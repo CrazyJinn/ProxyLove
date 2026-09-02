@@ -1,4 +1,4 @@
-"""script_splitter 纯函数单测（parse_md / align / assign_orders / build_actions）——不连 Neo4j。
+"""script_splitter 纯函数单测（parse_ink / align / assign_orders / build_actions）——不连 Neo4j。
 
 split 主流程（查图/写图）不在单测范围（需真实库，端到端验证）。
 在 99_game/tools 下跑：python -m pytest test_script_splitter.py -v
@@ -13,31 +13,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / ".claude" / "skills
 import script_splitter as sp  # noqa: E402
 
 
-MD = """# 酒店醒来
-
-## s00_酒店 酒店-客房（清晨）
-
-旁白:清晨，一缕阳光从窗帘缝隙钻进来。
-陆择:嗯……等下还要赶飞机。
-
-**选择**
-- 起床 → 分支:起床
-- 继续睡 → 分支:赖床
-
-**分支:起床**
-
-顾盈:哟，醒这么早？
-
-**结局**:BE——没赶上飞机
-"""
-
-
-def _write_md(tmp_path, text=MD):
-    p = tmp_path / "台词.md"
-    p.write_text(text, encoding="utf-8")
-    return str(p)
-
-
 def _g(op, text, *, who=None, order=0, status=11, nid="g",
        voice_key=None, sha=None, scene_block_id=None, kind=None, pos=None):
     """图行 dict（split 图查询返回形状）。"""
@@ -48,53 +23,7 @@ def _g(op, text, *, who=None, order=0, status=11, nid="g",
             "ord": order}
 
 
-# ── parse_md ──
-
-def test_parse_md_basic(tmp_path):
-    parsed = sp.parse_md(_write_md(tmp_path))
-    rows, blocks = parsed["rows"], parsed["blocks"]
-    ops = [r["op"] for r in rows]
-    assert ops == ["narrate", "say", "label", "say", "ending"]   # scene 行已去图化
-    assert blocks == [{"block": "s00_酒店", "scene_name": "酒店-客房"}]
-    assert rows[0]["scene_block_id"] == "s00_酒店"
-    assert rows[1] == {"op": "say", "who": "陆择", "text": "嗯……等下还要赶飞机。",
-                       "scene_block_id": "s00_酒店"}
-    assert rows[2]["text"] == "起床"            # label 行
-    assert rows[4]["kind"] == "BE" and rows[4]["text"] == "没赶上飞机"
-
-
-def test_parse_md_choice_block_skipped(tmp_path):
-    rows = sp.parse_md(_write_md(tmp_path))["rows"]
-    texts = [r.get("text") for r in rows]
-    assert "起床 → 分支:起床" not in texts      # 选择块整块跳过（choice 不进图）
-
-
-def test_parse_md_rejects_unknown_line(tmp_path):
-    p = _write_md(tmp_path, "## s0 场（早）\n%%怪行%%\n")
-    with pytest.raises(ValueError, match="第 2 行"):
-        sp.parse_md(p)
-
-
-def test_parse_md_rejects_legacy_portrait_bracket(tmp_path):
-    """演出层已与台词分离：残留 [表情] 标注必须显式报错，不得静默吞掉。"""
-    p = _write_md(tmp_path, "## s0 场（早）\n陆择[微笑]:再睡五分钟嘛。\n")
-    with pytest.raises(ValueError, match="第 2 行"):
-        sp.parse_md(p)
-
-
-def test_parse_md_requires_scene_header(tmp_path):
-    p = _write_md(tmp_path, "# 只有节标题\n\n")   # 无任何场景二级标题
-    with pytest.raises(ValueError, match="缺场景"):
-        sp.parse_md(p)
-
-
-def test_parse_md_line_before_first_scene_header(tmp_path):
-    p = _write_md(tmp_path, "旁白:出现在首个场景标题之前\n## s0 场（早）\n")
-    with pytest.raises(ValueError, match="首个场景标题之前"):
-        sp.parse_md(p)
-
-
-# ── parse_ink（台词.ink 方言，2026-09-02 起定稿格式）──
+# ── parse_ink（台词.ink 方言，2026-09-02 起定稿格式；md→ink 转换保真锚见 test_md_to_ink.py）──
 
 INK = """// 酒店醒来
 
@@ -143,11 +72,6 @@ def test_parse_ink_choice_lines_skipped(tmp_path):
            "旁白:醒了。\n")
     rows = sp.parse_ink(_write_ink(tmp_path, ink))["rows"]
     assert rows == [{"op": "narrate", "text": "醒了。", "scene_block_id": "s0"}]
-
-
-def test_parse_ink_rows_equal_md_parse(tmp_path):
-    """方言等价性锚点：INK fixture 与其 md 原型的解析输出必须深相等（行模型零漂移）。"""
-    assert sp.parse_ink(_write_ink(tmp_path)) == sp.parse_md(_write_md(tmp_path))
 
 
 def test_parse_ink_comment_ignored(tmp_path):
@@ -374,18 +298,7 @@ def test_say_create_gets_default_pos_and_status_zero():
 
 
 # ── 环境音行（transition / ambience）与块级 pos 分配 ──
-
-def test_parse_md_transition_line(tmp_path):
-    """「环境音:」独立行 → op=transition（转场音效行）；旁白内嵌【环境音:x】→ narrate.ambient_text。"""
-    md = ("## s0 场（早）\n"
-          "环境音:推门时门口的风铃清脆作响\n"
-          "旁白:雨点骤然砸落【环境音:骤雨由疏转密】\n")
-    rows = sp.parse_md(_write_md(tmp_path, md))["rows"]
-    assert rows[0] == {"op": "transition", "text": "推门时门口的风铃清脆作响",
-                       "scene_block_id": "s0"}
-    assert rows[1] == {"op": "narrate", "text": "雨点骤然砸落",
-                       "ambient_text": "骤雨由疏转密", "scene_block_id": "s0"}
-
+# 「环境音:」独立行 / 旁白内嵌【环境音:x】两型解析用例：test_parse_ink_transition_and_inline_ambient
 
 def test_block_pos_two_speakers_split_sides():
     """双人块：先说话者 left、后说话者 right（对话分侧）；create/update 都按块规则值。"""

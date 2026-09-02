@@ -1,11 +1,13 @@
-"""台词.md 拆分对齐进图（SecScript → 逐句 LineAudio，produces{order} 大间距排序）。
+"""台词.ink 拆分对齐进图（SecScript → 逐句 LineAudio，produces{order} 大间距排序）。
 
 section-voice-publisher 第一步「拆分进图」的唯一实现。把已批定稿（SecScript=11 的
-台词.md，人读 Markdown）幂等拆分为图节点：
+台词.ink，人读 ink 方言——规范见 chapter-dialoguer references/ink方言规范.md）幂等
+拆分为图节点：
 
-  parse_md  解析 台词.md → 行序列（say/narrate/transition/label/ending；**选择**块跳过——
-            choice 及配套 jump 暂不进图，建模后续设计；解析失败抛 ValueError 带行号）
-  align     md 行 vs 图已有行 difflib 对齐（签名 = op+who+text）→ 保留/更新/新建/删除
+  parse_ink 解析 台词.ink → 行序列（say/narrate/transition/label/ending；* / + 选择行
+            整行跳过——choice 及配套 jump 暂不进图，建模后续设计；解析失败抛
+            ValueError 带行号）
+  align     定稿行 vs 图已有行 difflib 对齐（签名 = op+who+text）→ 保留/更新/新建/删除
   split     经 cypher_exec.py（--stdin --multi 单事务）写图 + 产出报告 JSON
 
 数据模型（00_init/Schema/剧情.md）：
@@ -15,7 +17,7 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已批�
            voice key，重排安全）
   恢复   = sync 级联置 -1 的行：text_sha1 匹配且 wav 在 → 10（音频复用，保守进审）；
            非 say 行 → 11（无音频语义，拆分即完成）；否则 0
-  微调   = 人工改 md 重批后重拆：未变行原样保留（含已批 11），只有改动句置 0
+  微调   = 人工改 ink 重批后重拆：未变行原样保留（含已批 11），只有改动句置 0
            ——单句修改不丢
 
 CLI:
@@ -50,12 +52,12 @@ ORDER_STEP = 1000          # 初始间距
 SAY_DEFAULT_POS = "left"   # say 行立绘位兜底（单人块规则值；update 沿用存量时的兜底）
 
 
-def _block_pos_map(md_rows_in_block: list) -> dict:
+def _block_pos_map(script_rows_in_block: list) -> dict:
     """块内 say 行 who（按首次说话序）→ 立绘位（md 不写 pos，块级规则值即缺省值）：
     1 人 left（独白靠左，与对话框正文起始位一致）/ 2 人先说话者 left 后说话者 right（对话分侧）/
     ≥3 人按首话序 left/right/center（第 4+ 人兜底 center）。"""
     whos = []
-    for m in md_rows_in_block:
+    for m in script_rows_in_block:
         if m.get("op") == "say" and m.get("who") and m["who"] not in whos:
             whos.append(m["who"])
     if not whos:
@@ -110,134 +112,60 @@ def _run_cypher_multi(statements: list) -> None:
         raise RuntimeError(f"写图失败（退出码 {proc.returncode}）:\n{proc.stderr}")
 
 
-# ── 解析 台词.md ─────────────────────────────────────────────
+# ── 解析 台词.ink（方言规范：chapter-dialoguer references/ink方言规范.md）──
 
-_SCENE_RE = re.compile(r"^##\s+(\S+)\s+(.+?)\s*(?:（([^）]*)）)?\s*$")
+# 场景块标记（=== knot 风格；方言允许中文标识符与人读后缀——偏离严格 ink，见规范）
+_SCENE_RE = re.compile(r"^===\s+(\S+)\s+(.+?)\s*(?:（([^）]*)）)?\s*$")
 _NARRATE_RE = re.compile(r"^旁白\s*:\s*(.+)$")
 # 说话行不支持 [表情] 标注（演出层已与台词分离）：角色名排除 [ 与 ]，残留标注（陆择[微笑]:x）
 # 因 group(1) 无法跨 [ 而整行不匹配 → 落入末尾 ValueError 显式拦截
 _SAY_RE = re.compile(r"^([^:\[\]]+?)\s*:\s*(.+)$")
-_LABEL_RE = re.compile(r"^\*\*分支\s*[:：]\s*(.+?)\s*\*\*$")
-_ENDING_RE = re.compile(r"^\*\*结局\*\*\s*[:：]\s*(BE|TE|HE|NE)\s*(?:——|—)\s*(.+)$")
-_CHOICE_RE = re.compile(r"^\*\*选择\*\*\s*$")
+# 分支标记（= stitch 风格）→ op=label
+_STITCH_RE = re.compile(r"^=\s+(.+?)\s*$")
+# 结局行（-> END + 行尾 ending tag 承载 kind 与落点）；含冒号，判定必须先于 _SAY_RE
+_ENDING_RE = re.compile(r"^->\s*END\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*(?:——|—)\s*(.+)$")
+# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag
+_CHOICE_RE = re.compile(r"^[*+](\s|$)")
+# 注释行（ink 中 # 是 tag 非注释，注释是 //）
+_COMMENT_RE = re.compile(r"^//")
 # 环境音行（与旁白同级别，保留字「环境音」）；必须先于 _SAY_RE 匹配，否则被说话行正则吃掉
 _AMBIENT_RE = re.compile(r"^环境音\s*[:：]\s*(.+)$")
 # 氛围型环境音：旁白行内嵌标注【环境音:<语义>】（至多一个，与旁白同出）
 _INLINE_AMBIENT_RE = re.compile(r"【环境音[:：]([^】]+)】")
-
-# ── 台词.ink 方言正则（2026-09-02 起定稿格式；规范：chapter-dialoguer references/ink方言规范.md）──
-# 场景块标记（=== knot 风格；方言允许中文标识符与人读后缀——偏离严格 ink，见规范）
-_INK_SCENE_RE = re.compile(r"^===\s+(\S+)\s+(.+?)\s*(?:（([^）]*)）)?\s*$")
-# 分支标记（= stitch 风格）→ op=label
-_INK_STITCH_RE = re.compile(r"^=\s+(.+?)\s*$")
-# 结局行（-> END + 行尾 ending tag 承载 kind 与落点）；含冒号，判定必须先于 _SAY_RE
-_INK_ENDING_RE = re.compile(r"^->\s*END\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*(?:——|—)\s*(.+)$")
-# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag
-_INK_CHOICE_RE = re.compile(r"^[*+](\s|$)")
-# 注释行（ink 中 # 是 tag 非注释，注释是 //）
-_INK_COMMENT_RE = re.compile(r"^//")
 
 
 def _strip_inline_ambient(narration: str, lineno: int, raw: str) -> tuple:
     """旁白正文 → (纯正文, 氛围语义 or None)。至多一个内嵌标注，多个报错。"""
     found = _INLINE_AMBIENT_RE.findall(narration)
     if len(found) > 1:
-        raise ValueError(f"台词.md 第 {lineno} 行内嵌环境音标注多于一个：{raw!r}")
+        raise ValueError(f"台词.ink 第 {lineno} 行内嵌环境音标注多于一个：{raw!r}")
     text = _INLINE_AMBIENT_RE.sub("", narration).strip() if found else narration
     return text, (found[0].strip() if found else None)
-
-
-def parse_md(path) -> dict:
-    """解析 台词.md → {"rows": [...], "blocks": [{block, scene_name}, ...]}。
-
-    - 场景二级标题**不产生图行**（scene 行已去图化）：块定义进 blocks（写入
-      SecScript.scene_blocks），后续行各带 scene_block_id（行上存块归属）。
-    - 行 dict：op/who/text/kind/scene_block_id(+ambient_text：氛围型旁白)。演出层（立绘
-      选择）不在拆分期——由配音判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
-    - `#` 节标题与空行忽略；`**选择**` 块（含其下 `- ` 选项行）整体跳过（choice 不进图）。
-    - 无法识别的行抛 ValueError（带行号与原文）——skill 依报错修 md。
-    """
-    rows, blocks = [], []
-    cur_block = None
-    in_choice = False
-    text = Path(path).read_text(encoding="utf-8")
-    for n, raw in enumerate(text.splitlines(), 1):
-        line = raw.strip()
-        if not line or line.startswith("#") and not line.startswith("##"):
-            continue  # 空行 / 一级节标题
-        if _CHOICE_RE.match(line):
-            in_choice = True
-            continue
-        if in_choice:
-            if line.startswith("-"):
-                continue  # 选择块内的选项行
-            in_choice = False  # 其他行 = 选择块结束，继续正常解析
-        if line.startswith("##"):
-            m = _SCENE_RE.match(line)
-            if not m:
-                raise ValueError(f"台词.md 第 {n} 行场景标题格式错误：{raw!r}"
-                                 "（应为 ## <scene_block_id> <Scene 名>（<时段>））")
-            cur_block = m.group(1)
-            blocks.append({"block": cur_block, "scene_name": m.group(2).strip()})
-            continue
-        if cur_block is None:
-            raise ValueError(f"台词.md 第 {n} 行出现在首个场景标题之前：{raw!r}")
-        m = _NARRATE_RE.match(line)
-        if m:
-            body, amb = _strip_inline_ambient(m.group(1).strip(), n, raw)
-            row = {"op": "narrate", "text": body, "scene_block_id": cur_block}
-            if amb:
-                row["ambient_text"] = amb
-            rows.append(row)
-            continue
-        m = _AMBIENT_RE.match(line)
-        if m:
-            rows.append({"op": "transition", "text": m.group(1).strip(),
-                         "scene_block_id": cur_block})
-            continue
-        m = _LABEL_RE.match(line)
-        if m:
-            rows.append({"op": "label", "text": m.group(1).strip(),
-                         "scene_block_id": cur_block})
-            continue
-        m = _ENDING_RE.match(line)
-        if m:
-            rows.append({"op": "ending", "kind": m.group(1), "text": m.group(2).strip(),
-                         "scene_block_id": cur_block})
-            continue
-        m = _SAY_RE.match(line)
-        if m:
-            rows.append({"op": "say", "who": m.group(1).strip(),
-                         "text": m.group(2).strip(), "scene_block_id": cur_block})
-            continue
-        raise ValueError(f"台词.md 第 {n} 行无法解析：{raw!r}（格式规范见 chapter-dialoguer SKILL.md）")
-    if not blocks:
-        raise ValueError("台词.md 缺场景二级标题（## <scene_block_id> <Scene 名>（<时段>））")
-    return {"rows": rows, "blocks": blocks}
 
 
 def parse_ink(path) -> dict:
     """解析 台词.ink → {"rows": [...], "blocks": [{block, scene_name}, ...]}。
 
-    行 dict 与 parse_md 完全同形（op/who/text/kind/scene_block_id+ambient_text）——
-    下游 align/orders/build_actions 与 md 时代零差异。判定次序（防线，顺序敏感）：
-    空行 → // 注释 → */+ 选择行（整行跳过，含行尾 tag——choice 不进图）→ === 场景块
-    （先于 =，否则 === 被 stitch 吃）→ 首块前内容行报错 → 行首 # 报错（ink 中 # 是 tag
-    非注释，行首 tag 会被 _SAY_RE 吃成 who）→ 行首 ->（须匹配结局行正则——其含冒号，
-    迟判会被 _SAY_RE 吃）→ 旁白 → 环境音 → = 分支（label）→ 说话行 → 兜底 ValueError。
-    解析失败抛 ValueError（带行号与原文）——skill 依报错修 ink。
+    行 dict：op/who/text/kind/scene_block_id(+ambient_text：氛围型旁白)。演出层（立绘
+    选择）不在拆分期——由配音判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
+    判定次序（防线，顺序敏感）：空行 → // 注释 → */+ 选择行（整行跳过，含行尾 tag
+    ——choice 不进图）→ === 场景块（先于 =，否则 === 被 stitch 吃）→ 首块前内容行报错
+    → 行首 # 报错（ink 中 # 是 tag 非注释，行首 tag 会被 _SAY_RE 吃成 who）→ 行首 ->
+    （须匹配结局行正则——其含冒号，迟判会被 _SAY_RE 吃）→ 旁白 → 环境音 → = 分支
+    （label）→ 说话行 → 兜底 ValueError。解析失败抛 ValueError（带行号与原文）——
+    skill 依报错修 ink。
     """
     rows, blocks = [], []
     cur_block = None
     text = Path(path).read_text(encoding="utf-8")
     for n, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
-        if not line or _INK_COMMENT_RE.match(line):
+        if not line or _COMMENT_RE.match(line):
             continue  # 空行 / // 注释
-        if _INK_CHOICE_RE.match(line):
+        if _CHOICE_RE.match(line):
             continue  # 选择行：整行跳过（choice 及去向 tag 不进图，建模后续设计）
         if line.startswith("==="):
-            m = _INK_SCENE_RE.match(line)
+            m = _SCENE_RE.match(line)
             if not m:
                 raise ValueError(f"台词.ink 第 {n} 行场景块标记格式错误：{raw!r}"
                                  "（应为 === <scene_block_id> <Scene 名>（<时段>））")
@@ -249,7 +177,7 @@ def parse_ink(path) -> dict:
         if line.startswith("#"):
             raise ValueError(f"台词.ink 第 {n} 行以 # 开头（tag 非行首语法，仅结局行行尾支持）：{raw!r}")
         if line.startswith("->"):
-            m = _INK_ENDING_RE.match(line)
+            m = _ENDING_RE.match(line)
             if not m:
                 raise ValueError(f"台词.ink 第 {n} 行 divert 仅支持结局行：{raw!r}"
                                  "（应为 -> END # ending: <BE|TE|HE|NE>——<落点一句话>）")
@@ -269,7 +197,7 @@ def parse_ink(path) -> dict:
             rows.append({"op": "transition", "text": m.group(1).strip(),
                          "scene_block_id": cur_block})
             continue
-        m = _INK_STITCH_RE.match(line)
+        m = _STITCH_RE.match(line)
         if m:
             rows.append({"op": "label", "text": m.group(1).strip(),
                          "scene_block_id": cur_block})
@@ -338,35 +266,35 @@ def _purge_line_audio_files(g: dict, report: dict) -> None:
 
 # ── 对齐 ─────────────────────────────────────────────────────
 
-def align(md_rows: list, graph_rows: list) -> dict:
-    """md 行 vs 图行（须按 order 升序）→ {keep, update, create, delete} 计划。
+def align(script_rows: list, graph_rows: list) -> dict:
+    """定稿行 vs 图行（须按 order 升序）→ {keep, update, create, delete} 计划。
 
     keep   equal：签名全同（text 必相同）。-1 恢复 / 演出字段 diff 在 build_actions 处理
     update replace 块按位置配对：沿用图行 id/order，字段全量更新，status=0（stale 重配）
     create md 独有：新节点（雪花 id）+ order 中点
     delete 图独有：DETACH DELETE（wav 留盘）
     """
-    sm = difflib.SequenceMatcher(None, [_sig(r) for r in graph_rows], [_sig(r) for r in md_rows])
+    sm = difflib.SequenceMatcher(None, [_sig(r) for r in graph_rows], [_sig(r) for r in script_rows])
     plan = {"keep": [], "update": [], "create": [], "delete": []}
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag == "equal":
             for k in range(i2 - i1):
-                plan["keep"].append({"graph": graph_rows[i1 + k], "md": md_rows[j1 + k]})
+                plan["keep"].append({"graph": graph_rows[i1 + k], "md": script_rows[j1 + k]})
         elif tag == "delete":
             plan["delete"].extend({"graph": g} for g in graph_rows[i1:i2])
         elif tag == "insert":
-            plan["create"].extend({"md": m} for m in md_rows[j1:j2])
+            plan["create"].extend({"md": m} for m in script_rows[j1:j2])
         else:  # replace：按位置配对，多出部分按删/建
             n = min(i2 - i1, j2 - j1)
             for k in range(n):
-                plan["update"].append({"graph": graph_rows[i1 + k], "md": md_rows[j1 + k]})
+                plan["update"].append({"graph": graph_rows[i1 + k], "md": script_rows[j1 + k]})
             plan["delete"].extend({"graph": g} for g in graph_rows[i1 + n:i2])
-            plan["create"].extend({"md": m} for m in md_rows[j1 + n:j2])
+            plan["create"].extend({"md": m} for m in script_rows[j1 + n:j2])
     return plan
 
 
-def assign_orders(md_rows: list, plan: dict) -> tuple:
-    """给最终序列（md 顺序）分配 order。返回 (seq, reordered)。
+def assign_orders(script_rows: list, plan: dict) -> tuple:
+    """给最终序列（定稿顺序）分配 order。返回 (seq, reordered)。
 
     seq = [{md, action, graph?, id, order}]。create 行取上下邻居中点（同缝隙多行均分
     gap/(n+1)）；头/尾插入外推 ±1000；分配后非严格递增（或旧行缺 order）→ 全节重排
@@ -377,7 +305,7 @@ def assign_orders(md_rows: list, plan: dict) -> tuple:
         for it in plan[action]:
             by_md[id(it["md"])] = (action, it)
     seq = []
-    for m in md_rows:
+    for m in script_rows:
         hit = by_md.get(id(m))
         if hit:
             action, it = hit
@@ -568,8 +496,8 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         raise ValueError(f"SecScript.status={st}（须 11 定稿已批才能拆分进图）")
     if not script_path:
         raise ValueError("SecScript.script_path 为空")
-    parsed = parse_md(script_path)
-    md_rows, blocks = parsed["rows"], parsed["blocks"]
+    parsed = parse_ink(script_path)
+    script_rows, blocks = parsed["rows"], parsed["blocks"]
 
     graph_rows = _run_cypher(
         "MATCH (sc:SecScript {id:'" + sc_id + "'})-[p:produces]->(l:LineAudio) "
@@ -581,8 +509,8 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         "ORDER BY p.order"
     )
 
-    plan = align(md_rows, graph_rows)
-    seq, reordered = assign_orders(md_rows, plan)
+    plan = align(script_rows, graph_rows)
+    seq, reordered = assign_orders(script_rows, plan)
     stmts, report = build_actions(seq, plan, sc_id)
     # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）
     stmts.append(f"MATCH (sc:SecScript {{id:{_q(sc_id)}}}) "
@@ -597,7 +525,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="台词.md 拆分对齐进图（SecScript→逐句 LineAudio）")
+    ap = argparse.ArgumentParser(description="台词.ink 拆分对齐进图（SecScript→逐句 LineAudio）")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p_split = sub.add_parser("split", help="拆分进图")
     p_split.add_argument("--section", required=True, help="Section 节点 ID（snowflake）")
