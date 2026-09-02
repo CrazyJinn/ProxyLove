@@ -125,6 +125,18 @@ _AMBIENT_RE = re.compile(r"^环境音\s*[:：]\s*(.+)$")
 # 氛围型环境音：旁白行内嵌标注【环境音:<语义>】（至多一个，与旁白同出）
 _INLINE_AMBIENT_RE = re.compile(r"【环境音[:：]([^】]+)】")
 
+# ── 台词.ink 方言正则（2026-09-02 起定稿格式；规范：chapter-dialoguer references/ink方言规范.md）──
+# 场景块标记（=== knot 风格；方言允许中文标识符与人读后缀——偏离严格 ink，见规范）
+_INK_SCENE_RE = re.compile(r"^===\s+(\S+)\s+(.+?)\s*(?:（([^）]*)）)?\s*$")
+# 分支标记（= stitch 风格）→ op=label
+_INK_STITCH_RE = re.compile(r"^=\s+(.+?)\s*$")
+# 结局行（-> END + 行尾 ending tag 承载 kind 与落点）；含冒号，判定必须先于 _SAY_RE
+_INK_ENDING_RE = re.compile(r"^->\s*END\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*(?:——|—)\s*(.+)$")
+# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag
+_INK_CHOICE_RE = re.compile(r"^[*+](\s|$)")
+# 注释行（ink 中 # 是 tag 非注释，注释是 //）
+_INK_COMMENT_RE = re.compile(r"^//")
+
 
 def _strip_inline_ambient(narration: str, lineno: int, raw: str) -> tuple:
     """旁白正文 → (纯正文, 氛围语义 or None)。至多一个内嵌标注，多个报错。"""
@@ -201,6 +213,76 @@ def parse_md(path) -> dict:
         raise ValueError(f"台词.md 第 {n} 行无法解析：{raw!r}（格式规范见 chapter-dialoguer SKILL.md）")
     if not blocks:
         raise ValueError("台词.md 缺场景二级标题（## <scene_block_id> <Scene 名>（<时段>））")
+    return {"rows": rows, "blocks": blocks}
+
+
+def parse_ink(path) -> dict:
+    """解析 台词.ink → {"rows": [...], "blocks": [{block, scene_name}, ...]}。
+
+    行 dict 与 parse_md 完全同形（op/who/text/kind/scene_block_id+ambient_text）——
+    下游 align/orders/build_actions 与 md 时代零差异。判定次序（防线，顺序敏感）：
+    空行 → // 注释 → */+ 选择行（整行跳过，含行尾 tag——choice 不进图）→ === 场景块
+    （先于 =，否则 === 被 stitch 吃）→ 首块前内容行报错 → 行首 # 报错（ink 中 # 是 tag
+    非注释，行首 tag 会被 _SAY_RE 吃成 who）→ 行首 ->（须匹配结局行正则——其含冒号，
+    迟判会被 _SAY_RE 吃）→ 旁白 → 环境音 → = 分支（label）→ 说话行 → 兜底 ValueError。
+    解析失败抛 ValueError（带行号与原文）——skill 依报错修 ink。
+    """
+    rows, blocks = [], []
+    cur_block = None
+    text = Path(path).read_text(encoding="utf-8")
+    for n, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if not line or _INK_COMMENT_RE.match(line):
+            continue  # 空行 / // 注释
+        if _INK_CHOICE_RE.match(line):
+            continue  # 选择行：整行跳过（choice 及去向 tag 不进图，建模后续设计）
+        if line.startswith("==="):
+            m = _INK_SCENE_RE.match(line)
+            if not m:
+                raise ValueError(f"台词.ink 第 {n} 行场景块标记格式错误：{raw!r}"
+                                 "（应为 === <scene_block_id> <Scene 名>（<时段>））")
+            cur_block = m.group(1)
+            blocks.append({"block": cur_block, "scene_name": m.group(2).strip()})
+            continue
+        if cur_block is None:
+            raise ValueError(f"台词.ink 第 {n} 行出现在首个场景块标记之前：{raw!r}")
+        if line.startswith("#"):
+            raise ValueError(f"台词.ink 第 {n} 行以 # 开头（tag 非行首语法，仅结局行行尾支持）：{raw!r}")
+        if line.startswith("->"):
+            m = _INK_ENDING_RE.match(line)
+            if not m:
+                raise ValueError(f"台词.ink 第 {n} 行 divert 仅支持结局行：{raw!r}"
+                                 "（应为 -> END # ending: <BE|TE|HE|NE>——<落点一句话>）")
+            rows.append({"op": "ending", "kind": m.group(1), "text": m.group(2).strip(),
+                         "scene_block_id": cur_block})
+            continue
+        m = _NARRATE_RE.match(line)
+        if m:
+            body, amb = _strip_inline_ambient(m.group(1).strip(), n, raw)
+            row = {"op": "narrate", "text": body, "scene_block_id": cur_block}
+            if amb:
+                row["ambient_text"] = amb
+            rows.append(row)
+            continue
+        m = _AMBIENT_RE.match(line)
+        if m:
+            rows.append({"op": "transition", "text": m.group(1).strip(),
+                         "scene_block_id": cur_block})
+            continue
+        m = _INK_STITCH_RE.match(line)
+        if m:
+            rows.append({"op": "label", "text": m.group(1).strip(),
+                         "scene_block_id": cur_block})
+            continue
+        m = _SAY_RE.match(line)
+        if m:
+            rows.append({"op": "say", "who": m.group(1).strip(),
+                         "text": m.group(2).strip(), "scene_block_id": cur_block})
+            continue
+        raise ValueError(f"台词.ink 第 {n} 行无法解析：{raw!r}"
+                         "（方言规范见 chapter-dialoguer references/ink方言规范.md）")
+    if not blocks:
+        raise ValueError("台词.ink 缺场景块标记行（=== <scene_block_id> <Scene 名>（<时段>））")
     return {"rows": rows, "blocks": blocks}
 
 
