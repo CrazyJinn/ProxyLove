@@ -1,8 +1,8 @@
 """剧本章节 Schema 校验（发布产出的运行时章 JSON / YAML）。本环境（bash + python）可立即运行。
 
 校验对象是 99_game/data/chapters/ 下的章 JSON（merge_sections_to_chapter.py 从图投影产出，
-chapter-publisher 发布流程必跑）。台词.jsonl 已停产，创作侧 台词.md 的机器可解析性由
-script_splitter.parse_md 在拆分时把关。
+chapter-publisher 发布流程必跑）。台词.jsonl 已停产，创作侧 台词.ink 的机器可解析性由
+script_splitter.parse_ink 在拆分时把关。
 """
 import json
 import sys

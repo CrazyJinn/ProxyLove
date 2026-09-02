@@ -163,7 +163,7 @@ RETURN char.name AS char, count(DISTINCT e) AS event_count;
 
 **Write**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/outline.md`（NN=`chapter_no`、MM=`section_no` 零填充；<章概述>取章 title、<节概述>取节 title 核心主题，清洗 Windows 非法字符）。Write 自动创建章/节目录。
 
-> 节级提纲 = 拓扑骨架契约值 + authoring 散文。`chapter-dialoguer` 读此文件，以「节拍（beats）」章节为节拍依据，在保持拓扑契约值不变的前提下填逐句台词成节级 `台词.jsonl`；**authoring 散文不搬进台词**。
+> 节级提纲 = 拓扑骨架契约值 + authoring 散文。`chapter-dialoguer` 读此文件，以「节拍（beats）」章节为节拍依据，在保持拓扑契约值不变的前提下填逐句台词成节级 `台词.ink`；**authoring 散文不搬进台词**。
 
 ### 3. 保存结果（MERGE 兜底建 SecOutline + has_outline 边 + 写 outline_path/status=1）
 

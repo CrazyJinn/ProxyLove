@@ -12,7 +12,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 章节发布（Chapter + 各 Section → 99_game）
 
-把审阅通过的章节从**图**（LineAudio 逐句行，台词.md 为人机界面）发布到**运行时区**（`99_game/`）：
+把审阅通过的章节从**图**（LineAudio 逐句行，台词.ink 为人机界面）发布到**运行时区**（`99_game/`）：
 **从图投影全章各节台词行合并为一个章 JSON** 落到 `99_game/data/chapters/`（Godot 只读 JSON，运行时不感知节层；行节点 id 等图字段被投影丢弃，say.voice 取自行节点 voice_key），拷贝章节涉及的立绘/背景图片/BGM 音频到 `99_game/assets/`，更新 `manifest.json`，并产出**章资源清单** `chapter_packs.json`（Web 按章分包导出依据）。
 发布是**确定性转换+拷贝**（非 LLM 创作），幂等——重复发布覆盖旧文件，无副作用。
 
@@ -94,7 +94,7 @@ python 99_game/tools/merge_sections_to_chapter.py \
   --chapter-map '99_game/data/.cache/chapter-map-<stem>.json' \
   -o '99_game/data/chapters/<stem>.json'
 python 99_game/tools/validate_chapter.py '99_game/data/chapters/<stem>.json' 99_game/data/剧本.schema.json
-#   validate FAIL → 中断发布，报警（剧本 schema 不合，回 台词.md 修对应节并重新走拆分/审批）
+#   validate FAIL → 中断发布，报警（剧本 schema 不合，回 台词.ink 修对应节并重新走拆分/审批）
 #   注：合并工具内置 scene-block id 章内唯一性校验（重复则报错）——若报 id 重复，说明 structurer 预分配环节 id 冲突，需回上游修正。
 
 # (b) 立绘：绿幕原图 → opencv 抠绿+发丝精修+头位归一化 → 99_game/assets/portraits/<整键>.png
@@ -192,15 +192,15 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
 
 `voice` 字段（`say.voice`）由 [section-voice-publisher](../section-voice-publisher/SKILL.md) 在**节级定稿后**经 `bind-graph` 写进行节点 `voice_key`，本 skill 图投影合并时自动带进章 JSON：
 
-- **生产时序**：chapter-dialoguer（台词.md → SecScript=10→11）→ **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
+- **生产时序**：chapter-dialoguer（台词.ink → SecScript=10→11）→ **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
 - 本 skill 合并时 say 行节点已含 voice_key（投影把 `voice_key` 投为 `say.voice`）→ 合并后章 JSON 每 say 自带 voice，**无需再注入**。
 - **本 skill 末尾补 manifest.voices + chapter_packs.voices**（节级阶段章未合并，这两处无法写；合并后用 voice_bundler 读章 JSON 推导补齐，见第 3、4 步）。
-- **行身份稳定寻址**：voice key 末段是 LineAudio 行节点雪花 id——台词.md 插入/删除/移动行不影响其他行 key；某句台词被改（stale 重配）后重跑该节 section-voice-publisher 覆盖对应 wav 即可，无全节重配。
+- **行身份稳定寻址**：voice key 末段是 LineAudio 行节点雪花 id——台词.ink 插入/删除/移动行不影响其他行 key；某句台词被改（stale 重配）后重跑该节 section-voice-publisher 覆盖对应 wav 即可，无全节重配。
 - chapter JSON 的 `meta.requires` 不含 voices（voice 键按行节点 id 算，不进 requires）。
 
 ## 参考文档
 
-- 台词.md 格式（人读定稿）与图行投影：[script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_md——格式规范的机器侧权威）+ [merge_sections_to_chapter.py](../../../99_game/tools/merge_sections_to_chapter.py)（graph_lines_to_doc 图行投影）
+- 台词.ink 方言（人读定稿）与图行投影：[script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威；方言规范见 [ink方言规范.md](../chapter-dialoguer/references/ink方言规范.md)）+ [merge_sections_to_chapter.py](../../../99_game/tools/merge_sections_to_chapter.py)（graph_lines_to_doc 图行投影）
 - 节合并工具：[99_game/tools/merge_sections_to_chapter.py](../../../99_game/tools/merge_sections_to_chapter.py)（图行 → 1 章 JSON）
 - manifest 生成器：[99_game/tools/manifest_builder.py](../../../99_game/tools/manifest_builder.py)
 - 章资源清单更新器：[99_game/tools/chapter_packs_updater.py](../../../99_game/tools/chapter_packs_updater.py)

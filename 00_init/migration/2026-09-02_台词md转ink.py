@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]  # 00_init/migration/<本文件> → 项目根
 
 # md 侧行型（与 script_splitter.parse_md 的正则同形——迁移器自包含，不依赖其存活）
 _MD_H1_RE = re.compile(r"^#\s+(.*)$")

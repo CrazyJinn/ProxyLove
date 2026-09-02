@@ -1,8 +1,8 @@
 ---
 name: section-voice-publisher
 description: |
-  把单节已批定稿（SecScript.status=11 的 台词.md）拆分进图、逐句选立绘并克隆 TTS 语音：
-  ① 拆分对齐进图（script_splitter.py：台词.md ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
+  把单节已批定稿（SecScript.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
+  ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
   ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 Scene-depicts→expands_to 列已有立绘；池空按场景事件 wears 优先、兜底 has_costume 选定 IllusDesign）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
   ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to/ref_style + Scene-depicts->IllusDesign）→
@@ -17,10 +17,10 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 节级拆分进图 + 配音发布（SecScript 定稿 → 逐句 LineAudio → 行级 TTS）
 
-把**单节已批定稿**（`SecScript.status=11` 的 `台词.md`）先**拆分对齐进图**（逐句 LineAudio 节点 + `SecScript-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
+把**单节已批定稿**（`SecScript.status=11` 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `SecScript-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
 按本节出场角色 `VoiceDesign`，用 [voice_clone_runner.py](scripts/voice_clone_runner.py) ensure-ref 出/复用 ref_audio → 同脚本 `publish` 逐句 clone（Qwen3 Base Voice Clone，输入 tts_text 变体承载情绪，均 env/.venv-qwen）→ 母带落 `15_声音/<chapter_stem>/<scene_block_id>/`（按章节归档），再用 [voice_bundler.py](scripts/voice_bundler.py) `bind-graph` 给每个（重）生成行写节点属性（`status=10` 待审）。**不拷运行时副本**：dashboard 逐句审批试听直接读母带 `15_声音/`；`99_game/assets/voices|sfx` 只由 chapter-publisher 发布时按 `status=11` 收录（`voice_bundler.py publish`），未批音频不进成品目录。
 
-> **拆分幂等**（script_splitter.py 对齐算法）：台词.md 与图行按签名（op+who+text）difflib 对齐——未变行原样保留（级联 -1 的未变 say 行且 wav 在 → 恢复 10，**resubmit 微调回路下未变行连 status 都不动**，已批 11 保持）；text 变化行沿用节点置 0（voice key 不变覆盖 wav）；md 新增行建新节点（order 取上下句中点，**单句插入不丢任何行**）；md 删除行 DETACH DELETE。order 中点耗尽时全节重排（order 不进 voice key，安全）。
+> **拆分幂等**（script_splitter.py 对齐算法）：台词.ink 与图行按签名（op+who+text）difflib 对齐——未变行原样保留（级联 -1 的未变 say 行且 wav 在 → 恢复 10，**resubmit 微调回路下未变行连 status 都不动**，已批 11 保持）；text 变化行沿用节点置 0（voice key 不变覆盖 wav）；定稿新增行建新节点（order 取上下句中点，**单句插入不丢任何行**）；定稿删除行 DETACH DELETE。order 中点耗尽时全节重排（order 不进 voice key，安全）。
 > **行身份 = 节点雪花 id**（voice key 末段，永不复用）——md 插入/删除/移动行不改变其他行的 key，旧 wav 不成孤儿。
 
 ## 参数
@@ -47,7 +47,7 @@ RETURN sc.script_path AS script_path, sc.status AS sc_status, sc.id AS sc_id,
 ```
 
 - `sc_status≠11` → 停止（先定稿审）。
-- 出场角色 = 图行 distinct `who`（首拆图无行时读 `台词.md` 的说话行 `who` 集合），其 VoiceDesign 沿图关系查（出场角色 → 在本节场景发生的事件中 involved）：
+- 出场角色 = 图行 distinct `who`（首拆图无行时读 `台词.ink` 的说话行 `who` 集合），其 VoiceDesign 沿图关系查（出场角色 → 在本节场景发生的事件中 involved）：
 
 ```cypher
 // (2) 本节出场角色 VoiceDesign——图关系遍历，不按名字列表猜
@@ -101,17 +101,17 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 
-**读本节 `台词.md` 全文**（对话上下文）+ **选绘候选池** `portrait-candidates-<stem>-sec<MM>.json`（3a 产出），对 tasks 里的每个任务句做四件事：
+**读本节 `台词.ink` 全文**（对话上下文）+ **选绘候选池** `portrait-candidates-<stem>-sec<MM>.json`（3a 产出），对 tasks 里的每个任务句做四件事：
 
 1. **判别 emotion**（12 词表选一）：`平静` / `高兴` / `悲伤` / `愤怒` / `震惊` / `无奈` / `调侃` / `温柔` / `冷漠` / `紧张` / `恐惧` / `坚定`。判别依据：该句台词文本 + 前后对话语境 + 该角色在此刻的情绪走向。
-2. **产 tts_text 配音变体**：在台词原文基础上做**仅标点/停顿级修饰**——按情绪加省略号（迟疑/喃喃）、叹号（惊讶/愤怒）、问号强化、破折号拖音、逗号停顿；**禁止增删改任何汉字**（运行时字幕显示原文 text，变体发声必须与字幕字面一致——加字会音字不符出戏）。原文已足够口语化时 `tts_text` 等于原文。强烈语气诉求（语气词/引导词，如「哼」「咦」「你说」）不写在变体里，而是建议作者写进台词.md 原文（text 层改动走 stale 自动重配，字幕同步）。驳回句重配时变体保持原文级（标点至多微调），靠**同文本重采样**的韵律随机性换演绎——仍不满意说明是 ref 音色问题，回 char-voice-design 层调 instruct。
+2. **产 tts_text 配音变体**：在台词原文基础上做**仅标点/停顿级修饰**——按情绪加省略号（迟疑/喃喃）、叹号（惊讶/愤怒）、问号强化、破折号拖音、逗号停顿；**禁止增删改任何汉字**（运行时字幕显示原文 text，变体发声必须与字幕字面一致——加字会音字不符出戏）。原文已足够口语化时 `tts_text` 等于原文。强烈语气诉求（语气词/引导词，如「哼」「咦」「你说」）不写在变体里，而是建议作者写进台词.ink 原文（text 层改动走 stale 自动重配，字幕同步）。驳回句重配时变体保持原文级（标点至多微调），靠**同文本重采样**的韵律随机性换演绎——仍不满意说明是 ref 音色问题，回 char-voice-design 层调 instruct。
 3. **判别 clone_mode**（演绎通道，二选一，缺省 `icl`）：
    - `icl`（ICL）：ref codec + ref_text 进 prompt，ref 韵律迁移——音色最稳；但**平静 ref 的韵律会压制文本语气信号**，迟疑/强情绪句演绎乏力。
    - `xvec`（仅说话人向量）：丢 ref 韵律，**文本语义完全主导语气演绎**；音色无损失（demo/hesitation_demo.py 变体 C 验证），官方注明克隆相似度可能略降。
    - 判别依据：**迟疑/结巴/喃喃（省略号密集）、强情绪起伏（惊呼/崩溃/嘶喊/狂喜）、句内情绪反差大的句子 → `xvec`；平稳叙述、信息交付、日常应答 → `icl`**。emotion 词表与 clone_mode **不做固定映射**——同为「震惊」，轻讶短句 icl 足够、长嘶喊才需要 xvec；综合文本形态（标点密度/句长/情绪强度）与上下文判定。
    - tasks 项透传的 clone_mode 是**初值**：人工在 dashboard 改过的非缺省值视为意志表达，**除非与语境明显矛盾否则保留**；重配句参考上一轮模式——上轮 icl 被驳回/作废的非平静句优先改判 xvec（反之亦然）。
 
-4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.md` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
+4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.ink` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
    - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`description` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
    - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "description": "<该变体氛围一句话：情绪强度/神态/身体张力，供出图把握——写氛围而非台词复述>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。
    - **节奏原则**：同一段落情绪内保持同一 stand（不为每句强行换）；情绪转折/强反应处换变体；也不许整节只选一个变体敷衍——变体区分度是立绘表现力来源。
@@ -190,7 +190,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 
 ## 重做与对齐
 
-- **行身份不漂移**：voice key 末段是 LineAudio 节点雪花 id——台词.md 插入/删除/移动行不会使其他行的 key 失效，旧 wav 不成孤儿。台词被改的行在重拆时判 stale 置 0 自动重配；人工微调走 dashboard「重新提交审批」（仅 sc→10，**不动行节点**），重批后重拆只重做被改句，未变句审批结果原样保留。
+- **行身份不漂移**：voice key 末段是 LineAudio 节点雪花 id——台词.ink 插入/删除/移动行不会使其他行的 key 失效，旧 wav 不成孤儿。台词被改的行在重拆时判 stale 置 0 自动重配；人工微调走 dashboard「重新提交审批」（仅 sc→10，**不动行节点**），重批后重拆只重做被改句，未变句审批结果原样保留。
 - **status=-1 级联**：SecScript/上游被 sync 级联 → 该节全部行 -1。重跑本 skill：拆分对齐把「text_sha1 匹配且 wav 在」的行恢复 10（音频复用不重配），其余置 0 重配；若 SecScript 本身 -1，先经 dialoguer 重做定稿升 11，再重跑本 skill。
 - **批量强制重做（演绎质量迁移等）置 0 不置 -1**：-1 会被拆分对齐的恢复机制判定「wav 在即复用旧音频」恢复 10，重配不发生；置 0 才是「待配重做，覆盖母带」的归一入口（挑行 status∈{0,-1} 均可挑中，但 -1 行先经拆分恢复分诊）。
 
@@ -200,7 +200,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 
 ## 参考文档
 
-- 拆分对齐：[script_splitter.py](scripts/script_splitter.py)（parse_md/align/split——台词.md↔图行对齐与 order 中点的唯一实现）
+- 拆分对齐：[script_splitter.py](scripts/script_splitter.py)（parse_ink/align/split——台词.ink↔图行对齐与 order 中点的唯一实现；方言规范见 chapter-dialoguer references/ink方言规范.md）
 - 选绘建边：[portrait_binder.py](scripts/portrait_binder.py)（candidates/apply——候选池与 `LineAudio-[:uses]->StandingIllustration` 边的唯一实现）
 - 挑行与绑定：[voice_bundler.py](scripts/voice_bundler.py)（make_voice_key / tasks-from-graph --nodes / bind-graph）
 - 基线音色设计：[char-voice-design](../char-voice-design/SKILL.md)（VoiceDesign 生成）

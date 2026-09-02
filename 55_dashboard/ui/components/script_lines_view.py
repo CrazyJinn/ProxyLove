@@ -1,6 +1,6 @@
-"""图行（LineAudio 逐句节点）渲染组件：定稿审台词.md 预览 + 逐句音频审批卡。
+"""图行（LineAudio 逐句节点）渲染组件：定稿审台词.ink 预览 + 逐句音频审批卡。
 
-- 定稿审（SecScript=10）对象是 台词.md（人读 Markdown）——render_script_md 直接渲染全文。
+- 定稿审（SecScript=10）对象是 台词.ink（人读 ink 方言）——render_script_ink 直接渲染全文。
 - 逐句音频审（行 status=10）数据源是图行（SecScript-produces{order}->LineAudio，
   按 order 遍历遇 op=scene 行切块）；写回经 core.script_lines（行节点 status 11/0）。
 """
@@ -38,17 +38,18 @@ def _rel(p: Path) -> str:
         return str(p)
 
 
-# ── 定稿审：台词.md 只读预览（人读格式，审文字质量）──
+# ── 定稿审：台词.ink 只读预览（人读格式，审文字质量）──
 
-def render_script_md(script_path, label=""):
-    """渲染 台词.md 全文（定稿审对象——拆分进图发生在审批通过之后，故审的是 md）。"""
+def render_script_ink(script_path, label=""):
+    """渲染 台词.ink 全文（定稿审对象——拆分进图发生在审批通过之后，故审的是 ink 定稿）。
+    st.text 纯文本渲染：ink 非 markdown，#/*/下划线会被 md 渲染器误排版。"""
     p = _abs(script_path)
     if not p.exists():
         st.caption(f"台词文件不存在：{script_path}")
         return
     text = p.read_text(encoding="utf-8")
     with st.expander(f"📜 台词定稿：{label or script_path}", expanded=False):
-        st.markdown(text)
+        st.text(text)
 
 
 # ── 顺序连播器（点一次播完整节；单句审批仍在各行卡）──

@@ -8,10 +8,10 @@ Section 是纯编排容器（无 status），节级进度看**产物链**：
 Section→has_outline→SecOutline(提纲)→produces→SecScript(定稿)→produces→LineAudio(逐句台词行)。
 节完成 = SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11（派生判断；行状态聚合显示瓶颈值）。
 
-节级预览渲染各 SecScript.script_path 指向的 **台词.md**（人读定稿格式）——review 对白质量，
+节级预览渲染各 SecScript.script_path 指向的 **台词.ink**（人读定稿格式）——review 对白质量，
 区别于美术节点审批（看图片）。Chapter 审批按钮 status=10→11（结构审通过，卡片内渲染
 brief_path 设计简报）/→0（驳回重做）；SecScript 定稿审（审 md）与 LineAudio 逐句音频审（按节
-聚合）走审批中心（page_approval）。**人工微调回路**：用户直接编辑 台词.md 单句后点「重新提交
+聚合）走审批中心（page_approval）。**人工微调回路**：用户直接编辑 台词.ink 单句后点「重新提交
 审批」（仅 SecScript 0/1/11→10，**不动行节点**；重批后 section-voice-publisher 重拆，text_sha1
 匹配的行原样保留审批结果，只有被改句重配）——不经 dialoguer，手改不丢。
 """
@@ -142,12 +142,12 @@ def _render_section_row(s, ch_status):
                 launch_button.render_section(s["id"], f"第{s['_no']}节 · {title}")
         else:
             st.caption("待章结构审批")
-        # 人工微调回路：直接编辑 台词.md 后重新送审（不经 dialoguer，手改不丢）。
+        # 人工微调回路：直接编辑 台词.ink 后重新送审（不经 dialoguer，手改不丢）。
         # 只置 sc→10、不动行节点——重批后重拆按 text_sha1 恢复未变句审批结果，只重配被改句。
         # 显示条件含驳回后的 0——否则驳回态手改会被 plot-design 触发的 dialoguer 整篇覆盖。
         if ch_status == 11 and s.get("script_path") and s["sc_status"] in (0, 1, 11):
             if st.button("重新提交审批", key=f"resub_{s['id']}",
-                         help="直接编辑 台词.md 改单句后点此重审：仅 SecScript→10（行节点不动）。"
+                         help="直接编辑 台词.ink 改单句后点此重审：仅 SecScript→10（行节点不动）。"
                               "重批后「推进此节」重拆：未变句审批结果原样保留，只有被改句重配。"
                               "注意：点「推进此节」在 sc=0/1 时会让 dialoguer 整篇重写覆盖手改。"):
                 graph_repo.set_status(s["sc_id"], approval.resubmit("SecScript", s["sc_status"]))
@@ -220,11 +220,11 @@ def _render_chapter_row(schema, ch):
             for s in sections:
                 _render_section_row(s, status)
 
-        # 各节台词预览（核心：review 对白质量）——渲染 SecScript.script_path 指向的 台词.md
+        # 各节台词预览（核心：review 对白质量）——渲染 SecScript.script_path 指向的 台词.ink
         for s in sections:
             sp = s.get("script_path")
             if sp:
-                script_lines_view.render_script_md(
+                script_lines_view.render_script_ink(
                     sp, f"第{s['_no']}节 · {s['_full'].get('title') or s['id']}")
 
         # 编排子图：has_section→Section→contains→Scene→depicts→立绘缺口

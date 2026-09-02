@@ -1,7 +1,7 @@
 """图行（LineAudio 逐句节点）的 dashboard 侧封装：行状态分类 / 审批动作 / 统计。
 
 行级审批写节点 status（11 通过 / 0 驳回）——台词**文字**的审批已在 SecScript 定稿审
-（台词.md）完成，行 status 只代表音频审批。stale 不再有图上表现：拆分对齐
+（台词.ink）完成，行 status 只代表音频审批。stale 不再有图上表现：拆分对齐
 （script_splitter.py）把改词句在重拆时归一置 0。
 
 line_state / say_counts / all_approved 是纯函数（dict 输入，不连库，可脱库单测）；

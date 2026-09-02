@@ -16,7 +16,7 @@ allowed-tools: Read, Bash, Write, Edit, Skill
 
 # 环境音产出（ambient 行 · 实录 foley + AudioFly 氛围）
 
-台词.md 的 `环境音:` 行拆分进图后是 `LineAudio {op:'ambient', status:0}`——本 skill 把它们产出为音频资产，
+台词.ink 的两种环境音语法（转场型 `环境音:` 独立行 → op=transition；氛围型旁白内嵌 `【环境音:…】` → narrate 的 ambient_text）拆分进图后均为待产行（status=0）——本 skill 把它们产出为音频资产，
 走行级审批（10→11）与其他音频行同构。
 
 **双通道分工**（2026-08-28 demo 验证结论）：
@@ -48,7 +48,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/ambient_tasks.py" --section '<section_id>' -
 
 ### 2. 逐行确认类型 + 产出（先产物后写图）
 
-**类型由 md 语法决定**（ambient_tasks.py 已在 jobs 里带 `kind`，无需再判）：
+**类型由 ink 方言语法决定**（ambient_tasks.py 已在 jobs 里带 `kind`，无需再判）：
 - `kind=transition`：独立 `环境音:` 行（转场音效，op=transition）——极短音（1~2s）运行时播完再接下一句；
 - `kind=ambience`：旁白内嵌 `【环境音:…】` 标注（氛围型，挂在 narrate 行的 ambient_text）——约 5s 声景与该旁白同出。
 

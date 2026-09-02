@@ -47,7 +47,7 @@
 | Chapter | snowflake Base62 | 剧本章节编排单元（章级：结构 / 分节规划） |
 | Section | snowflake Base62 | 章节内的节编排容器（纯编排：节序/标题/概要，无 status 与产物路径） |
 | SecOutline | snowflake Base62 | 节级提纲产物（outline_path；0→1 无审批） |
-| SecScript | snowflake Base62 | 节级定稿产物（script_path 指 台词.md；0→1→10→11 定稿审） |
+| SecScript | snowflake Base62 | 节级定稿产物（script_path 指 台词.ink；0→1→10→11 定稿审） |
 | LineAudio | snowflake Base62 | **逐句台词行**（SecScript-produces{order}-> 1:N；节点 id=行身份；行 status 只代表音频审批 0→10→11，非 say 行拆分即 11；wav 按 voice key 落盘） |
 | VoiceDesign | snowflake Base62 | 角色基线音色设计（instruct + 参考音频；多候选流程：3 候选 ref + 3×3 情绪试听 → dashboard 采用固化） |
 | BgmTrack | snowflake Base62 | 场景背景音乐（人工生成链；0→1 描述产出→2 用户手动放 wav 归档；无审批） |

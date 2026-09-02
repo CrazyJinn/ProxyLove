@@ -85,11 +85,11 @@ sequenceDiagram
 | SceneLayer | 图片完成 → 10 | 无下游；作为发布前置 |
 | VoiceDesign | 候选+试听落盘即写 `10`（无 submit 步；`candidates_path` 非空=候选待选，dashboard 试听「采用」固化 ref 后仍 10 走二审） | `11` → 节级配音（section-voice-publisher 要求 VoiceDesign=11） |
 | Chapter | 结构完成 → `10`（structurer 直写，不经 submit） | `11` → 进入节级生产（提纲 / 定稿 / 拆分配音） |
-| SecScript（定稿审） | 定稿完成 → `10`（dialoguer 直写，不经 submit；审批对象为 **台词.md** 全文） | `11` → 节级拆分+配音 + 该节立绘推进 |
+| SecScript（定稿审） | 定稿完成 → `10`（dialoguer 直写，不经 submit；审批对象为 **台词.ink** 全文） | `11` → 节级拆分+配音 + 该节立绘推进 |
 | LineAudio（逐句音频审） | 配音完成 → 行节点 `10`（section-voice-publisher 的 bind-graph 直写，不经 submit；**行级** status 只代表音频审批） | 全部行 `11` = 该节配音完成（派生判断，无节级批准按钮；全章各节产物就绪 + 立绘全 11 才发布） |
 
 > AppearanceStyle / LanguageStyle / CostumeStyle / Scene / SecOutline 等数据节点完成值 `1`，**无审批**。
-> 产物链各节点独立审批——驳回 SecScript 只重写定稿（SecOutline 不动）、驳回单句 LineAudio 行只重配该句（SecScript 不动）；上游变更的作废走 sync 级联（见 §5）。SecScript 支持**人工微调回路**：直接编辑 台词.md 改单句 → dashboard「重新提交审批」0/1/11→10（**仅改 sc status、不动行节点**；不经 dialoguer，手改不丢——重批后重拆按 text_sha1 保留未变句审批结果，只重配被改句）。
+> 产物链各节点独立审批——驳回 SecScript 只重写定稿（SecOutline 不动）、驳回单句 LineAudio 行只重配该句（SecScript 不动）；上游变更的作废走 sync 级联（见 §5）。SecScript 支持**人工微调回路**：直接编辑 台词.ink 改单句 → dashboard「重新提交审批」0/1/11→10（**仅改 sc status、不动行节点**；不经 dialoguer，手改不丢——重批后重拆按 text_sha1 保留未变句审批结果，只重配被改句）。
 
 ---
 
@@ -216,10 +216,10 @@ sequenceDiagram
 
 > **唯一职责**：推进某章节从「建结构 → 创作（提纲 + 细节对话）→ 拆分+配音 → 立绘」到全章就绪为止。输入**章节标题、序号或 ID**（如「新皮肤」、`1`、snowflake ID），或**小节 section id**（单节聚焦，由 dashboard「推进此节」入口触发，只推该节的提纲/定稿/配音/该节关联立绘）。
 >
-> 创作链（混合粒度）= **章级结构段 → 结构审（渲染设计简报）→ 各节提纲段 → 各节定稿段（台词.md）→ 各节定稿审 → 各节拆分+选绘+配音段 → 各节逐句音频审 → 立绘（按需）**，到全章就绪为止；BGM 走 scene-design 编排（`bgm-designer`），plot-design 不查不调 BgmTrack。结构段是**章级**，产物链是**节级**（各节独立推进、独立审批、独立重做）；**发布不在 plot-design 职责内**——全章就绪后汇报退出，`chapter-publisher` 由用户直接触发：
-> 1. 创作侧拆为 `chapter-structurer`（建结构+设计简报）→ `chapter-outliner`（提纲）→ `chapter-dialoguer`（台词.md）→ `section-voice-publisher`（拆分进图 + 选绘建边 + 配音），原 `screenwriter` 已删除；BGM 走 `bgm-designer`（scene-design 编排：产描述文字 → 用户手动生成 wav 归档 `13_BGM/`）。
+> 创作链（混合粒度）= **章级结构段 → 结构审（渲染设计简报）→ 各节提纲段 → 各节定稿段（台词.ink）→ 各节定稿审 → 各节拆分+选绘+配音段 → 各节逐句音频审 → 立绘（按需）**，到全章就绪为止；BGM 走 scene-design 编排（`bgm-designer`），plot-design 不查不调 BgmTrack。结构段是**章级**，产物链是**节级**（各节独立推进、独立审批、独立重做）；**发布不在 plot-design 职责内**——全章就绪后汇报退出，`chapter-publisher` 由用户直接触发：
+> 1. 创作侧拆为 `chapter-structurer`（建结构+设计简报）→ `chapter-outliner`（提纲）→ `chapter-dialoguer`（台词.ink）→ `section-voice-publisher`（拆分进图 + 选绘建边 + 配音），原 `screenwriter` 已删除；BGM 走 `bgm-designer`（scene-design 编排：产描述文字 → 用户手动生成 wav 归档 `13_BGM/`）。
 > 2. **节级产物链**（Section 拆分后）：`Section -has_outline-> SecOutline -produces-> SecScript -[:produces {order}]-> LineAudio(×N 逐句行)`，链式 sync 级联——改提纲自动作废定稿+全部行、改定稿自动作废全部行；三产物独立审批，驳回互不牵连（驳回 SecScript 只重写定稿、驳回单句行只重配该句）。「节完成」= SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11。
-> 3. **台词双轨分离**：`台词.md`（人读/人改的唯一定稿格式，机器可解析）↔ 图行（结构化真相：行身份=节点雪花 id，顺序=produces 边 order 大间距 ×1000 中点插入）。审批通过（sc=11）后由 section-voice-publisher 第一步拆分进图（script_splitter.py 幂等对齐：新增建行+中点 order、修改沿用节点置 0、删除 DETACH DELETE、级联未变句恢复）再配音。`台词.jsonl` 已停产（历史文件留创作区，链路不再读取）。
+> 3. **台词双轨分离**：`台词.ink`（人读/人改的唯一定稿格式，ink 方言机器可解析）↔ 图行（结构化真相：行身份=节点雪花 id，顺序=produces 边 order 大间距 ×1000 中点插入）。审批通过（sc=11）后由 section-voice-publisher 第一步拆分进图（script_splitter.py 幂等对齐：新增建行+中点 order、修改沿用节点置 0、删除 DETACH DELETE、级联未变句恢复）再配音。`台词.jsonl` 已停产（历史文件留创作区，链路不再读取）。
 > 4. 立绘侧：**StandingIllustration 由 plot-design 直接调 `char-stand-designer <stand_id>`**（按需；SecScript=11 定稿已批后通用动作，独立于声音门控——立绘不依赖配音）；上游 `IllusDesign` 未就绪时**报警跳过**（不跨链调 `char-design`，角色美术链由人工单独跑）。
 > 5. 素材门控：**outliner 自检 event 不够丰满时拒绝产出提纲并报告缺口**，plot-design 汇报后退出（剧情链不内置自增长）——用户手动跑 `nrt-narrative-grower`（可选聚焦入参 + 多轮迭代）补全叙事基础后重调 plot-design。
 
@@ -229,7 +229,7 @@ sequenceDiagram
 |------|-------|------|------|
 | ① 建章节结构 | `chapter-structurer` | ✅ 已实现 | 建 Chapter + 按情感弧分节建 Section（has_section，纯编排容器无 status）+ 各节 `Section-contains->Scene`，预分配全章 scene-block id |
 | ② 出节级提纲 | `chapter-outliner` | ✅ 已实现 | 为**每节**产出提纲（入参 section_id，落盘 `25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/outline.md`；兜底建 SecOutline 节点 → ol=1） |
-| ③ 节级细节对话 | `chapter-dialoguer` | ✅ 已实现 | **纯台词创作**：基于**本节**提纲创作逐句对话，产出 `25_剧本/.../sec<MM>_/台词.md`（人读 Markdown、机器可解析：场景标题带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——**不写演出标注**，立绘由配音期选绘判定；入参 section_id；兜底建 SecScript 节点 script_path 指 md → sc=10 定稿待审，dashboard 审 md） |
+| ③ 节级细节对话 | `chapter-dialoguer` | ✅ 已实现 | **纯台词创作**：基于**本节**提纲创作逐句对话，产出 `25_剧本/.../sec<MM>_/台词.ink`（人读 ink 方言、机器可解析：场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——**不写演出标注**，立绘由配音期选绘判定；入参 section_id；兜底建 SecScript 节点 script_path 指 ink → sc=10 定稿待审，dashboard 审 ink） |
 | ④ 节级拆分+选绘+配音 | `section-voice-publisher` | ✅ 已实现 | 定稿已批（SecScript=11）后**拆分进图**（script_splitter.py 对齐 md↔已有行 → 逐句 LineAudio + produces{order}）→ 挑行（say 且 status∈{0,-1}）+ 产选绘候选池（portrait_binder candidates）+ **LLM 判 emotion + 产 tts_text 变体 + 选立绘 stand**（按台词氛围每句选，池中无贴切变体则提新变体）→ **apply 建边**（`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 status=0 + depicts/expands_to）+ Qwen3 Base Voice Clone 逐句克隆 → 母带 `15_声音/<chapter_stem>/<scene_block_id>/` + bind-graph 写行节点（待审行 status=10，dashboard 按节聚合逐句通过=11/驳回=0，试听读母带）。不拷运行时副本——`99_game/assets/` 只由发布期按 status=11 收录（立绘整键沿 uses 边投影） |
 
 > **门控**：① 建章节结构 → 结构审通过（ch=11）→ 才进入 ②③④ 节级创作；SecScript=11（定稿已批）才拆分配音、才推该节立绘（立绘独立于音频门控）；**全章就绪 = ch=11 ∧ 各节产物就绪（ol=1 ∧ sc=11 ∧ 行全 11）∧ 立绘全 `11`**——plot-design 到此汇报退出，发布由用户直接触发 `chapter-publisher`。
@@ -243,7 +243,7 @@ sequenceDiagram
 | Chapter | `chapter-structurer` | -1/0→1→10→11 | ✅ |
 | Section | `chapter-structurer`（创建） | 无 status | — |
 | SecOutline | `chapter-outliner` | -1/0→1 | 无 |
-| SecScript | `chapter-dialoguer` | -1/0→1→10→11（script_path 指 台词.md） | ✅（审 md） |
+| SecScript | `chapter-dialoguer` | -1/0→1→10→11（script_path 指 台词.ink） | ✅（审 ink） |
 | LineAudio（逐句行 ×N） | `section-voice-publisher`（拆分进图 + 配音） | say 行：-1/0→10→11；非 say 行拆分即 11 | ✅（逐句审） |
 | StandingIllustration | `char-stand-designer`（直调 stand_id） | -1/0→1→2→10→11 | ✅ |
 | BgmTrack | `bgm-designer`（**scene-design 编排**，plot-design 不查不调） | -1/0→1→2 | 无（手工放入文件夹即合格） |
@@ -273,7 +273,7 @@ sequenceDiagram
     end
 
     rect rgb(255, 248, 240)
-    Note over A,SV: ② 创作+拆分配音（structurer 建结构 → 结构审 → 各节 outliner 提纲 → dialoguer 台词.md<br/>→ 定稿审 → 拆分进图+配音 → 逐句音频审；节级产物链 SecOutline→SecScript→LineAudio×N）
+    Note over A,SV: ② 创作+拆分配音（structurer 建结构 → 结构审 → 各节 outliner 提纲 → dialoguer 台词.ink<br/>→ 定稿审 → 拆分进图+配音 → 逐句音频审；节级产物链 SecOutline→SecScript→LineAudio×N）
     opt 章节结构未就绪（未建 / -1 重做）
         A->>ST: Skill chapter-structurer ch_id
         Note right of ST: 建 Chapter + 按情感弧分节建 Section（has_section，纯编排容器）<br/>+ 各节 Section-contains->Scene，预分配 scene-block id
@@ -293,7 +293,7 @@ sequenceDiagram
         end
         opt ol=1 且（无 SecScript ∨ sc ∈ {-1,0,1}）（待定稿）
             A->>DG: Skill chapter-dialoguer sec_id
-            Note right of DG: 基于本节提纲创作逐句对话（纯台词，不写演出标注）<br/>产出 台词.md + 兜底建 SecScript（script_path 指 md）
+            Note right of DG: 基于本节提纲创作逐句对话（纯台词，不写演出标注）<br/>产出 台词.ink + 兜底建 SecScript（script_path 指 ink）
             DG-->>A: 定稿 → sc=10 定稿待审
             Note over A: ⏸ 定稿审（审 md）→ 11（见 §2 审批流程）
         end
@@ -370,7 +370,7 @@ sequenceDiagram
 |-------|------|------|---------|-------------------|
 | chapter-structurer | ① 章级结构 | 建 Chapter + 按情感弧分节建 Section（纯编排容器）+ 各节 `Section-contains->Scene` + 预分配 scene-block id | Chapter + has_section + Section + contains 边 | ✅ |
 | chapter-outliner | ② 节级提纲 | 为**每节**出提纲（入参 section_id；兜底建 SecOutline 节点 → ol=1） | `25_剧本/chapter<NN>_<概述>/sec<MM>_<概述>/outline.md` | ✅ |
-| chapter-dialoguer | ③ 节级定稿 | **纯台词创作**：基于**本节**提纲创作逐句对话，产出人读 Markdown 定稿（场景标题带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——不写演出标注，立绘由配音期选绘判定；入参 section_id；兜底建 SecScript 节点 script_path 指 md → sc=10） | `25_剧本/.../sec<MM>_/台词.md` | ✅ |
+| chapter-dialoguer | ③ 节级定稿 | **纯台词创作**：基于**本节**提纲创作逐句对话，产出人读 ink 方言定稿（场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——不写演出标注，立绘由配音期选绘判定；入参 section_id；兜底建 SecScript 节点 script_path 指 ink → sc=10） | `25_剧本/.../sec<MM>_/台词.ink` | ✅ |
 | section-voice-publisher | ④ 节级拆分+选绘+配音 | 定稿已批（SecScript=11）：script_splitter 拆分对齐进图（逐句 LineAudio + produces{order} 中点排序）→ 挑行 + portrait_binder candidates 候选池 → LLM 判 emotion + 产 tts_text 变体 + 选立绘 stand → apply 建 `LineAudio-[:uses]->stand` 边（新变体兜底建 status=0 + depicts/expands_to）→ Qwen3 Base Voice Clone 逐句克隆 → bind-graph 写行节点 status=10（母带即产物，运行时副本不在此步） | 图逐句行 + uses 选绘边 + 立绘缺口 + `15_声音/<chapter_stem>/<scene_block_id>/<key>.wav` 母带 | ✅ |
 | chapter-publisher | 章级发布（用户直接触发，不经 plot-design） | 全章各节产物就绪（各节 SecOutline=1 ∧ SecScript=11 ∧ 行全 11）时**从图投影**合并 + 立绘/背景/BGM/已批音频（voices+sfx，voice_bundler publish 按 status=11）到运行时 + 补 manifest.voices / chapter_packs | `99_game/` 资源 + manifest | ✅ |
 
@@ -380,7 +380,7 @@ sequenceDiagram
 |------|------|------|
 | infra-image-generator | 读 prompt 调 OfoxAI API 出图（纯产出） | 文生图 / 图生图；不写图、不写 status |
 | cypher_exec.py | 执行 Cypher（统一图读写入口） | 所有 skill 读写 Neo4j 的唯一脚本，支持 `-c`/`-f`/`--stdin`/`--multi`/`--json` |
-| `.claude/skills/section-voice-publisher/scripts/` | 声音链脚本组（收编进 skill） | script_splitter.py（台词.md 拆分对齐进图：parse_md + difflib 对齐 + 单事务写图）· voice_clone_runner.py（Qwen3 全家：候选/试听/ref + 逐句配音 publish，env/.venv-qwen）· voice_bundler.py（voice key 单一源 make_voice_key + tasks-from-graph/bind-graph + publish 发布期拷运行时）· paths.py（模型路径配置，读 settings.json）；char-voice-design / chapter-publisher 跨 skill 引用 |
+| `.claude/skills/section-voice-publisher/scripts/` | 声音链脚本组（收编进 skill） | script_splitter.py（台词.ink 拆分对齐进图：parse_ink + difflib 对齐 + 单事务写图）· voice_clone_runner.py（Qwen3 全家：候选/试听/ref + 逐句配音 publish，env/.venv-qwen）· voice_bundler.py（voice key 单一源 make_voice_key + tasks-from-graph/bind-graph + publish 发布期拷运行时）· paths.py（模型路径配置，读 settings.json）；char-voice-design / chapter-publisher 跨 skill 引用 |
 
 > 纯产出层（`char-prompt-assembler` / `scene-prompt-assembler` / `infra-image-generator`）只产文件，节点字段与 status 一律由调用方生产 skill 在「保存结果」步用 MERGE 兜底写入。
 
@@ -423,7 +423,7 @@ sequenceDiagram
 ├── 15_声音/                          # TTS 逐句母带（<char>/<char>-<stem>-<scene_block_id>-<行节点id>.wav；requirements/ venv 锁文件，见其 README）
 │
 ├── 25_剧本/                          # 剧本产出（章+节两层：structurer 出设计简报；outliner/dialoguer 按节产出）
-│   └── chapter<NN>_<章概述>/         # 每章一目录：设计简报.md + 各 sec<MM>_<节概述>/（outline.md + 台词.jsonl）
+│   └── chapter<NN>_<章概述>/         # 每章一目录：设计简报.md + 各 sec<MM>_<节概述>/（outline.md + 台词.ink）
 │
 ├── 55_dashboard/                     # 人工治理后台（Streamlit，http://localhost:8501）
 │   ├── config/                       # settings.py（凭证来源）

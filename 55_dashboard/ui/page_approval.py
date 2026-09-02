@@ -1,6 +1,6 @@
 """审批中心：列出待审节点（status=10：通用/结构审/定稿审/逐句音频审），通过/驳回。
 
-全图统一待审 10 → 批准 11 / 驳回 0。剧情产物：SecScript(10)=定稿审（渲染 台词.md 全文）、
+全图统一待审 10 → 批准 11 / 驳回 0。剧情产物：SecScript(10)=定稿审（渲染 台词.ink 全文）、
 LineAudio(10)=**逐句行节点**（按节聚合为一张「逐句音频审」卡：逐句试听 + 单句通过=11/驳回=0，
 「节完成」= 全部行 11 的派生判断，无节级批准按钮）、Chapter(10)=结构审（渲染 brief_path 设计简报）。
 
@@ -102,8 +102,8 @@ def render():
             status_badge.render(n["status"])
             show_approve = True  # 候选待选态置 False（防未选先批）
             if n["label"] == "SecScript" and n["status"] == 10:
-                # 定稿审：渲染 台词.md 全文（人读格式，review 对白质量；拆分进图在批准后）
-                script_lines_view.render_script_md(full.get("script_path"), label_text)
+                # 定稿审：渲染 台词.ink 全文（人读格式，review 对白质量；拆分进图在批准后）
+                script_lines_view.render_script_ink(full.get("script_path"), label_text)
             elif n["label"] == "Chapter" and n["status"] == 10:
                 # 结构审：渲染设计简报（brief_path）
                 markdown_viewer.render(full.get("brief_path"), "📑 章节设计简报")
