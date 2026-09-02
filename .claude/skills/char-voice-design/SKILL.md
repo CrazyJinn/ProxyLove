@@ -91,7 +91,7 @@ env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/../section-voice-publishe
   --profiles '99_game/data/.cache/voice-candidates-<角色名>.json'
 ```
 
-**③ audition**（每候选 3 情绪试听「平静/高兴/愤怒」，Qwen3 Base Voice Clone——README「Voice Design then Clone」流程：`create_voice_clone_prompt(ref, ref_text)` + `generate_voice_clone`；**无 instruct 通道，情绪靠试听句文本语义自适应**）：
+**③ audition**（每候选 3 情绪试听「平静/高兴/愤怒」，Qwen3 Base Voice Clone **xvec 通道**：`create_voice_clone_prompt(ref, ref_text=None, x_vector_only_mode=True)` + `generate_voice_clone`——仅提取说话人向量克隆音色、不迁移 ref（平静长句）的韵律；**无 instruct 通道，情绪演绎由试听句文本语义主导**——icl 韵律迁移会压制文本语气，xvec 才能暴露音色的情绪域表现，情绪试听名实相符）：
 
 ```bash
 env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/../section-voice-publisher/scripts/voice_clone_runner.py" audition \
@@ -125,7 +125,7 @@ SET v.name = '<角色名>声音设计',
 
 ### 4. 汇报
 
-列出：角色名、VD_ID、新建/复用、instruct 全文、ref_text、候选数（3）与试听数（9，Qwen3 Base 引擎）、manifest 路径（candidates.json）、status=10（候选待选）。附提示：到 dashboard 审批中心（声音审）逐候选试听 ref + 3 情绪试听 →「采用」（固化为 `<角色名>_ref.wav` 并清理临时文件夹，status 仍 10）→ 二审通过→11（下游配音要求 11）/驳回→0；三个候选都不理想可驳回后重跑本 skill（候选会重新采样覆盖）。注意向用户说明：**试听与下游配音同引擎（Qwen3 Base Voice Clone）、同 ref+ref_text**——试听即成品引擎的真实预览；情绪演绎靠文本语义自适应（配音期由 tts_text 变体承载），试听句的韵律表现可直接外推到成品。
+列出：角色名、VD_ID、新建/复用、instruct 全文、ref_text、候选数（3）与试听数（9，Qwen3 Base 引擎）、manifest 路径（candidates.json）、status=10（候选待选）。附提示：到 dashboard 审批中心（声音审）逐候选试听 ref + 3 情绪试听 →「采用」（固化为 `<角色名>_ref.wav` 并清理临时文件夹，status 仍 10）→ 二审通过→11（下游配音要求 11）/驳回→0；三个候选都不理想可驳回后重跑本 skill（候选会重新采样覆盖）。注意向用户说明：**试听与下游配音同引擎（Qwen3 Base Voice Clone）、同 ref 的 xvec 通道**（仅说话人向量克隆音色、丢 ref 韵律）——试听是「音色 + 文本自主演绎」的真实预览；但下游配音逐句选 **icl**（ref 韵律迁移，缺省通道）的句子，其韵律表现**不能**由 xvec 试听外推（需到配音期逐句审听把关）。
 
 ## 参考文档
 

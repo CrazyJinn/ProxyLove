@@ -64,7 +64,7 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
 ## 候选与试听（多候选流程）
 
 - **3 候选 = 同一 instruct × 3 次随机采样**（Qwen 批量 do_sample 独立采样），差异来自模型随机性——对比的是音色变体，不是设计方向。不写多版 instruct。
-- **每候选 3 个情绪试听**：固定「平静/高兴/愤怒」（覆盖基准线 + 正/负高唤醒），**每情绪配一句语义匹配的不同试听文本**；试听引擎为 **Qwen3 Base Voice Clone**（README「Voice Design then Clone」流程：`create_voice_clone_prompt(ref, ref_text)` + `generate_voice_clone`）——Base clone **无 instruct 通道**，情绪演绎靠试听句文本语义自适应（试听句语义与情绪匹配正是为此）：
+- **每候选 3 个情绪试听**：固定「平静/高兴/愤怒」（覆盖基准线 + 正/负高唤醒），**每情绪配一句语义匹配的不同试听文本**；试听引擎为 **Qwen3 Base Voice Clone xvec 通道**（`create_voice_clone_prompt(ref, ref_text=None, x_vector_only_mode=True)` + `generate_voice_clone`）——仅说话人向量克隆音色、不迁移 ref（平静长句）的韵律；Base clone **无 instruct 通道**，情绪演绎由试听句文本语义主导（试听句语义与情绪匹配正是为此；icl 韵律迁移会压制文本语气，xvec 才能暴露音色的情绪域表现）：
 
   | 情绪 | 试听句 |
   |------|--------|
@@ -72,7 +72,7 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
   | 高兴 | 太好了，我们真的赢了，今晚我请大家吃饭！ |
   | 愤怒 | 我说过多少次了，这份文件不能再出错！ |
 
-  > 试听与下游配音**同引擎**（Qwen3 Base Voice Clone，配音期情绪由 tts_text 变体承载）——试听即成品引擎的真实预览。
+  > 试听与下游配音**同引擎、同 ref 的 xvec 通道**（仅说话人向量克隆音色、丢 ref 韵律）——试听是「音色 + 文本自主演绎」的真实预览；下游配音逐句选 **icl**（ref 韵律迁移，缺省通道）的句子其韵律表现不能由 xvec 试听外推，需配音期逐句审听把关。
 - **产物布局**（`14_声音设计/<char>/candidates/` 临时文件夹，dashboard 采用后整夹删除；绝不放 `15_声音/`——那是逐句配音母带区，发布期按 status=11 收进运行时；设计阶段无重采样副产物）：
 
   | 文件 | 说明 |

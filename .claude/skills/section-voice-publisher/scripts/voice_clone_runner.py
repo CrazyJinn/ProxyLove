@@ -8,7 +8,8 @@
 >
 > 子命令：`ensure-ref`（单 ref，下游配音用） / `design-candidates`（多候选流程第一步：
 > 同一 instruct × N 次采样出候选 ref 24k + candidates.json manifest） / `audition`
-> （第二步：Qwen3 Base Voice Clone 出每候选 3 情绪试听，情绪靠试听句文本语义自适应） /
+> （第二步：Qwen3 Base Voice Clone **xvec 通道**出每候选 3 情绪试听——仅说话人向量克隆
+> 音色、丢 ref 韵律，情绪演绎由试听句文本语义主导） /
 > `publish`（逐句配音：按角色 ref + tts_text 变体逐句 clone，母带 → 15_声音/<chapter_stem>/<scene_block_id>/；
 > 情绪由 tts_text 变体承载，emotion 不参与合成参数；clone_mode 逐句选演绎通道——
 > icl（缺省）=ref 韵律迁移 / xvec=仅说话人向量文本主导演绎，每角色按模式懒建 prompt）。
@@ -170,9 +171,10 @@ def design_candidates(profiles: dict, device="cuda:0") -> dict:
 def audition(manifest_path: str, device="cuda:0") -> dict:
     """按 candidates.json 给每候选出情绪试听（Qwen3 Base Voice Clone，env/.venv-qwen）。
 
-    README「Voice Design then Clone」流程：每候选一次 create_voice_clone_prompt(ref, ref_text)
-    （ref_text 须与 ref 音频逐字一致——统一长句天然满足），逐情绪 generate_voice_clone。
-    Base clone 无 instruct 通道，情绪演绎靠试听句文本语义自适应（试听句本身语义与情绪匹配）。
+    每候选一次 create_voice_clone_prompt(ref, ref_text=None, x_vector_only_mode=True)
+    ——**xvec 通道**：仅提取说话人向量克隆音色，不迁移 ref（平静长句）的韵律；
+    逐情绪 generate_voice_clone，情绪演绎完全由试听句文本语义主导（试听句本身
+    语义与情绪匹配——icl 韵律迁移会压制文本语气，xvec 才能暴露音色的情绪域表现）。
     试听 wav 已存在即跳过（断点续跑）；回填 manifest 的 auditions 并落盘。
     返回 {"produced": wav 数, "failed": [候选 key]}；failed 非空时调用方视为失败。
     """
@@ -180,7 +182,6 @@ def audition(manifest_path: str, device="cuda:0") -> dict:
     with open(manifest_path, encoding="utf-8") as f:
         manifest = json.load(f)
     char = manifest["char"]
-    ref_text = manifest["ref_text"]
     audition_texts = manifest.get("audition_texts") or DEFAULT_AUDITION_TEXTS
     model = load_base_model(device=device)
 
@@ -192,8 +193,9 @@ def audition(manifest_path: str, device="cuda:0") -> dict:
             print(f"[skip] {char}/{key}: 无候选 ref（先跑 design-candidates）")
             failed.append(key)
             continue
-        # 每候选构建一次可复用 prompt（提取 codec code + 说话人向量）
-        prompt = model.create_voice_clone_prompt(ref_audio=ref, ref_text=ref_text)
+        # 每候选构建一次可复用 prompt（仅说话人向量——xvec 通道，丢 ref 韵律）
+        prompt = model.create_voice_clone_prompt(
+            ref_audio=ref, ref_text=None, x_vector_only_mode=True)
         auditions = cand.setdefault("auditions", {})
         for emo, text in audition_texts.items():
             out = os.path.join(os.path.dirname(ref), f"{char}_{key}_{emo}.wav")
