@@ -68,7 +68,7 @@ def render():
     st.markdown("**选定汇总 → 生成继续指令**")
     picks_desc = "；".join(f"{desc} → {pick}" for track, (pick, _, desc) in picks.items())
     prompt = (f"执行环境音 finalize 并收尾（ambient-sfx-designer 段 3），选定结果：{picks_desc}。"
-              "逐条按行语义判型（短事件=transition --cut 1.5 --fade 0.4；声景=ambience）finalize "
+              "逐条按行语义判型（点状音效=sfx --cut 1.5 --fade 2；音床=bed --fade 1）finalize "
               "对应候选（.tmp/ambient/ 下各 track 的 _cN）到母带 15_声音/<stem>/<block>/<track>.wav，"
               "全部成功后写图（行节点 SET ambient_track + status=10，行 id=track 末段，"
               "不拷运行时副本——dashboard 试听读母带）、清理 .tmp/ambient。")

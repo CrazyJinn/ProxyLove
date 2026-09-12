@@ -15,9 +15,9 @@ tools: Read, Grep, Glob, Bash, Skill
 Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section + 产物链 SecOutline/SecScript/LineAudio 逐句行 + has_section/has_outline/produces{order}/contains/depicts/uses 边）。
 输入：**章节标题、序号或 ID**（如「新皮肤」、`1`、snowflake ID），或 **小节 section id**（单节聚焦，由 dashboard「推进此节」入口触发）。一次 cypher 查询即可拿到 Chapter + 全部 has_section 的 Section + 各节产物链（SecOutline/SecScript + LineAudio 行聚合）+ 各节 contains 的 Scene + 全部 depicts 的立绘 status，据 status 决定下一步。两种模式：**章节全量**（章节标识 → 全量循环推进全章）与 **单节聚焦**（section id → 只推该节的提纲/定稿/配音/该节关联立绘，见第 3 步「单节聚焦模式决策」）。
 
-创作链（混合粒度）= **章级结构段 → 结构审（dashboard 渲染 brief_path 设计简报）→ 各节提纲段 → 各节定稿段（台词.ink）→ 各节定稿审 → 各节拆分+选绘+配音段 → 各节环境音段（ambient 行：实录/AI 生成）→ 各节逐句音频审（配音+环境音行）→ 立绘（按需）**，到全章就绪为止。
+创作链（混合粒度）= **章级结构段 → 结构审（dashboard 渲染 brief_path 设计简报）→ 各节提纲段 → 各节定稿段（台词.ink）→ 各节定稿审 → 各节拆分+选绘+配音段 → 各节音频环境段（sfx 点状实录 / bed 音床声景）→ 各节逐句音频审（配音+环境音行）→ 立绘（按需）**，到全章就绪为止。
 - **章级**：`chapter-structurer`（建 Chapter + 分节 + Section 纯编排容器 + brief_path + 预分配 scene-block id）→ 结构审。
-- **节级产物链**（各节独立推进、独立审批、独立重做；`Section -has_outline-> SecOutline -produces-> SecScript -[:produces {order}]-> LineAudio(×N 逐句行)`）：每节独立走 `chapter-outliner`（兜底建 SecOutline → ol=1）→ `chapter-dialoguer`（纯台词创作：产 `台词.ink` 人读定稿，兜底建 SecScript → sc=10 定稿待审）→ 定稿审（审 ink，→ sc=11）→ `section-voice-publisher`（**第一步拆分进图**：script_splitter.py 对齐 台词.ink ↔ 已有行 → 逐句 LineAudio 节点；第二步挑行 + 产选绘候选池 portrait_binder candidates；第三步 LLM 逐句判 emotion/clone_mode/tts_text/**选立绘 stand**；第四步 apply 建边——`LineAudio-[:uses]->stand`（sync=false）每句一条 + 新变体缺口兜底建（depicts/expands_to/ref_style）；第五步 TTS 克隆 + bind-graph 写行节点 status=10）→ `ambient-sfx-designer`（环境音行（op=transition 与氛围型 ambient_text）：短事件走 Freesound CC0 实录、声景走 AudioFly 生成，产 wav 写 ambient_track + status=10）→ 逐句音频审（行 status 10→11）。
+- **节级产物链**（各节独立推进、独立审批、独立重做；`Section -has_outline-> SecOutline -produces-> SecScript -[:produces {order}]-> LineAudio(×N 逐句行)`）：每节独立走 `chapter-outliner`（兜底建 SecOutline → ol=1）→ `chapter-dialoguer`（纯台词创作：产 `台词.ink` 人读定稿，兜底建 SecScript → sc=10 定稿待审）→ 定稿审（审 ink，→ sc=11）→ `section-voice-publisher`（**第一步拆分进图**：script_splitter.py 对齐 台词.ink ↔ 已有行 → 逐句 LineAudio 节点；第二步挑行 + 产选绘候选池 portrait_binder candidates；第三步 LLM 逐句判 emotion/clone_mode/tts_text/**选立绘 stand**；第四步 apply 建边——`LineAudio-[:uses]->stand`（sync=false）每句一条 + 新变体缺口兜底建（depicts/expands_to/ref_style）；第五步 TTS 克隆 + bind-graph 写行节点 status=10）→ `ambient-sfx-designer`（音频环境行（op=transition 点状 sfx 与 op=bed_start 音床）：点状走 Freesound CC0 实录、声景走 AudioFly 生成，产 wav 写 ambient_track + status=10）→ 逐句音频审（行 status 10→11）。
 - **台词模型**：台词.ink（ink 方言）是人读/人改的唯一定稿格式（机器可解析）；图行是结构化真相——行身份 = 节点雪花 id（voice key 末段 `<char>-<chapter_stem>-<scene_block_id>-<行节点id>`，插入/删除行不漂移）；顺序 = produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。
 - **LineAudio 行级审批**（行节点 status，只代表音频——文字审批已在定稿审完成）：say 行 `0` 待配/被驳回 → `10` 配完待审 → `11` 已通过；非 say 行拆分即 11。「节完成」gate = 该节全部行 status=11（派生判断）；单句驳回后审批卡出现「重生成」deeplink 唤起本 agent 单节聚焦（voice-publisher `--nodes <行id>` 只重做该句）。
 - **SecScript 人工微调回路（不经 plot-design）**：用户直接编辑 `台词.ink` 改单句 → dashboard「重新提交审批」（**仅 sc 0/1/11→10，不动行节点**）→ 定稿审 → 11 → 重跑 voice-publisher 重拆：text_sha1 匹配的行原样保留审批结果（含 11），只有被改句置 0 重配——手改不丢。**plot-design 看到行 status≠11 即需推配音**。注意 sc=0 可能是「驳回后人工编辑中」——重跑 dialoguer 会整篇覆盖手改，用户被明确提示过（按钮 help 文案），此时以 status 为准正常调度。
@@ -62,8 +62,8 @@ RETURN ch.id AS ch_id, ch.title AS title, ch.chapter_no AS chapter_no, ch.status
        count(DISTINCT CASE WHEN l.status = 11 THEN l.id END) AS line_done,
        count(DISTINCT CASE WHEN l.op = 'say' THEN l.id END) AS say_count,
        count(DISTINCT CASE WHEN l.op = 'say' AND l.status = 11 THEN l.id END) AS say_done,
-       count(DISTINCT CASE WHEN l.op = 'ambient' THEN l.id END) AS amb_count,
-       count(DISTINCT CASE WHEN l.op = 'ambient' AND l.status = 11 THEN l.id END) AS amb_done,
+       count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] THEN l.id END) AS amb_count,
+       count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] AND l.status = 11 THEN l.id END) AS amb_done,
        count(DISTINCT CASE WHEN l.op = 'say' AND NOT (l)-[:uses]->(:StandingIllustration) THEN l.id END) AS say_no_stand,
        c.order AS scene_order, s.id AS scene_id, s.name AS scene_name, s.status AS scene_status,
        illus.id AS illus_id, illus.status AS illus_status,
@@ -101,8 +101,8 @@ ORDER BY sec.section_no, c.order, scene_name, variant
 >        count(DISTINCT CASE WHEN l.status = 11 THEN l.id END) AS line_done,
 >        count(DISTINCT CASE WHEN l.op = 'say' THEN l.id END) AS say_count,
 >        count(DISTINCT CASE WHEN l.op = 'say' AND l.status = 11 THEN l.id END) AS say_done,
->        count(DISTINCT CASE WHEN l.op = 'ambient' THEN l.id END) AS amb_count,
->        count(DISTINCT CASE WHEN l.op = 'ambient' AND l.status = 11 THEN l.id END) AS amb_done,
+>        count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] THEN l.id END) AS amb_count,
+>        count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] AND l.status = 11 THEN l.id END) AS amb_done,
 >        count(DISTINCT CASE WHEN l.op = 'say' AND NOT (l)-[:uses]->(:StandingIllustration) THEN l.id END) AS say_no_stand,
 >        c.order AS scene_order, s.id AS scene_id, s.name AS scene_name,
 >        illus.id AS illus_id, illus.status AS illus_status,
@@ -143,7 +143,7 @@ ORDER BY sec.section_no, c.order, scene_name, variant
 | SecOutline（节级提纲） | `chapter-outliner` | Skill | -1/0→1 | 无 |
 | SecScript（节级定稿，台词.ink） | `chapter-dialoguer` | Skill | -1/0→1→10→11（10 直写，不经 submit） | ✅ 定稿审（审 ink） |
 | LineAudio（逐句台词行 ×N） | `section-voice-publisher`（拆分进图 + 配音） | Skill | say 行：-1/0→10→11（10 直写）；非音频行拆分即 11 | — |
-| LineAudio（环境音行 op=ambient） | `ambient-sfx-designer`（Freesound 实录 / AudioFly 氛围） | Skill | -1/0→10→11（10 直写）；拆分即 0 待产 | ✅ 逐句审（sfx 试听） |
+| LineAudio（音频环境行 op=transition/bed_start） | `ambient-sfx-designer`（sfx→Freesound 实录 / bed→AudioFly 声景） | Skill | -1/0→10→11（10 直写）；拆分即 0 待产 | ✅ 逐句审（sfx 试听） |
 | LineAudio 行级逐句音频审 | dashboard 审批中心（按节聚合卡） | — | 行 10→11（gate=该节全部行 11，派生无节级按钮） | ✅ 逐句审 |
 | StandingIllustration（章节所需立绘） | `char-stand-designer` | Skill | -1/0→1→2→10→11 | ✅ |
 

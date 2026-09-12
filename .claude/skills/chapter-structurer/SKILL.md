@@ -72,7 +72,7 @@ ORDER BY s.name LIMIT 50
 - 每节定 `section_no`（章内从 0 起）、`title`（节标题）、`summary`（本节戏剧职责一句话）。
 - 分节依据是情感弧的段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是 Scene 序的**连续切片**，不交错（节 A 含 order 0–2，节 B 含 3–5）。
-- **预分配全章每个 scene-block 的 id**：为每个 Scene 在剧本里的首次出现分配一个**章内唯一**的段标识（下游 outliner/dialoguer 直接用它做 `scenes[].id`，保证跨节 jump 与发布时拍平合并不冲突）。命名建议 `s<MM>_<short>`（MM=节序零填充，short=简短标识），如 `s00_酒店`、`s01_路口`。
+- **预分配全章每个 scene-block 的 id**：为每个 Scene 在剧本里的首次出现分配一个**章内唯一**的段标识（下游 outliner/dialoguer 直接用它做 `scenes[].id`，保证跨节 jump 与发布时拍平合并不冲突）。命名 `s<MM>_<short>`（MM=节序零填充，short=简短英文标识），**ASCII 字母数字下划线、禁连字符**（voice key 解析 rsplit 约束 + 标准 ink 标识符——knot 名即此 id），如 `s00_hotel`、`s01_road`。存量 chapter00 中文 id（`s00_酒店` 等）已封存，新章不再产生中文 id。
 
 > 这一步确定「本章分几节、每节含哪些 Scene（按 order）、每节的 scene-block id」。分支拓扑留给 outliner。
 

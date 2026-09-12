@@ -95,8 +95,7 @@
           "additionalProperties": false,
           "properties": {
             "op": { "const": "narrate" },
-            "text": { "type": "string" },
-            "ambience": { "type": "string" }
+            "text": { "type": "string" }
           }
         },
         {
@@ -148,6 +147,25 @@
           "properties": {
             "op": { "const": "transition" },
             "track": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["op", "bed", "track"],
+          "additionalProperties": false,
+          "properties": {
+            "op": { "const": "bed_start" },
+            "bed": { "type": "string" },
+            "track": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["op", "bed"],
+          "additionalProperties": false,
+          "properties": {
+            "op": { "const": "bed_end" },
+            "bed": { "type": "string" }
           }
         },
         {

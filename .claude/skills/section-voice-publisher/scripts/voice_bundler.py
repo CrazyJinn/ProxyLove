@@ -95,10 +95,12 @@ def make_voice_key(char: str, chapter_stem: str, scene_block_id, node_id) -> str
     return "-".join(parts)
 
 
-def make_ambient_track(chapter_stem: str, scene_block_id, node_id) -> str:
-    """环境音资源键：amb-<chapter_stem>-<scene_block_id>-<行节点id>（无角色段，
-    'amb' 占位保证与 voice key 同为四段、可共用 split_voice_key 解析）。"""
-    parts = ["amb", _sanitize(chapter_stem), _sanitize(scene_block_id), _sanitize(node_id)]
+def make_ambient_track(chapter_stem: str, scene_block_id, node_id, prefix: str = "amb") -> str:
+    """环境音资源键：<prefix>-<chapter_stem>-<scene_block_id>-<行节点id>（无角色段，
+    前缀占位保证与 voice key 同为四段、可共用 split_voice_key 解析）。
+    prefix：'amb'（sfx 点状/迁移沿用）或 'bed'（音床起新产）——**键一经落图终身不换前缀**
+    （重跑 ambient 链沿用行上已有 track 覆盖母带，voice key 同哲学）。"""
+    parts = [prefix, _sanitize(chapter_stem), _sanitize(scene_block_id), _sanitize(node_id)]
     return "-".join(parts)
 
 

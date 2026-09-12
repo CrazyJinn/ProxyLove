@@ -87,11 +87,12 @@ def test_voiceover_approval():
 
 
 def test_resubmit_approved_to_pending():
-    """SecScript 人工微调回路：已批(11)→重新提交(10)；其他状态非法。"""
+    """SecScript 人工微调回路：0（驳回后手改）/1（草稿）/11（已批微调）→10 送审；
+    10（在审，审批对象须稳定）/-1（级联作废走重拆）非法——与章概览按钮显示条件一致。"""
     assert approval.resubmit("SecScript", 11) == 10
+    assert approval.resubmit("SecScript", 0) == 10
+    assert approval.resubmit("SecScript", 1) == 10
     with pytest.raises(approval.IllegalTransition):
         approval.resubmit("SecScript", 10)
     with pytest.raises(approval.IllegalTransition):
-        approval.resubmit("SecScript", 0)
-    with pytest.raises(approval.IllegalTransition):
-        approval.resubmit("SecScript", 1)
+        approval.resubmit("SecScript", -1)

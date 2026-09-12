@@ -42,3 +42,28 @@ def test_bad_ending_kind_fails(tmp_path):
     )
     ok, _ = validate_chapter(str(bad), SCHEMA)
     assert not ok
+
+
+def test_bed_lines_pass_validation(tmp_path):
+    """bed_start（op/bed/track）/ bed_end（op/bed）合法文档过 schema。"""
+    doc = _valid_doc()
+    doc["scenes"][0]["lines"] = [
+        {"op": "bed_start", "bed": "rain", "track": "bed-ch0-s01-B1"},
+        {"op": "narrate", "text": "雨下起来。"},
+        {"op": "bed_end", "bed": "rain"},
+    ]
+    p = tmp_path / "bed.json"
+    p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+    ok, errors = validate_chapter(str(p), SCHEMA)
+    assert ok, errors
+
+
+def test_bed_lines_missing_required_fails(tmp_path):
+    """bed_end 缺 bed / bed_start 缺 track 均不过校验。"""
+    for bad_line in ({"op": "bed_end"}, {"op": "bed_start", "bed": "rain"}):
+        doc = _valid_doc()
+        doc["scenes"][0]["lines"] = [bad_line]
+        p = tmp_path / "bad_bed.json"
+        p.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
+        ok, errors = validate_chapter(str(p), SCHEMA)
+        assert not ok

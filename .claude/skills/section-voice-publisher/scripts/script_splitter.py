@@ -4,9 +4,13 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已批�
 台词.ink，人读 ink 方言——规范见 chapter-dialoguer references/ink方言规范.md）幂等
 拆分为图节点：
 
-  parse_ink 解析 台词.ink → 行序列（say/narrate/transition/label/ending；* / + 选择行
-            整行跳过——choice 及配套 jump 暂不进图，建模后续设计；解析失败抛
-            ValueError 带行号）
+  parse_ink 解析 台词.ink（方言 v3，标准合法 ink：ASCII knot/stitch 标识符、knot 行尾
+            注释载 Scene 名/时段、结局两行式=落点内容行+行尾 ending tag+裸 -> END；
+            存量 v1 === 行双格式兼容；音频三型 sfx:（点状→transition）/ bed+ bed-（音床
+            起止→bed_start/bed_end，文件级配对校验）/ 旧环境音两型废止报错；llm: 占位
+            不产行（split 门禁拒绝含占位定稿））→ 行序列（say/narrate/transition/
+            bed_start/bed_end/label/ending；* / + 选择行整行跳过——choice 及配套 jump
+            暂不进图，建模后续设计；解析失败抛 ValueError 带行号）
   align     定稿行 vs 图已有行 difflib 对齐（签名 = op+who+text）→ 保留/更新/新建/删除
   split     经 cypher_exec.py（--stdin --multi 单事务）写图 + 产出报告 JSON
 
@@ -112,91 +116,148 @@ def _run_cypher_multi(statements: list) -> None:
         raise RuntimeError(f"写图失败（退出码 {proc.returncode}）:\n{proc.stderr}")
 
 
-# ── 解析 台词.ink（方言规范：chapter-dialoguer references/ink方言规范.md）──
+# ── 解析 台词.ink（方言 v2 规范：chapter-dialoguer references/ink方言规范.md）──
 
-# 场景块标记（=== knot 风格；方言允许中文标识符与人读后缀——偏离严格 ink，见规范）
-_SCENE_RE = re.compile(r"^===\s+(\S+)\s+(.+?)\s*(?:（([^）]*)）)?\s*$")
+# 场景块标记（knot）双格式：v2「=== <ascii_id> // <Scene 名>（<时段>）」（优先，行尾注释——标准 ink）
+# + v1「=== <id> <Scene 名>（<时段>）」（空格分隔，存量 chapter00 中文 id 封存兼容；
+#   哨兵 (?!//) 防 v1 把 // 后缀当 Scene 名）
+_SCENE_RE = re.compile(r"^===\s+(\S+)(?:\s+//\s*|\s+(?!//))(.+?)\s*(?:（([^）]*)）)?\s*$")
 _NARRATE_RE = re.compile(r"^旁白\s*:\s*(.+)$")
 # 说话行不支持 [表情] 标注（演出层已与台词分离）：角色名排除 [ 与 ]，残留标注（陆择[微笑]:x）
 # 因 group(1) 无法跨 [ 而整行不匹配 → 落入末尾 ValueError 显式拦截
 _SAY_RE = re.compile(r"^([^:\[\]]+?)\s*:\s*(.+)$")
-# 分支标记（= stitch 风格）→ op=label
+# 分支标记（= stitch）→ op=label；解析器不校验字符集（ASCII 是文档契约，存量中文零风险）
 _STITCH_RE = re.compile(r"^=\s+(.+?)\s*$")
-# 结局行（-> END + 行尾 ending tag 承载 kind 与落点）；含冒号，判定必须先于 _SAY_RE
-_ENDING_RE = re.compile(r"^->\s*END\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*(?:——|—)\s*(.+)$")
-# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag
+# v2 两行式结局·落点行：裸内容行 + 行尾 ending tag（官方 tag 挂内容行）；
+# text=落点、kind=tag 段；判定必须先于 narrate/say（tag 冒号会被 _SAY_RE 吃）
+_ENDING_LINE_RE = re.compile(r"^(.+?)\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*$")
+# ending 哨兵：行内含「# ending」但不匹配完整格式 → 显式报错（防 _SAY_RE 产垃圾 say 行）
+_ENDING_HINT_RE = re.compile(r"#\s*ending")
+# 裸收束行 -> END：不产行（线性节尾可加，消 inklecate loose ends 警告）
+_BARE_END_RE = re.compile(r"^->\s*END\s*$")
+# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag/注释
 _CHOICE_RE = re.compile(r"^[*+](\s|$)")
 # 注释行（ink 中 # 是 tag 非注释，注释是 //）
 _COMMENT_RE = re.compile(r"^//")
-# 环境音行（与旁白同级别，保留字「环境音」）；必须先于 _SAY_RE 匹配，否则被说话行正则吃掉
+# ── 音频行型 v3（sfx 点状 / bed± 音床起止 / llm 占位）──
+# sfx 点状音效：→ op=transition（图/投影/运行时语义不变，纯语法层）。含冒号，先于 _SAY_RE
+_SFX_RE = re.compile(r"^sfx\s*[:：]\s*(.+)$")
+# 音床起止对：id 限 [A-Za-z0-9_]+（配对/多床并行/嵌套）；起始行语义必填（AudioFly 生成提示语）
+_BED_START_RE = re.compile(r"^bed\+\s+([A-Za-z0-9_]+)(?:\s*//\s*(.+))?$")
+_BED_END_RE = re.compile(r"^bed-\s+([A-Za-z0-9_]+)$")
+_BED_HINT_RE = re.compile(r"^bed[+-]")  # 哨兵：bed 行格式坏 → 定向报错（防落兜底笼统错误）
+# LLM 占位：不产行不进图（split 门禁拒绝含占位定稿）；含冒号，必须先于 _SAY_RE
+_LLM_RE = re.compile(r"^llm\s*[:：]\s*(.+)$")
+# v3 废止探测（报错引导新语法，防静默丢行/丢声）：
+# 环境音独立行（→ sfx:）与内嵌【环境音:…】（→ bed±）
 _AMBIENT_RE = re.compile(r"^环境音\s*[:：]\s*(.+)$")
-# 氛围型环境音：旁白行内嵌标注【环境音:<语义>】（至多一个，与旁白同出）
 _INLINE_AMBIENT_RE = re.compile(r"【环境音[:：]([^】]+)】")
 
 
-def _strip_inline_ambient(narration: str, lineno: int, raw: str) -> tuple:
-    """旁白正文 → (纯正文, 氛围语义 or None)。至多一个内嵌标注，多个报错。"""
-    found = _INLINE_AMBIENT_RE.findall(narration)
-    if len(found) > 1:
-        raise ValueError(f"台词.ink 第 {lineno} 行内嵌环境音标注多于一个：{raw!r}")
-    text = _INLINE_AMBIENT_RE.sub("", narration).strip() if found else narration
-    return text, (found[0].strip() if found else None)
-
-
 def parse_ink(path) -> dict:
-    """解析 台词.ink → {"rows": [...], "blocks": [{block, scene_name}, ...]}。
+    """解析 台词.ink 文件 → {"rows", "blocks", "llm_hints"}（薄壳，主体在 parse_ink_text）。"""
+    return parse_ink_text(Path(path).read_text(encoding="utf-8"))
 
-    行 dict：op/who/text/kind/scene_block_id(+ambient_text：氛围型旁白)。演出层（立绘
-    选择）不在拆分期——由配音判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
-    判定次序（防线，顺序敏感）：空行 → // 注释 → */+ 选择行（整行跳过，含行尾 tag
-    ——choice 不进图）→ === 场景块（先于 =，否则 === 被 stitch 吃）→ 首块前内容行报错
-    → 行首 # 报错（ink 中 # 是 tag 非注释，行首 tag 会被 _SAY_RE 吃成 who）→ 行首 ->
-    （须匹配结局行正则——其含冒号，迟判会被 _SAY_RE 吃）→ 旁白 → 环境音 → = 分支
-    （label）→ 说话行 → 兜底 ValueError。解析失败抛 ValueError（带行号与原文）——
-    skill 依报错修 ink。
+
+def parse_ink_text(text: str) -> dict:
+    """解析 台词.ink 文本（方言 v3，标准合法 ink）→
+    {"rows": [...], "blocks": [{block, scene_name}, ...], "llm_hints": [(行号, 提示语), ...]}。
+
+    行 dict：op/who/text/kind/bed/scene_block_id。演出层（立绘选择）不在拆分期——由配音
+    判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
+    判定次序（防线，顺序敏感）：空行 → // 注释 → */+ 选择行（整行跳过——choice 不进图）
+    → === 场景块（双格式，先于 =）→ 首块前内容行报错 → 行首 # 报错 → 行首 ->
+    （裸 END 跳过 / 其余报错）→ ending 落点行（先于 narrate/say）→ 内嵌【环境音:】哨兵
+    （v3 废止，通杀旁白/说话行）→ 旁白 → 环境音独立行（v3 废止报错）→ sfx:（点状→
+    transition）→ bed+ / bed-（音床起止 + 配对状态机）→ llm:（占位不产行）→ bed 哨兵
+    （格式坏定向报错）→ = 分支（label）→ 说话行 → 兜底。sfx:/llm: 含冒号，**必须先于
+    _SAY_RE**（否则被吃成 who）。解析失败抛 ValueError（带行号与原文）。
     """
-    rows, blocks = [], []
+    rows, blocks, llm_hints = [], [], []
+    open_beds = {}  # bed id -> (起始行号, scene_block_id)；配对状态机（多床并行/嵌套天然支持）
     cur_block = None
-    text = Path(path).read_text(encoding="utf-8")
     for n, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line or _COMMENT_RE.match(line):
             continue  # 空行 / // 注释
         if _CHOICE_RE.match(line):
-            continue  # 选择行：整行跳过（choice 及去向 tag 不进图，建模后续设计）
+            continue  # 选择行：整行跳过（choice 及去向 tag/注释不进图，建模后续设计）
         if line.startswith("==="):
             m = _SCENE_RE.match(line)
             if not m:
                 raise ValueError(f"台词.ink 第 {n} 行场景块标记格式错误：{raw!r}"
-                                 "（应为 === <scene_block_id> <Scene 名>（<时段>））")
+                                 "（应为 === <scene_block_id> // <Scene 名>（<时段>）；"
+                                 "存量 v1 行式 === <id> <Scene 名>（<时段>）兼容）")
             cur_block = m.group(1)
             blocks.append({"block": cur_block, "scene_name": m.group(2).strip()})
             continue
         if cur_block is None:
             raise ValueError(f"台词.ink 第 {n} 行出现在首个场景块标记之前：{raw!r}")
         if line.startswith("#"):
-            raise ValueError(f"台词.ink 第 {n} 行以 # 开头（tag 非行首语法，仅结局行行尾支持）：{raw!r}")
+            raise ValueError(f"台词.ink 第 {n} 行以 # 开头（tag 非行首语法，仅结局落点行行尾支持）：{raw!r}")
         if line.startswith("->"):
-            m = _ENDING_RE.match(line)
+            if _BARE_END_RE.match(line):
+                continue  # 裸 -> END：纯收束行，不产行（线性节尾消 loose ends）
+            raise ValueError(f"台词.ink 第 {n} 行 divert 仅支持裸 -> END：{raw!r}"
+                             "（v1 单行式 -> END # ending: 已废止——结局改两行式："
+                             "<落点一句话> # ending: <BE|TE|HE|NE> 内容行 + 单独一行 -> END）")
+        if _ENDING_HINT_RE.search(line):
+            m = _ENDING_LINE_RE.match(line)
             if not m:
-                raise ValueError(f"台词.ink 第 {n} 行 divert 仅支持结局行：{raw!r}"
-                                 "（应为 -> END # ending: <BE|TE|HE|NE>——<落点一句话>）")
-            rows.append({"op": "ending", "kind": m.group(1), "text": m.group(2).strip(),
+                raise ValueError(f"台词.ink 第 {n} 行结局落点行格式错误：{raw!r}"
+                                 "（应为 <落点一句话> # ending: <BE|TE|HE|NE>）")
+            rows.append({"op": "ending", "kind": m.group(2), "text": m.group(1).strip(),
                          "scene_block_id": cur_block})
             continue
+        if _INLINE_AMBIENT_RE.search(line):
+            raise ValueError(f"台词.ink 第 {n} 行内嵌环境音标注已废止（方言 v3）：{raw!r}"
+                             "——区间声景改用 bed+ <id> // <语义> … bed- <id>，"
+                             "点状音效改用 sfx: <语义>")
         m = _NARRATE_RE.match(line)
         if m:
-            body, amb = _strip_inline_ambient(m.group(1).strip(), n, raw)
-            row = {"op": "narrate", "text": body, "scene_block_id": cur_block}
-            if amb:
-                row["ambient_text"] = amb
-            rows.append(row)
+            rows.append({"op": "narrate", "text": m.group(1).strip(),
+                         "scene_block_id": cur_block})
             continue
-        m = _AMBIENT_RE.match(line)
+        if _AMBIENT_RE.match(line):
+            raise ValueError(f"台词.ink 第 {n} 行独立环境音行已废止（方言 v3）：{raw!r}"
+                             "——点状音效改 sfx: <语义>，区间音床改 bed+ <id> // <语义> … bed- <id>")
+        m = _SFX_RE.match(line)
         if m:
             rows.append({"op": "transition", "text": m.group(1).strip(),
                          "scene_block_id": cur_block})
             continue
+        m = _BED_START_RE.match(line)
+        if m:
+            if not m.group(2):
+                raise ValueError(f"台词.ink 第 {n} 行 bed+ 缺语义（AudioFly 生成提示语必填）：{raw!r}"
+                                 "（应为 bed+ <id> // <语义>）")
+            bid = m.group(1)
+            if bid in open_beds:
+                raise ValueError(f"台词.ink 第 {n} 行音床 {bid} 重复起始"
+                                 f"（第 {open_beds[bid][0]} 行已起始且未闭合）")
+            open_beds[bid] = (n, cur_block)
+            rows.append({"op": "bed_start", "bed": bid, "text": m.group(2).strip(),
+                         "scene_block_id": cur_block})
+            continue
+        m = _BED_END_RE.match(line)
+        if m:
+            bid = m.group(1)
+            if bid not in open_beds:
+                raise ValueError(f"台词.ink 第 {n} 行 bed- {bid} 无对应未闭合的 bed+")
+            s_ln, s_blk = open_beds.pop(bid)
+            if s_blk != cur_block:
+                raise ValueError(f"台词.ink 第 {n} 行 bed- {bid} 跨场景块"
+                                 f"（bed+ 在第 {s_ln} 行·块 {s_blk}，bed- 在块 {cur_block}）"
+                                 "——运行时换段即停床，起止必须在同一场景块内")
+            rows.append({"op": "bed_end", "bed": bid, "scene_block_id": cur_block})
+            continue
+        m = _LLM_RE.match(line)
+        if m:
+            llm_hints.append((n, m.group(1).strip()))
+            continue  # 占位不产行不进图（split 门禁拒绝含占位定稿）
+        if _BED_HINT_RE.match(line):
+            raise ValueError(f"台词.ink 第 {n} 行音床行格式错误：{raw!r}"
+                             "（应为 bed+ <id> // <语义> 或 bed- <id>，id 限 ASCII 字母数字下划线）")
         m = _STITCH_RE.match(line)
         if m:
             rows.append({"op": "label", "text": m.group(1).strip(),
@@ -210,19 +271,35 @@ def parse_ink(path) -> dict:
         raise ValueError(f"台词.ink 第 {n} 行无法解析：{raw!r}"
                          "（方言规范见 chapter-dialoguer references/ink方言规范.md）")
     if not blocks:
-        raise ValueError("台词.ink 缺场景块标记行（=== <scene_block_id> <Scene 名>（<时段>））")
-    return {"rows": rows, "blocks": blocks}
+        raise ValueError("台词.ink 缺场景块标记行（=== <scene_block_id> // <Scene 名>（<时段>））")
+    if open_beds:
+        raise ValueError("台词.ink 有未闭合音床：" +
+                         "、".join(f"{bid}（第 {ln} 行）" for bid, (ln, _) in open_beds.items()))
+    return {"rows": rows, "blocks": blocks, "llm_hints": llm_hints}
+
+
+def ensure_no_placeholders(parsed: dict) -> None:
+    """split 门禁：含 llm: 占位的定稿拒绝拆分进图（占位不产行，静默拆分会丢内容）。
+    先由 chapter-dialoguer 填充模式扩写占位，再拆分。"""
+    hints = parsed.get("llm_hints") or []
+    if hints:
+        where = "、".join(f"第 {ln} 行" for ln, _ in hints)
+        raise ValueError(f"台词.ink 含 {len(hints)} 处 llm: 占位（{where}）——"
+                         "先由 chapter-dialoguer 填充模式扩写占位，再拆分进图")
 
 
 def _sig(r: dict) -> tuple:
-    """对齐签名：ending 用 kind+落点，narrate 含内嵌氛围语义（标注变化=氛围音变），
-    其余 op+who+text。存量 op=scene 图行（已去图化）在此签名下必然落入 delete；
-    存量 op=ambient 归一为 transition（改名兼容，防历史图行对齐断裂误置 0 重配）。"""
+    """对齐签名：ending 用 kind+落点；bed 起止用 bed id（防两个 bed_end 同签名产生配对
+    歧义）；narrate 含内嵌氛围语义（v3 已废止内嵌，⟨⟩ 恒空——保留拼接防旧图残留行
+    对齐断裂，残留行自然走 update 洗掉）。存量 op=scene（已去图化）必落 delete；
+    存量 op=ambient 归一 transition（改名兼容，防历史图行对齐断裂误置 0 重配）。"""
     op = r.get("op")
     if op == "ambient":
         op = "transition"
     if op == "ending":
         return ("ending", "", (r.get("kind") or "") + "——" + (r.get("text") or ""))
+    if op in ("bed_start", "bed_end"):
+        return (op, r.get("bed") or "", r.get("text") or "")
     if op == "narrate":
         return ("narrate", "", (r.get("text") or "") + "⟨" + (r.get("ambient_text") or "") + "⟩")
     return (op, r.get("who") or "", r.get("text") or "")
@@ -254,7 +331,7 @@ def _purge_line_audio_files(g: dict, report: dict) -> None:
             master = voice_master_path(ROOT, key)
         except ValueError:
             continue
-        runtime_root = ROOT / "99_game" / "assets" / ("sfx" if key.startswith("amb-") else "voices")
+        runtime_root = ROOT / "99_game" / "assets" / ("sfx" if key.startswith(("amb-", "bed-")) else "voices")
         for p in (master, runtime_root / f"{key}.wav", Path(str(master) + ".import"),
                   Path(str(runtime_root / f"{key}.wav") + ".import")):
             if p.exists():
@@ -365,8 +442,8 @@ def _strictly_increasing(seq: list) -> bool:
 
 def _set_props(m: dict, pos) -> str:
     """行字段全量 SET 子句（update/create 用）。status：音频行（say 配音 / transition
-    转场音效 / 带内嵌氛围的 narrate）=0 待产；其余非音频行 =11。"""
-    has_amb = m["op"] == "narrate" and m.get("ambient_text")
+    点状音效 / bed_start 音床起）=0 待产；其余非音频行（纯 narrate/label/ending/
+    bed_end）=11。ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）。"""
     return ", ".join([
         f"l.name={_q(_row_name(m))}",
         f"l.op={_q(m['op'])}",
@@ -374,10 +451,11 @@ def _set_props(m: dict, pos) -> str:
         f"l.pos={_q(pos)}",
         f"l.text={_q(m.get('text'))}",
         f"l.kind={_q(m.get('kind'))}",
+        f"l.bed={_q(m.get('bed'))}",
         f"l.scene_block_id={_q(m.get('scene_block_id'))}",
         f"l.ambient_text={_q(m.get('ambient_text'))}",
         f"l.text_sha1={_q(text_sha1(m.get('text') or ''))}",
-        f"l.status={0 if m['op'] in ('say', 'transition') or has_amb else 11}",
+        f"l.status={0 if m['op'] in ('say', 'transition', 'bed_start') else 11}",
     ])
 
 
@@ -422,13 +500,6 @@ def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
             if m["op"] == "say":
                 pos = pos_map.get(m.get("who") or "") or pos
             stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET {_set_props(m, pos)};")
-            # 氛围型旁白：正文改了但 ambient_text 未变且音频已在 → 保留已产（置 10 进审），
-            # 不白白重做环境音（音频跟语义走，不跟旁白正文走）
-            if m.get("ambient_text") and m.get("ambient_text") == g.get("ambient_text") \
-                    and g.get("ambient_track") and _wav_exists(g["ambient_track"]):
-                stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.status=10, "
-                             f"l.ambient_track={_q(g['ambient_track'])};")
-                report.setdefault("reused_amb", []).append({"id": oid})
             if m["op"] == "say":
                 pos_map[m.get("who") or ""] = pos or SAY_DEFAULT_POS
             report["updated"].append({"id": oid, "op": m["op"],
@@ -445,14 +516,16 @@ def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
                              f"SET l.scene_block_id={_q(m.get('scene_block_id'))};")
             if g.get("status") == -1:
                 # 非音频行恢复 11；音频行按「键在 +（say 另需 text_sha1 匹配）+ 母带 wav 在」恢复 10
+                # （transition/bed_start 音频行：ambient_track 在且母带在 → 10 否则 0——
+                # 修复历史死条件：md 侧 op 永不为 'ambient'，旧写法实际落 else 置 11 违反
+                # ambient-sfx-designer「track 在+wav 在→10 否则 0」的宣称）
                 track = g.get("ambient_track")
                 if m["op"] == "say":
                     ok = g.get("voice_key") and g.get("text_sha1") == text_sha1(m.get("text") or "") \
                         and _wav_exists(g.get("voice_key"))
                     new_status = 10 if ok else 0
-                elif m["op"] == "ambient" or m.get("ambient_text"):
-                    ok = track and _wav_exists(track)
-                    new_status = 10 if ok else 0
+                elif m["op"] in ("transition", "bed_start"):
+                    new_status = 10 if (track and _wav_exists(track)) else 0
                 else:
                     new_status = 11
                 stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.status={new_status};")
@@ -497,12 +570,13 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     if not script_path:
         raise ValueError("SecScript.script_path 为空")
     parsed = parse_ink(script_path)
+    ensure_no_placeholders(parsed)  # llm: 占位定稿拒绝拆分（防占位内容静默丢失）
     script_rows, blocks = parsed["rows"], parsed["blocks"]
 
     graph_rows = _run_cypher(
         "MATCH (sc:SecScript {id:'" + sc_id + "'})-[p:produces]->(l:LineAudio) "
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.pos AS pos, "
-        "l.text AS text, l.kind AS kind, l.scene_block_id AS scene_block_id, "
+        "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.ambient_text AS ambient_text, "
         "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
         "l.ambient_track AS ambient_track, l.text_sha1 AS text_sha1, p.order AS ord "

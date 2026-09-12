@@ -1,7 +1,9 @@
-"""环境音行任务生成（系统 python 跑）：查单节 op=transition status=0 的图行（+ narrate 内嵌声景）→ jobs JSON。
+"""环境音行任务生成（系统 python 跑）：查单节 op=transition / op=bed_start 的 status=0 图行 → jobs JSON。
 
-track 由本脚本预计算（amb-<stem>-<block>-<node_id>，复用 voice_bundler 单源构造），
-杜绝 LLM 手拼 key。块归属按 produces.order 遍历遇 op=scene 行切块推导（行上不冗余存）。
+方言 v3 音频三型：sfx:（点状→op=transition，kind=sfx，Freesound 实录）、bed+（音床起→
+op=bed_start，kind=bed，AudioFly 声景）；旧环境音两型（独立行/内嵌）已废止（2026-09-03 迁移）。
+track 由本脚本预计算（前缀 amb-/bed- + <stem>-<block>-<node_id>，复用 voice_bundler 单源
+构造），杜绝 LLM 手拼 key；行上已有 track 沿用原键（键一经落图终身不换前缀）。
 """
 import argparse
 import json
@@ -19,7 +21,7 @@ def collect(section_id: str) -> list:
         "OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline)-[:produces]->(sc:SecScript) "
         "OPTIONAL MATCH (sc)-[p:produces]->(l:LineAudio) "
         "RETURN ch.chapter_no AS no, ch.title AS title, sc.id AS sc_id, "
-        "l.id AS lid, l.op AS op, l.text AS text, l.ambient_text AS ambient_text, "
+        "l.id AS lid, l.op AS op, l.text AS text, l.bed AS bed, l.prompt AS prompt, "
         "l.ambient_track AS ambient_track, "
         "l.status AS status, l.scene_block_id AS block, p.order AS ord "
         "ORDER BY p.order"
@@ -34,17 +36,18 @@ def collect(section_id: str) -> list:
             continue
         seen_any_line = True
         block = r.get("block") or ""  # 行上直读块归属（scene 行已去图化）
-        if r["op"] in ("transition", "ambient"):  # ambient 为存量值兼容（已改名 transition）
-            kind, text = "transition", r.get("text") or ""
-        elif r["op"] == "narrate" and r.get("ambient_text"):
-            kind, text = "ambience", r["ambient_text"]  # 氛围型：语义在旁白行 ambient_text
+        if r["op"] == "transition":
+            kind, text, prefix = "sfx", r.get("text") or "", "amb"
+        elif r["op"] == "bed_start":
+            kind, text, prefix = "bed", r.get("text") or "", "bed"  # 语义在 bed+ 行 text
         else:
             continue
         if r.get("status") != 0:
             continue  # 只挑待产行（被驳回/未产/stale 均归一于 0）
-        track = r.get("ambient_track") or make_ambient_track(stem, block, r["lid"])
+        track = r.get("ambient_track") or make_ambient_track(stem, block, r["lid"], prefix=prefix)
         jobs.append({"node_id": r["lid"], "track": track, "stem": stem,
-                     "block": block, "text": text, "kind": kind})
+                     "block": block, "text": text, "kind": kind, "bed": r.get("bed"),
+                     "prompt": r.get("prompt") or ""})  # 行上存量 prompt（重产复用；空=需现场翻写）
     if not seen_any_line:
         raise SystemExit(f"Section {section_id} 图无行（先 section-voice-publisher 拆分）")
     return jobs

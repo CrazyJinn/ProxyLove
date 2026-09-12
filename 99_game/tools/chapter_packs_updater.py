@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--portraits", default="", help="立绘整键 CSV（<char>-<costume>-<variant>-<stand_id>，取合并章 JSON requires.portraits）")
     ap.add_argument("--scenes", default="", help="场景逻辑名 CSV（<Scene.name>）")
     ap.add_argument("--voices", default="", help="语音键 CSV（<char>-<stem>-<scene_id>-<line_idx>）")
-    ap.add_argument("--sfx", default="", help="环境音 track CSV（amb-<stem>-<block>-<行id>，本章已批 ambient 行）")
+    ap.add_argument("--sfx", default="", help="环境音 track CSV（amb-/bed-<stem>-<block>-<行id>，本章已批 ambient 行）")
     ap.add_argument("--bgm", default="", help="BGM 逻辑名 CSV（章 JSON 各 scene-block bgm.track，从图 Scene-has_bgm 收集）")
     ap.add_argument("--packs", default=str(DEFAULT_PACKS), help="chapter_packs.json 路径")
     args = ap.parse_args(argv)

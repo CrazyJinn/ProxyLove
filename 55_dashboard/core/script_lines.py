@@ -41,10 +41,10 @@ def get_lines(sc_id):
 
 
 def _is_audio_line(l: dict) -> bool:
-    """音频行：say 配音 / transition 转场音效（存量 op=ambient 兼容）/ 带内嵌氛围标注（ambient_text）的 narrate。"""
+    """音频行：say 配音 / transition 点状音效（方言 v3 的 sfx:）/ bed_start 音床起。
+    （narrate 内嵌氛围已废止迁移为 bed±，op=ambient 历史死值已清。）"""
     op = l.get("op")
-    return op == "say" or op in ("transition", "ambient") \
-        or (op == "narrate" and bool(l.get("ambient_text")))
+    return op == "say" or op in ("transition", "bed_start")
 
 
 def line_state(l: dict) -> str:
@@ -68,7 +68,7 @@ def line_state(l: dict) -> str:
 
 
 def say_counts(lines: list) -> dict:
-    """音频行（say 配音 / ambient 转场 / 带氛围标注的 narrate）状态统计（节级审批 gate 用）。
+    """音频行（say 配音 / sfx 点状 / bed_start 音床起）状态统计（节级审批 gate 用）。
     键名沿用 say（UI 兼容），口径含全部音频行。"""
     c = {"say": 0, "missing": 0, "pending": 0, "approved": 0, "rejected": 0, "void": 0}
     for l in lines:

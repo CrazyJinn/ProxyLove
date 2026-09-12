@@ -22,11 +22,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = str(ROOT / "data" / "剧本.schema.json")
 
 
-def _line(op, text=None, *, who=None, pos=None, kind=None,
+def _line(op, text=None, *, who=None, pos=None, kind=None, bed=None,
           scene_block_id=None, voice_key=None, lid="N1", ambient_track=None):
     """图行 dict（fetch_chapter 查询返回形状——portrait 已不在 RETURN 列）。"""
     return {"lid": lid, "op": op, "who": who, "pos": pos,
-            "text": text, "kind": kind, "scene_block_id": scene_block_id,
+            "text": text, "kind": kind, "bed": bed, "scene_block_id": scene_block_id,
             "voice_key": voice_key, "ambient_track": ambient_track, "line_status": 11}
 
 
@@ -96,30 +96,52 @@ def test_graph_lines_to_doc_blocks_drive_scene_structure():
 # ── 环境音两型投影（transition 独立行 / ambience 挂 narrate）──
 
 def test_transition_line_projects_transition_op():
-    """转场音效独立行（op=transition，存量 ambient 兜底归一）→ {"op":"transition","track"}。"""
+    """点状音效独立行（op=transition，方言 v3 的 sfx:）→ {"op":"transition","track"}。"""
     lines = [
         _line("narrate", "街角的咖啡店。", scene_block_id="s01", lid="N1"),
         _line("transition", "推门时门口的风铃清脆作响",
               ambient_track="amb-ch0-s01-P1", scene_block_id="s01", lid="N2"),
-        _line("ambient", "存量旧行", ambient_track="amb-ch0-s01-P0",
-              scene_block_id="s01", lid="N3"),  # 存量值兜底归一
     ]
     doc = graph_lines_to_doc(lines, _blocks(("s01", "咖啡店")), {}, 0, "节")
     ls = doc["scenes"][0]["lines"]
-    assert ls[0] == {"op": "narrate", "text": "街角的咖啡店。"}   # 纯 narrate 无 ambience 键
+    assert ls[0] == {"op": "narrate", "text": "街角的咖啡店。"}
     assert ls[1] == {"op": "transition", "track": "amb-ch0-s01-P1"}
-    assert ls[2] == {"op": "transition", "track": "amb-ch0-s01-P0"}  # 存量归一
 
 
-def test_narrate_with_ambient_track_projects_ambience_key():
-    """氛围声景（narrate+ambient_track）→ narrate 行带 ambience 键（不再拍平成独立行）。"""
+def test_narrate_with_stray_ambient_track_projects_plain():
+    """落网 narrate 带残留 ambient_track（v3 废止后不应存在）→ 投影纯文本，忽略该字段。"""
     lines = [
         _line("narrate", "雨点骤然砸落", ambient_track="amb-ch0-s01-P2",
               scene_block_id="s01", lid="N1"),
     ]
     doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
-    assert doc["scenes"][0]["lines"] == [
-        {"op": "narrate", "text": "雨点骤然砸落", "ambience": "amb-ch0-s01-P2"}]
+    assert doc["scenes"][0]["lines"] == [{"op": "narrate", "text": "雨点骤然砸落"}]
+
+
+def test_bed_lines_project(tmp_path):
+    """音床起止（op=bed_start/bed_end）→ {"op","bed","track"} / {"op","bed"}，产物过 schema。"""
+    lines = [
+        _line("bed_start", "雨点骤然砸落，越来越密", bed="rain",
+              ambient_track="bed-ch0-s01-B1", scene_block_id="s01", lid="N1"),
+        _line("narrate", "雨下起来。", scene_block_id="s01", lid="N2"),
+        _line("bed_end", "", bed="rain", scene_block_id="s01", lid="N3"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
+    ls = doc["scenes"][0]["lines"]
+    assert ls[0] == {"op": "bed_start", "bed": "rain", "track": "bed-ch0-s01-B1"}
+    assert ls[1] == {"op": "narrate", "text": "雨下起来。"}
+    assert ls[2] == {"op": "bed_end", "bed": "rain"}
+    _dump_validate(doc, tmp_path)
+
+
+def test_bed_line_missing_track_skipped():
+    """bed_start 缺 track（未产音）静默跳过——发布 gate 全行 11 保证产音后 track 必在。"""
+    lines = [
+        _line("bed_start", "雨声", bed="rain", scene_block_id="s01", lid="N1"),
+        _line("bed_end", "", bed="rain", scene_block_id="s01", lid="N2"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
+    assert doc["scenes"][0]["lines"] == [{"op": "bed_end", "bed": "rain"}]
 
 
 # ── merge ──

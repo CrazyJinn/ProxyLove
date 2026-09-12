@@ -86,6 +86,8 @@ python -m pytest tests/test_cascade.py::test_xxx -v   # 单个用例
 - **SecScript 定稿审**（审 台词.ink，`10→11`）：走全局「审批中心」（[page_approval.py](ui/page_approval.py)），渲染 ink 全文。
 - **LineAudio 逐句音频审**（行 `10→11`）：审批中心把 status=10 的行节点**按节聚合**为一张卡（[script_lines_view.render_audio_review](ui/components/script_lines_view.py)）：试听 + 单句通过=11/驳回=0（写行节点 status，经 [core/script_lines.py](core/script_lines.py)）；「节完成」= 全部行 11（派生，无节级批准按钮）；整节驳回 = say 行全置 0。
 
+**台词全文编辑器**（人工微调回路的编辑入口，[page_chapter_overview.py](ui/page_chapter_overview.py) `_edit_script_dialog`）：各节「编辑台词」按钮（条件与「重新提交审批」相同：章已批 ∧ 有 script_path ∧ sc∈{0,1,11}；sc=10 在审不出现——审批对象须稳定）打开 @st.dialog 全文 text_area。输入变化即 [core/script_editor.py](core/script_editor.py) `validate`（经懒导入调 `script_splitter.parse_ink_text`——与拆分进图同一解析器，错误带行号+原文；成功给行型摘要）；「保存并送审」= `save`（tmp+replace **原子写**）→ `approval.resubmit`（0/1/11→10）→ toast → rerun（先产物后写图）。text_area key 带打开计数器后缀——取消/X 关闭后再开不残留未存草稿。方言 v3（标准合法 ink：ASCII 标识符、knot 行尾注释、结局两行式；音频三型 sfx:/bed±、llm: 占位、旧环境音两型废止）见 chapter-dialoguer references/ink方言规范.md；存量 chapter00 v1 `===` 行式解析器双格式兼容（[test_script_editor.py](tests/test_script_editor.py) 从 dashboard 侧再锁一次）。编辑器摘要含行型统计与 llm 占位警告。
+
 推进入口分两级（生成 `vscode://` deeplink 唤起 `plot-design` agent，见 [launch_button.py](ui/components/launch_button.py)）：
 - 章行「推进剧情创作」= **章节全量**（structurer 分节 / 结构审 / 全量循环推进，到全章就绪即止）。**发布（chapter-publisher）由用户直接触发，不在 plot-design 职责内**。
 - 各节「推进此节」（`ch.status==11` 且该节产物链未全就绪、且无待审项时出现）= **单节聚焦**（plot-design 按产物链当前段推进该节的提纲/定稿/拆分选绘配音；`SecScript=11` 时推该节关联的 depicts 立绘——行级引用为 `LineAudio-[:uses]->` 选绘边，选绘在 section-voice-publisher 配音判断期完成，不碰其他节、不发布）。

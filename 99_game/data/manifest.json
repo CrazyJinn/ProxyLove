@@ -54,19 +54,6 @@
     "街角咖啡店-点餐台": "assets/scenes/街角咖啡店-点餐台.png",
     "长江大桥-栏杆": "assets/scenes/长江大桥-栏杆.png"
   },
-  "bgm": {
-    "晨离": "assets/bgm/晨离.wav",
-    "骤雨路口": "assets/bgm/骤雨路口.wav",
-    "晨光小店": "assets/bgm/晨光小店.wav",
-    "夹缝暮光": "assets/bgm/夹缝暮光.wav"
-  },
-  "sfx": {
-    "amb-chapter00_序章-s00_酒店-PxH5yKwcuh": "assets/sfx/amb-chapter00_序章-s00_酒店-PxH5yKwcuh.wav",
-    "amb-chapter00_序章-s01_咖啡店-Pz3xmsRauO": "assets/sfx/amb-chapter00_序章-s01_咖啡店-Pz3xmsRauO.wav",
-    "amb-chapter00_序章-s01_路口-Pz3xmsRauP": "assets/sfx/amb-chapter00_序章-s01_路口-Pz3xmsRauP.wav",
-    "amb-chapter00_序章-s01_路口-Pz3xmsRauQ": "assets/sfx/amb-chapter00_序章-s01_路口-Pz3xmsRauQ.wav"
-  },
-  "cg": {},
   "voices": {
     "顾盈-chapter00_序章-s00_酒店-PxH5yKwcul": "assets/voices/顾盈-chapter00_序章-s00_酒店-PxH5yKwcul.wav",
     "陆择-chapter00_序章-s00_酒店-PxH5yKwcum": "assets/voices/陆择-chapter00_序章-s00_酒店-PxH5yKwcum.wav",
@@ -109,5 +96,18 @@
     "伊芙-chapter00_序章-s02_夹缝-PxSUKe2h88": "assets/voices/伊芙-chapter00_序章-s02_夹缝-PxSUKe2h88.wav",
     "陆择-chapter00_序章-s02_夹缝-PxSUKe2h89": "assets/voices/陆择-chapter00_序章-s02_夹缝-PxSUKe2h89.wav",
     "伊芙-chapter00_序章-s02_夹缝-PxSUKe2h8A": "assets/voices/伊芙-chapter00_序章-s02_夹缝-PxSUKe2h8A.wav"
-  }
+  },
+  "bgm": {
+    "晨离": "assets/bgm/晨离.wav",
+    "骤雨路口": "assets/bgm/骤雨路口.wav",
+    "晨光小店": "assets/bgm/晨光小店.wav",
+    "夹缝暮光": "assets/bgm/夹缝暮光.wav"
+  },
+  "sfx": {
+    "amb-chapter00_序章-s00_酒店-PxH5yKwcuh": "assets/sfx/amb-chapter00_序章-s00_酒店-PxH5yKwcuh.wav",
+    "amb-chapter00_序章-s01_咖啡店-Pz3xmsRauO": "assets/sfx/amb-chapter00_序章-s01_咖啡店-Pz3xmsRauO.wav",
+    "amb-chapter00_序章-s01_路口-Pz3xmsRauP": "assets/sfx/amb-chapter00_序章-s01_路口-Pz3xmsRauP.wav",
+    "amb-chapter00_序章-s01_路口-Pz3xmsRauQ": "assets/sfx/amb-chapter00_序章-s01_路口-Pz3xmsRauQ.wav"
+  },
+  "cg": {}
 }

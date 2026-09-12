@@ -230,6 +230,7 @@ def get_script_lines(sc_id):
             OPTIONAL MATCH (l)-[:uses]->(pst:StandingIllustration)
             RETURN l.id AS id, l.name AS name, l.op AS op, l.who AS who,
                    pst.variant_label AS portrait, l.pos AS pos, l.text AS text,
+                   l.bed AS bed, l.kind AS kind, l.prompt AS prompt,
                    l.tts_text AS tts_text, l.scene_block_id AS scene_block_id,
                    l.ambient_text AS ambient_text,
                    l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.emotion AS emotion,

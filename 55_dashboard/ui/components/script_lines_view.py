@@ -134,9 +134,12 @@ def _render_sequential_player(lines):
     items = []
     for i, l in enumerate(lines, 1):
         op = l.get("op")
-        if op == "transition" or (op == "narrate" and l.get("ambient_track")):
+        if op == "transition":
             wav = sl.master_wav_path(l)
-            who = "🔊 转场音效" if op == "transition" else "🔊 氛围声景"
+            who = "🔊 点状音效"
+        elif op == "bed_start":
+            wav = sl.master_wav_path(l)
+            who = f"🔊 音床起（{l.get('bed', '')}）"
         elif op == "say":
             wav = sl.master_wav_path(l)
             who = l.get("who", "")
@@ -220,11 +223,13 @@ def _render_line_card(l, idx, sec_id, rejected_nodes):
     """
     op = l.get("op")
     nid = l.get("id", "")
-    if op == "transition" or (op == "narrate" and l.get("ambient_track")):
+    if op in ("transition", "bed_start"):
         state = sl.line_state(l)
-        kind_label = "🔊 转场音效" if op == "transition" else "🔊 氛围声景"
+        kind_label = "🔊 点状音效" if op == "transition" else f"🔊 音床起（{l.get('bed', '')}）"
         with st.container(border=True):
             st.markdown(f"**{kind_label}** `#{idx}` {_STATE_BADGE.get(state, '')}：{l.get('text', '')}")
+            if l.get("prompt"):
+                st.caption(f"🪄 prompt：{l['prompt']}")  # bed 行 AudioFly 生成提示（持久化，重产复用）
             track = l.get("ambient_track")  # 已产音频才有通过/驳回按钮
             wav = sl.master_wav_path(l)
             if wav:
@@ -256,6 +261,8 @@ def _render_line_card(l, idx, sec_id, rejected_nodes):
             st.markdown(f"*（旁白）{l.get('text', '')}*")
         elif op == "label":
             st.caption(f"[锚点] {l.get('text', '')}")
+        elif op == "bed_end":
+            st.caption(f"[音床止] {l.get('bed', '')}")
         elif op == "ending":
             st.markdown(f"**【结局 {l.get('kind', '')}】{l.get('text', '')}**")
         return

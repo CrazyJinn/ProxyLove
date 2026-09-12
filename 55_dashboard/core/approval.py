@@ -32,13 +32,14 @@ def reject(current_status):
 
 
 def resubmit(label, current_status):
-    """重新提交审批（SecScript 人工微调回路）：已批(11)→待审(10)，其他状态非法。
+    """重新提交审批（SecScript 人工微调回路）：0/1/11→待审(10)，其他状态非法。
 
-    用户直接编辑台词 JSONL 后点「重新提交审批」：SecScript 11→10 重走定稿审；
-    台词已变 → LineAudio 由回调方置 -1（stale 机制后续只重配被改句）。
+    用户编辑 台词.ink 后点「重新提交审批」/「保存并送审」：0（驳回后手改）/1（草稿）/
+    11（已批微调）均→10 重走定稿审——与章概览按钮显示条件及剧情.md 契约一致；
+    10（在审，审批对象须稳定）与 -1（级联作废走重拆）不可送审。
     """
-    if current_status != 11:
-        raise IllegalTransition(f"{label} status={current_status} 不可重新提交（仅已批 11）")
+    if current_status not in (0, 1, 11):
+        raise IllegalTransition(f"{label} status={current_status} 不可重新提交（仅 0/1/11）")
     return 10
 
 

@@ -7,8 +7,9 @@ BigVGAN，单次固定出 10s / 44.1kHz；ddim_steps=200 / cfg=3.5 官方推荐�
 子命令：
   jobs <jobs.json>       批量生成候选：jobs = [{track, prompt, kind, count?}, ...]，
                          候选落 .tmp/ambient/<track>_c<i>.wav（10s 原生段）
-  finalize <候选wav> <母带wav> --kind ambience|transition [--seconds 5|--cut 1.5] [--fade 2]
-                         裁剪+淡出落母带（氛围 ~5s+淡出 / 转场 1~2s 峰值截取）
+  finalize <候选wav> <母带wav> --kind sfx|bed [--seconds N|--cut N] [--fade N]
+                         落母带：sfx=峰值截取 1~2s+尾淡出；bed=全长原样（~10s 无处理，
+                         运行时一次性播放、未播完推进时程序 1s 淡出）
 
 - prompt 必须英文（AudioCaps 语料训练 + flan-t5 编码）——中文语义由 skill 翻写。
 - 模型加载 ~8GB 显存 fp32，一次加载批量跑全节候选（生成 ~68s/条）。
@@ -77,6 +78,25 @@ def fade_out(seg: np.ndarray, sr: int, fade_s: float) -> np.ndarray:
     return seg
 
 
+_KIND_MAP = {"transition": "sfx", "ambience": "bed"}  # 旧 kind 值兼容映射（2026-09-03 前历史命令）
+
+
+def cmd_finalize(args):
+    kind = _KIND_MAP.get(args.kind, args.kind)
+    seg, sr = sf.read(args.candidate)
+    seg = seg.astype(np.float32)
+    if kind == "sfx":  # 点状：峰值截取（默认 1.5s）+ 尾淡出（运行时播完再接下一句）
+        seg = cut_peak(seg, sr, args.cut if args.cut is not None else 1.5)
+        seg = fade_out(seg, sr, args.fade if args.fade is not None else 2.0)
+    else:  # bed 音床：全长原样（默认 ~10s，无淡入淡出）——运行时一次性播放（不循环），
+           # 未播完时用户推进由程序 1s 淡出（--fade/--cut 对 bed 均不适用）
+        seg = seg[: int((args.seconds if args.seconds is not None else 10.0) * sr)]
+    dst = Path(args.master)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    sf.write(dst, seg, samplerate=sr)
+    print(f"[done] {dst}（{len(seg)/sr:.1f}s）")
+
+
 def cmd_jobs(args):
     jobs = json.loads(Path(args.jobs).read_text(encoding="utf-8"))
     out_dir = ROOT / ".tmp" / "ambient"
@@ -105,21 +125,6 @@ def cmd_jobs(args):
     print(f"[done] 候选在 {out_dir}")
 
 
-def cmd_finalize(args):
-    seg, sr = sf.read(args.candidate)
-    seg = seg.astype(np.float32)
-    if args.kind == "transition":
-        seg = cut_peak(seg, sr, args.cut)
-        seg = fade_out(seg, sr, args.fade)
-    else:  # ambience：氛围 ~5s（取前段，AudioCaps 事件多在段首）+ 淡出
-        seg = seg[: int(args.seconds * sr)]
-        seg = fade_out(seg, sr, args.fade)
-    dst = Path(args.master)
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    sf.write(dst, seg, samplerate=sr)
-    print(f"[done] {dst}（{len(seg)/sr:.1f}s）")
-
-
 def main():
     ap = argparse.ArgumentParser(description="AudioFly 环境音生成（ambient-sfx-designer 氛围层）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -130,10 +135,12 @@ def main():
     p2 = sub.add_parser("finalize", help="候选裁剪+淡出落母带")
     p2.add_argument("candidate", help="候选 wav（.tmp/ambient/<track>_c<i>.wav）")
     p2.add_argument("master", help="母带 wav（15_声音/<stem>/<block>/<track>.wav）")
-    p2.add_argument("--kind", choices=["ambience", "transition"], default="ambience")
-    p2.add_argument("--seconds", type=float, default=5.0, help="氛围成品时长（秒），默认 5")
-    p2.add_argument("--cut", type=float, default=1.5, help="转场成品时长（秒），默认 1.5")
-    p2.add_argument("--fade", type=float, default=2.0, help="末尾淡出（秒），默认 2")
+    p2.add_argument("--kind", choices=["sfx", "bed", "transition", "ambience"], default="sfx",
+                    help="sfx=点状（峰值截取+淡出）/ bed=音床（全长原样，一次性播放，未播完推进时程序 1s 淡出）；"
+                         "transition/ambience 为旧值兼容映射")
+    p2.add_argument("--seconds", type=float, default=None, help="bed 成品时长（秒），缺省 10")
+    p2.add_argument("--cut", type=float, default=None, help="sfx 成品时长（秒），缺省 1.5")
+    p2.add_argument("--fade", type=float, default=None, help="sfx 尾淡出（秒），缺省 2；bed 不适用")
     p2.set_defaults(func=cmd_finalize)
     args = ap.parse_args()
     args.func(args)

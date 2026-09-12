@@ -5,7 +5,10 @@
 本脚本从图查：
   - status=11 的 StandingIllustration → portraits（键 = <char_name>.<variant_label>）
   - 所有 Scene                        → scenes   （键 = <Scene.name>）
-并保留现有 manifest 的 bgm/sfx/cg（无对应图节点，手写）。
+并图驱动收集：
+  - status=11 的音频行（ambient_track）→ sfx
+  - status=11 的配音行（voice_key）   → voices
+保留现有 manifest 的 bgm/cg（无对应图节点，手写）。
 
 资源路径约定（与当前 manifest.json 一致，运行时缺资源由 PlaceholderGen 兜底）：
   portraits: assets/portraits/<逻辑名>.png
@@ -109,14 +112,28 @@ def collect_scenes() -> dict:
 def collect_sfx() -> dict:
     """已批环境音行 → <ambient_track>: assets/sfx/<track>.wav（图驱动收集，status=11）。
 
-    以 ambient_track 字段存在为准、不看 op——转场行（op=transition）与 narrate 内嵌
-    声景行（op=narrate + ambient_track）同样收集。"""
+    以 ambient_track 字段存在为准、不看 op——点状音效行（op=transition）与音床行
+    （op=bed_start）同样收集。"""
     rows = _run_cypher(
         "MATCH (l:LineAudio) WHERE l.status = 11 "
         "AND l.ambient_track IS NOT NULL RETURN l.ambient_track AS track"
     )
     return {(r.get("track") or "").strip(): "assets/sfx/" + r["track"] + ".wav"
             for r in rows if (r.get("track") or "").strip()}
+
+
+def collect_voices() -> dict:
+    """已批配音行 → <voice_key>: assets/voices/<key>.wav（图驱动收集，status=11）。
+
+    以 voice_key 字段存在为准（say 行）。此前 voices 段由 chapter-publisher 流程维护、
+    manifest_builder 输出清单未含——单独重跑会静默抹掉 voices 段致运行时全部配音
+    miss（2026-09-03 踩过），现改为图驱动收集与 sfx 对称。"""
+    rows = _run_cypher(
+        "MATCH (l:LineAudio) WHERE l.status = 11 "
+        "AND l.voice_key IS NOT NULL RETURN l.voice_key AS key"
+    )
+    return {(r.get("key") or "").strip(): "assets/voices/" + r["key"] + ".wav"
+            for r in rows if (r.get("key") or "").strip()}
 
 
 def build_manifest(manifest_path: Path) -> dict:
@@ -128,12 +145,13 @@ def build_manifest(manifest_path: Path) -> dict:
         except json.JSONDecodeError:
             print(f"[warn] {manifest_path} JSON 解析失败，bgm/sfx/cg 从空重建", file=sys.stderr)
 
-    # portraits/scenes/sfx 合并：保留现有手写，图查到的覆盖/补充（向后兼容）；bgm/cg 保留现有
+    # portraits/scenes/sfx/voices 合并：保留现有手写，图查到的覆盖/补充（向后兼容）；bgm/cg 保留现有
     portraits, scales = collect_portraits()
     return {
         "portraits": {**existing.get("portraits", {}), **portraits},
         "portrait_scales": {**existing.get("portrait_scales", {}), **scales},
         "scenes": {**existing.get("scenes", {}), **collect_scenes()},
+        "voices": {**existing.get("voices", {}), **collect_voices()},
         "bgm": existing.get("bgm", {}),
         "sfx": {**existing.get("sfx", {}), **collect_sfx()},
         "cg": existing.get("cg", {}),
@@ -155,6 +173,7 @@ def main() -> None:
         print(
             f"[dry-run] portraits={len(data['portraits'])} "
             f"portrait_scales={len(data['portrait_scales'])} scenes={len(data['scenes'])} "
+            f"voices={len(data['voices'])} "
             f"bgm={len(data['bgm'])}(保留) sfx={len(data['sfx'])}(保留) cg={len(data['cg'])}(保留)",
             file=sys.stderr,
         )
@@ -164,7 +183,8 @@ def main() -> None:
     print(
         f"已写入 {manifest_path}：portraits={len(data['portraits'])} "
         f"portrait_scales={len(data['portrait_scales'])} "
-        f"scenes={len(data['scenes'])} bgm={len(data['bgm'])} sfx={len(data['sfx'])} cg={len(data['cg'])}"
+        f"scenes={len(data['scenes'])} voices={len(data['voices'])} "
+        f"bgm={len(data['bgm'])} sfx={len(data['sfx'])} cg={len(data['cg'])}"
     )
 
 

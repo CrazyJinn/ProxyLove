@@ -53,11 +53,11 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     scene-block 结构从这里生成）；scene_times = {scene_name: time_of_day}（块时段）；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
-    行 dict 形状：op/who/pos/text/kind/scene_block_id/voice_key/ambient_track/line_status
+    行 dict 形状：op/who/pos/text/kind/bed/scene_block_id/voice_key/ambient_track/line_status
     ——行按 scene_block_id 变化归块（行上存块归属）。
     label 行 text → name；ending 行 text → title；say 行 voice_key → voice；
-    transition 行（转场音效）→ {"op":"transition","track"}（运行时等播完再推进）；
-    narrate 行带 ambient_track（氛围声景）→ narrate 行带 "ambience" 键（随旁白播放一次，不阻塞）。
+    transition 行（方言 v3 的 sfx: 点状音效）→ {"op":"transition","track"}（运行时等播完再推进）；
+    bed_start/bed_end 行（音床起止）→ {"op","bed","track"} / {"op","bed"}（运行时区间循环/停止）。
     """
     portrait_keys = portrait_keys or {}
     chars, scenes_seq, portraits = [], [], []
@@ -92,18 +92,22 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
             _keep(chars, l.get("who"))
             _keep(portraits, say["portrait"])
         elif op == "narrate":
-            # 氛围声景（ambience）：track 带进 narrate 行——运行时随旁白播放一次
-            #（产物 ~5s 带淡出，自然结束），不阻塞台词，换段停。
-            narrate = {"op": "narrate", "text": l.get("text") or ""}
-            if l.get("ambient_track"):
-                narrate["ambience"] = l["ambient_track"]
-            cur.setdefault("lines", []).append(narrate)
-        elif op in ("transition", "ambient"):
-            # 转场音效独立行 → {"op":"transition"}（运行时等播完再推进）。
-            # "ambient" 为存量值兜底（改名迁移幂等）；track 缺失静默跳过——
-            # 发布 gate 全行 11 保证产音后 track 必在。
+            # narrate 纯文本行（方言 v3 起内嵌氛围已废止迁移为 bed±；行上残留 ambient_track
+            # 为落网旧值，忽略不再投影 ambience 键）
+            cur.setdefault("lines", []).append({"op": "narrate", "text": l.get("text") or ""})
+        elif op == "transition":
+            # 点状音效独立行（方言 v3 的 sfx: 语法）→ {"op":"transition"}（运行时等播完再推进）。
+            # track 缺失静默跳过——发布 gate 全行 11 保证产音后 track 必在。
             if l.get("ambient_track"):
                 cur.setdefault("lines", []).append({"op": "transition", "track": l["ambient_track"]})
+        elif op == "bed_start":
+            # 音床起：{"op":"bed_start"}（运行时循环播放直到 bed_end/换段）；track 缺失静默跳过同上
+            if l.get("ambient_track"):
+                cur.setdefault("lines", []).append(
+                    {"op": "bed_start", "bed": l.get("bed") or "", "track": l["ambient_track"]})
+        elif op == "bed_end":
+            # 音床止：{"op":"bed_end"}（运行时停对应床；幂等）
+            cur.setdefault("lines", []).append({"op": "bed_end", "bed": l.get("bed") or ""})
         elif op == "label":
             cur.setdefault("lines", []).append({"op": "label", "name": l.get("text") or ""})
         elif op == "ending":
@@ -162,7 +166,7 @@ def fetch_chapter(chapter_id: str) -> dict:
         "sec.title AS sec_title, ol.status AS ol_status, sc.status AS sc_status, "
         "sc.scene_blocks AS scene_blocks, "
         "l.id AS lid, l.op AS op, l.who AS who, l.pos AS pos, "
-        "l.text AS text, l.kind AS kind, l.scene_block_id AS scene_block_id, "
+        "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.voice_key AS voice_key, l.ambient_track AS ambient_track, "
         "l.status AS line_status, p.order AS ord "
         "ORDER BY sec.section_no, p.order"

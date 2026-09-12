@@ -19,9 +19,39 @@ import streamlit as st
 
 from config import settings
 from repo import graph_repo
-from core import approval
+from core import approval, script_editor
 from ui.components import launch_button, status_badge, script_lines_view, markdown_viewer
 from ui import page_node_editor
+
+
+@st.dialog("编辑台词", width="large")
+def _edit_script_dialog(sc_id, sc_status, script_path, title):
+    """台词.ink 全文编辑器（人工微调回路的编辑入口）：实时 parse_ink 校验 → 原子写 → 送审。
+
+    即点即开型 dialog（image_viewer._zoom_dialog 范式，不进 _dialog_node 跨 rerun 机制）。
+    text_area key 带打开计数器后缀——每次打开全新 widget，取消/X 关闭后再开不残留未存草稿。
+    保存四步（动作 → toast → rerun）同 page_node_editor 范式；sc_status 由调用方限定
+    ∈{0,1,11}（10 在审不出现——审批对象须稳定）。
+    """
+    text0 = script_editor.load(script_path, settings.PROJECT_ROOT)
+    if text0 is None:
+        st.error(f"台词文件不存在：{script_path}")
+        return
+    st.caption(f"{title} · {script_path} —— 保存即校验并送审；重批后重拆只重配被改句，"
+               "未变句审批结果保留")
+    n = st.session_state.get(f"ink_open_{sc_id}", 0)
+    text = st.text_area("台词.ink", value=text0, key=f"ink_ta_{sc_id}_{n}",
+                        height=480, label_visibility="collapsed")
+    ok, msg = script_editor.validate(text, settings.PROJECT_ROOT)
+    (st.caption if ok else st.error)(msg)  # 错误带 parse_ink 行号+原文
+    c1, c2 = st.columns(2)
+    if c1.button("保存并送审", type="primary", disabled=not ok, key=f"ink_save_{sc_id}"):
+        script_editor.save(script_path, text, settings.PROJECT_ROOT)   # 先产物（原子写）
+        graph_repo.set_status(sc_id, approval.resubmit("SecScript", sc_status))  # 后写图
+        st.toast("已保存并重新提交定稿审（SecScript=10）；重批后重拆只重配被改句", icon="🔁")
+        st.rerun()
+    if c2.button("取消", key=f"ink_cancel_{sc_id}"):
+        st.rerun()
 
 
 @st.dialog("节点编辑", width="large")
@@ -142,12 +172,20 @@ def _render_section_row(s, ch_status):
                 launch_button.render_section(s["id"], f"第{s['_no']}节 · {title}")
         else:
             st.caption("待章结构审批")
-        # 人工微调回路：直接编辑 台词.ink 后重新送审（不经 dialoguer，手改不丢）。
+        # 人工微调回路：dashboard 编辑器改文（或手改文件）后送审（不经 dialoguer，手改不丢）。
         # 只置 sc→10、不动行节点——重批后重拆按 text_sha1 恢复未变句审批结果，只重配被改句。
-        # 显示条件含驳回后的 0——否则驳回态手改会被 plot-design 触发的 dialoguer 整篇覆盖。
+        # 显示条件含驳回后的 0——否则驳回态手改会被 plot-design 触发的 dialoguer 整篇覆盖；
+        # sc=10（在审）不出现——审批对象须稳定。
         if ch_status == 11 and s.get("script_path") and s["sc_status"] in (0, 1, 11):
-            if st.button("重新提交审批", key=f"resub_{s['id']}",
-                         help="直接编辑 台词.ink 改单句后点此重审：仅 SecScript→10（行节点不动）。"
+            e1, e2 = st.columns(2)
+            if e1.button("编辑台词", key=f"edit_ink_{s['sc_id']}",
+                         help="打开全文编辑器：实时 parse_ink 校验 → 原子写盘 → SecScript→10 送审"):
+                st.session_state[f"ink_open_{s['sc_id']}"] = \
+                    st.session_state.get(f"ink_open_{s['sc_id']}", 0) + 1
+                _edit_script_dialog(s["sc_id"], s["sc_status"], s["script_path"],
+                                    f"第{s['_no']}节 · {title}")
+            if e2.button("重新提交审批", key=f"resub_{s['id']}",
+                         help="直接编辑 台词.ink 文件改单句后点此重审：仅 SecScript→10（行节点不动）。"
                               "重批后「推进此节」重拆：未变句审批结果原样保留，只有被改句重配。"
                               "注意：点「推进此节」在 sc=0/1 时会让 dialoguer 整篇重写覆盖手改。"):
                 graph_repo.set_status(s["sc_id"], approval.resubmit("SecScript", s["sc_status"]))

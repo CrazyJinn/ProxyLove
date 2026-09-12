@@ -56,16 +56,18 @@ def test_all_approved_requires_say_rows():
 # ── ambient 行（环境音，与 say 同走 0→10→11 行级音频审）──
 
 def test_ambient_line_state():
-    assert sl.line_state(_line(op="ambient", status=0, attempts=None)) == "missing"
-    assert sl.line_state(_line(op="ambient", status=10, attempts=1)) == "pending"
-    assert sl.line_state(_line(op="ambient", status=11, attempts=1)) == "approved"
-    assert sl.line_state(_line(op="ambient", status=-1, attempts=1)) == "void"
+    """音频环境行（transition/bed_start）四态（v3：op=ambient 历史死值已清）。"""
+    for op in ("transition", "bed_start"):
+        assert sl.line_state(_line(op=op, status=0, attempts=None)) == "missing"
+        assert sl.line_state(_line(op=op, status=10, attempts=1)) == "pending"
+        assert sl.line_state(_line(op=op, status=11, attempts=1)) == "approved"
+        assert sl.line_state(_line(op=op, status=-1, attempts=1)) == "void"
 
 
 def test_ambient_counts_into_gate():
-    """ambient 行进节完成 gate：未批 ambient 挡住整节，全批后通过。"""
+    """音频环境行进节完成 gate：未批挡住整节，全批后通过。"""
     lines = [_line(op="scene", nid="S"), _line(status=11, attempts=1, nid="A"),
-             _line(op="ambient", status=10, attempts=1, nid="AMB")]
+             _line(op="bed_start", status=10, attempts=1, nid="AMB")]
     c = sl.say_counts(lines)
     assert c["say"] == 2 and c["pending"] == 1
     assert not sl.all_approved(lines)
@@ -74,7 +76,7 @@ def test_ambient_counts_into_gate():
 
 
 def test_ambient_reject_section_included():
-    """整节驳回把 ambient 行一并置 0（mock repo 验证 id 集合）。"""
+    """整节驳回把音频环境行一并置 0（mock repo 验证 id 集合）。"""
     import core.script_lines as sl_mod
 
     captured = {}
@@ -88,27 +90,21 @@ def test_ambient_reject_section_included():
     try:
         lines = [_line(status=11, attempts=1, nid="A"),
                  _line(op="narrate", nid="N"),
-                 _line(op="ambient", status=11, attempts=1, nid="AMB")]
+                 _line(op="transition", status=11, attempts=1, nid="AMB")]
         n = sl.reject_section(lines)
         assert n == 2 and set(captured["ids"]) == {"A", "AMB"} and captured["status"] == 0
     finally:
         sl_mod.graph_repo = orig
 
 
-# ── 氛围型 narrate（旁白内嵌【环境音】，带 ambient_text 的 narrate 是音频行）──
-
-def test_ambient_narrate_is_audio_line():
-    """带 ambient_text 的 narrate 进分类/统计/驳回；纯 narrate 不进。"""
-    amb_n = _line(op="narrate", nid="AN", text="正文")
-    amb_n["ambient_text"] = "雨声渐密"
-    assert sl.line_state(amb_n) == "missing"            # status=0 未产
-    amb_n["status"], amb_n["attempts"] = 10, 1
-    assert sl.line_state(amb_n) == "pending"
-    assert sl.say_counts([amb_n])["say"] == 1           # 进 gate 口径
-    assert sl.say_counts([_line(op="narrate", nid="P")])["say"] == 0  # 纯旁白不进
-    lines = [amb_n, _line(op="narrate", nid="P", status=11)]
-    lines[0]["status"] = 11
-    assert sl.all_approved(lines)                        # 氛围旁白 11 + 纯旁白（不计）→ 通过
+def test_bed_end_is_not_audio_line():
+    """bed_end 非音频行：不进分类/统计/驳回；带 ambient_text 的 narrate（v3 废止残留）也不再是音频行。"""
+    assert sl.line_state(_line(op="bed_end", nid="BE", status=0)) == ""
+    assert sl.say_counts([_line(op="bed_end", nid="BE")])["say"] == 0
+    stray = _line(op="narrate", nid="AN", text="正文")
+    stray["ambient_text"] = "残留标注"   # v3 废止，防御性不计音频
+    assert sl.line_state(stray) == ""
+    assert sl.say_counts([stray])["say"] == 0
 
 
 # ── master_wav_path（审批试听源 = 母带 15_声音/，运行时副本归发布期）──

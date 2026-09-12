@@ -54,9 +54,17 @@
           "text": "昨夜的酒气还没散透。外套歪在椅背上，两只杯子空在床头，谁也没打算收拾。"
         },
         {
+          "op": "bed_start",
+          "bed": "bath",
+          "track": "amb-chapter00_序章-s00_酒店-PxH5yKwcuh"
+        },
+        {
           "op": "narrate",
-          "text": "浴室传来哗哗的水声。",
-          "ambience": "amb-chapter00_序章-s00_酒店-PxH5yKwcuh"
+          "text": "浴室传来哗哗的水声。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "bath"
         },
         {
           "op": "narrate",
@@ -315,9 +323,17 @@
       "time": "阴天白天",
       "lines": [
         {
+          "op": "bed_start",
+          "bed": "rain",
+          "track": "amb-chapter00_序章-s01_路口-Pz3xmsRauP"
+        },
+        {
           "op": "narrate",
-          "text": "天突然暗了下来，接着淅淅沥沥地落起雨来。",
-          "ambience": "amb-chapter00_序章-s01_路口-Pz3xmsRauP"
+          "text": "天突然暗了下来，接着淅淅沥沥地落起雨来。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "rain"
         },
         {
           "op": "narrate",
@@ -340,9 +356,17 @@
           "text": "陆择低声骂了一句，把衣领竖了起来。"
         },
         {
+          "op": "bed_start",
+          "bed": "motor",
+          "track": "amb-chapter00_序章-s01_路口-Pz3xmsRauQ"
+        },
+        {
           "op": "narrate",
-          "text": "远处一辆摩托车发出了巨大的轰鸣。",
-          "ambience": "amb-chapter00_序章-s01_路口-Pz3xmsRauQ"
+          "text": "远处一辆摩托车发出了巨大的轰鸣。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "motor"
         },
         {
           "op": "narrate",
