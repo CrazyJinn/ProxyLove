@@ -10,6 +10,15 @@
 | fs_640766_doorbell | doorbell.wav | fabiopx | https://freesound.org/people/fabiopx/sounds/640766/ | CC0 | — | 4.9s（未采用，待清） |
 | fs_675866_door_chime_columbia | S16-10 Door chime (Columbia Pictures).wav | craigsmith | https://freesound.org/people/craigsmith/sounds/675866/ | CC0 | — | 哥伦比亚影业门厅 chime；3.3s（未采用，待清） |
 
+| fs_9508_splash | SPLASH.wav | petenice | https://freesound.org/people/petenice/sounds/9508/ | CC0 | amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMP | 物体入水（跳江 BE 分支）；峰值截取 1.5s |
+| fs_775609_phone_tone | phone tone | Anonio82 | https://freesound.org/people/Anonio82/sounds/775609/ | CC0 | amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMW | 深夜来电骤响；2.0s 原样 |
+| fs_347240_unlock_smarphone | unlock smarphone.wav | BraveFrog | https://freesound.org/people/BraveFrog/sounds/347240/ | CC0 | amb-chapter01_新皮肤-s00_apartment-QZXoBBWJMl | 手机解锁短音；峰值截取 1.0s |
+| fs_666296_phone_chime | Phone chime.wav | ChristopherJngs | https://freesound.org/people/ChristopherJngs/sounds/666296/ | CC0 | — | 0.81s 偏短未采用（待清） |
+
+| fs_730184_iphone_haptic_bop | Haptic Bop of the iPhone | CuriousTorvald | https://freesound.org/people/CuriousTorvald/sounds/730184/ | CC0 | amb-chapter01_新皮肤-s04_setup-QZccDTjmXH | 语音通话接通（现代 App 连通感）；原件 0.14s 峰值截取全保留 |
+| fs_392183_negative_error | NEGATIVE.wav | DExUS5 | https://freesound.org/people/DExUS5/sounds/392183/ | CC0 | amb-chapter01_新皮肤-s04_setup-QZccDTjmXO | 游戏闪退报错音（首次）；峰值截取 1.1s |
+| fs_493163_error_buzzer | Buzzer sounds (Wrong answer / Error) | Breviceps | https://freesound.org/people/Breviceps/sounds/493163/ | CC0 | amb-chapter01_新皮肤-s04_setup-QZccDTjmXT | 游戏闪退报错音（第二次，荒诞升级）；峰值截取 1.5s |
+
 ## 获取方式说明
 
 - 下载件为 Freesound **CDN 匿名预览**（128kbps mp3 + 转 wav，同内容双份），选型用；

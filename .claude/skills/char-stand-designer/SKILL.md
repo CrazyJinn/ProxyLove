@@ -36,7 +36,7 @@ MATCH (stand:StandingIllustration {id:'<stand_id>'})
 MATCH (illus:IllusDesign)-[:expands_to]->(stand)
 MATCH (voice:LanguageStyle)-[:ref_style]->(stand)
 MATCH (ch:Character)-[:has_voice_style]->(voice)
-OPTIONAL MATCH (illus)-[:outfit_for]->(cos:CostumeStyle)
+OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
 RETURN ch.name AS char_name, ch.id AS char_id,
        voice.id AS voice_id, voice.emotion_patterns AS emotion_patterns,
        illus.id AS illus_id, illus.image_path AS illus_image, illus.status AS illus_status,
@@ -75,9 +75,28 @@ char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<cos_
 
 #### 生成图片
 
-使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <illus_image>`（图生图，以 IllusDesign 图片为参考）：
+使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <illus_image> --background transparent --output-format png`（图生图，以 IllusDesign 图片为参考）：
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/<cos_name>/立绘/<variant_label>.png`。infra-image-generator 返回路径 `IMAGE_PATH`。
+> **透明参数必传**（2026-09-13 生产实测）：仅靠 prompt 英文透明措辞连续 3 次返回 RGB（服务端行为已变）；措辞 + `--background transparent --output-format png` 同时在场才稳定直出 RGBA。
+
+`OUTPUT_PATH = 06_角色美术/<char_name>/<cos_name>/立绘/<variant_label>.png`。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
+
+#### 透明校验（生成后、写图前——先产物后写图铁律的校验步）
+
+立绘要求模型直出透明 PNG（prompt 画风段固化英文透明措辞）。生成产物**必须先过透明校验**才进入保存结果步——不透明产物禁止写图：
+
+```bash
+python "${CLAUDE_SKILL_DIR}/scripts/check_transparency.py" '<IMAGE_PATH>'
+```
+
+判据：**alpha=0 像素占比 > 1%**（gpt-image 系主体 alpha≈253，不能用 alpha<255 判定；2026-09-09 实验矩阵实测）。
+
+- **退出码 0** → 校验通过，进入「保存结果」步。
+- **退出码 1**（无 alpha 通道，或 alpha=0 占比不足——OfoxAI 偶发忽略透明措辞返回 RGB）→ **不写 image_path、不写 status**：
+  1. Read 检查 prompt 文件画风段是否含固化透明行 `fully transparent background with alpha channel, no background elements`，并确认本次调用带了 `--background transparent --output-format png`（模板漂移或漏传参数是最常见原因；2026-09-13 起措辞与参数须同时在场）；
+  2. 修正后重调 infra-image-generator 覆盖重生成，最多重试 2 次；
+  3. 仍失败 → 停止并报告，节点保持原 status（0/-1）待人工处理。
+- **退出码 2**（文件不存在）→ 报告并停止。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 

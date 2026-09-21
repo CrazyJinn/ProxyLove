@@ -65,6 +65,9 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 | 唇形 | lip_shape | 薄唇 / 饱满 / 厚唇 / 微笑唇 | 单选 |
 | 特殊标记 | marks | 无 / 疤痕 / 纹身 / 胎记 / 泪痣 | 可多选 |
 
+**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 visual_tone / first_impression / appearance。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。
+例：✅「琥珀色上挑眼」 ❌「琥珀色上挑眼，眼神凌厉逼人」
+
 **身高抽取（height_cm）**：从刚生成的 `appearance` 文本里识别形如 `NNNcm` / `约NNNcm` 的三位身高，取整数填入 `height_cm`（供下游 IllusDesign 推算立绘显示缩放，见 char-illus-designer）。若 appearance 未给明确身高，填 `null`。
 
 **LanguageStyle**（怪物跳过）：

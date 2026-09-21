@@ -224,7 +224,7 @@ def publish(tasks: dict, profiles: dict, out_dir, keys=None, device="cuda:0") ->
     每角色按 clone_mode 懒构建 prompt（同角色 icl/xvec 可混排）：
       icl（缺省）= ICL——ref codec + ref_text 韵律迁移，音色最稳；
       xvec = 仅说话人向量——丢 ref 韵律、文本语义主导演绎（迟疑/强情绪句；
-      demo/hesitation_demo.py 变体 C 验证平静 ref 韵律会压制文本语气）。
+      变体 C 实验验证平静 ref 韵律会压制文本语气）。
     emotion 不参与合成参数（Base clone 无 instruct 通道）——情绪全部由 tts_text 变体承载，
     缺 tts_text 回落 text 原文；emotion 仅随 bind-graph 写图作标注。
     返回 {produced: {char: [wav_path]}, skipped: [char], failed: [{char, key, error}]}。

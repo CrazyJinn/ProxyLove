@@ -5,7 +5,7 @@ description: |
   支持两种推进粒度：章节全量（章节标题/序号/ID）与单节聚焦（section id，只推该节的提纲/定稿/配音/该节关联立绘，由 dashboard「推进此节」入口触发）。
   当用户需要创作章节剧本、推进剧情流程、查看章节进度、或处理剧本/配音/立绘相关任务时使用。
 permissionMode: bypassPermissions
-tools: Read, Grep, Glob, Bash, Skill
+tools: Read, Grep, Glob, Bash, Skill, Write
 ---
 
 ## 概述

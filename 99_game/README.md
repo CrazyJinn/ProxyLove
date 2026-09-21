@@ -56,7 +56,7 @@ godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
 ## 资源
 - **占位兜底**：缺资源时程序生成占位图（立绘 400×800 纯绿 `#00FF00`、场景 1536×1024、头像 128²），首次引用时缓存到 `user://placeholder_cache/`。
 - **真图搬运**：真图由上游 `chapter-publisher` skill（`.claude/skills/chapter-publisher/`）从创作区（`06_角色美术/`、`07_场景美术/`）发布到 `data/chapters/`（剧本）与 `assets/`（图片），并更新 `manifest.json`。
-- **立绘缩放 + 去绿**：立绘原图是 `#00FF00` 绿幕，搬运时经 `tools/process_portrait.py` 先缩放到 800×1200（保 2:3）、再用 ffmpeg `colorkey` 抠去绿幕成透明 PNG，落到 `assets/portraits/<角色>.<变体>.png`；**原图不动**，处理只发生在搬运结果上。背景图是场景油画（非绿幕），原样拷贝。ffmpeg 路径读 `settings.json` 的 `ffmpeg_path`。
+- **立绘直通 + 头位归一化**：立绘自 2026-09 起由生成端直出透明 PNG（透明措辞与 `--background transparent` 参数双在场触发）；搬运时经 `tools/process_portrait.py` 做头位归一化（YuNet 双眼锚定、人物高 ÷ 7.5 头身为尺度等高 1200、双眼中心水平居中，输出按前景紧凑裁剪）落到 `assets/portraits/<整键>.png`，输入无 alpha 通道直接报错（绿幕抠图管线已退役）。**原图不动**，处理只发生在搬运结果上。背景图是场景油画（非透明），原样拷贝。
 - **改图不改剧本**：换真图只改 `manifest.json`（逻辑名→`assets/...` 路径），不动剧本 JSON。
 
 ## 已知 V1 边界 / 待办

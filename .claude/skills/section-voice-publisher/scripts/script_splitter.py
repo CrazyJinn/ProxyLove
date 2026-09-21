@@ -560,7 +560,8 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     rows = _run_cypher(
         "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
         "-[:produces]->(sc:SecScript) "
-        "RETURN sc.id AS sc_id, sc.script_path AS p, sc.status AS st LIMIT 1"
+        "RETURN sc.id AS sc_id, sc.script_path AS p, sc.status AS st, "
+        "sc.scene_blocks AS sb LIMIT 1"
     )
     if not rows:
         raise ValueError(f"Section {section_id} 无 SecScript（先跑 chapter-dialoguer 产定稿）")
@@ -586,13 +587,35 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
     stmts, report = build_actions(seq, plan, sc_id)
-    # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）
+    # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）。
+    # 图上已有同 block 映射为权威（人工/上游落的图 Scene 名），ink 块头注记仅作新块初值——
+    # 剧作化注记（如「床前」）≠图名（「床铺区」）时若盲写会让下游 depicts 选绘静默降级。
+    try:
+        existing_sb = json.loads(rows[0]["sb"]) if isinstance(rows[0].get("sb"), str) else (rows[0].get("sb") or [])
+    except (TypeError, json.JSONDecodeError):
+        existing_sb = []
+    existing_of = {b.get("block"): b.get("scene_name") for b in existing_sb if isinstance(b, dict)}
+    graph_scene_names = {r["n"] for r in _run_cypher("MATCH (s:Scene) RETURN s.name AS n") if r.get("n")}
+    merged_blocks = []
+    for b in blocks:
+        bid, ink_name = b.get("block"), b.get("scene_name")
+        if bid in existing_of and existing_of[bid]:
+            name = existing_of[bid]
+            if ink_name and ink_name != name:
+                report.setdefault("scene_block_name_overrides", []).append(
+                    {"block": bid, "graph": name, "ink": ink_name})
+        else:
+            name = ink_name
+            if name and name not in graph_scene_names:
+                report.setdefault("scene_block_name_unmatched", []).append(
+                    {"block": bid, "scene_name": name})
+        merged_blocks.append({"block": bid, "scene_name": name})
     stmts.append(f"MATCH (sc:SecScript {{id:{_q(sc_id)}}}) "
-                 f"SET sc.scene_blocks={_q(json.dumps(blocks, ensure_ascii=False))};")
+                 f"SET sc.scene_blocks={_q(json.dumps(merged_blocks, ensure_ascii=False))};")
     stmts = _order_statements(seq, sc_id, reordered) + stmts
     report.update({"section_id": section_id, "sc_id": sc_id, "script_path": script_path,
                    "reordered": reordered, "statements": len(stmts), "dry_run": dry_run,
-                   "blocks": blocks})
+                   "blocks": merged_blocks})
     if stmts and not dry_run:
         _run_cypher_multi(stmts)
     return report

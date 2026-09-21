@@ -1,6 +1,6 @@
 """AudioFly 环境音生成（图行驱动的氛围层产出；**env/.venv-audiofly，Python 3.11** 跑）。
 
-收编自 demo/ambient_demo.py（2026-08-28 验证链路）。AudioFly（讯飞开源 LDM，
+2026-08-28 验证链路后从早期 demo 收编。AudioFly（讯飞开源 LDM，
 ModelScope `iflytek/AudioFly`，Apache 2.0）：PixArt-MDT DiT + flan-t5-large +
 BigVGAN，单次固定出 10s / 44.1kHz；ddim_steps=200 / cfg=3.5 官方推荐不建议改。
 
@@ -55,14 +55,16 @@ def load_model():
 
 
 def cut_peak(seg: np.ndarray, sr: int, seconds: float) -> np.ndarray:
-    """事件型短音效截取：取能量峰值前后保留起振的 N 秒。"""
+    """事件型短音效截取：取能量峰值前后保留起振的 N 秒。
+    多声道按均值降混检测能量（时间窗各声道一致），切片保留原声道数。"""
+    mono = seg.mean(axis=1) if seg.ndim > 1 else seg
     n = int(seconds * sr)
-    if n >= len(seg):
+    if n >= len(mono):
         return seg
     win = max(1, int(0.05 * sr))
-    energy = np.convolve(seg**2, np.ones(win) / win, mode="same")
+    energy = np.convolve(mono**2, np.ones(win) / win, mode="same")
     start = int(np.argmax(energy)) - int(0.15 * sr)
-    start = max(0, min(start, len(seg) - n))
+    start = max(0, min(start, len(mono) - n))
     return seg[start: start + n]
 
 
@@ -108,6 +110,10 @@ def cmd_jobs(args):
     print(f"[load] AudioFly 就绪 {time.time()-t0:.0f}s | {len(jobs)} 条 job")
     for job in jobs:
         track, prompt = job["track"], job["prompt"]
+        if job.get("kind", "bed") != "bed":
+            # AudioFly 只产 bed 声景；sfx（op=transition）走 Freesound 实录链，喂错通道直接跳过
+            print(f"[skip] {track}（kind={job.get('kind')}：点状音效走 Freesound 实录链）")
+            continue
         count = int(job.get("count", 1))  # 单候选制：不满意换 seed/prompt 重出，不做多选一
         if args.seed is not None:
             torch.manual_seed(args.seed)

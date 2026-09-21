@@ -2,13 +2,9 @@
 """
 OfoxAI Images API - 图片生成脚本
 
-支持文生图和图生图两种模式，兼容 gpt-image-2 / dall-e-3 / dall-e-2 等模型。
-请求始终携带 moderation=low（写死，不接收其他值）——叙事性提示词易被默认审核强度误拒。
-
 使用方式:
     # 文生图
     python ofoxai_api.py submit "提示词" --size 1024x1024
-    python ofoxai_api.py submit "提示词" --model openai/gpt-image-2 --size 1024x1024 --quality high
 
     # 图生图（单图）
     python ofoxai_api.py submit "提示词" --image ./设计图.png --size 1024x1024
@@ -28,6 +24,7 @@ import base64
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -62,18 +59,55 @@ def load_api_key() -> str:
 
 
 API_BASE = "https://api.ofox.io/v1"
-API_KEY = load_api_key()
-DEFAULT_MODEL = "openai/gpt-image-2"
+DEFAULT_MODEL = "openai/gpt-image-2.5-sunburst"
+
+_API_KEY_CACHE: Optional[str] = None
+
+
+def get_api_key() -> str:
+    """惰性加载 API Key（wait/download 命令不需要 key，不应强制要求 settings.json 存在）"""
+    global _API_KEY_CACHE
+    if _API_KEY_CACHE is None:
+        _API_KEY_CACHE = load_api_key()
+    return _API_KEY_CACHE
+
+
+def post_with_retry(url: str, **kwargs) -> requests.Response:
+    """POST 请求，对 429/502/503/504 与网络异常自动重试（退避 5/10/20s，共 3 次）。
+
+    重试前对 multipart 文件句柄 seek(0)——上次尝试已消费读取位置，不复位会重发空内容。
+    """
+    delays = [5, 10, 20]
+    for attempt in range(len(delays) + 1):
+        try:
+            resp = requests.post(url, **kwargs)
+            if resp.status_code not in (429, 502, 503, 504) or attempt == len(delays):
+                return resp
+            reason = f"HTTP {resp.status_code}"
+        except requests.RequestException as e:
+            if attempt == len(delays):
+                raise
+            reason = str(e)
+        print(f"[retry] {reason}，{delays[attempt]}s 后重试（第 {attempt + 1}/{len(delays)} 次）", file=sys.stderr)
+        time.sleep(delays[attempt])
+        for item in kwargs.get("files") or []:
+            try:
+                item[1].seek(0)
+            except Exception:
+                pass
+    raise RuntimeError("unreachable")
 
 
 def submit_task(
     prompt: str,
     model: str = DEFAULT_MODEL,
-    size: str = "1024x1024",
+    size: str = "1536x1024",
     n: int = 1,
-    quality: Optional[str] = "low",
+    quality: Optional[str] = "medium",
     image: Optional[List[str]] = None,
     response_format: str = "b64_json",
+    background: Optional[str] = None,
+    output_format: Optional[str] = None,
 ) -> dict:
     has_images = image and len(image) > 0
 
@@ -92,13 +126,17 @@ def submit_task(
         if quality:
             data["quality"] = quality
         data["moderation"] = "low"  # 写死，降低安全审核强度（叙事性提示词易被误拒）
+        if background:
+            data["background"] = background
+        if output_format:
+            data["output_format"] = output_format
 
-        resp = requests.post(
+        resp = post_with_retry(
             url,
-            headers={"Authorization": f"Bearer {API_KEY}"},
+            headers={"Authorization": f"Bearer {get_api_key()}"},
             data=data,
             files=files,
-            timeout=180,
+            timeout=1200,
         )
         # 关闭文件句柄
         for _, f in files:
@@ -116,18 +154,25 @@ def submit_task(
         if quality:
             body["quality"] = quality
         body["moderation"] = "low"  # 写死，降低安全审核强度（叙事性提示词易被误拒）
+        if background:
+            body["background"] = background
+        if output_format:
+            body["output_format"] = output_format
 
-        resp = requests.post(
+        resp = post_with_retry(
             url,
-            headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+            headers={"Authorization": f"Bearer {get_api_key()}", "Content-Type": "application/json"},
             json=body,
-            timeout=180,
+            timeout=1200,
         )
 
-    result = resp.json()
     if resp.status_code != 200:
-        raise Exception(f"API error ({resp.status_code}): {json.dumps(result, ensure_ascii=False)}")
-    return result
+        try:
+            detail = json.dumps(resp.json(), ensure_ascii=False)
+        except ValueError:
+            detail = resp.text[:300]
+        raise Exception(f"API error ({resp.status_code}): {detail}")
+    return resp.json()
 
 
 def save_result(result: dict, output_path: str) -> dict:
@@ -149,7 +194,7 @@ def save_result(result: dict, output_path: str) -> dict:
                 f.write(base64.b64decode(item["b64_json"]))
             saved.append(save_path)
         elif "url" in item:
-            resp = requests.get(item["url"], timeout=60)
+            resp = requests.get(item["url"], timeout=1200)
             resp.raise_for_status()
             with open(save_path, "wb") as f:
                 f.write(resp.content)
@@ -165,7 +210,7 @@ def save_result(result: dict, output_path: str) -> dict:
 
 
 def download_image(url: str, output_path: str) -> dict:
-    resp = requests.get(url, timeout=60)
+    resp = requests.get(url, timeout=1200)
     resp.raise_for_status()
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "wb") as f:
@@ -185,12 +230,14 @@ def main():
             print("用法: python ofoxai_api.py submit <prompt|--prompt-stdin> [options]")
             print("")
             print("选项:")
-            print("  --model <name>       模型 (默认: openai/gpt-image-2)")
-            print("  --size <WxH>         输出尺寸 (默认: 1024x1024)")
+            print("  --model <name>       模型 (默认: openai/gpt-image-2.5-sunburst)")
+            print("  --size <WxH>         输出尺寸 (1024x1024 / 1024x1536 / 1536x1024，ASCII x，默认 1536x1024)")
             print("  --n <int>            生成数量 (默认: 1)")
-            print("  --quality <val>      gpt-image: low/medium/high; dall-e-3: standard/hd")
+            print("  --quality <val>      已强制为 `medium`")
             print("  --image <path>       参考图片路径 (可多次指定)")
             print("  --response-format    b64_json 或 url (默认: b64_json)")
+            print("  --background <val>   transparent/opaque(当识别到需求为透明背景时，就传transparent)")
+            print("  --output-format <val> 已强制为 png（项目统一格式）")
             print("  --prompt-stdin       从标准输入读取 prompt（管道消费，支持多行 markdown）")
             print("  -o, --output <path>  直接保存到指定路径（跳过 wait 步骤）")
             sys.exit(1)
@@ -198,11 +245,13 @@ def main():
         prompt = None
         prompt_stdin = False
         model = DEFAULT_MODEL
-        size = "1024x1024"
+        size = "1536x1024"
         n = 1
         quality = None
         image = []
         response_format = "b64_json"
+        background = None
+        output_format = None
         output = None
 
         i = 2
@@ -222,6 +271,10 @@ def main():
                 image.append(sys.argv[i + 1]); i += 2
             elif arg == "--response-format" and i + 1 < len(sys.argv):
                 response_format = sys.argv[i + 1]; i += 2
+            elif arg == "--background" and i + 1 < len(sys.argv):
+                background = sys.argv[i + 1]; i += 2
+            elif arg == "--output-format" and i + 1 < len(sys.argv):
+                output_format = sys.argv[i + 1]; i += 2
             elif arg in ("-o", "--output") and i + 1 < len(sys.argv):
                 output = sys.argv[i + 1]; i += 2
             elif prompt is None and not arg.startswith("--"):
@@ -232,8 +285,9 @@ def main():
         if prompt_stdin:
             prompt = sys.stdin.read()
 
-        # 强制质量为 low
-        quality = "low"
+        # 强制质量为 medium、输出格式为 png（项目统一，无其他格式）
+        quality = "medium"
+        output_format = "png"
 
         if prompt is None:
             print("错误：必须提供 prompt（位置参数或 --prompt-stdin）", file=sys.stderr)
@@ -246,7 +300,7 @@ def main():
                 sys.exit(1)
 
         try:
-            result = submit_task(prompt=prompt, model=model, size=size, n=n, quality=quality, image=image or None, response_format=response_format)
+            result = submit_task(prompt=prompt, model=model, size=size, n=n, quality=quality, image=image or None, response_format=response_format, background=background, output_format=output_format)
             if output:
                 result = save_result(result, output)
             print(json.dumps(result, ensure_ascii=False))

@@ -4,19 +4,19 @@
 
 ### 文生图
 ```
-POST https://api.ofox.ai/v1/images/generations
+POST https://api.ofox.io/v1/images/generations
 Content-Type: application/json
 ```
 
 ### 图生图（编辑）
 ```
-POST https://api.ofox.ai/v1/images/edits
+POST https://api.ofox.io/v1/images/edits
 Content-Type: multipart/form-data
 ```
 
 ## 认证
 Header: `Authorization: Bearer $OFOX_API_KEY`
-API Key 存储位置: 项目根目录 `settings.json` → `ofox` 字段
+API Key 存储位置: 项目根目录 `settings.json` → `ofox_api_key` 字段
 
 ## 文生图参数
 
@@ -25,9 +25,11 @@ API Key 存储位置: 项目根目录 `settings.json` → `ofox` 字段
 | model | string | Y | 模型名称 |
 | prompt | string | Y | 图像描述文本 |
 | n | number | N | 生成数量，默认 1 |
-| size | string | N | 尺寸，如 `1024x1024`、`2048x2048` |
+| size | string | N | 尺寸，如 `1024x1024` |
 | quality | string | N | 见下方质量参数对照 |
 | response_format | string | N | `b64_json`（默认）或 `url` |
+| background | string | N | `transparent` / `opaque` |
+| output_format | string | N | API 支持 `png` / `jpeg` / `webp`；本项目统一 `png`（脚本已强制） |
 
 ## 图生图参数（multipart/form-data）
 
@@ -39,6 +41,8 @@ API Key 存储位置: 项目根目录 `settings.json` → `ofox` 字段
 | n | number | N | 生成数量 |
 | size | string | N | 输出尺寸 |
 | mask | file | N | 蒙版图片（仅 gpt-image 模型，需含 alpha 通道） |
+| background | string | N | 同文生图（透明需与英文措辞同时在场，2026-09-13 实测） |
+| output_format | string | N | 同文生图（本项目统一 `png`，脚本已强制） |
 
 ### 多图引用
 使用 `image[]` 字段名上传多张参考图片：
@@ -66,6 +70,7 @@ curl ... \
 - 两边必须是 16 的倍数
 - 长短边比例不超过 3:1
 - 总像素: 655,360 ~ 8,294,400
+- 尺寸格式必须 ASCII `x` 分隔（`1024x1024`），传错（如中文乘号 `×`）可能触发服务端自动改尺寸逻辑（2026-09-14 判断：此前观测到的非请求尺寸返回疑源于此，格式修正后尺寸应严格遵守，再遇漂移按异常排查）
 
 ## 响应格式
 
@@ -98,17 +103,6 @@ curl ... \
 
 | 模型 ID | 文生图 | 图生图 | 质量 | 说明 |
 |---------|:------:|:------:|------|------|
-| openai/gpt-image-2 | Y | Y | low/medium/high | 最新模型，支持多图引用 |
-| openai/gpt-image-1 | Y | Y | low/medium/high | 上一代 GPT Image |
-| openai/dall-e-3 | Y | N | standard/hd | 高质量文生图 |
-| openai/dall-e-2 | Y | Y | — | 支持编辑，仅单图 |
+| openai/gpt-image-2.5-sunburst | Y | Y | low/medium/high | 透明背景实测可用（需措辞+参数双在场，见 SKILL.md） |
 
-## 错误处理
-
-| HTTP 状态码 | 含义 | 处理方式 |
-|-------------|------|---------|
-| 400 | 请求参数错误 | 检查参数格式和尺寸约束 |
-| 401 | 认证失败 | 检查 API Key |
-| 402 | 余额不足 | 充值后重试 |
-| 429 | 请求频率超限 | 等待后重试 |
-| 500 | 服务端错误 | 重试 |
+> 错误码处理见 [SKILL.md](../SKILL.md) 的「错误处理」节（脚本已内置 429/5xx 自动重试）。

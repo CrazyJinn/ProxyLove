@@ -84,8 +84,12 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
         "OPTIONAL MATCH (c0)-[:involved]->(e:Event)-[:wears]->(:CostumeStyle) "
         "-[:outfit_for]->(wi:IllusDesign), (e)-[:occurred_at]->(loc) "
         "OPTIONAL MATCH (c0)-[:has_costume]->(:CostumeStyle)-[:outfit_for]->(di:IllusDesign) "
-        "RETURN DISTINCT d.id AS depicts_id, wi.id AS wears_id, di.id AS default_id"
+        "RETURN DISTINCT d.id AS depicts_id, wi.id AS wears_id, di.id AS default_id, "
+        "scn.name AS scene_hit"
     )
+    if scene_name and rows and all(r.get("scene_hit") is None for r in rows):
+        warnings.append(f"{scene_name}：未命中本节 contains 的任何 Scene（名字与图 Scene 名不符）——"
+                        f"depicts/wears 两路将降级，请核对 SecScript.scene_blocks 的 scene_name")
     for col, source in _PRIORITY:
         vals = sorted({r.get(col) for r in rows if r.get(col)})
         if len(vals) > 1:

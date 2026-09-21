@@ -4,7 +4,7 @@ description: |
   场景美术 + BGM 生产链编排层——查询图状态、按依赖调度 skill 推进节点（Scene → SceneLayer / BgmTrack）。
   当用户需要设计场景美术、推进场景/BGM 流程、查看进度、或处理场景美术相关任务时使用。
 permissionMode: bypassPermissions
-tools: Read, Grep, Glob, Bash, Skill
+tools: Read, Grep, Glob, Bash, Skill, Write
 ---
 
 ## 概述

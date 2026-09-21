@@ -4,7 +4,7 @@ description: |
   角色视觉 + 声音生产链编排层——查询图状态、按依赖调度 skill 推进节点（美术外观/立绘 + 声音设计 VoiceDesign）。
   当用户需要设计角色美术或声音、推进美术/声音流程、查看进度、或处理角色美术/声音相关任务时使用。
 permissionMode: bypassPermissions
-tools: Read, Grep, Glob, Bash, Skill
+tools: Read, Grep, Glob, Bash, Skill, Write
 ---
 
 ## 概述

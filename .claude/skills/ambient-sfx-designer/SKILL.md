@@ -123,5 +123,5 @@ EOF
 
 - 行模型：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md)（LineAudio op=transition/bed_start/bed_end / bed / ambient_track / status）
 - track 解析与母带路径：[voice_bundler.py](../section-voice-publisher/scripts/voice_bundler.py)（split_voice_key / voice_master_path / make_ambient_track）
-- AudioFly 环境（env/.venv-audiofly 重建）与能力边界：[demo/README.md](../../../demo/README.md)
+- AudioFly 环境（env/.venv-audiofly 重建）与能力边界：[ambient_fly.py](scripts/ambient_fly.py) 模块 docstring
 - Freesound 素材登记：[15_声音/sfx_raw/SOURCES.md](../../../15_声音/sfx_raw/SOURCES.md)

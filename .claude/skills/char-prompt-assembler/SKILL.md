@@ -39,7 +39,7 @@ allowed-tools: Read, Bash, Write, Edit
 ## 输出流程（三种模式通用）
 
 1. 解析 data，提取 tags（分号分隔串，需 split）、自由文本字段、`node.id`，以及调用方声明的 `output_path`
-2. 从 `00_init/美术风格.md` 读取全局风格参数（背景色、线条、上色、色调等）；**分辨率按当前模式从该文件的对应条目动态提取后写入 prompt 画风段**——模式 A/B 取「设计图 / 立绘设计图」分辨率，模式 C 取「立绘」分辨率
+2. 从 `00_init/美术风格.md` 读取全局风格参数（线条、上色、色调等）；**背景按该文件「角色图片背景」节分模式处理——模式 A/B 画风段背景行固定声明不透明纯色背景（白色），模式 C 在画风段固化英文透明措辞（见模式 C 与立绘模板）**；**分辨率按当前模式从该文件的对应条目动态提取后写入 prompt 画风段（ASCII `x` 分隔，勿引入中文乘号 `×`）**——模式 A/B 取「设计图 / 立绘设计图」分辨率，模式 C 取「立绘」分辨率
 3. 按模式规则组装 markdown prompt（见下方各模式 + reference 模板的维度结构）
 4. 用 **Write 工具**写 prompt 文件到调用方在 data 中声明的 `output_path`（不经 shell，markdown 无损；目录不存在时 Write 自动创建）。**路径由调用方决定，assembler 透传，不自行拼接；三种模式均要求调用方在 `data` 中提供 `output_path`**
 5. **返回 prompt 文件路径**给调用方（由调用方写入节点 `prompt_path` 字段）
@@ -48,7 +48,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 模式A：DesignSheet（文生图）
 
-为三视图设计稿组装提示词。聚焦角色外貌，不涉及衣着——角色统一穿着深色基础衣物（黑色贴身背心+深色短裤），与肤色形成高对比。详细维度映射见 [references/template-设计图提示词.md](references/template-设计图提示词.md)。
+为三视图设计稿组装提示词。聚焦角色外貌，不涉及衣着——角色统一穿着深色基础衣物（黑色长袖压缩上衣与深色全长压缩裤，措辞为安全审核实测过的固定值，勿改回贴身/背心/短裤类），与肤色形成高对比。详细维度映射见 [references/template-设计图提示词.md](references/template-设计图提示词.md)。
 
 **data 参数结构**：
 ```json
@@ -63,7 +63,7 @@ allowed-tools: Read, Bash, Write, Edit
 }
 ```
 
-组装：从 `appearance.tags` 展开各维度（体态/肤色/发长发型发色/眼型瞳色/唇形/特殊标记）为自然语言，结合 `appearance` 自由文本（综合气质、身高）与 `character.color_direction`（配色逻辑），加贴身基础衣物说明，画风放末尾。**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值）。**
+组装：从 `appearance.tags` 展开各维度（体态/肤色/发长发型发色/眼型瞳色/唇形/特殊标记）为自然语言，结合 `appearance` 自由文本（综合气质、身高）与 `character.color_direction`（配色逻辑），加贴身基础衣物说明，画风放末尾。画风段背景行固定声明**不透明纯色背景**（白色，无渐变、无纹理、无场景元素——设计图产物非透明）；图面要求**无描述性文字**（无标签/注记/说明文字），三视图可附 3 宫格特写（面部、手部等，见模板三视图规则）；**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值，ASCII `x` 分隔）。**
 
 ## 模式B：IllusDesign（图生图）
 
@@ -82,7 +82,7 @@ allowed-tools: Read, Bash, Write, Edit
 }
 ```
 
-组装：从 `costume.tags` 展开着装（风格/材质+颜色+类型/鞋/配饰）为自然语言，加 `adaptation_notes` 适配补充（无则跳过），画风放末尾。**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值）。**
+组装：从 `costume.tags` 展开着装（风格/材质+颜色+类型/鞋/配饰）为自然语言，加 `adaptation_notes` 适配补充（无则跳过），画风放末尾。开头声明与画风段**不写背景内容**，画风段背景行固定声明**不透明纯色背景**（白色，产物非透明，禁止任何透明措辞）；图面要求**无描述性文字**，三视图可附 3 宫格特写；**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值，ASCII `x` 分隔）。**
 
 ## 模式C：StandingIllustration（图生图）
 
@@ -102,7 +102,7 @@ allowed-tools: Read, Bash, Write, Edit
 }
 ```
 
-组装：**首要依据 `stand.description`（变体氛围/情绪情境）定调表情强度、身体朝向、动作张力**；固定前缀 `[角色名]立绘，[背景色]背景，全身像，`，随后**据 description 氛围自主决定身体面对镜头的朝向**（正视镜头/3/4侧身/全侧身/背影——默认/微笑倾向正视镜头，战斗/愤怒等动态倾向 3/4侧身，回眸/悲伤等倾向全侧身或背影）写在「全身像」之后；再从 `stand.tags` 展开表情（eye/brow/mouth/head_angle）与动作（hand/foot）为自然语言，结合 `voice.emotion_patterns` 补充情绪；**动态/强情绪变体的动作幅度应更大、更有张力**（见 [references/template-立绘提示词.md](references/template-立绘提示词.md) 编写要点）。画风放末尾。**身体朝向与动作幅度由 LLM 据 `stand.description` 氛围自主生成**（data 里无硬编码朝向字段，description 是氛围依据）。**画风段分辨率取美术风格.md 的「立绘」条目（动态提取，不硬编码数值）。**
+组装：**首要依据 `stand.description`（变体氛围/情绪情境）定调表情强度、身体朝向、动作张力**；固定前缀 `[角色名]立绘，全身像，`（不写背景——透明措辞固化在画风段背景行，不放前缀），随后**据 description 氛围自主决定身体面对镜头的朝向**（正视镜头/3/4侧身/全侧身/背影——默认/微笑倾向正视镜头，战斗/愤怒等动态倾向 3/4侧身，回眸/悲伤等倾向全侧身或背影）写在「全身像」之后；再从 `stand.tags` 展开表情（eye/brow/mouth/head_angle）与动作（hand/foot）为自然语言，结合 `voice.emotion_patterns` 补充情绪；**动态/强情绪变体的动作幅度应更大、更有张力**（见 [references/template-立绘提示词.md](references/template-立绘提示词.md) 编写要点）。画风放末尾，**画风段背景行固化英文透明措辞（原样写入、一字不改）**：`**背景**：主体完整居中，fully transparent background with alpha channel, no background elements, no cast shadow on background`——立绘产物**必须透明**；透明触发需措辞与 API 参数双在场（2026-09-13 实测：仅措辞连续返 RGB），调用方生成时须同时传 `--background transparent`（png 已由 infra-image-generator 全局强制）。**身体朝向与动作幅度由 LLM 据 `stand.description` 氛围自主生成**（data 里无硬编码朝向字段，description 是氛围依据）。**画风段分辨率取美术风格.md 的「立绘」条目（动态提取，不硬编码数值）。**
 
 ## 参考文档
 

@@ -121,7 +121,7 @@ def normalize_clone_mode(v) -> str:
     """clone_mode 归一（bind 写图 / runner 合成分支两侧共用）：
 
     'xvec' = 仅说话人向量（丢 ref 韵律，文本语义主导演绎——迟疑/强情绪句用，
-    demo/hesitation_demo.py 变体 C 验证：平静 ref 的韵律迁移会压制文本语气信号）；
+    变体 C 实验验证：平静 ref 的韵律迁移会压制文本语气信号）；
     None / 'icl' / 脏值一律 'icl'（ICL：ref codec + ref_text 韵律迁移，生产链缺省）。"""
     return "xvec" if str(v or "").strip().lower() == "xvec" else "icl"
 
