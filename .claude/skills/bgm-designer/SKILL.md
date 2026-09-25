@@ -1,7 +1,7 @@
 ---
 name: bgm-designer
 description: |
-  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围与章节设计简报生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/description + status=1 → **把文字产出给用户**并明示归档路径 13_BGM/<name>.wav。
+  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围与章节设计简报生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/description + status=1 并落盘同名文档 13_BGM/<name>.md（LLM 直产文本，随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<name>.wav。
   音频由用户手动生成并放入预制路径（手工放入文件夹即合格，无审批）；再次触发本 skill（或 dashboard 编辑器）检测文件存在置 status=2。由 scene-design agent 编排触发（Scene → SceneLayer → BgmTrack 链），也可由用户直接触发。
 argument-hint: <scene_name_or_bgm_id>
 arguments:
@@ -11,7 +11,7 @@ allowed-tools: Read, Bash, Write
 
 # 背景音乐设计（BgmTrack 描述段 · status 0→1→2）
 
-BGM 资产链的 skill 侧半程：**生成一段音乐描述文字**给用户 → 用户在外部工具（Suno 类）手动生成 .wav → 归档到预制路径 `13_BGM/<name>.wav` → 检测文件存在置 `status=2`。**本 skill 不生成音频**——生成与归档是用户的手工环节（手工放入即合格，无 dashboard 审批）。
+BGM 资产链的 skill 侧半程：**生成一段音乐描述文字**给用户 → 用户在外部工具（Suno 类）手动生成 .wav → 归档到预制路径 `13_BGM/<name>.wav` → 检测文件存在置 `status=2`。**本 skill 不生成音频**——生成与归档是用户的手工环节（手工放入即合格，无 dashboard 审批）。每轨在 `13_BGM/` 平铺同名 md+wav 配对——`<name>.md`（文档）+ `<name>.wav`（音频），md 由本 skill 写图时同步落盘。
 
 > 关联：`Scene -[:has_bgm]-> BgmTrack` 1:1（sync=false，BGM 独立资产）。**缺口节点（Scene 无关联 BgmTrack）由本 skill 自行兜底建**（BGM 是场景资产，需求源于 Scene 本身）；本 skill 由 **scene-design agent 编排**（plot-design 不查不调 BgmTrack）。发布时 `chapter-publisher` 把 status=2 的 track 拷 `99_game/assets/bgm/` + manifest.bgm 图驱动更新 + 注入章 JSON scene-block.bgm。
 
@@ -84,18 +84,22 @@ SET b.description = '<音乐定位描述，1-2 句>',
     b.status = 1;           // 文字描述已产出（等用户手动生成 wav）
 ```
 
+#### 3a-2. 落盘同名文档 13_BGM/<name>.md（与 wav 平铺配对）
+
+用 **Write 工具**写 `13_BGM/<name>.md`——LLM 直产文本随写图步内联交付，不额外触发。内容含：BgmTrack name/id、关联 Scene、description（音乐定位）、prompt（生成用文字全文）、mode/loop、status 与日期。图与 md 同步写；后续 description/prompt/status 变更时同步更新该文件（段 3b 置 2 时刷新 status 行与归档状态）。
+
 #### 3b. 文件检测置 2（status=1 再次触发时，或用户报告已归档时）
 
 ```bash
 ls '13_BGM/<name>.wav'
 ```
 
-文件存在 → `SET b:BgmTrack {id:'<bgm_id>'} SET b.status = 2, b.audio_path = '13_BGM/<name>.wav'`；
+文件存在 → `SET b:BgmTrack {id:'<bgm_id>'} SET b.status = 2, b.audio_path = '13_BGM/<name>.wav'`，并同步刷新 `13_BGM/<name>.md` 的 status 行与音频归档状态（md 缺失则按段 3a-2 模板补写）；
 不存在 → 提醒用户归档路径与文件名（`13_BGM/<name>.wav`，name 即 BgmTrack.name）。
 
 ## 汇报
 
-列出：BgmTrack name/id、status 变化、**给用户的生成文字（prompt 全文，用户复制到外部工具）**、归档路径 `13_BGM/<name>.wav`（明确提示：生成后手动放入该路径，再触发本 skill 或在 dashboard 置 status=2）、关联 Scene。
+列出：BgmTrack name/id、status 变化、**给用户的生成文字（prompt 全文，用户复制到外部工具）**、归档路径 `13_BGM/<name>.wav`（明确提示：生成后手动放入该路径，再触发本 skill 或在 dashboard 置 status=2）、文档路径 `13_BGM/<name>.md`、关联 Scene。
 
 ## 参考文档
 

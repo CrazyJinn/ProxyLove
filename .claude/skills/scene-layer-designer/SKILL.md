@@ -85,7 +85,7 @@ scene 字段的值从步骤 1 查询的 Scene 节点属性读取。在 data 中�
 
 使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH>`（文生图，无参考图）：
 
-`OUTPUT_PATH = 07_场景美术/<loc_name>/<scene_name>/background.png`。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
+`OUTPUT_PATH = 07_场景美术/<loc_name>/<scene_name>/background/background.png`（与 background/prompt.md 同层——图层子目录内配对）。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 
