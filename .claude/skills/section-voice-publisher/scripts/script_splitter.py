@@ -9,8 +9,9 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已批�
             存量 v1 === 行双格式兼容；音频三型 sfx:（点状→transition）/ bed+ bed-（音床
             起止→bed_start/bed_end，文件级配对校验）/ 旧环境音两型废止报错；llm: 占位
             不产行（split 门禁拒绝含占位定稿））→ 行序列（say/narrate/transition/
-            bed_start/bed_end/label/ending；* / + 选择行整行跳过——choice 及配套 jump
-            暂不进图，建模后续设计；解析失败抛 ValueError 带行号）
+            bed_start/bed_end/label/ending/choice（连续 * / + 选择行聚合一条，去向三种：
+            = stitch 名→to / === 场景块 id→scene / END+ending 注释→leads_to_ending+kind；
+            解析失败抛 ValueError 带行号）
   align     定稿行 vs 图已有行 difflib 对齐（签名 = op+who+text）→ 保留/更新/新建/删除
   split     经 cypher_exec.py（--stdin --multi 单事务）写图 + 产出报告 JSON
 
@@ -135,13 +136,20 @@ _ENDING_LINE_RE = re.compile(r"^(.+?)\s*#\s*ending[:：]\s*(BE|TE|HE|NE)\s*$")
 _ENDING_HINT_RE = re.compile(r"#\s*ending")
 # 裸收束行 -> END：不产行（线性节尾可加，消 inklecate loose ends 警告）
 _BARE_END_RE = re.compile(r"^->\s*END\s*$")
-# 选择行（* once-only / + sticky 均可，解析不区分）：整行跳过，含行尾 tag/注释
+# 选择行（* once-only / + sticky 均可，解析不区分）：连续行聚合一条 op=choice。
+# 选项正文 + 去向 + 可选直达结局注释（-> END // ending: <kind>）
 _CHOICE_RE = re.compile(r"^[*+](\s|$)")
+_CHOICE_OPT_RE = re.compile(
+    r"^[*+]\s+(.+?)\s*->\s*(\S+)(?:\s*//\s*ending[:：]\s*(BE|TE|HE|NE)\s*)?$")
 # 注释行（ink 中 # 是 tag 非注释，注释是 //）
 _COMMENT_RE = re.compile(r"^//")
 # ── 音频行型 v3（sfx 点状 / bed± 音床起止 / llm 占位）──
 # sfx 点状音效：→ op=transition（图/投影/运行时语义不变，纯语法层）。含冒号，先于 _SAY_RE
 _SFX_RE = re.compile(r"^sfx\s*[:：]\s*(.+)$")
+# 立绘下台指令：→ op=hide（清 slots 中该角色槽——演出层，如双轨同身体角色切换/电话场景）
+_HIDE_RE = re.compile(r"^hide\s*[:：]\s*(.+)$")
+# 立绘位覆盖指令：pos: <角色名>=<left|center|right>——拆分期消费（覆盖块规则值），不产行不进图
+_POS_RE = re.compile(r"^pos\s*[:：]\s*(.+?)\s*=\s*(left|center|right)\s*$")
 # 音床起止对：id 限 [A-Za-z0-9_]+（配对/多床并行/嵌套）；起始行语义必填（AudioFly 生成提示语）
 _BED_START_RE = re.compile(r"^bed\+\s+([A-Za-z0-9_]+)(?:\s*//\s*(.+))?$")
 _BED_END_RE = re.compile(r"^bed-\s+([A-Za-z0-9_]+)$")
@@ -159,29 +167,86 @@ def parse_ink(path) -> dict:
     return parse_ink_text(Path(path).read_text(encoding="utf-8"))
 
 
+def _resolve_choice_target(dest: str, kind_tag, stitch_names: set, block_ids: set,
+                           line_no: int, raw: str) -> dict:
+    """选项去向 → option 目标字段（与章 JSON schema choiceOption 对齐）：
+    END+ending 注释 → {leads_to_ending, kind}；本文件 stitch 名 → {to}；场景块 id → {scene}。
+    消歧规则：目标名同时命中 stitch 与块 id → 报错（改名其一）；均未命中 → 报错。
+    """
+    if dest == "END":
+        if not kind_tag:
+            raise ValueError(
+                f"台词.ink 第 {line_no} 行选项 -> END 缺 ending 注释：{raw!r}"
+                "（直达结局须写 -> END // ending: <BE|TE|HE|NE>；普通跳转去向用 stitch 名/场景块 id）")
+        return {"leads_to_ending": True, "kind": kind_tag}
+    if dest in stitch_names and dest in block_ids:
+        raise ValueError(f"台词.ink 第 {line_no} 行选项去向 {dest!r} 同名 stitch 与场景块，无法消歧——改名其一：{raw!r}")
+    if dest in stitch_names:
+        return {"to": dest}
+    if dest in block_ids:
+        return {"scene": dest}
+    raise ValueError(f"台词.ink 第 {line_no} 行选项去向 {dest!r} 既非本文件 stitch 也非场景块 id：{raw!r}")
+
+
 def parse_ink_text(text: str) -> dict:
     """解析 台词.ink 文本（方言 v3，标准合法 ink）→
     {"rows": [...], "blocks": [{block, scene_name}, ...], "llm_hints": [(行号, 提示语), ...]}。
 
-    行 dict：op/who/text/kind/bed/scene_block_id。演出层（立绘选择）不在拆分期——由配音
-    判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
-    判定次序（防线，顺序敏感）：空行 → // 注释 → */+ 选择行（整行跳过——choice 不进图）
-    → === 场景块（双格式，先于 =）→ 首块前内容行报错 → 行首 # 报错 → 行首 ->
-    （裸 END 跳过 / 其余报错）→ ending 落点行（先于 narrate/say）→ 内嵌【环境音:】哨兵
-    （v3 废止，通杀旁白/说话行）→ 旁白 → 环境音独立行（v3 废止报错）→ sfx:（点状→
-    transition）→ bed+ / bed-（音床起止 + 配对状态机）→ llm:（占位不产行）→ bed 哨兵
-    （格式坏定向报错）→ = 分支（label）→ 说话行 → 兜底。sfx:/llm: 含冒号，**必须先于
-    _SAY_RE**（否则被吃成 who）。解析失败抛 ValueError（带行号与原文）。
+    行 dict：op/who/text/kind/bed/options/scene_block_id。演出层（立绘选择）不在拆分期——
+    由配音判断期选绘建 LineAudio-[:uses]->StandingIllustration 边。
+    判定次序（防线，顺序敏感）：空行 → // 注释 → */+ 选择行（收集进 pending，随下一个
+    产行 flush 为一条 op=choice）→ === 场景块（双格式，先于 =）→ 首块前内容行报错 →
+    行首 # 报错 → 行首 ->（裸 END 跳过 / 其余报错）→ ending 落点行（先于 narrate/say）→
+    内嵌【环境音:】哨兵（v3 废止，通杀旁白/说话行）→ 旁白 → 环境音独立行（v3 废止报错）
+    → sfx:（点状→transition）→ hide:（立绘下台→op=hide）→ bed+ / bed-（音床起止 +
+    配对状态机）→ llm:（占位不产行）→ bed 哨兵（格式坏定向报错）→ = 分支（label）
+    → 说话行 → 兜底。sfx:/llm:/hide: 含冒号，**必须先于 _SAY_RE**（否则被吃成
+    who）。解析失败抛 ValueError（带行号与原文）。
     """
     rows, blocks, llm_hints = [], [], []
     open_beds = {}  # bed id -> (起始行号, scene_block_id)；配对状态机（多床并行/嵌套天然支持）
     cur_block = None
-    for n, raw in enumerate(text.splitlines(), 1):
+    pending_choices = []  # [(行号, label, 去向, ending kind|None)]；遇产行 flush 为一条 choice
+    pos_overrides = {}    # {block_id: {who: pos}}——pos: 指令行收集（拆分期消费）
+    # 预扫：去向目标集合（选择可指向后文 stitch/场景块——sec00 即如此，须先收集再判定）
+    lines = text.splitlines()
+    stitch_names = set()
+    block_ids = set()
+    for raw in lines:
+        s = raw.strip()
+        if s.startswith("==="):
+            m = _SCENE_RE.match(s)
+            if m:
+                block_ids.add(m.group(1))
+        else:
+            m = _STITCH_RE.match(s)
+            if m:
+                stitch_names.add(m.group(1).strip())
+
+    def _flush_choices():
+        if not pending_choices:
+            return
+        opts = []
+        for ln, label, dest, kind_tag in pending_choices:
+            opts.append({"label": label, **_resolve_choice_target(
+                dest, kind_tag, stitch_names, block_ids, ln, lines[ln - 1])})
+        rows.append({"op": "choice", "options": opts, "scene_block_id": cur_block})
+        pending_choices.clear()
+
+    for n, raw in enumerate(lines, 1):
         line = raw.strip()
         if not line or _COMMENT_RE.match(line):
             continue  # 空行 / // 注释
         if _CHOICE_RE.match(line):
-            continue  # 选择行：整行跳过（choice 及去向 tag/注释不进图，建模后续设计）
+            m = _CHOICE_OPT_RE.match(line)
+            if not m:
+                raise ValueError(f"台词.ink 第 {n} 行选项格式错误：{raw!r}"
+                                 "（应为 * <选项文本> -> <去向>；直达结局写 -> END // ending: <BE|TE|HE|NE>）")
+            if cur_block is None:
+                raise ValueError(f"台词.ink 第 {n} 行选择出现在首个场景块标记之前：{raw!r}")
+            pending_choices.append((n, m.group(1).strip(), m.group(2), m.group(3)))
+            continue
+        _flush_choices()  # 选择块到此为止：choice 行就位后再处理当前行（保序）
         if line.startswith("==="):
             m = _SCENE_RE.match(line)
             if not m:
@@ -226,6 +291,17 @@ def parse_ink_text(text: str) -> dict:
             rows.append({"op": "transition", "text": m.group(1).strip(),
                          "scene_block_id": cur_block})
             continue
+        m = _HIDE_RE.match(line)
+        if m:
+            rows.append({"op": "hide", "who": m.group(1).strip(),
+                         "scene_block_id": cur_block})
+            continue
+        m = _POS_RE.match(line)
+        if m:
+            if cur_block is None:
+                raise ValueError(f"台词.ink 第 {n} 行 pos 指令出现在首个场景块标记之前：{raw!r}")
+            pos_overrides.setdefault(cur_block, {})[m.group(1).strip()] = m.group(2)
+            continue  # 拆分期消费（覆盖块规则 pos），不产行不进图
         m = _BED_START_RE.match(line)
         if m:
             if not m.group(2):
@@ -270,12 +346,14 @@ def parse_ink_text(text: str) -> dict:
             continue
         raise ValueError(f"台词.ink 第 {n} 行无法解析：{raw!r}"
                          "（方言规范见 chapter-dialoguer references/ink方言规范.md）")
+    _flush_choices()
     if not blocks:
         raise ValueError("台词.ink 缺场景块标记行（=== <scene_block_id> // <Scene 名>（<时段>））")
     if open_beds:
         raise ValueError("台词.ink 有未闭合音床：" +
                          "、".join(f"{bid}（第 {ln} 行）" for bid, (ln, _) in open_beds.items()))
-    return {"rows": rows, "blocks": blocks, "llm_hints": llm_hints}
+    return {"rows": rows, "blocks": blocks, "llm_hints": llm_hints,
+            "pos_overrides": pos_overrides}
 
 
 def ensure_no_placeholders(parsed: dict) -> None:
@@ -296,6 +374,15 @@ def _sig(r: dict) -> tuple:
     op = r.get("op")
     if op == "ambient":
         op = "transition"
+    if op == "choice":
+        # 图行 options 是 JSON 字符串、script 行是 list——归一为同构再序列化，防对齐断裂
+        opts = r.get("options")
+        if isinstance(opts, str):
+            try:
+                opts = json.loads(opts)
+            except (TypeError, json.JSONDecodeError):
+                opts = []
+        return ("choice", "", json.dumps(opts or [], ensure_ascii=False))
     if op == "ending":
         return ("ending", "", (r.get("kind") or "") + "——" + (r.get("text") or ""))
     if op in ("bed_start", "bed_end"):
@@ -306,7 +393,11 @@ def _sig(r: dict) -> tuple:
 
 
 def _row_name(m: dict) -> str:
-    """行正文即 name。"""
+    """行正文即 name（choice 行给选项摘要，dashboard 显示友好）。"""
+    if m.get("op") == "choice":
+        return "选择：" + "/".join(o.get("label", "") for o in m.get("options") or [])
+    if m.get("op") == "hide":
+        return "隐·" + (m.get("who") or "")
     return m.get("text") or ""
 
 
@@ -443,7 +534,8 @@ def _strictly_increasing(seq: list) -> bool:
 def _set_props(m: dict, pos) -> str:
     """行字段全量 SET 子句（update/create 用）。status：音频行（say 配音 / transition
     点状音效 / bed_start 音床起）=0 待产；其余非音频行（纯 narrate/label/ending/
-    bed_end）=11。ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）。"""
+    bed_end/choice）=11。ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；
+    options 仅 choice 行有值，其余恒 null（全量 SET 自愈脏值）。"""
     return ", ".join([
         f"l.name={_q(_row_name(m))}",
         f"l.op={_q(m['op'])}",
@@ -454,12 +546,13 @@ def _set_props(m: dict, pos) -> str:
         f"l.bed={_q(m.get('bed'))}",
         f"l.scene_block_id={_q(m.get('scene_block_id'))}",
         f"l.ambient_text={_q(m.get('ambient_text'))}",
+        f"l.options={_q(json.dumps(m['options'], ensure_ascii=False)) if m.get('options') is not None else 'null'}",
         f"l.text_sha1={_q(text_sha1(m.get('text') or ''))}",
         f"l.status={0 if m['op'] in ('say', 'transition', 'bed_start') else 11}",
     ])
 
 
-def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
+def build_actions(seq: list, plan: dict, sc_id: str, pos_overrides: dict = None) -> tuple:
     """最终序列 → (cypher 语句列表, 报告 dict)。含 keep 的 -1 恢复、块归属补写与演出字段 diff。"""
     stmts = []
     report = {"counts": {"kept": 0, "created": 0, "updated": 0, "deleted": 0, "restored": 0},
@@ -484,6 +577,9 @@ def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
                     break
                 blk_rows.append(it2["md"])
             pos_map = _block_pos_map(blk_rows)
+            # pos: 指令覆盖（块级）：显式值优先于首话序规则值（同身体顶位等演出意图）
+            for who, p in (pos_overrides or {}).get(prev_block, {}).items():
+                pos_map[who] = p
         if action == "create":
             pos = pos_map.get(m.get("who") or "") if m["op"] == "say" else None
             stmts.append(
@@ -578,7 +674,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         "MATCH (sc:SecScript {id:'" + sc_id + "'})-[p:produces]->(l:LineAudio) "
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
-        "l.ambient_text AS ambient_text, "
+        "l.ambient_text AS ambient_text, l.options AS options, "
         "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
         "l.ambient_track AS ambient_track, l.text_sha1 AS text_sha1, p.order AS ord "
         "ORDER BY p.order"
@@ -586,7 +682,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
 
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
-    stmts, report = build_actions(seq, plan, sc_id)
+    stmts, report = build_actions(seq, plan, sc_id, pos_overrides=parsed.get("pos_overrides"))
     # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）。
     # 图上已有同 block 映射为权威（人工/上游落的图 Scene 名），ink 块头注记仅作新块初值——
     # 剧作化注记（如「床前」）≠图名（「床铺区」）时若盲写会让下游 depicts 选绘静默降级。

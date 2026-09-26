@@ -2,7 +2,7 @@
 name: char-stand-designer
 description: |
   推进 StandingIllustration 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  入参 stand_id——只推进指定的单个立绘变体，由 plot-design 按 depicts 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 description 变体氛围），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量。
+  入参 stand_id——只推进指定的单个立绘变体，由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 description 变体氛围），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量。
 argument-hint: <stand_id>
 arguments:
   - stand_id
@@ -15,7 +15,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 从 IllusDesign 拓展出不同表情、动作的单张立绘，表情和动作参考 LanguageStyle 生成。
 
-**按需单变体模式**（stand_id）：只推进指定的那一个 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 depicts 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `description` 变体氛围）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
+**按需单变体模式**（stand_id）：只推进指定的那一个 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `description` 变体氛围）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
 
 ## 参数
 

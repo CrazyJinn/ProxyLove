@@ -288,7 +288,8 @@ def collect_approved_audio_keys(rows: list) -> list:
 def publish_runtime(root, keys: list, runtime_voices, runtime_sfx=None, ext: str = "wav") -> dict:
     """已批音频键清单 → 母带拷运行时（**发布期动作**，chapter-publisher 调用）：
 
-    - amb- 前缀 → <runtime_sfx>/<key>.<ext>（默认 99_game/assets/sfx）
+    - amb-/bed- 前缀 → <runtime_sfx>/<key>.<ext>（默认 99_game/assets/sfx；与
+      manifest_builder.collect_sfx 的 ambient_track 口径一致——bed 音床也走 sfx 段）
     - 其余（voice key）→ <runtime_voices>/<key>.<ext>（默认 99_game/assets/voices）
     源一律 voice_master_path（15_声音/<stem>/<block>/，key 单一权威）。
     幂等：按 mtime+size 跳过未变文件；母带缺失计 missing 不中断（status=11 却无
@@ -305,7 +306,7 @@ def publish_runtime(root, keys: list, runtime_voices, runtime_sfx=None, ext: str
     counts = {"copied": 0, "skipped": 0, "missing": 0,
               "copied_sfx": 0, "skipped_sfx": 0, "missing_sfx": 0}
     for key in keys:
-        is_amb = key.startswith("amb-")
+        is_amb = key.startswith("amb-") or key.startswith("bed-")
         if is_amb and sfx is None:
             continue
         try:

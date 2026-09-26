@@ -90,7 +90,7 @@ python -m pytest tests/test_cascade.py::test_xxx -v   # 单个用例
 
 推进入口分两级（生成 `vscode://` deeplink 唤起 `plot-design` agent，见 [launch_button.py](ui/components/launch_button.py)）：
 - 章行「推进剧情创作」= **章节全量**（structurer 分节 / 结构审 / 全量循环推进，到全章就绪即止）。**发布（chapter-publisher）由用户直接触发，不在 plot-design 职责内**。
-- 各节「推进此节」（`ch.status==11` 且该节产物链未全就绪、且无待审项时出现）= **单节聚焦**（plot-design 按产物链当前段推进该节的提纲/定稿/拆分选绘配音；`SecScript=11` 时推该节关联的 depicts 立绘——行级引用为 `LineAudio-[:uses]->` 选绘边，选绘在 section-voice-publisher 配音判断期完成，不碰其他节、不发布）。
+- 各节「推进此节」（`ch.status==11` 且该节产物链未全就绪、且无待审项时出现）= **单节聚焦**（plot-design 按产物链当前段推进该节的提纲/定稿/拆分选绘配音；`SecScript=11` 时推该节台词 uses 边（`LineAudio-[:uses]->`，选绘在 section-voice-publisher 配音判断期建立）可达的立绘——depicts 枚举中未被本节台词引用的仅提示不推进（Scene 多节共享，多为后续节的活），不碰其他节、不做后续节的事情、不发布）。
 
 ## 叙事审批（写 Cypher 进库）
 

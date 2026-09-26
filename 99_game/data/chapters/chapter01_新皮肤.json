@@ -1,0 +1,612 @@
+{
+  "meta": {
+    "chapter": 1,
+    "title": "新皮肤",
+    "requires": {
+      "characters": [
+        "陆择",
+        "陈念",
+        "陈默"
+      ],
+      "scenes": [
+        "长江大桥-护栏段",
+        "八楼出租屋-床铺区",
+        "八楼出租屋-进门处",
+        "八楼出租屋-厨房餐区"
+      ],
+      "portraits": [
+        "陆择-商务休闲着装-错愕-QZYCCE55NY",
+        "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+        "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+        "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+        "陈念-探望休闲着装-絮叨-Qe7ZoIAMmv",
+        "陈念-探望休闲着装-释然-Qe7ZoIAMmy",
+        "陆择-商务休闲着装-慵懒-PJajqyM6s4",
+        "陆择-商务休闲着装-玩味-PJajqyM6s5",
+        "陆择-商务休闲着装-淡漠-QeR7wDvsfo",
+        "陈默-居家颓废着装-敛笑-QZYDLMIlJw",
+        "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+        "陈默-居家颓废着装-局促-QZd9MZHuUq",
+        "陈默-居家颓废着装-赧然-QZdA7KqOBs"
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "s00_bridge",
+      "scene": "长江大桥-护栏段",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "bed_start",
+          "bed": "river",
+          "track": "bed-chapter01_新皮肤-s00_bridge-QZXoBBWJMG"
+        },
+        {
+          "op": "narrate",
+          "text": "一片深邃的黑暗。"
+        },
+        {
+          "op": "narrate",
+          "text": "耳边是流水声，混杂了些车来车往的喧嚣。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "river"
+        },
+        {
+          "op": "narrate",
+          "text": "冷风灌进领口，陈默打了个哆嗦。"
+        },
+        {
+          "op": "narrate",
+          "text": "黑暗逐渐散开，他环视四周，发现自己正站在一座桥的护栏外侧，再往前一步就要落入水中。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-错愕-QZYCCE55NY",
+          "pos": "left",
+          "text": "这他妈给我干哪来了？不会是在做梦吧？",
+          "voice": "陆择-chapter01_新皮肤-s00_bridge-QZXoBBWJMM"
+        },
+        {
+          "op": "narrate",
+          "text": "他看了看眼前湍急的流水，先冒上来的不是恐惧，而是个荒唐的念头"
+        },
+        {
+          "op": "choice",
+          "options": [
+            {
+              "label": "跳下去",
+              "to": "jump"
+            },
+            {
+              "label": "再想想",
+              "to": "wait_call"
+            }
+          ]
+        },
+        {
+          "op": "label",
+          "name": "jump"
+        },
+        {
+          "op": "hide",
+          "who": "陆择"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMP"
+        },
+        {
+          "op": "narrate",
+          "text": "噗通一声，水面泛起一圈涟漪。"
+        },
+        {
+          "op": "narrate",
+          "text": "第二天，桥面摆满了陌生人自发买来的奶茶和外卖。"
+        },
+        {
+          "op": "ending",
+          "kind": "BE",
+          "title": "仿佛是对他无声的祭奠。"
+        },
+        {
+          "op": "label",
+          "name": "wait_call"
+        },
+        {
+          "op": "narrate",
+          "text": "他翻过栏杆，回到桥面上。"
+        },
+        {
+          "op": "narrate",
+          "text": "有一些吃力，陆择看了看手，意识到这已经不是自己的身体了。"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMW"
+        },
+        {
+          "op": "narrate",
+          "text": "屏幕上亮着两个字：姐姐。"
+        },
+        {
+          "op": "narrate",
+          "text": "他盯着看了两秒，接通了电话。"
+        },
+        {
+          "op": "hide",
+          "who": "陆择"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+          "pos": "right",
+          "text": "喂？！默默？是你吧？说话！",
+          "voice": "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMZ"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+          "pos": "left",
+          "text": "嗯……",
+          "voice": "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMa"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+          "pos": "right",
+          "text": "你大半夜的在哪儿呢？刚才你给我的留言是什么意思，你老实交代，是不是出什么事了？",
+          "voice": "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMb"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+          "pos": "left",
+          "text": "我……没事，姐。",
+          "voice": "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMc"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "right",
+          "text": "没事才怪！声音都不对。明天你给我在家待着，我过去看你，听见没有！",
+          "voice": "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMd"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-絮叨-Qe7ZoIAMmv",
+          "pos": "right",
+          "text": "默默？",
+          "voice": "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMe"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+          "pos": "left",
+          "text": "在。",
+          "voice": "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMf"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-释然-Qe7ZoIAMmy",
+          "pos": "right",
+          "text": "你要照顾好自己，有事就和姐说，不要把事情全兜自己心里。",
+          "voice": "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMg"
+        },
+        {
+          "op": "narrate",
+          "text": "他「嗯」了一声。那头也没再说什么，沉默了两秒，挂断了电话。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-慵懒-PJajqyM6s4",
+          "pos": "left",
+          "text": "我这是穿越了么。",
+          "voice": "陆择-chapter01_新皮肤-s00_bridge-QZXoBBWJMi"
+        },
+        {
+          "op": "narrate",
+          "text": "他从口袋掏出手机，从外卖软件里面找到了地址。"
+        },
+        {
+          "op": "narrate",
+          "text": "走出十几米，他回头看了一眼那截护栏。"
+        }
+      ],
+      "bgm": {
+        "track": "隔岸",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s00_apartment",
+      "scene": "八楼出租屋-床铺区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "出租屋不大，一眼看得完：一张床，一台电脑，墙角堆着外卖盒。"
+        },
+        {
+          "op": "narrate",
+          "text": "他坐在床沿，翻手机。"
+        },
+        {
+          "op": "narrate",
+          "text": "转账记录翻到底，全是同一个方向。"
+        },
+        {
+          "op": "narrate",
+          "text": "几百的，一千的，最大一笔一万。深夜转的。"
+        },
+        {
+          "op": "narrate",
+          "text": "加起来，六万六千六百六十六。"
+        },
+        {
+          "op": "narrate",
+          "text": "对方一条消息都没回过。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "left",
+          "text": "哇，这哥们还真是个情种啊。",
+          "voice": "陆择-chapter01_新皮肤-s00_apartment-QZXoBBWJMs"
+        },
+        {
+          "op": "narrate",
+          "text": "他停了几秒，没笑出来。"
+        },
+        {
+          "op": "narrate",
+          "text": "他的手指停在那个头像上，按下了删除。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-淡漠-QeR7wDvsfo",
+          "pos": "left",
+          "text": "舔狗不得house。",
+          "voice": "陆择-chapter01_新皮肤-s00_apartment-QZXoBBWJMv"
+        }
+      ]
+    },
+    {
+      "id": "s01_arrive",
+      "scene": "八楼出租屋-进门处",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s01_arrive-QcwD5QbQxs"
+        },
+        {
+          "op": "narrate",
+          "text": "第二天上午，门被敲响了。敲门的节奏又急又密，透着一股不敲门缝里看一眼绝不罢休的架势。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择开门。门外站着个女人，和陈默一个模子的眉眼，手里拎着两大袋菜。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+          "pos": "left",
+          "text": "打你电话怎么不接！",
+          "voice": "陈念-chapter01_新皮肤-s01_arrive-QcwD5QbQxv"
+        },
+        {
+          "op": "narrate",
+          "text": "她挤进门，先绕着他转了一圈，上下打量。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-絮叨-Qe7ZoIAMmv",
+          "pos": "left",
+          "text": "瘦了。气色倒是好点了？眼睛怎么还是这样，又熬夜了吧——",
+          "voice": "陈念-chapter01_新皮肤-s01_arrive-QcwD5QbQxx"
+        },
+        {
+          "op": "narrate",
+          "text": "她一边说一边往厨房走，拉开冰箱门。"
+        }
+      ]
+    },
+    {
+      "id": "s01_fridge",
+      "scene": "八楼出租屋-厨房餐区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "冰箱空得能跑马。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "left",
+          "text": "陈默！你冰箱里连根葱都没有！你天天吃什么？外卖？",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy0"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "left",
+          "text": "外卖那东西能吃吗，我跟你讲我同事的侄子，天天外卖，二十六岁，体检就查出了脂肪肝。",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy1"
+        },
+        {
+          "op": "narrate",
+          "text": "接下来的一个小时，陆择见识了什么叫话痨式唠叨。"
+        },
+        {
+          "op": "narrate",
+          "text": "冰箱被塞得满满的，两大袋饺子，两板鸡蛋，一把小葱一捆青菜，冻抽屉里码着两盒烧麦、两把挂面。"
+        },
+        {
+          "op": "narrate",
+          "text": "排骨汤炖上，一大锅，玉米两段，胡萝卜一根，她边切边数落。燃气阀检查了三遍，检查完还把软管拎起来看了看接口。抹布把灶台擦出了原本的颜色。"
+        },
+        {
+          "op": "narrate",
+          "text": "嘴上没有一刻停：几点睡的，多久没体检，被子晒了没有，以及……那个女人。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-敛笑-QZYDLMIlJw",
+          "pos": "right",
+          "text": "以后不会再和她联系了。",
+          "voice": "陈默-chapter01_新皮肤-s01_fridge-QcwD5QbQy6"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "left",
+          "text": "最好没有，我就不知道那种人怎么就把你迷成这样。",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy7"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "left",
+          "text": "我跟你说，处了两年，她进过咱家一次门没有？过年妈喊她来吃饭，她说票不好买——大年初六的票，不好买？",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy8"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "left",
+          "text": "你自己看看，那两年你一件外套穿两个冬天，她倒好，包换得比手机壳还勤。图什么？图你会转钱！",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy9"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+          "pos": "left",
+          "text": "你从小就这样，受了委屈自己憋着。小时候你爸罚你，你一声不吭站屋外，站到腿麻也不哭，还得是我去把你拉回来。",
+          "voice": "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQyA"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s01_fridge-QcwD5QbQyB"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择大多时候在听。偶尔应一声。他的渣男话术一句都没拿出来——对这屋里的人，他不想用，也舍不得用。"
+        }
+      ],
+      "bgm": {
+        "track": "家常课",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s01_talk",
+      "scene": "八楼出租屋-厨房餐区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "趁她炖汤，他问了一句。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-局促-QZd9MZHuUq",
+          "pos": "left",
+          "text": "姐，我以前……怎么样？",
+          "voice": "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyE"
+        },
+        {
+          "op": "narrate",
+          "text": "问出口的时候他自己都听出了迟疑。他在替陈默打听陈默。"
+        },
+        {
+          "op": "narrate",
+          "text": "陈念的话匣子一下子打开了。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "right",
+          "text": "你以前？你以前拼命代练打单子，一睁眼就是接单，饭都不好好吃——姐喊你吃饭，你说「打完这把」，结果呢？饭热了三遍都不来吃！",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyH"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "right",
+          "text": "赚了钱干什么？全给了女人，自己啥都不留。",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyI"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+          "pos": "right",
+          "text": "还天天熬夜，黑白颠倒。你那破游戏，啥时候才是个头。",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyJ"
+        },
+        {
+          "op": "narrate",
+          "text": "她骂着骂着，声音就红了。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+          "pos": "right",
+          "text": "你是不是傻？",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyL"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择看着她的背影，忽然很羡慕，他陆择习惯了孤身一人，辞世的时候，怕是连个来收尸的人都没有。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+          "pos": "left",
+          "text": "姐。",
+          "voice": "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyN"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+          "pos": "right",
+          "text": "啊？",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyO"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-赧然-QZdA7KqOBs",
+          "pos": "left",
+          "text": "我饿了。",
+          "voice": "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyP"
+        },
+        {
+          "op": "narrate",
+          "text": "她头也不回，手里的刀重新动起来，切得比刚才快。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+          "pos": "right",
+          "text": "……等下多给你盛点。",
+          "voice": "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyR"
+        }
+      ],
+      "bgm": {
+        "track": "家常课",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s01_leave",
+      "scene": "八楼出租屋-进门处",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "临走，陈念检查完第三遍燃气，收拾碗的时候，往碗底压了一沓现金，动作快得像做贼。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-局促-QZd9MZHuUq",
+          "pos": "left",
+          "text": "姐，这——",
+          "voice": "陈默-chapter01_新皮肤-s01_leave-QcwD5QbQyT"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-释然-Qe7ZoIAMmy",
+          "pos": "right",
+          "text": "闭嘴。",
+          "voice": "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyU"
+        },
+        {
+          "op": "narrate",
+          "text": "她拎起包，站在门口换了副表情。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-释然-Qe7ZoIAMmy",
+          "pos": "right",
+          "text": "汤明早就喝掉。冰箱不许再空着。要好好生活，爱惜自己。",
+          "voice": "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyW"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+          "pos": "left",
+          "text": "知道了。",
+          "voice": "陈默-chapter01_新皮肤-s01_leave-QcwD5QbQyX"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+          "pos": "right",
+          "text": "知道什么知道，人首先要自爱！",
+          "voice": "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyY"
+        },
+        {
+          "op": "narrate",
+          "text": "她一边换鞋一边回头。"
+        },
+        {
+          "op": "say",
+          "who": "陈念",
+          "portrait": "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+          "pos": "right",
+          "text": "听到没有？",
+          "voice": "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQya"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择答应了一声。脚步声下了半层，停了停，才接着往下去。"
+        },
+        {
+          "op": "narrate",
+          "text": "屋里一下子静了。"
+        }
+      ]
+    }
+  ]
+}

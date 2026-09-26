@@ -7,6 +7,7 @@
 - 合并产物通过 schema 校验
 - scene-block id 重复时报错（防御 structurer 预分配失败）
 - chapter-map：仅 bgm 段注入 scene-block（portrait 已在投影期沿 uses 解析）
+- --sections 部分发布：_parse_section_nos 解析 / _in_sections 过滤判定（图查询段不连库）
 
 fetch_chapter / fetch_uses_portrait_keys（图查询 + 前置校验）不连库，端到端验证。
 """
@@ -15,7 +16,12 @@ from pathlib import Path
 
 import pytest
 
-from merge_sections_to_chapter import graph_lines_to_doc, merge
+from merge_sections_to_chapter import (
+    _in_sections,
+    _parse_section_nos,
+    graph_lines_to_doc,
+    merge,
+)
 from validate_chapter import validate_chapter
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,11 +29,12 @@ SCHEMA = str(ROOT / "data" / "剧本.schema.json")
 
 
 def _line(op, text=None, *, who=None, pos=None, kind=None, bed=None,
-          scene_block_id=None, voice_key=None, lid="N1", ambient_track=None):
+          scene_block_id=None, voice_key=None, lid="N1", ambient_track=None, options=None):
     """图行 dict（fetch_chapter 查询返回形状——portrait 已不在 RETURN 列）。"""
     return {"lid": lid, "op": op, "who": who, "pos": pos,
             "text": text, "kind": kind, "bed": bed, "scene_block_id": scene_block_id,
-            "voice_key": voice_key, "ambient_track": ambient_track, "line_status": 11}
+            "voice_key": voice_key, "ambient_track": ambient_track, "options": options,
+            "line_status": 11}
 
 
 def _blocks(*pairs):
@@ -227,3 +234,75 @@ def test_merge_without_chapter_map_keeps_pure_concat():
     assert doc["scenes"][0]["lines"][0]["portrait"] == key
     assert doc["meta"]["requires"]["portraits"] == [key]
     assert "bgm" not in doc["scenes"][0]
+
+
+# ── choice 选择行投影（图 options JSON 字符串 → 章 JSON options 数组） ──
+
+def test_choice_line_projects_options_list(tmp_path):
+    """choice 行：options JSON 串解析投影为数组，三种去向原样透传，产物过 schema。"""
+    opts = [{"label": "跳下去", "to": "jump"},
+            {"label": "换个地方", "scene": "s01_arrive"},
+            {"label": "不看了", "leads_to_ending": True, "kind": "BE"}]
+    lines = [
+        _line("narrate", "桥上。", scene_block_id="s00", lid="N1"),
+        _line("choice", options=json.dumps(opts, ensure_ascii=False),
+              scene_block_id="s00", lid="N2"),
+        _line("label", "jump", scene_block_id="s00", lid="N3"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节")
+    ls = doc["scenes"][0]["lines"]
+    assert ls[1] == {"op": "choice", "options": opts}
+    assert ls[2] == {"op": "label", "name": "jump"}
+    _dump_validate(doc, tmp_path)
+
+
+def test_choice_line_bad_options_skipped():
+    """options 缺失/坏 JSON → 行跳过不崩（拆分器保证必有，防御仅兜异常数据）。"""
+    lines = [
+        _line("choice", scene_block_id="s00", lid="N1"),                       # 缺 options
+        _line("choice", options="{broken", scene_block_id="s00", lid="N2"),    # 坏 JSON
+        _line("narrate", "旁白仍投影。", scene_block_id="s00", lid="N3"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "室内")), {}, 0, "节")
+    assert doc["scenes"][0]["lines"] == [{"op": "narrate", "text": "旁白仍投影。"}]
+
+
+def test_hide_line_projects_clear_slot(tmp_path):
+    """hide 行（立绘下台）→ {"op":"hide","who"}（运行时清槽）；缺 who 跳过；产物过 schema。"""
+    lines = [
+        _line("say", "桥上独白。", who="陆择", scene_block_id="s00", lid="N1"),
+        _line("hide", who="陆择", scene_block_id="s00", lid="N2"),
+        _line("say", "嗯……", who="陈默", scene_block_id="s00", lid="N3"),
+        _line("hide", scene_block_id="s00", lid="N4"),  # 缺 who：静默跳过
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节")
+    assert doc["scenes"][0]["lines"][1] == {"op": "hide", "who": "陆择"}
+    assert len(doc["scenes"][0]["lines"]) == 3  # 缺 who 的 hide 未投影
+    _dump_validate(doc, tmp_path)
+
+
+# ── --sections 部分发布（纯函数段；图查询过滤不连库，端到端验证） ──
+
+def test_parse_section_nos_accepts_ints_and_padding():
+    assert _parse_section_nos("0,1") == {0, 1}
+    assert _parse_section_nos(" 2 , 03 ") == {2, 3}   # 容错空白 / 前导零
+
+
+def test_parse_section_nos_rejects_garbage_and_empty():
+    with pytest.raises(ValueError):
+        _parse_section_nos("abc")
+    with pytest.raises(ValueError):
+        _parse_section_nos(" , ")
+
+
+def test_in_sections_none_wanted_means_all():
+    assert _in_sections(0, None) and _in_sections(9, None)
+    assert _in_sections(None, None)  # 全章模式不过滤，保持原查询行为
+
+
+def test_in_sections_filters_by_wanted_set():
+    wanted = {0, 1}
+    assert _in_sections(0, wanted) and _in_sections("1", wanted)
+    assert not _in_sections(4, wanted)
+    assert not _in_sections(None, wanted)
+    assert not _in_sections("x", wanted)  # 非数节号不选，不抛

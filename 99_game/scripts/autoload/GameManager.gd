@@ -14,6 +14,17 @@ func _ready() -> void:
 		Engine.register_singleton("Manifest", m)
 	_register_inputs()
 	_apply_default_font()
+	_apply_env_override()
+
+func _apply_env_override() -> void:
+	# 调试入口：环境变量覆盖起始章/段（headless 冒烟、桌面直进某章，免改代码/点 UI）。
+	# 例：PROXYLOVE_CHAPTER=chapter01_新皮肤 godot --headless res://scenes/Game.tscn
+	var ch := OS.get_environment("PROXYLOVE_CHAPTER")
+	if ch != "":
+		start_chapter = ch
+	var sc := OS.get_environment("PROXYLOVE_SCENE")
+	if sc != "":
+		start_scene = sc
 
 func _register_inputs() -> void:
 	_add_action("advance", [KEY_SPACE, KEY_ENTER], [MOUSE_BUTTON_LEFT])

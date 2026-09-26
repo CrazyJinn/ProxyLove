@@ -232,7 +232,7 @@ def get_script_lines(sc_id):
                    pst.variant_label AS portrait, l.pos AS pos, l.text AS text,
                    l.bed AS bed, l.kind AS kind, l.prompt AS prompt,
                    l.tts_text AS tts_text, l.scene_block_id AS scene_block_id,
-                   l.ambient_text AS ambient_text,
+                   l.ambient_text AS ambient_text, l.options AS options,
                    l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.emotion AS emotion,
                    l.clone_mode AS clone_mode,
                    l.attempts AS attempts, l.text_sha1 AS text_sha1,

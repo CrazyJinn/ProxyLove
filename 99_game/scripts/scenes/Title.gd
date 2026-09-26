@@ -4,6 +4,7 @@ extends Control
 var _bg: ColorRect
 var _center: CenterContainer
 var _vbox: VBoxContainer
+var _chapter: OptionButton
 var _start: Button
 var _quit: Button
 
@@ -22,11 +23,21 @@ func _ready() -> void:
 	title.add_theme_font_size_override("font_size", 72)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_vbox.add_child(title)
+	# 章节选择：stem 清单读 chapter_packs.json 键（发布工具维护，随章自动增长）；
+	# 排序后默认选首章，「开始游戏」从所选章进入
+	_chapter = OptionButton.new()
+	for stem in _chapter_stems():
+		_chapter.add_item(stem)
+	if _chapter.item_count > 0:
+		_chapter.select(0)
+	_chapter.custom_minimum_size = Vector2(160, 40)
+	_chapter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_vbox.add_child(_chapter)
 	_start = Button.new()
 	_start.text = "开始游戏"
 	_start.custom_minimum_size = Vector2(160, 50)
 	_start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_start.pressed.connect(GameManager.start_new_game)
+	_start.pressed.connect(_on_start_pressed)
 	_vbox.add_child(_start)
 	_quit = Button.new()
 	_quit.text = "退出"
@@ -52,6 +63,23 @@ func _apply_layout() -> void:
 	_bg.size = s
 	_center.size = s
 	_log_layout("apply")
+
+func _chapter_stems() -> Array:
+	"""已发布章 stem 清单（chapter_packs.json 键，章号排序）；读不到时退回默认章。"""
+	var txt := FileAccess.get_file_as_string("res://data/chapter_packs.json")
+	if txt != "":
+		var packs = JSON.parse_string(txt)
+		if packs is Dictionary and not packs.is_empty():
+			var stems := (packs.keys() as Array).duplicate()
+			stems.sort()  # chapterNN_ 前缀字典序 = 章号序
+			return stems
+	return [GameManager.start_chapter]
+
+func _on_start_pressed() -> void:
+	if _chapter.item_count > 0:
+		GameManager.start_new_game(_chapter.get_item_text(_chapter.selected))
+	else:
+		GameManager.start_new_game()
 
 func _log_layout(tag: String) -> void:
 	var vp: Vector2 = Vector2.ZERO

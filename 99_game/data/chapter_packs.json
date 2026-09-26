@@ -83,5 +83,77 @@
       "陆择-chapter00_序章-s02_夹缝-PxSUKe2h89",
       "伊芙-chapter00_序章-s02_夹缝-PxSUKe2h8A"
     ]
+  },
+  "chapter01_新皮肤": {
+    "bgm": [
+      "家常课",
+      "隔岸"
+    ],
+    "portraits": [
+      "陆择-商务休闲着装-错愕-QZYCCE55NY",
+      "陈念-探望休闲着装-急嗔-Qe7ZoIAMmu",
+      "陈默-居家颓废着装-讷讷-QZYCZx0RPs",
+      "陈念-探望休闲着装-数落-Qe7ZoIAMmw",
+      "陈念-探望休闲着装-絮叨-Qe7ZoIAMmv",
+      "陈念-探望休闲着装-释然-Qe7ZoIAMmy",
+      "陆择-商务休闲着装-慵懒-PJajqyM6s4",
+      "陆择-商务休闲着装-玩味-PJajqyM6s5",
+      "陆择-商务休闲着装-淡漠-QeR7wDvsfo",
+      "陈默-居家颓废着装-敛笑-QZYDLMIlJw",
+      "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
+      "陈默-居家颓废着装-局促-QZd9MZHuUq",
+      "陈默-居家颓废着装-赧然-QZdA7KqOBs"
+    ],
+    "scenes": [
+      "长江大桥-护栏段",
+      "八楼出租屋-床铺区",
+      "八楼出租屋-进门处",
+      "八楼出租屋-厨房餐区"
+    ],
+    "sfx": [
+      "amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMP",
+      "amb-chapter01_新皮肤-s00_bridge-QZXoBBWJMW",
+      "amb-chapter01_新皮肤-s01_arrive-QcwD5QbQxs",
+      "amb-chapter01_新皮肤-s01_fridge-QcwD5QbQyB",
+      "bed-chapter01_新皮肤-s00_bridge-QZXoBBWJMG"
+    ],
+    "voices": [
+      "陆择-chapter01_新皮肤-s00_bridge-QZXoBBWJMM",
+      "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMZ",
+      "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMa",
+      "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMb",
+      "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMc",
+      "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMd",
+      "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMe",
+      "陈默-chapter01_新皮肤-s00_bridge-QZXoBBWJMf",
+      "陈念-chapter01_新皮肤-s00_bridge-QZXoBBWJMg",
+      "陆择-chapter01_新皮肤-s00_bridge-QZXoBBWJMi",
+      "陆择-chapter01_新皮肤-s00_apartment-QZXoBBWJMs",
+      "陆择-chapter01_新皮肤-s00_apartment-QZXoBBWJMv",
+      "陈念-chapter01_新皮肤-s01_arrive-QcwD5QbQxv",
+      "陈念-chapter01_新皮肤-s01_arrive-QcwD5QbQxx",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy0",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy1",
+      "陈默-chapter01_新皮肤-s01_fridge-QcwD5QbQy6",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy7",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy8",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQy9",
+      "陈念-chapter01_新皮肤-s01_fridge-QcwD5QbQyA",
+      "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyE",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyH",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyI",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyJ",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyL",
+      "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyN",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyO",
+      "陈默-chapter01_新皮肤-s01_talk-QcwD5QbQyP",
+      "陈念-chapter01_新皮肤-s01_talk-QcwD5QbQyR",
+      "陈默-chapter01_新皮肤-s01_leave-QcwD5QbQyT",
+      "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyU",
+      "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyW",
+      "陈默-chapter01_新皮肤-s01_leave-QcwD5QbQyX",
+      "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQyY",
+      "陈念-chapter01_新皮肤-s01_leave-QcwD5QbQya"
+    ]
   }
 }

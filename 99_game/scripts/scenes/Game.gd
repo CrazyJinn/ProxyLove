@@ -198,16 +198,24 @@ func _skip() -> void:
 	# 每帧推一句（异步）：transition 行的 await 会挂起协程，若同帧同步循环推进
 	# 会被 _advancing 挡住而 _line_idx 不动 → 同帧无限空转死循环——必须让帧流动。
 	# 快进期间解释器 skipping=true（_process 每帧同步），transition 行不播不等直通。
+	if _skip_active:
+		return  # 防重入：S 键 / 对话框 skip 按钮并发会叠协程
 	AudioManager.stop_voice()  # skip 立即静音，不等下一句自覆盖
 	_skip_active = true
 	var start := ScriptInterpreter.current_scene_idx()
-	while not _ended and not _choice.visible and not _menu.visible:
+	# is_inside_tree()：协程 await 恢复时本节点可能已被摘树（菜单回标题等不设 _ended 的
+	# 切场景路径）——循环就此退出，不推进已不渲染的场景
+	while not _ended and is_inside_tree() and not _choice.visible and not _menu.visible:
 		if ScriptInterpreter.current_scene_idx() != start:
 			break  # 已跨段，停在新段首句
 		if _dialogue.is_typing():
 			_dialogue.finish_typing()
 		else:
 			ScriptInterpreter.advance()
+		if _ended or not is_inside_tree():
+			break  # advance 同步链内已章末/ending 切场景（本节点 queue_free/摘树）——
+			# 协程就此终止。不得再 await：挂到帧末节点销毁后协程会在已亡节点上恢复，
+			# get_tree() 报 "data.tree is null"（Game.gd 老 211 行报错的根因）。
 		await get_tree().process_frame
 	_skip_active = false
 

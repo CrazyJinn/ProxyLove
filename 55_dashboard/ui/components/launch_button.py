@@ -86,14 +86,15 @@ def build_section_deeplink(sec_id, sec_label=None):
     """生成「推进此节」的 deeplink，调 plot-design agent 单节聚焦模式。
 
     与章级入口互补：章级负责 structurer 分节 / 结构审 / 全章发布 / 全量推进；
-    节级只推进单节的产物链（提纲/定稿/配音）与该节关联立绘，不碰其他节、不发布。
+    节级只推进单节的产物链（提纲/定稿/配音）与该节台词 uses 边引用的立绘，
+    不碰其他节、不做后续节的事情、不发布。
     """
     name = sec_label or sec_id
     prompt = (
         f"使用 plot-design agent 推进小节 {name}（section id={sec_id}）的剧情创作。"
-        f"单节聚焦：按该节产物链当前进度推进提纲/定稿/拆分选绘配音，定稿已批(SecScript=11)则推进该节关联立绘"
-        f"（depicts 引用；选绘 uses 边由配音判断期建立）；"
-        f"不碰其他节、不发布。"
+        f"单节聚焦：按该节产物链当前进度推进提纲/定稿/拆分选绘配音，定稿已批(SecScript=11)则推进该节台词"
+        f"uses 边引用的立绘（选绘 uses 边由配音判断期建立；depicts 枚举中未被本节台词引用的仅提示不推进）；"
+        f"不碰其他节、不做后续节的事情、不发布。"
     )
     return f"{VSCODE_HANDLER}?prompt={urllib.parse.quote(prompt)}"
 

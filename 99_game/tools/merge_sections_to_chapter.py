@@ -12,6 +12,8 @@ chapter-publisher 在全章各节产物就绪时调用：图（SecScript-produce
 - scenes：按节序拼接各 scene-block（scene_block_id 由 structurer 预分配、章内唯一，纯 concat）。
 - BGM 注入：--chapter-map 的 bgm 段（Scene-has_bgm->BgmTrack，status=2 才进 map）写入 scene-block.bgm。
 - 合并后校验 scene-block id 章内唯一（防御性）。
+- 部分发布：--sections 0,1 仅合并指定节（section_no 逗号分隔）——章内其余节未就绪时
+  先发已就绪节；前置校验仅针对所选节。全量重发覆盖同 stem 文件（幂等）。
 
 前置校验：各节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11（不满足报缺口并退出）。
 choice/jump 行暂不进图（建模后续设计），投影自然不含分支跳转行。
@@ -110,6 +112,23 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
             cur.setdefault("lines", []).append({"op": "bed_end", "bed": l.get("bed") or ""})
         elif op == "label":
             cur.setdefault("lines", []).append({"op": "label", "name": l.get("text") or ""})
+        elif op == "hide":
+            # 立绘下台（演出层）：清 slots 中该角色槽——双轨同身体切换/电话场景等。
+            # who 缺失静默跳过（拆分器保证 hide 行必有 who）。
+            if l.get("who"):
+                cur.setdefault("lines", []).append({"op": "hide", "who": l["who"]})
+        elif op == "choice":
+            # 选择行（图 options 是 JSON 字符串）→ {"op":"choice","options":[...]}（运行时阻塞
+            # 弹选项，choose 沿 to/scene/leads_to_ending 跳转）。坏 JSON/缺失静默跳过——
+            # 拆分器保证 choice 行必有合法 options，防御仅兜异常数据。
+            opts = l.get("options")
+            if isinstance(opts, str):
+                try:
+                    opts = json.loads(opts)
+                except json.JSONDecodeError:
+                    opts = None
+            if isinstance(opts, list) and opts:
+                cur.setdefault("lines", []).append({"op": "choice", "options": opts})
         elif op == "ending":
             end = {"op": "ending", "kind": l.get("kind") or "NE"}
             if l.get("text"):
@@ -121,25 +140,56 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     return {"meta": meta, "scenes": scenes}
 
 
-def fetch_uses_portrait_keys(chapter_id: str) -> tuple:
+def _parse_section_nos(spec: str) -> set:
+    """'0,1' → {0,1}（容错空白/小数/str 数字）；非法或空集报 ValueError。"""
+    out = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            out.add(int(float(part)))
+        except ValueError:
+            raise ValueError(f"--sections 含非法节号: {part!r}（应为逗号分隔 section_no，如 0,1）")
+    if not out:
+        raise ValueError("--sections 不能为空（如需全章发布请省略该参数）")
+    return out
+
+
+def _in_sections(no, wanted) -> bool:
+    """行/节的 section_no 是否在所选集（None 时全选；no 缺失/非数不选）。"""
+    if wanted is None:
+        return True
+    if no is None:
+        return False
+    try:
+        return int(no) in wanted
+    except (TypeError, ValueError):
+        return False
+
+
+def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
     """沿 uses 边解析全章 say 行立绘整键 → ({行id: 整键}, [缺边行id])。
 
     与 scene_times 同款的二次查询模式（主查询不内联 OPTIONAL uses 边——防行乘积破坏
     逐行投影）。costume 经 stand 自身 IllusDesign 回溯（stand 唯一 → 键唯一，同场换装
     歧义结构上不存在）；孤儿立绘（无 outfit_for）→ make_key 的 None costume 三段键。
+    section_nos={0,1} 时仅解析所选节（部分发布——未选节的缺边行不进 missing 警告）。
     """
     rows = _run_cypher(
-        "MATCH (ch:Chapter {id:'" + chapter_id + "'})-[:has_section]->(:Section)"
+        "MATCH (ch:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section)"
         "-[:has_outline]->(:SecOutline)-[:produces]->(:SecScript)-[:produces]->(l:LineAudio) "
         "WHERE l.op = 'say' "
         "OPTIONAL MATCH (l)-[:uses]->(st:StandingIllustration) "
         "OPTIONAL MATCH (illus:IllusDesign)-[:expands_to]->(st) "
         "OPTIONAL MATCH (costume:CostumeStyle)-[:outfit_for]->(illus) "
         "RETURN l.id AS lid, l.who AS who, st.id AS stand_id, st.variant_label AS variant, "
-        "costume.name AS costume"
+        "costume.name AS costume, sec.section_no AS sno"
     )
     keys, missing, seen = {}, [], set()
     for r in rows:
+        if not _in_sections(r.get("sno"), section_nos):
+            continue
         lid = r.get("lid")
         if not r.get("stand_id"):
             missing.append(lid)
@@ -152,10 +202,12 @@ def fetch_uses_portrait_keys(chapter_id: str) -> tuple:
     return keys, missing
 
 
-def fetch_chapter(chapter_id: str) -> dict:
+def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
     """查全章图 → {chapter_no, title, sections: [投影doc 按节序]}；前置不满足 raise ValueError。
 
     前置：每节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11。
+    section_nos={0,1} 时部分发布：仅投影所选节，前置校验也仅针对所选节（章内其余节
+    可未就绪）——供先发已就绪节；全量重发覆盖同 stem 文件。
     """
     rows = _run_cypher(
         "MATCH (ch:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section) "
@@ -167,12 +219,22 @@ def fetch_chapter(chapter_id: str) -> dict:
         "sc.scene_blocks AS scene_blocks, "
         "l.id AS lid, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
-        "l.voice_key AS voice_key, l.ambient_track AS ambient_track, "
+        "l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.options AS options, "
         "l.status AS line_status, p.order AS ord "
         "ORDER BY sec.section_no, p.order"
     )
     if not rows:
         raise ValueError(f"Chapter {chapter_id} 不存在或无 Section")
+    if section_nos is not None:
+        avail = sorted({int(r["section_no"]) for r in rows if r.get("section_no") is not None})
+        rows = [r for r in rows if _in_sections(r.get("section_no"), section_nos)]
+        if not rows:
+            raise ValueError(
+                f"Chapter {chapter_id} 下不存在 section_no ∈ {sorted(section_nos)} 的节（现有节号: {avail}）"
+            )
+        sys.stderr.write(
+            f"[info] 部分发布：仅合并 section_no ∈ {sorted(section_nos)}（全章节号: {avail}）\n"
+        )
     chapter_no, chapter_title = rows[0]["no"], rows[0]["title"]
 
     # 块时段：scene_blocks 的 scene_name → Scene.time_of_day（图为准）
@@ -195,7 +257,7 @@ def fetch_chapter(chapter_id: str) -> dict:
                 scene_times[t["name"]] = t["t"]
 
     # 立绘整键：沿 uses 边二次查询（say 行无 uses = 选绘缺口，发布警告、投影空串）
-    portrait_keys, no_uses = fetch_uses_portrait_keys(chapter_id)
+    portrait_keys, no_uses = fetch_uses_portrait_keys(chapter_id, section_nos=section_nos)
     if no_uses:
         preview = ", ".join(no_uses[:5])
         sys.stderr.write(f"[warn] {len(no_uses)} 句 say 行缺 uses 选绘边（章 JSON 该句 portrait 为空串，"
@@ -236,7 +298,8 @@ def fetch_chapter(chapter_id: str) -> dict:
         sections.append(graph_lines_to_doc(line_rows, blocks, scene_times, chapter_no, sec_title,
                                            portrait_keys=portrait_keys))
     if problems:
-        raise ValueError("全章产物未就绪：\n  " + "\n  ".join(problems))
+        scope = "所选节" if section_nos is not None else "全章"
+        raise ValueError(f"{scope}产物未就绪：\n  " + "\n  ".join(problems))
     return {"chapter_no": chapter_no, "title": chapter_title, "sections": sections}
 
 
@@ -309,6 +372,9 @@ def main(argv=None) -> int:
     p.add_argument("--chapter-map", default=None,
                    help="章映射 JSON 路径（generate_portrait_map.py 产出，现仅 bgm 段）；"
                         "传入则注入 scene-block.bgm（say.portrait 已在投影期沿 uses 边解析为整键）")
+    p.add_argument("--sections", default=None,
+                   help="部分发布：仅合并指定节（逗号分隔 section_no，如 0,1）；"
+                        "前置校验仅针对所选节，章内其余节可未就绪。缺省=全章")
     args = p.parse_args(argv)
 
     chapter_map = None
@@ -320,7 +386,8 @@ def main(argv=None) -> int:
             return 1
 
     try:
-        info = fetch_chapter(args.chapter)
+        section_nos = _parse_section_nos(args.sections) if args.sections else None
+        info = fetch_chapter(args.chapter, section_nos=section_nos)
         doc = merge(info["sections"], info["chapter_no"], info["title"], chapter_map)
     except (RuntimeError, ValueError) as e:
         sys.stderr.write(f"合并失败: {e}\n")

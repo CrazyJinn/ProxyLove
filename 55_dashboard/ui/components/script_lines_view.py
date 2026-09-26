@@ -213,6 +213,27 @@ def render_audio_review(sec_id, sc_id, label=""):
             st.rerun()
 
 
+def _render_choice_summary(l):
+    """选择行（op=choice，options 是 JSON 字符串）只读摘要：各选项 label → 去向。"""
+    opts = l.get("options")
+    if isinstance(opts, str):
+        try:
+            opts = json.loads(opts)
+        except (TypeError, json.JSONDecodeError):
+            opts = None
+    if not opts:
+        st.caption("[选择]（options 缺失/坏 JSON）")
+        return
+    parts = []
+    for o in opts:
+        dest = (f"→ {o.get('to')}" if o.get("to")
+                else f"→ 段 {o.get('scene')}" if o.get("scene")
+                else f"→ 结局 {o.get('kind', 'NE')}" if o.get("leads_to_ending")
+                else "→ ？")
+        parts.append(f"`{o.get('label', '')}` {dest}")
+    st.markdown("**[选择]** " + "　|　".join(parts))
+
+
 def _render_line_card(l, idx, sec_id, rejected_nodes):
     """单行卡：音频行（say / 转场 ambient / 带氛围标注 narrate）带徽章/对照/试听/通过驳回；
     其余结构行只读渲染。
@@ -259,8 +280,12 @@ def _render_line_card(l, idx, sec_id, rejected_nodes):
     if op != "say":
         if op == "narrate":
             st.markdown(f"*（旁白）{l.get('text', '')}*")
+        elif op == "choice":
+            _render_choice_summary(l)
         elif op == "label":
             st.caption(f"[锚点] {l.get('text', '')}")
+        elif op == "hide":
+            st.caption(f"[立绘下台] {l.get('who', '')}")
         elif op == "bed_end":
             st.caption(f"[音床止] {l.get('bed', '')}")
         elif op == "ending":

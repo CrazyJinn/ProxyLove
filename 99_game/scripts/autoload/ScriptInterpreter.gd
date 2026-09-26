@@ -234,8 +234,12 @@ func _do_jump(line: Dictionary) -> void:
 	# 仅重定位指令指针，不推进；由 _run_from_current 的 while continue 自然走到新位置
 	resolve_target(line.get("to", ""), line.get("scene", ""), line.get("file", ""))
 
-# 玩家选定选项后由 UI 调用。option 含 to/scene/file（与 jump 共用 resolve_target）。
+# 玩家选定选项后由 UI 调用。option 含 to/scene/file（与 jump 共用 resolve_target）；
+# 直达结局选项（方言 -> END // ending: kind，拆分器记 leads_to_ending+kind）直接进结局。
 func choose(option: Dictionary) -> void:
+	if option.get("leads_to_ending", false):
+		ended.emit(option.get("kind", "NE"), "", "")
+		return
 	if not resolve_target(option.get("to", ""), option.get("scene", ""), option.get("file", "")):
 		push_error("ScriptInterpreter: 选项目标无法定位 %s" % str(option))
 		chapter_finished.emit()
