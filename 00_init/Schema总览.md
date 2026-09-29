@@ -39,7 +39,7 @@
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
 | AppearanceStyle | snowflake Base62 | 角色固定外貌（脸、体型、发色） |
 | CostumeStyle | snowflake Base62 | 角色默认着装（衣物、配饰） |
-| DesignSheet | snowflake Base62 | 角色三视图设计稿 |
+| DesignSheet | snowflake Base62 | 角色三视图设计稿（版本链：剪发等永久变更图生图新增版本，active_from 时间线分流） |
 | IllusDesign | snowflake Base62 | 着装适配立绘设计图 |
 | StandingIllustration | snowflake Base62 | 具体表情/动作的单张立绘 |
 | Scene | snowflake Base62 | 地点内的子场景视觉设定 |
@@ -72,9 +72,9 @@
 | has_costume | Character → CostumeStyle | 1:N | ✅ | 角色着装 |
 | has_voice_style | Character → LanguageStyle | 1:1 | ✅ | 角色语言风格 |
 | has_voice_design | Character → VoiceDesign | 1:1 | ✅ | 角色基线音色设计（区别于 has_voice_style 的文字风格） |
-| produces | AppearanceStyle → DesignSheet | 1:1 | ✅ | 外貌产出设计图 |
+| produces | AppearanceStyle → DesignSheet | 1:N | ✅ | 外貌产出设计图（版本链：永久变更图生图新增版本） |
 | produces | DesignSheet → IllusDesign | 1:N | ✅ | 设计图→立绘设计图 |
-| outfit_for | CostumeStyle → IllusDesign | 1:1 | ✅ | 着装→立绘设计图 |
+| outfit_for | CostumeStyle → IllusDesign | 1:N | ✅ | 着装→立绘设计图（每 (DesignSheet, CostumeStyle) 组合一个） |
 | wears | Event → CostumeStyle | N:N | ❌ | 事件着装 |
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
@@ -141,8 +141,8 @@ flowchart LR
     Character -->|"has_costume ✅ 1:N"| Costume
     Character -->|"has_voice_style ✅ 1:1"| Language
     Character -->|"has_voice_design ✅ 1:1"| Voice
-    Appearance -->|"produces ✅ 1:1"| DesignSheet
-    Costume -->|"outfit_for ✅ 1:1"| IllusDesign
+    Appearance -->|"produces ✅ 1:N 版本链"| DesignSheet
+    Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
     Event -->|"wears ❌ N:N"| Costume
     Event -->|"presents ❌ N:N"| Choice

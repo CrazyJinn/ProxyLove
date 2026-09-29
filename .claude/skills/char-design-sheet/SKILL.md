@@ -2,10 +2,13 @@
 name: char-design-sheet
 description: |
   推进 DesignSheet 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
+  双模式：常规（首版文生图 / 按 status 推进已有版本）与**增量模式**（`<char_id> <base_ds_id> <口述改动>`——以参考版设计图为底图生图新增版本，剧情永久外貌变更如剪发用）。
   单轮直推到最大门控（图片完成即待审 10）。在需要生成角色设计图或 DesignSheet 节点需推进时使用。
-argument-hint: <char_id>
+argument-hint: <char_id> [base_ds_id] [口述改动]
 arguments:
   - char_id
+  - base_ds_id
+  - notes
 allowed-tools: Read, Bash, Write, Edit
 ---
 
@@ -13,13 +16,20 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 设计图（DesignSheet）
 
-每个角色一个 DesignSheet 节点，对应三视图设计稿。
+每角色每版本一个 DesignSheet 节点。**首版**文生图（Mode A）；**增量版本**（剧情永久外貌变更，如 sec02 剪发）以参考版设计图为底**图生图**（DesignSheetDelta 模式）——仅变更口述内容，保持同人物脸部一致，不改写旧版（旧链下游零作废）。
 
 ## 参数
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| char_id | 角色 ID（snowflake Base62） | 必传 |
+| char_id | 角色 ID（snowflake） | 必传 |
+| base_ds_id | 参考版 DesignSheet 节点 ID（增量模式必传；缺省 = 常规模式） | — |
+| notes | 口述改动（增量模式必传，引号包裹）。须含：变更描述（如「清爽利落的黑色短发，发丝干净有型」）+ 生效点（`ch<NN>/sec<MM>`）+ 版本短名（`slug=<短名>`） | — |
+
+## 模式判定
+
+- **无 base_ds_id → 常规模式**：推进该角色已有 DesignSheet（status ∈ {-1,0} 逐个重做/生成），或首版不存在时新建（文生图 Mode A）。
+- **有 base_ds_id + notes → 增量模式**：从参考版图生图新增版本节点。口述缺生效点或 slug → **停止并询问，禁止猜**。
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
@@ -27,31 +37,28 @@ allowed-tools: Read, Bash, Write, Edit
 
 ### 1. 查询目标节点状态
 
-通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询前驱 + 目标 DesignSheet 是否已存在：
+通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询前驱 + 全部已有 DesignSheet：
 
 ```cypher
 MATCH (ch:Character {id: '<char_id>'})-[:has_appearance]->(app:AppearanceStyle)
 OPTIONAL MATCH (app)-[:produces]->(ds:DesignSheet)
 RETURN ch.name AS char_name, app.id AS app_id, app.status AS app_status,
-       ds.id AS ds_id, ds.status AS ds_status
+       ds.id AS ds_id, ds.status AS ds_status, ds.slug AS slug,
+       ds.active_from AS active_from, ds.delta_notes AS delta_notes
 ```
 
 - **前驱校验**：`app_status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
-- **目标节点判定**：
-  - 若 `ds_id` 为空（DesignSheet 不存在）→ 生成新 snowflake id 作为 `DESIGN_ID`，本次将新建：
-    ```bash
-    python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
-    ```
-  - 若 `ds_id` 存在 → `DESIGN_ID = ds_id`；按 `ds_status` 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
+- **常规模式目标判定**：多版本时对每个 `ds_status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
+- **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds_status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
 - 记录 `char_name`（产物路径用）与 `app_id`（保存步建 `produces` 边用）。
 
 ### 2. 完成任务
 
-按当前 status 单轮直推到图片完成（待审 10）：
+#### 常规模式（首版文生图 / 重做覆盖）
 
-#### 组装提示词
+与既有流程一致：按当前 status 单轮直推到图片完成（待审 10）。
 
-使用 Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheet '<data_json>'`：
+**组装提示词**：Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheet '<data_json>'`：
 
 ```json
 {
@@ -62,13 +69,39 @@ RETURN ch.name AS char_name, app.id AS app_id, app.status AS app_status,
 }
 ```
 
-在 data 中声明 `output_path = 06_角色美术/<char_name>/prompt.md`；char-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
+（重做多版本中某版时：`output_path` 用该版 slug 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
 
-#### 生成图片
+**生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH>`（文生图，无参考图）：`OUTPUT_PATH = 06_角色美术/<char_name>/设计图.png`。
 
-使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH>`（文生图，无参考图）：
+#### 增量模式（图生图新增版本）
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/设计图.png`。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
+**解析口述**（缺项停止询问，禁止猜）：
+- 变更描述：notes 正文（图生图 prompt 变更段唯一来源）
+- 生效点：形如 `ch01/sec02` → `active_from = chapter_no*1000 + section_no`（如 1002）
+- slug：形如 `slug=短发` → 版本短名（产物路径目录段，禁 Windows 非法字符）
+- 否定锚定 `negation`：由 LLM 据「变更描述 × AppearanceStyle 对应旧字段值」生成对旧特征的显式否定（如旧 hair「黑色凌乱短发，油腻缺乏打理」→「头发不油腻、不凌乱，无颓废未打理感」）——压制参考图惯性，**只否定被变更的维度**，不得引入新否定
+
+**组装提示词**：Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheetDelta '<data_json>'`：
+
+```json
+{
+  "base": { "image": "<参考版 image_path>", "summary": "参考版设计图（同人物）" },
+  "delta": { "notes": "<口述变更描述>", "negation": "<否定锚定>" },
+  "character": { "id":"<char_id>", "name":"<char_name>", "color_direction":"..." },
+  "node": { "id":"<DESIGN_ID>" },
+  "output_path": "06_角色美术/<char_name>/<slug>/prompt.md"
+}
+```
+
+**生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base_image>`（**图生图**，第三参 = 参考版设计图路径）：
+
+`OUTPUT_PATH = 06_角色美术/<char_name>/<slug>/设计图.png`。
+
+#### 路径规则（两模式通用）
+
+- slug 为空的版本（首版/单版角色）：`06_角色美术/<char_name>/prompt.md` 与 `设计图.png`（旧路径零迁移）。
+- slug 非空的版本：`06_角色美术/<char_name>/<slug>/prompt.md` 与 `设计图.png`。
+- 反向校验：角色已有多个版本而本版 slug 为空（且非 active_from 为空的首版）→ 停止并提示补 slug（防两版同路径物理覆盖）。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 
@@ -80,16 +113,19 @@ MERGE (ds:DesignSheet {id: '<DESIGN_ID>'})
   ON CREATE SET ds.status = 0;
 MATCH (app:AppearanceStyle {id: '<app_id>'}), (ds:DesignSheet {id: '<DESIGN_ID>'})
 MERGE (app)-[r:produces]->(ds) SET r.sync = true;
-// 写产物 + 推进 status
+// 写产物 + 推进 status（增量版本并写版本三字段）
 MATCH (ds:DesignSheet {id: '<DESIGN_ID>'})
 SET ds.prompt_path = '<PROMPT_PATH>',
     ds.image_path  = '<IMAGE_PATH>',
+    ds.delta_notes = '<增量模式：口述变更描述；常规模式：保持原值不动>',
+    ds.active_from = <增量模式：生效锚点 int；常规模式：保持原值不动>,
+    ds.slug        = '<增量模式：版本短名；常规模式：保持原值不动>',
     ds.status = 10;                      // 图片完成即待审（直写，不经 submit）
 ```
 
-**status 写入**：固定 `10`（待审，等待 dashboard 审批）。
+**status 写入**：固定 `10`（待审，等待 dashboard 审批）。增量版本审批重点：与参考版并排比对——脸部/五官/体型/眼镜一致、**仅口述维度变化**。
 
 ## 参考文档
 
-- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) Mode A
+- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) Mode A（首版）/ DesignSheetDelta（增量版）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)

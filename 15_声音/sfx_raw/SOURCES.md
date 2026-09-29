@@ -31,3 +31,6 @@
 
 | fs_621234_knock_x4 | Someone knock on door (4 knocks).mp3 | AUDACITIER | https://freesound.org/people/AUDACITIER/sounds/621234/ | CC0 | amb-chapter01_新皮肤-s01_arrive-QcwD5QbQxs | 陈念急密敲门（一下接一下）；1.1s 原样 |
 | fs_813444_boiling_pot | Boiling pot | Luisa_Sanchez | https://freesound.org/people/Luisa_Sanchez/sounds/813444/ | CC0 | amb-chapter01_新皮肤-s01_fridge-QcwD5QbQyB | 汤锅咕嘟炖煮声；峰值截取 2.0s |
+
+| fs_487083_electric_tool_buzz | R18-20-Small Electric Tool Buzzing.wav | craigsmith | https://freesound.org/people/craigsmith/sounds/487083/ | CC0 | amb-chapter01_新皮肤-s02_barber-QmU9d2C8ux | 推剪贴后颈嗡鸣（小型电动工具）；峰值截取 1.5s |
+| fs_203371_glass_explosion | glass-explosion_01.ogg | C_Rogers | https://freesound.org/people/C_Rogers/sounds/203371/ | CC0 | amb-chapter01_新皮肤-s02_online-QmU9d2Tk3N | 胜利结算水晶爆炸；原长 1.2s 近原样 |

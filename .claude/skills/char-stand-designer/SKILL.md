@@ -37,10 +37,11 @@ MATCH (illus:IllusDesign)-[:expands_to]->(stand)
 MATCH (voice:LanguageStyle)-[:ref_style]->(stand)
 MATCH (ch:Character)-[:has_voice_style]->(voice)
 OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
+OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
 RETURN ch.name AS char_name, ch.id AS char_id,
        voice.id AS voice_id, voice.emotion_patterns AS emotion_patterns,
        illus.id AS illus_id, illus.image_path AS illus_image, illus.status AS illus_status,
-       cos.name AS cos_name,
+       cos.name AS cos_name, ds.slug AS ds_slug,
        stand.id AS stand_id, stand.variant_label AS variant_label, stand.status AS status,
        stand.eye AS eye, stand.brow AS brow, stand.mouth AS mouth,
        stand.head_angle AS head_angle, stand.hand AS hand, stand.foot AS foot,
@@ -67,11 +68,11 @@ RETURN ch.name AS char_name, ch.id AS char_id,
   "voice": { "emotion_patterns":"...", "description":"..." },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<stand_id>" },
-  "output_path": "06_角色美术/<char_name>/<cos_name>/立绘/<variant_label>.md"
+  "output_path": "06_角色美术/<char_name>/<dir>/立绘/<variant_label>.md"
 }
 ```
 
-char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<cos_name>/立绘/<variant_label>.md`（与图片同目录同名）并返回路径 `PROMPT_PATH`。
+char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<dir>/立绘/<variant_label>.md`（`<dir>` = 所属设计图 `ds_slug` 非空时 `<ds_slug>/<cos_name>`，空时 `<cos_name>`——多版本形象分目录隔离防物理覆盖）并返回路径 `PROMPT_PATH`。
 
 #### 生成图片
 
@@ -79,7 +80,7 @@ char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<cos_
 
 > **透明参数必传**（2026-09-13 生产实测）：仅靠 prompt 英文透明措辞连续 3 次返回 RGB（服务端行为已变）；措辞 + `--background transparent --output-format png` 同时在场才稳定直出 RGBA。
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/<cos_name>/立绘/<variant_label>.png`。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
+`OUTPUT_PATH = 06_角色美术/<char_name>/<dir>/立绘/<variant_label>.png`（`<dir>` 同上 slug 规则）。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
 
 #### 透明校验（生成后、写图前——先产物后写图铁律的校验步）
 

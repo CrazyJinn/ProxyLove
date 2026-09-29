@@ -3,7 +3,7 @@ name: section-voice-publisher
 description: |
   把单节已批定稿（SecScript.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
   ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
-  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 Scene-depicts→expands_to 列已有立绘；池空按场景事件 wears 优先、兜底 has_costume 选定 IllusDesign）→
+  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 Scene-depicts→expands_to 列已有立绘；池空按场景事件 wears 优先、兜底 has_costume 选定 IllusDesign；**候选一律按 DesignSheet.active_from 形象版本时间线过滤**——多版本角色如剪发前后自动取生效形象）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
   ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to/ref_style + Scene-depicts->IllusDesign）→
   ⑤ Qwen3 单 venv（env/.venv-qwen，voice_clone_runner.py）：ensure-ref 出/复用 ref → publish 按 Qwen3 Base Voice Clone 逐句克隆（输入 tts_text 变体承载情绪，clone_mode 逐句选演绎通道：icl=ref 韵律迁移缺省 / xvec=仅说话人向量文本主导演绎；emotion 仅作图标注）→
@@ -97,7 +97,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
   -o '.tmp/portrait-candidates-<stem>-sec<MM>.json'
 ```
 
-`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Scene-depicts->IllusDesign-expands_to->stand` 列**场景内已有变体**（含未出图 status<11 的，附 variant_label/status/description）；该 (scene, who) 无 depicts 时按「场景事件 wears 优先、兜底 has_costume」选定 IllusDesign 再列其变体。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建，apply 无法为其建边——汇报并继续其他角色。
+`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Scene-depicts->IllusDesign-expands_to->stand` 列**场景内已有变体**（含未出图 status<11 的，附 variant_label/status/description）；该 (scene, who) 无 depicts 时按「场景事件 wears 优先、兜底 has_costume」选定 IllusDesign 再列其变体。**形象版本时间线**：三路候选一律按所属 DesignSheet 的 `active_from` 过滤，取「≤本节叙事位置（chapter_no×1000+section_no）的最新版本」——多版本角色（如 sec02 剪发后）自动取新形象，共用场景 depicts 的旧版本被滤除并记 warning（「属未生效设计图版本」）；`chars[who].design_sheet` 带生效版本 `{id, slug, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 
@@ -113,7 +113,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
 
 4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.ink` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
    - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`description` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
-   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "description": "<该变体氛围一句话：情绪强度/神态/身体张力，供出图把握——写氛围而非台词复述>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。
+   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "description": "<该变体氛围一句话：情绪强度/神态/身体张力，供出图把握——写氛围而非台词复述>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，description 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
    - **节奏原则**：同一段落情绪内保持同一 stand（不为每句强行换）；情绪转折/强反应处换变体；也不许整节只选一个变体敷衍——变体区分度是立绘表现力来源。
    - 旁白/narrate 行不选（tasks 只含 say 行）。**任何任务句不得缺 stand 字段**（3c 的 apply 会拒绝整个 tasks）。
 

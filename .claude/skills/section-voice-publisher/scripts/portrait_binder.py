@@ -5,11 +5,18 @@ section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b
   apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + depicts 补建 + uses 边幂等替换
 
 设计约束（00_init/Schema/剧情.md uses 边）：
-  - 选绘范围与挑行一致：say 且 status∈{0,-1}（与 voice_bundler.collect_graph_tasks 同条件）
+  - 选绘范围 ⊇ 配音挑行：say 且 status∈{0,-1}，另含 status=10 且无 uses 边的
+    补选绘行（先配音、角色着装链后建的时序坑，链就绪后回头补选绘；配音挑行
+    voice_bundler.collect_graph_tasks 仍只认 {0,-1}，两范围自此不再相同。
+    status=11 已批行不自动纳入——重选须经显式驳回）
   - 每句 say 行都显式建 uses 边（sync=false）；apply 先全量校验后单事务写，任一项不合法即
     整体拒绝（不写图）——LLM 漏判可补 tasks 后重跑，无图副作用
   - 候选池与 apply 共用同一 IllusDesign 解析（确定性：depicts 已有 > 场景事件 wears >
     has_costume 兜底；同级歧义按 id 字典序取首并记 warning，重跑稳定）
+  - **形象版本时间线**（DesignSheet 版本链，如剪发前后）：三路候选 IllusDesign 一律回溯
+    `<-[:produces]-(ds:DesignSheet)` 按 ds.active_from 过滤，取「≤本节叙事位置
+    (chapter_no*1000+section_no) 的最新版本」——多版本角色（sec02 剪发后）自动取新形象，
+    场景已 depicts 的旧版本被滤除并记 warning；单版本角色恒等于唯一版（零行为变化）
 
 CLI:
   python portrait_binder.py candidates --section <sec_id> [-o out.json]
@@ -27,8 +34,13 @@ from snowflake_base62 import SnowflakeGenerator  # noqa: E402
 
 _GEN = SnowflakeGenerator()
 
-# IllusDesign 解析优先级（列名 → source 标签）
-_PRIORITY = (("depicts_id", "depicts"), ("wears_id", "event_wears"), ("default_id", "default_costume"))
+# IllusDesign 解析优先级（候选列 → 其所属 DesignSheet 列 → source 标签）
+_PRIORITY = (("depicts_id", "depicts_ds", "depicts"),
+             ("wears_id", "wears_ds", "event_wears"),
+             ("default_id", "default_ds", "default_costume"))
+
+_POS_CACHE = {}   # section_id → 叙事位置 int 或 None
+_EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
 
 
 # ── 公共查询 ─────────────────────────────────────────────────
@@ -56,15 +68,72 @@ def fetch_section_head(section_id: str) -> dict:
 
 
 def judgeable_lines(section_id: str) -> list:
-    """待判 say 行（选绘范围 = 挑行范围）：say ∧ status∈{0,-1}，按 produces.order。"""
+    """待判 say 行（选绘范围 = 配音挑行 ∪ 补选绘行）：say ∧ (status∈{0,-1}
+    ∨ (status=10 ∧ 无 uses 边))，按 produces.order。补选绘行 = 已配音待审但
+    选绘期候选池空没建成 uses 边（先配音、着装链后建），链就绪后由此补。"""
     return _run_cypher(
         "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
         "-[:produces]->(sc:SecScript)-[p:produces]->(l:LineAudio) "
-        "WHERE l.op = 'say' AND l.status IN [0, -1] "
+        "WHERE l.op = 'say' AND (l.status IN [0, -1] "
+        "OR (l.status = 10 AND NOT (l)-[:uses]->())) "
         "OPTIONAL MATCH (l)-[:uses]->(st:StandingIllustration) "
         "RETURN l.id AS node_id, l.who AS who, l.scene_block_id AS block, l.text AS text, "
         "l.status AS status, st.id AS current_stand ORDER BY p.order"
     )
+
+
+def _section_pos(section_id: str):
+    """Section 叙事位置 = chapter_no*1000+section_no；缺 Chapter/编号 → None（降级不过滤）。"""
+    if section_id not in _POS_CACHE:
+        rows = _run_cypher(
+            "MATCH (sec:Section {id:" + _q(section_id) + "})<-[:has_section]-(ch:Chapter) "
+            "RETURN ch.chapter_no AS cn, sec.section_no AS sn LIMIT 1"
+        )
+        _POS_CACHE[section_id] = (int(rows[0]["cn"]) * 1000 + int(rows[0].get("sn") or 0)
+                                  if rows and rows[0].get("cn") is not None else None)
+    return _POS_CACHE[section_id]
+
+
+def _effective_ds(section_id: str, who: str, warnings: list):
+    """该 (节, 角色) 生效的 DesignSheet 版本 → {"id","slug","notes"} 或 None。
+
+    形象版本时间线（DesignSheet 版本链，如剪发前后）：取 active_from 为空（首版）或
+    ≤本节叙事位置的最新版本；并列（同 active_from）按 id 字典序取首 + warning；全部
+    active_from 在未来（病态）→ 最早版兜底 + warning。None = 不过滤（无定位/无 DS，
+    单版本角色常态——行为与旧版一致）。
+    """
+    key = (section_id, who)
+    if key in _EFF_CACHE:
+        return _EFF_CACHE[key]
+    eff = None
+    pos = _section_pos(section_id)
+    if pos is None:
+        warnings.append(f"{section_id}：缺 Chapter/section_no，形象版本时间线过滤跳过（旧行为）")
+    else:
+        _base = ("MATCH (c:Character {name:" + _q(who) + "})-[:has_appearance]->()"
+                 "-[:produces]->(ds:DesignSheet) ")
+        rows = _run_cypher(
+            _base + "WHERE ds.active_from IS NULL OR ds.active_from <= " + str(pos) + " "
+            "WITH coalesce(ds.active_from, -1) AS af, ds ORDER BY af DESC, ds.id ASC "
+            "WITH af, collect({id: ds.id, slug: ds.slug, notes: ds.delta_notes}) AS cands "
+            "ORDER BY af DESC LIMIT 1 RETURN cands"
+        )
+        if not rows:  # 病态兜底：全部版本 active_from 在未来 → 取最早版
+            rows = _run_cypher(
+                _base + "WITH coalesce(ds.active_from, -1) AS af, ds ORDER BY af ASC, ds.id ASC "
+                "WITH af, collect({id: ds.id, slug: ds.slug, notes: ds.delta_notes}) AS cands "
+                "ORDER BY af ASC LIMIT 1 RETURN cands"
+            )
+            if rows:
+                warnings.append(f"{who}：本节叙事位置早于全部设计图版本的 active_from，取最早版兜底")
+        if rows:
+            cands = rows[0]["cands"]
+            ids = sorted(c["id"] for c in cands)
+            if len(ids) > 1:
+                warnings.append(f"{who}：生效点并列多个设计图版本（{ids}），按 id 字典序取首 {ids[0]}")
+            eff = next(c for c in cands if c["id"] == ids[0])
+    _EFF_CACHE[key] = eff
+    return eff
 
 
 def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) -> tuple:
@@ -74,24 +143,46 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
     同级多个按 id 字典序取首（决定性），歧义记 warning。三路全空 → ("", "")。
     depicts 路径须经 outfit_for←has_costume 连到该 Character——同 Scene 常 depicts 多个
     角色的 IllusDesign，不过滤角色会把别人的着装池当候选。
+    **形象版本过滤**：三路候选一律回溯所属 DesignSheet（illus←produces←DS，1:1 无行
+    乘积），不属于生效版本（_effective_ds）的 IllusDesign 先滤除（记 warning）再取首——
+    多版本角色（sec02 剪发后）自动取新形象，共用场景 depicts 的旧版本被时间线拦下。
     """
     rows = _run_cypher(
         "MATCH (sec:Section {id:" + _q(section_id) + "}) "
         "OPTIONAL MATCH (c0:Character {name:" + _q(who) + "}) "
         "OPTIONAL MATCH (sec)-[:contains]->(scn:Scene {name:" + _q(scene_name) + "}) "
-        "-[:depicts]->(d:IllusDesign)<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
+        "OPTIONAL MATCH (scn)-[:depicts]->(d:IllusDesign)<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
+        "OPTIONAL MATCH (d)<-[:produces]-(dsd:DesignSheet) "
         "OPTIONAL MATCH (scn)<-[:has_scene]-(loc:Location) "
-        "OPTIONAL MATCH (c0)-[:involved]->(e:Event)-[:wears]->(:CostumeStyle) "
-        "-[:outfit_for]->(wi:IllusDesign), (e)-[:occurred_at]->(loc) "
+        "OPTIONAL MATCH (c0)-[:involved]->(e:Event)-[:wears]->(wc:CostumeStyle), "
+        "(c0)-[:has_costume]->(wc), (wc)-[:outfit_for]->(wi:IllusDesign), "
+        "(e)-[:occurred_at]->(loc) "
+        "OPTIONAL MATCH (wi)<-[:produces]-(dsw:DesignSheet) "
         "OPTIONAL MATCH (c0)-[:has_costume]->(:CostumeStyle)-[:outfit_for]->(di:IllusDesign) "
-        "RETURN DISTINCT d.id AS depicts_id, wi.id AS wears_id, di.id AS default_id, "
+        "OPTIONAL MATCH (di)<-[:produces]-(dsx:DesignSheet) "
+        "RETURN DISTINCT d.id AS depicts_id, dsd.id AS depicts_ds, "
+        "wi.id AS wears_id, dsw.id AS wears_ds, "
+        "di.id AS default_id, dsx.id AS default_ds, "
         "scn.name AS scene_hit"
     )
     if scene_name and rows and all(r.get("scene_hit") is None for r in rows):
         warnings.append(f"{scene_name}：未命中本节 contains 的任何 Scene（名字与图 Scene 名不符）——"
                         f"depicts/wears 两路将降级，请核对 SecScript.scene_blocks 的 scene_name")
-    for col, source in _PRIORITY:
-        vals = sorted({r.get(col) for r in rows if r.get(col)})
+    eff = _effective_ds(section_id, who, warnings)
+    for col, ds_col, source in _PRIORITY:
+        kept, dropped = set(), set()
+        for r in rows:
+            v = r.get(col)
+            if not v:
+                continue
+            if eff and r.get(ds_col) != eff["id"]:
+                dropped.add(v)
+            else:
+                kept.add(v)
+        if dropped:
+            warnings.append(f"{scene_name}/{who}：{source} 路径 {len(dropped)} 个 IllusDesign "
+                            f"属未生效设计图版本（{sorted(dropped)}），按 active_from 时间线过滤")
+        vals = sorted(kept)
         if len(vals) > 1:
             warnings.append(f"{scene_name}/{who}：{source} 路径命中多个 IllusDesign（{vals}），"
                             f"按 id 字典序取首 {vals[0]}")
@@ -129,8 +220,12 @@ def build_candidates(section_id: str) -> dict:
             stands = stands_of_illus(illus_id) if illus_id else []
             if not illus_id:
                 warnings.append(f"{block}/{who}：无着装 IllusDesign（depicts/事件 wears/has_costume "
-                                f"均空）——apply 无法建边，需先补角色着装链")
-            chars[who] = {"illus_id": illus_id, "illus_source": source, "stands": stands}
+                                f"均空或全被形象版本过滤）——apply 无法建边，需先补角色着装链")
+            entry = {"illus_id": illus_id, "illus_source": source, "stands": stands}
+            eff = _effective_ds(section_id, who, warnings)   # 已缓存，取生效形象供 LLM 对齐
+            if eff:
+                entry["design_sheet"] = eff                  # {"id","slug","notes"}——剪发后形象以 notes 为准
+            chars[who] = entry
         scenes[block] = {"scene_name": scene_name, "chars": chars}
 
     return {"section_id": section_id, "sc_id": head["sc_id"],
@@ -179,7 +274,8 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
         node_id = item.get("node_id")
         line = judgeable.get(node_id)
         if line is None:
-            errors.append(f"行 {node_id}：不属于本节待判 say 行（不存在 / 非 say / status∉{{0,-1}}）")
+            errors.append(f"行 {node_id}：不属于本节待判 say 行（不存在 / 非 say / "
+                          f"status∉{{0,-1}} 且非 10 无 uses 补选绘行）")
             continue
         stand = item.get("stand")
         if stand is None or stand == "":
@@ -204,7 +300,8 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                 cand_id, _src = _resolve()
                 if cand_id and hit["illus_id"] != cand_id:
                     warnings.append(f"行 {node_id}：stand {hit.get('variant_label')} 属 IllusDesign "
-                                    f"{hit['illus_id']}，与 {block}/{who} 候选 {cand_id} 不同（跨着装引用，已放行）")
+                                    f"{hit['illus_id']}，与 {block}/{who} 候选 {cand_id} 不同"
+                                    f"（跨着装/形象版本引用，已放行）")
             planned.append({"node_id": node_id, "stand_id": stand, "who": who,
                             "scene_name": scene_name, "illus_id": hit.get("illus_id") or ""})
         elif isinstance(stand, dict):

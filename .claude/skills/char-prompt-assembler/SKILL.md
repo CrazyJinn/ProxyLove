@@ -2,7 +2,7 @@
 name: char-prompt-assembler
 description: |
   从调用方传入的节点数据（设计元素 tags + 自由文本）组装图片生成提示词，派生为 prompt 文件并返回其路径。
-  三种模式：DesignSheet（文生图）、IllusDesign（图生图）、StandingIllustration（图生图）。
+  四种模式：DesignSheet（文生图）、DesignSheetDelta（图生图增量版——同人物仅变更 delta.notes 口述维度）、IllusDesign（图生图）、StandingIllustration（图生图）。
   纯产出层：不读写图数据库、不写 status，所有数据由调用方通过 data 参数提供。
   在需要为美术节点组装提示词或被其他 skill 调用时使用。
 argument-hint: <mode> <data_json>
@@ -35,8 +35,9 @@ allowed-tools: Read, Bash, Write, Edit
 - **中文提示词**，按 reference 模板的 markdown 结构（标题/编号）组织
 - **只提取不创作**：内容来自 data 参数（tags + 自由文本）和 `00_init/美术风格.md`，不臆造
 - **去重不矛盾**：同维度的信息只在 tags 中表达一次（服装款式/颜色/材质统一在 `garment` 标签），避免提示词出现重复或矛盾描述
+- **体态气质只用正向措辞，禁止负面体态词（含否定式）**：prompt 中不得出现「驼背 / 佝偻 / 含胸 / 塌腰」等负面体态字样——**否定句式也不行**（「不驼背佝偻」会把该体态词喂给模型、反而画出该姿态，2026-09-26 用户定规）。上游 adaptation_notes / delta_notes 若含此类否定句，组装时**丢弃该句**，用正向词替代表达（如「站姿挺拔舒展，肩背舒展打开，眼神坚定从容」）
 
-## 输出流程（三种模式通用）
+## 输出流程（四种模式通用）
 
 1. 解析 data，提取 tags（分号分隔串，需 split）、自由文本字段、`node.id`，以及调用方声明的 `output_path`
 2. 从 `00_init/美术风格.md` 读取全局风格参数（线条、上色、色调等）；**背景按该文件「角色图片背景」节分模式处理——模式 A/B 画风段背景行固定声明不透明纯色背景（白色），模式 C 在画风段固化英文透明措辞（见模式 C 与立绘模板）**；**分辨率按当前模式从该文件的对应条目动态提取后写入 prompt 画风段（ASCII `x` 分隔，勿引入中文乘号 `×`）**——模式 A/B 取「设计图 / 立绘设计图」分辨率，模式 C 取「立绘」分辨率
@@ -64,6 +65,23 @@ allowed-tools: Read, Bash, Write, Edit
 ```
 
 组装：从 `appearance.tags` 展开各维度（体态/肤色/发长发型发色/眼型瞳色/唇形/特殊标记）为自然语言，结合 `appearance` 自由文本（综合气质、身高）与 `character.color_direction`（配色逻辑），加贴身基础衣物说明，画风放末尾。画风段背景行固定声明**不透明纯色背景**（白色，无渐变、无纹理、无场景元素——设计图产物非透明）；图面要求**无描述性文字**（无标签/注记/说明文字），三视图可附 3 宫格特写（面部、手部等，见模板三视图规则）；**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值，ASCII `x` 分隔）。**
+
+## 模式A-delta：DesignSheetDelta（图生图增量版）
+
+为**设计图增量版本**组装提示词——以参考版设计图为底图，仅变更口述维度（剧情永久外貌变更如剪发）。详细维度结构与增量纪律见 [references/template-设计图增量提示词.md](references/template-设计图增量提示词.md)。
+
+**data 参数结构**：
+```json
+{
+  "base": { "image": "06_角色美术/<char_name>/设计图.png", "summary": "参考版设计图（同人物）" },
+  "delta": { "notes": "<口述改动原文>", "negation": "<对参考图旧特征的显式否定（只否定被变更维度）>" },
+  "character": {"id":"<char_id>","name":"...","color_direction":"..."},
+  "node": {"id":"<新designsheet_node_id>"},
+  "output_path": "06_角色美术/<char_name>/<slug>/prompt.md"
+}
+```
+
+组装（按模板四段顺序）：**同一人物开篇**（「与参考图为同一人物的角色设计图，全身三视图」）→ **保持段**（面部五官/体型肤色/特殊标记/黑色长袖压缩上衣+深色全长压缩裤底衣/静态姿态构图均与参考图完全一致不变）→ **变更段**（仅 `delta.notes` 展开为具体视觉描述句，唯一变更来源，禁止顺手改未口述项）→ **否定锚定段**（`delta.negation` 原样写入，压制参考图惯性）→ 画风段（同模式 A：三视图、无描述性文字、不透明纯色白背景、分辨率动态提取）。底衣措辞沿用模式 A 固定安全值。
 
 ## 模式B：IllusDesign（图生图）
 
@@ -107,6 +125,7 @@ allowed-tools: Read, Bash, Write, Edit
 ## 参考文档
 
 - [设计图提示词模板](references/template-设计图提示词.md) — 维度结构与编写要点（模式A）
+- [设计图增量提示词模板](references/template-设计图增量提示词.md) — 保持/变更/否定锚定结构与增量纪律（模式A-delta）
 - [着装提示词模板](references/template-着装提示词.md) — 维度结构与编写要点（模式B）
 - [立绘提示词模板](references/template-立绘提示词.md) — 表情+动作要素与变体规则（模式C）
 
