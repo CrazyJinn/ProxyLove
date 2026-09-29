@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}生产看板 · {{ tab_names[tab] }} · 代恋管理页{% endblock %}
+{% block content %}
+<h1>生产看板</h1>
+
+<div class="gsearch">
+  <span class="gtabs">
+    <a class="gtab {{ 'on' if tab == 'char' else '' }}" href="/board?tab=char">角色 · 美术+声音（char-design）</a>
+    <a class="gtab {{ 'on' if tab == 'scene' else '' }}" href="/board?tab=scene">场景 · 美术（scene-design）</a>
+    <a class="gtab {{ 'on' if tab == 'plot' else '' }}" href="/board?tab=plot">剧情（plot-design）</a>
+  </span>
+</div>
+<p class="muted small">行内「🖼」可展开产物缩略图（默认折叠）。</p>
+
+{% if tab == 'char' %}
+<div class="three-col">
+  <aside class="char-list">
+    {% for g in groups %}
+    <details {{ 'open' if loop.first else '' }}>
+      <summary><b>{{ g.prio }}</b> <span class="muted small">{{ g.chars | length }} 人{% if g.n_todo %} · 待办 {{ g.n_todo }}{% endif %}</span></summary>
+      <ul class="cl">
+        {% for c in g.chars %}
+        <li class="{{ 'on' if c.id == sel else '' }}">
+          <a href="/board?tab=char&sel={{ c.id }}">{{ c.name }}
+            {% if c.n_todo %}<span class="st st-10">{{ c.n_todo }}</span>{% else %}<span class="st st-11">✓</span>{% endif %}
+          </a>
+          <div class="muted small">{{ c.brief }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+  </aside>
+
+  <section class="char-mid">
+    {% if sel_head %}
+    <div id="artgraph" class="chart" style="height:760px"></div>
+    <p class="muted small">点击节点 → 右侧编辑（Cypher SET 保存，写前显示级联确认卡）。</p>
+    <div id="legend" class="small muted"></div>
+    {% else %}
+    <p class="muted">← 从左侧选择一个角色</p>
+    {% endif %}
+  </section>
+
+  <aside class="char-edit">
+    <h2 style="margin-top:0" id="editor-title">编辑</h2>
+    <div id="editor" class="muted">点击中间图中的节点加载属性…</div>
+    <div id="confirm-card" style="display:none"></div>
+  </aside>
+</div>
+
+{% if sel_graph_json %}
+<script src="/static/mindmap.js"></script>
+<script src="/static/char_edit.js"></script>
+<script>
+initCharArt({{ sel_graph_json | safe }});
+</script>
+{% endif %}
+{% elif tab == 'scene' %}
+<div class="three-col">
+  <aside class="char-list">
+    {% for g in groups %}
+    <details {{ 'open' if loop.first else '' }}>
+      <summary><b>{{ g.prio }}</b> <span class="muted small">{{ g.chars | length }} 地点</span></summary>
+      <ul class="cl">
+        {% for c in g.chars %}
+        <li class="{{ 'on' if c.id == sel else '' }}">
+          <a href="/board?tab=scene&sel={{ c.id }}">{{ c.name }}
+            {% if c.n_todo %}<span class="st st-10">{{ c.n_todo }}</span>{% else %}<span class="st st-11">✓</span>{% endif %}
+          </a>
+          <div class="muted small">{{ c.brief }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+  </aside>
+
+  <section class="char-mid">
+    {% if sel_head %}
+    <div id="artgraph" class="chart" style="height:760px"></div>
+    <p class="muted small">点击节点 → 右侧编辑（Location/Scene/SceneLayer/BgmTrack，Cypher SET 保存，写前级联确认）。</p>
+    <div id="legend" class="small muted"></div>
+    {% else %}
+    <p class="muted">← 从左侧选择一个地点</p>
+    {% endif %}
+  </section>
+
+  <aside class="char-edit">
+    <h2 style="margin-top:0" id="editor-title">编辑</h2>
+    <div id="editor" class="muted">点击中间图中的节点加载属性…</div>
+    <div id="confirm-card" style="display:none"></div>
+  </aside>
+</div>
+
+{% if sel_graph_json %}
+<script src="/static/mindmap.js"></script>
+<script src="/static/char_edit.js"></script>
+<script>
+initCharArt({{ sel_graph_json | safe }});
+</script>
+{% endif %}
+{% elif tab == 'plot' %}
+<details open>
+<summary><h2 style="display:inline">章节结构</h2></summary>
+<table>
+  <tr><th>章</th><th>结构</th><th>节</th><th>提纲</th><th>定稿</th><th>行音频</th><th>就绪</th><th></th></tr>
+  {% for ch in plot.chapters %}
+  <tr>
+    <td>ch{{ ch.no }} {{ ch.title }}</td>
+    <td><span class="st {{ ch.status | stclass }}">{{ ch.status | sttext }}</span></td>
+    <td>{{ ch.secs | length }}</td>
+    {% set agg = namespace(ol=0, sc=0, ok=0, tot=0) %}
+    {% for s in ch.secs %}{% if s.ol_st == 1 %}{% set agg.ol = agg.ol + 1 %}{% endif %}
+      {% if s.sc_st == 11 %}{% set agg.sc = agg.sc + 1 %}{% endif %}
+      {% set agg.ok = agg.ok + s.n_ok %}{% set agg.tot = agg.tot + s.n_line %}{% endfor %}
+    <td>{{ agg.ol }}/{{ ch.secs | length }}</td>
+    <td>{{ agg.sc }}/{{ ch.secs | length }}</td>
+    <td>{{ agg.ok }}/{{ agg.tot }}</td>
+    <td>{% if ch.ready %}<span class="st st-11">✅ 全章就绪</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+    <td><button class="btn mini copy-hint" data-hint="{{ ch.hint }}">📋 章级推进</button></td>
+  </tr>
+  {% endfor %}
+</table>
+</details>
+
+<details open>
+<summary><h2 style="display:inline">节级产物链</h2></summary>
+{% for ch in plot.chapters %}
+<div class="ch-block">
+  <h3>ch{{ ch.no }} {{ ch.title }}</h3>
+  <table>
+    <tr><th>节</th><th>标题</th><th>提纲</th><th>定稿</th><th>行音频</th><th>卡点</th><th>推进</th></tr>
+    {% for s in ch.secs %}
+    <tr>
+      <td>sec{{ "%02d" | format(s.section_no) }}</td>
+      <td>{{ s.title }}</td>
+      <td><span class="st {{ s.ol_st | stclass }}">{{ s.ol_st | sttext }}</span></td>
+      <td>
+        {% if s.sc_id %}<a href="/approvals/script/{{ s.sc_id }}"><span class="st {{ s.sc_st | stclass }}">{{ s.sc_st | sttext }}</span></a>
+        {% else %}<span class="st st-0">未建</span>{% endif %}
+      </td>
+      <td>{% if s.n_line %}<a href="/approvals/section/{{ s.id }}">{{ s.n_ok }}/{{ s.n_line }}</a>{% else %}—{% endif %}</td>
+      <td>{% if s.blocker %}<span class="muted small">{{ s.blocker }}</span>{% elif s.button == '✅ 就绪' %}<span class="st st-11">✅</span>{% endif %}</td>
+      <td>
+        {% if s.can_advance %}
+        <button class="btn mini copy-hint" data-hint="{{ s.hint }}">📋 推进此节</button>
+        {% else %}<span class="muted">{{ s.button }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endfor %}
+</details>
+
+<details>
+<summary><h2 style="display:inline">立绘缺口（{{ plot.stand_gaps | length }}）</h2></summary>
+<table>
+  <tr><th>场景</th><th>变体</th><th>状态</th><th>变体氛围</th><th>指令</th></tr>
+  {% for g in plot.stand_gaps %}
+  <tr>
+    <td>{{ g.scene_name }}</td>
+    <td>{{ g.label or '—' }}</td>
+    <td><span class="st {{ g.st | stclass }}">{{ g.st | sttext }}</span></td>
+    <td class="clip small">{{ g.descr or '' }}</td>
+    <td class="clip hint-cell small">{{ g.hint }}
+      <button class="btn mini copy-hint" data-hint="{{ g.hint }}">📋</button>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</details>
+{% endif %}
+{% endblock %}

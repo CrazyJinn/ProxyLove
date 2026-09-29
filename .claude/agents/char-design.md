@@ -14,6 +14,8 @@ tools: Read, Grep, Glob, Bash, Skill, Write
 Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/声音.md`（VoiceDesign 声音设计）
 输入：**角色名或 ID**（如"陆择"、snowflake ID）。美术子图节点类型固定，一次 cypher 查询即可拿到全部节点的 status，据 status 决定下一步。
 
+**设计图版本链（多版本形象）**：剧情永久外貌变更（如 sec02 剪发）走 DesignSheet 增量版本——输入含 `from <参考版ds_id> <口述改动>`（口述须含变更描述 + 生效点 `ch<NN>/sec<MM>` + `slug=<短名>`）时，委派 `char-design-sheet` 增量模式（图生图，参考版设计图为底，仅变更口述维度）；推进多版本角色的 IllusDesign 时透传 `design_sheet=<ds_id>` 控出图范围。状态查询天然容忍多版本（返回多行 DS）；**汇报按版本逐个交代**（各版本 slug/active_from/status）。
+
 ---
 
 ## 工作流
@@ -32,7 +34,7 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 **查询必须覆盖全部美术节点，尤其不得遗漏 `status=-1`/`0` 的待办节点**（这是最常见的失误源）：
 
 - **禁止**在 WHERE 加 `status >= 0` 之类过滤把 `-1` 滤掉——`-1`（作废重做）与 `0`（待生成）都是必须推进的待办，不是"已完成"也不是"不存在"。
-- 用**限定边类型的变长路径**一次查完全部：把美术+声音链 8 种边类型显式列入 `[:...]`（与 [graph_repo.py](55_dashboard/repo/graph_repo.py) 的 `_ART_EDGES` 一致），既是"明确"的体现，又能阻止遍历越界到叙事 Event / 其他角色。Schema 中所有美术/声音边都是 Character 的下游方向，有向 `*1..5` 一路可达全部 6 类节点（含声音设计 VoiceDesign；`StandingIllustration` 已剥离至 plot-design，不在本链）；`IllusDesign` 有双上游（produces/outfit_for）会被重复命中，用 `DISTINCT` 去重：
+- 用**限定边类型的变长路径**一次查完全部：把美术+声音链 8 种边类型显式列入 `[:...]`（dashboard 展示层的等价遍历在 [board.py](55_dashboard/app/services/board.py) 的 `char_art_graph`，边集少 `ref_style`，仅作参考——skill 侧以本行的 8 边为准），既是"明确"的体现，又能阻止遍历越界到叙事 Event / 其他角色。Schema 中所有美术/声音边都是 Character 的下游方向，有向 `*1..5` 一路可达全部 6 类节点（含声音设计 VoiceDesign；`StandingIllustration` 已剥离至 plot-design，不在本链）；`IllusDesign` 有双上游（produces/outfit_for）会被重复命中，用 `DISTINCT` 去重：
 
 ```cypher
 MATCH (:Character {id:'<角色ID>'})-[:has_appearance|has_voice_style|has_voice_design|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(n)
@@ -71,8 +73,9 @@ ORDER BY type, status
 | AppearanceStyle / LanguageStyle | char-concept-designer | -1/0→1 | 无 |
 | CostumeStyle | char-costume-designer | -1/0→1 | 无 |
 | VoiceDesign（声音设计） | char-voice-design | -1/0→1→10→11 | ✅ |
-| DesignSheet | char-design-sheet | -1/0→1→2→10→11 | ✅ |
-| IllusDesign | char-illus-designer | -1/0→1→2→10→11 | ✅ |
+| DesignSheet（首版/已有版本推进） | char-design-sheet `<char_id>` | -1/0→1→2→10→11 | ✅ |
+| DesignSheet（增量版本，剪发等永久变更） | char-design-sheet `<char_id> <base_ds_id> <口述改动>` | 新建→10→11 | ✅ |
+| IllusDesign | char-illus-designer `<char_id> [design_sheet]`（多版本角色建议传） | -1/0→1→2→10→11 | ✅ |
 
 **Status 合法值**（skill 只能写入这些值，禁止其他值如 `3`）：
 - `-1` 作废重做（skill 看到 `-1` 必须重新生成并覆盖旧产物，禁止因文件已存在而跳过）
@@ -84,7 +87,7 @@ ORDER BY type, status
 
 **依赖顺序**：char-concept-designer → {char-costume-designer, char-voice-design} → char-design-sheet → char-illus-designer（char-voice-design 读 LanguageStyle 作生成依据，须在 char-concept-designer 之后；与 char-costume-designer 无依赖、可并列）
 
-**调度方式**：用 `Skill` 工具调用**上表 5 个生产 skill 之一**，参数只有 `<char_id>`——每个 skill 单轮直推到该链最大门控（char-voice-design = 多候选完整生产直接 10；char-concept-designer / char-costume-designer = 1）。入口决策时 char-design **只从这 5 个生产 skill 选一个加载**，不跳过它们。`char-prompt-assembler` / `infra-image-generator` 是生产 skill 流程**内部**的子 skill——它们**不作为 char-design 的入口调度目标**，但**在已加载 char-design-sheet / char-illus-designer 并执行其第 2 步时，必须按该 skill 指示调用**（理由见上文「不绕过生产 skill 的流程框架」）。
+**调度方式**：用 `Skill` 工具调用**上表 5 个生产 skill 之一**，参数以 `<char_id>` 为主（char-design-sheet 增量版另传 `<base_ds_id> <口述改动>`、char-illus-designer 可选传 `design_sheet`——见上表）——每个 skill 单轮直推到该链最大门控（char-voice-design = 多候选完整生产直接 10；char-concept-designer / char-costume-designer = 1）。入口决策时 char-design **只从这 5 个生产 skill 选一个加载**，不跳过它们。`char-prompt-assembler` / `infra-image-generator` 是生产 skill 流程**内部**的子 skill——它们**不作为 char-design 的入口调度目标**，但**在已加载 char-design-sheet / char-illus-designer 并执行其第 2 步时，必须按该 skill 指示调用**（理由见上文「不绕过生产 skill 的流程框架」）。
 
 **节点由 skill 创建**：agent 不直接创建任何图节点或边；节点/边由各 skill 在「保存结果」步用 MERGE 兜底创建，status 由该步统一写入。子 skill（char-prompt-assembler / infra-image-generator）为**纯产出层**——只产 prompt/图片文件、不读写图、不写 status。
 

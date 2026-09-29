@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}触发 Agent · 代恋管理页{% endblock %}
+{% block content %}
+<h1>触发 Agent</h1>
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+
+{% if not webhook_on %}
+<div class="flash warn">
+  ⚠ webhook 未配置（55_dashboard/settings.json 的 webhook_url / webhook_secret）——本页触发功能已禁用，仅作历史查看。
+</div>
+{% endif %}
+
+<div class="flash warn">
+  ⚠ 页面无鉴权公网可达——任何人都能从这里向 agent 投递指令。建议尽快加 Basic Auth 或限制来源 IP。
+</div>
+
+<h2>下发任务</h2>
+<form method="post" action="/agent/trigger">
+  <textarea name="text" rows="4" class="ginput" style="width:100%; font-size:14px"
+    placeholder="例：请运行 char-design 编排：角色「江烈」&#10;例：/skill libai-skill 润色：……&#10;例：推进 ch1 sec05 的定稿"></textarea>
+  <p><button class="btn ok">🚀 投递给 Hermes</button>
+  <span class="muted small">经 hermes send 投递到网关，进入当前 agent 会话；执行结果回到聊天，不阻塞页面。</span></p>
+</form>
+
+<h2>说明</h2>
+<pre class="doc small">{{ help }}</pre>
+
+<h2>最近触发（audit）</h2>
+<table>
+  <tr><th>时间</th><th>内容</th></tr>
+  {% for a in triggers %}
+  <tr><td class="small">{{ a.ts }}</td><td class="small">{{ a.detail }}</td></tr>
+  {% else %}
+  <tr><td colspan="2" class="muted">暂无</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

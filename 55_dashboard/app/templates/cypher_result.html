@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}执行结果 · 代恋管理页{% endblock %}
+{% block content %}
+<h1>执行结果</h1>
+<p class="crumbs"><a href="/data">&larr; 数据与设置</a></p>
+<pre class="doc">{{ cypher }}</pre>
+
+{% if write %}
+<h2>写入计数</h2>
+<table class="kv">
+  {% for k, v in rows[0].items() %}
+  <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<h2>结果（{{ rows | length }} 行）</h2>
+<div style="overflow:auto">
+<table>
+  {% if rows %}
+  <tr>{% for k in rows[0].keys() %}<th>{{ k }}</th>{% endfor %}</tr>
+  {% for r in rows %}
+  <tr>{% for v in r.values() %}<td class="small">{{ v if v is not none else '' }}</td>{% endfor %}</tr>
+  {% endfor %}
+  {% else %}
+  <tr><td class="muted">(无结果)</td></tr>
+  {% endif %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

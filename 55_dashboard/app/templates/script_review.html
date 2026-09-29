@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}定稿审 · {{ ctx.sc_name }}{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/approvals">← 审批中心</a></p>
+<p class="crumbs">ch{{ ctx.ch_no }} {{ ctx.ch_title }} → sec{{ "%02d" | format(ctx.sec_no) }} {{ ctx.sec_title }} → 定稿</p>
+<h1>定稿审 · {{ ctx.sc_name }}
+  <span class="st {{ ctx.sc_status | stclass }}">{{ ctx.sc_status | sttext }}</span></h1>
+
+{% if llm_count %}
+<div class="flash warn">⚠️ 含 {{ llm_count }} 个 llm: 占位行 —— split 门禁会拒绝拆分，需先跑 chapter-dialoguer 填充模式</div>
+{% endif %}
+
+{% if not art %}
+<div class="flash warn">⚠ script_path 为空（节点未写路径）</div>
+{% elif not art.exists %}
+<div class="flash warn">⚠ 产物未挂载：<code>{{ ctx.script_path }}</code>{% if art.missing == 'unmounted' %}（settings.json 未配 artifact_root）{% endif %}</div>
+{% endif %}
+
+{% if source %}
+<div class="ink-view">
+{% for l in lines %}
+  <div class="ink-line ink-{{ l.cls }}">
+    {% if l.cls == 'block' %}<span class="ink-tag blocktag">▌{{ l.label }}</span>{% if l.text %} <span class="muted">// {{ l.text }}</span>{% endif %}
+    {% elif l.cls == 'say' %}<span class="ink-tag saytag">{{ l.label }}</span>{{ l.text }}
+    {% elif l.cls == 'narrate' %}<span class="ink-tag">旁白</span>{{ l.text }}
+    {% elif l.cls == 'sfx' %}<span class="ink-tag sfxtag">sfx</span>{{ l.text }}
+    {% elif l.cls == 'llm' %}<span class="ink-tag llmtag">llm占位</span>{{ l.text }}
+    {% elif l.cls == 'bed_start' %}<span class="ink-tag bedtag">bed+ {{ l.label }}</span>{{ l.text }}
+    {% elif l.cls == 'bed_end' %}<span class="ink-tag bedtag">bed- {{ l.label }}</span>
+    {% elif l.cls == 'choice' %}<span class="ink-tag choicetag">选项</span>{{ l.text }}
+    {% elif l.cls == 'label' %}<span class="ink-tag labeltag">= {{ l.label }}</span>
+    {% elif l.cls == 'ending' %}<span class="ink-tag endingtag">结局 {{ l.label }}</span>{{ l.text }}
+    {% else %}{{ l.text }}{% endif %}
+  </div>
+{% endfor %}
+</div>
+{% else %}
+<p class="muted">（无可渲染源文件）</p>
+{% endif %}
+
+{% if rows %}
+<h2>已拆分行（{{ rows | length }}，逐句审批在「本节逐句音频审」）</h2>
+<table>
+  <tr><th>#</th><th>op</th><th>who</th><th>文本</th><th>情绪</th><th>状态</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td>{{ loop.index }}</td><td>{{ r.op }}</td><td>{{ r.who }}</td>
+    <td class="clip">{{ r.text }}</td><td>{{ r.emotion or '' }}</td>
+    <td><span class="st {{ r.status | stclass }}">{{ r.status | sttext }}</span></td>
+  </tr>
+  {% endfor %}
+</table>
+{% if sec %}
+<p><a class="btn" href="/approvals/section/{{ sec.sec_id }}">本节逐句音频审 →</a></p>
+{% endif %}
+{% endif %}
+
+<h2>操作</h2>
+<div class="actions">
+  <form method="post" action="/approvals/{{ ctx.sc_id }}/decision">
+    <input type="hidden" name="action" value="approve"><button class="btn ok">通过（10→11）</button>
+  </form>
+  <form method="post" action="/approvals/{{ ctx.sc_id }}/decision">
+    <input type="hidden" name="action" value="reject"><button class="btn bad">驳回（10→0，只重写定稿）</button>
+  </form>
+  {% if ctx.sc_status != 10 %}
+  <form method="post" action="/approvals/{{ ctx.sc_id }}/decision">
+    <input type="hidden" name="action" value="resubmit"><button class="btn">重新提交审批（{{ ctx.sc_status }}→10，人工微调回路）</button>
+  </form>
+  {% endif %}
+</div>
+<p class="muted">人工微调：直接编辑 <code>{{ ctx.script_path }}</code> 改单句，再「重新提交审批」；重拆按 text_sha1 保留未变句审批结果。驳回只重写定稿，SecOutline 不动。</p>
+{% endblock %}

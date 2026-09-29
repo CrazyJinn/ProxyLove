@@ -72,7 +72,7 @@ curl -s "https://freesound.org/people/<user>/sounds/<id>/" -H "User-Agent: Mozil
 - 候选下载后**停下请用户试听**（`.tmp/ambient/`）。
 **单候选制**（用户 2026-08-29 定）：每行只出 1 个候选试听，不做多选一——不满意就换检索词/换 seed 重出下一版，迭代到满意为止。
 - 选定后：mp3 转 wav（`env/.venv-audiofly` 的 soundfile 可读 mp3）+ 裁剪（峰值截取 1~2s，可复用 `ambient_fly.py finalize --kind sfx --cut <秒>`，传 mp3 转出的临时 wav）+ 落母带路径。
-- **SOURCES.md 登记**（Steam 商售合规留存）：在 `15_声音/sfx_raw/SOURCES.md` 追加一行 `| <文件 stem> | <声音名> | <作者> | <详情页 URL> | CC0 | <成品 track> | 备注 |`（成品 track 列填本行 amb-… 键——dashboard 批准后按此列自动删除原始素材，登记文本保留）。
+- **SOURCES.md 登记**（Steam 商售合规留存）：在 `15_声音/sfx_raw/SOURCES.md` 追加一行 `| <文件 stem> | <声音名> | <作者> | <详情页 URL> | CC0 | <成品 track> | 备注 |`（成品 track 列填本行 amb-… 键——dashboard 批准后**人工**按此列清理原始素材，登记文本保留）。
 - **无损升级可选不阻塞**：先以预览版落盘写图（流水线不断）；SKILL 汇报里注明「用户可事后登录 freesound.org 下载无损原件覆盖同名母带，track 不变图不动」。
 - curl 失败/限流 → 降级：报告搜索结果页链接请用户手选，不硬造。
 

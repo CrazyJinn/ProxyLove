@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ d.name }} · 叙事图{% endblock %}
+{% block content %}
+<p class="crumbs"><a href="/graph?label={{ d.label }}">&larr; {{ d.label }} 列表</a></p>
+<h1><span class="tag">{{ d.label }}</span> {{ d.name }}</h1>
+
+<div class="gdetail">
+  <div class="gleft">
+    <h2>字段</h2>
+    <table class="kv">
+      {% for k, v in d.props.items() %}
+      <tr><th>{{ k }}</th><td class="small">{{ v if v is not none else '—' }}</td></tr>
+      {% endfor %}
+    </table>
+
+    <h2>出边（{{ d.out_edges | length }}）</h2>
+    {% for t, es in groups.items() %}
+    <h3>-[:{{ t }}]-&rarr; ×{{ es | length }}</h3>
+    <table>
+      {% for e in es %}
+      <tr>
+        <td><span class="tag">{{ e.blabel }}</span></td>
+        <td>
+          {% if e.blabel in ('Character','Event','Location','Info','Choice') %}
+          <a href="/graph/{{ e.blabel }}/{{ e.bid }}">{{ e.bname }}</a>
+          {% else %}{{ e.bname }}{% endif %}
+        </td>
+        <td class="small muted">
+          {% for pk, pv in e.rprops.items() %}{% if pv %}{{ pk }}={{ pv }} {% endif %}{% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">无出边</p>
+    {% endfor %}
+
+    <h2>入边（{{ d.in_edges | length }}）</h2>
+    <table>
+      {% for e in d.in_edges %}
+      <tr>
+        <td><span class="tag">{{ e.alabel }}</span></td>
+        <td>
+          {% if e.alabel in ('Character','Event','Location','Info','Choice') %}
+          <a href="/graph/{{ e.alabel }}/{{ e.aid }}">{{ e.aname }}</a>
+          {% else %}{{ e.aname }}{% endif %}
+        </td>
+        <td class="small muted">-[:{{ e.type }}]-&rarr;</td>
+      </tr>
+      {% else %}
+      <tr><td class="muted">无入边</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="gright">
+    <h2>局部子图（±2 跳{% if sg.truncated %}，已截断至 80 节点{% endif %}）</h2>
+    <div id="subgraph" class="chart"></div>
+    <p class="muted small">节点按 label 着色；可拖拽/缩放；悬停看关系类型。</p>
+  </div>
+</div>
+
+<script src="/static/echarts.min.js"></script>
+<script>
+const LABEL_COLORS = {
+  Character: '#e11d48', Event: '#2563eb', Location: '#16a34a',
+  Info: '#9333ea', Choice: '#f59e0b',
+  Scene: '#0d9488', Chapter: '#dc2626', Section: '#f97316',
+  SecOutline: '#64748b', SecScript: '#475569', LineAudio: '#94a3b8',
+  AppearanceStyle: '#db2777', LanguageStyle: '#be185d', CostumeStyle: '#9d174d',
+  DesignSheet: '#c026d3', IllusDesign: '#a21caf', StandingIllustration: '#86198f',
+  VoiceDesign: '#0e7490', BgmTrack: '#155e75', SceneLayer: '#0f766e',
+};
+const data = {{ sg_json | safe }};
+const chart = echarts.init(document.getElementById('subgraph'));
+chart.setOption({
+  tooltip: {
+    formatter: function (p) {
+      if (p.dataType === 'edge') return p.data.type;
+      return p.data.label + '<br/>' + p.data.name;
+    },
+  },
+  series: [{
+    type: 'graph', layout: 'force', roam: true, draggable: true,
+    label: { show: true, formatter: function (p) { return p.data.name.slice(0, 10); }, fontSize: 11 },
+    edgeLabel: { show: false },
+    force: { repulsion: 220, edgeLength: [50, 120], gravity: 0.08 },
+    data: data.nodes.map(function (n) {
+      return {
+        id: n.id, name: n.name, label: n.label,
+        symbolSize: n.id === '{{ d.id }}' ? 46 : 26,
+        itemStyle: { color: LABEL_COLORS[n.label] || '#6b7280' },
+      };
+    }),
+    links: data.links.map(function (l) { return { source: l.source, target: l.target, value: l.type }; }),
+  }],
+});
+window.addEventListener('resize', function () { chart.resize(); });
+</script>
+{% endblock %}

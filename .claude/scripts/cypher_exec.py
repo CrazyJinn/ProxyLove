@@ -42,7 +42,7 @@ CLI 用法：
 6. 查询加 LIMIT：避免全表扫描，如 ... RETURN n LIMIT 50。
 7. 多语句按依赖排序：先建节点、再建边；--multi 在单事务内顺序执行。
 8. status 白名单：仅 -1/0/1/2/10/11（见 00_init/Schema/角色美术.md 与
-   55_dashboard/core/status.py）。生产态 0/1/2，审批专属 10(待审)/11(批准)，作废 -1。
+   55_dashboard/app/services/status.py）。生产态 0/1/2，审批专属 10(待审)/11(批准)，作废 -1。
 """
 
 import os

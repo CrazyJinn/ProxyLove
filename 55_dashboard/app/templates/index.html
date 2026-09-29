@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}总览 · 代恋管理页{% endblock %}
+{% block content %}
+
+{% if just %}
+<div class="flash">✅ 操作已记录（{{ just }}）——下方待审列表为最新状态</div>
+{% endif %}
+
+<h1>总览</h1>
+
+<div class="cards">
+  {% for key, ch in chains.items() %}
+  <div class="card">
+    <h3>{{ ch.name }}链</h3>
+    <div class="card-nums">
+      <span class="num">{{ ch.total }}</span> 节点
+      <span class="num st--1">{{ ch.redo }}</span> 作废
+      <span class="num st-0">{{ ch.todo }}</span> 待办
+      <span class="num st-10">{{ ch.review }}</span> 待审
+    </div>
+  </div>
+  {% endfor %}
+  <div class="card">
+    <h3>图库</h3>
+    <div class="card-nums">{{ totals.nodes }} 节点 · {{ totals.edges }} 边</div>
+  </div>
+</div>
+
+<h2>待审队列（{{ pending | length }}）</h2>
+{% if pending %}
+<table>
+  <tr><th>类型</th><th>对象</th><th>上下文</th><th>操作</th></tr>
+  {% for p in pending %}
+  <tr>
+    <td><span class="tag">{{ p.label }}</span></td>
+    <td>
+      {% if p.label == 'SecScript' %}
+        <a href="/approvals/script/{{ p.id }}">{{ p.ctx2 }} 定稿</a>
+      {% elif p.label == 'VoiceDesign' %}
+        <a href="/approvals/voice/{{ p.id }}">{{ p.ctx1 }} 声音设计</a>
+      {% elif p.label == 'Chapter' %}
+        <a href="/approvals/chapter/{{ p.id }}">{{ p.ctx1 }}</a>
+      {% elif p.label == 'LineAudio' %}
+        <a href="/approvals/section/{{ p.sec_id }}">{{ p.ctx2 }} 逐句音频</a>
+      {% else %}
+        <a href="/approvals/image/{{ p.id }}">{{ p.ctx1 }} {{ p.ctx3 }} {{ p.label }}</a>
+      {% endif %}
+    </td>
+    <td>{{ p.ctx1 }}{% if p.ctx2 %} / {{ p.ctx2 }}{% endif %}{% if p.ctx3b %} / {{ p.ctx3b }}{% endif %}</td>
+    <td class="st st-10">待审</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">无待审项 🎉</p>
+{% endif %}
+
+<h2>用户动作阻塞</h2>
+{% if bgm_wait %}
+<table>
+  <tr><th>BgmTrack</th><th>等归档路径</th><th>状态</th></tr>
+  {% for b in bgm_wait %}
+  <tr><td>{{ b.name }}</td><td><code>{{ b.audio_path }}</code></td><td class="st st-1">等 wav 归档</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">无（BGM 全部归档或不缺）</p>
+{% endif %}
+
+<h2>章进度</h2>
+<table>
+  <tr><th>章</th><th>结构</th><th>节</th><th>提纲</th><th>定稿</th><th>行音频</th></tr>
+  {% for ch in chapters %}
+  <tr>
+    <td>ch{{ ch.no }} {{ ch.title }}</td>
+    <td><span class="st {{ ch.status | stclass }}">{{ ch.status | sttext }}</span></td>
+    <td>{{ ch.n_sec }}</td>
+    <td>{{ ch.n_ol }}/{{ ch.n_sec }}</td>
+    <td>{{ ch.n_sc }}/{{ ch.n_sec }}</td>
+    <td>{{ ch.n_line_ok }}/{{ ch.n_line }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>label × status 明细</h2>
+<table>
+  <tr><th>链</th><th>label</th><th>status</th><th>含义</th><th>数量</th></tr>
+  {% for c in counts %}
+  <tr>
+    <td>{{ c.chain }}</td><td>{{ c.label }}</td>
+    <td><span class="st {{ c.st | stclass }}">{{ c.st | sttext }}</span></td>
+    <td>{{ c.st | sttext }}</td>
+    <td>{{ c.c }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -104,8 +104,11 @@ sequenceDiagram
 | AppearanceStyle / LanguageStyle | char-concept-designer | -1/0 → 1 | 无 |
 | CostumeStyle | char-costume-designer | -1/0 → 1 | 无 |
 | VoiceDesign | char-voice-design | -1/0→1→10→11 | ✅ |
-| DesignSheet | char-design-sheet | -1/0→1→2→10→11 | ✅ |
-| IllusDesign | char-illus-designer | -1/0→1→2→10→11 | ✅ |
+| DesignSheet（首版/已有版本推进） | char-design-sheet `<char_id>` | -1/0→1→2→10→11 | ✅ |
+| DesignSheet（增量版本，剪发等永久形象变更） | char-design-sheet `<char_id> <base_ds_id> <口述改动>`（图生图：参考版设计图为底，仅变更口述维度，保持同人物脸部一致） | 新建 →10→11 | ✅ |
+| IllusDesign | char-illus-designer `<char_id> [design_sheet]` | -1/0→1→2→10→11 | ✅ |
+
+> **设计图版本链（多版本形象）**：剧情永久外貌变更（如 ch1 sec02 陈默剪发）不改动 AppearanceStyle、不改写旧版设计图——以参考版 DesignSheet 为底**图生图新增版本**（新版本带 `delta_notes` 口述变更 / `active_from` 生效锚点 `chapter_no*1000+section_no` / `slug` 路径目录段），下游为每 (DesignSheet, CostumeStyle) 组合各建一个 IllusDesign，产物路径按 slug 分目录隔离（`06_角色美术/<char>/<slug>/…`，旧版零迁移）。选绘（section-voice-publisher）按 active_from 时间线自动取「≤本节叙事位置的最新版本」。⚠️ 修正 `active_from`/`slug`/`delta_notes` 用 cypher 直改——**勿走 dashboard 编辑器**（改 DesignSheet 属性会 sync 级联作废该版本全部 IllusDesign 与立绘）。
 
 ### 时序图
 
@@ -425,12 +428,10 @@ sequenceDiagram
 ├── 25_剧本/                          # 剧本产出（章+节两层：structurer 出设计简报；outliner/dialoguer 按节产出）
 │   └── chapter<NN>_<章概述>/         # 每章一目录：设计简报.md + 各 sec<MM>_<节概述>/（outline.md + 台词.ink）
 │
-├── 55_dashboard/                     # 人工治理后台（Streamlit，http://localhost:8501）
-│   ├── config/                       # settings.py（凭证来源）
-│   ├── core/                         # schema_loader · status · cascade · graph_repo
-│   ├── repo/                         # 后台层 Cypher 读写封装（cypher_exec.py 的等价物）
-│   ├── tests/                        # core 层单测（纯单测，不连真实 Neo4j）
-│   └── ui/                           # 页面 + components/
+├── 55_dashboard/                     # 人工治理后台（FastAPI/uvicorn，http://localhost:8502）
+│   ├── app/                          # main.py（全部路由）+ services/（status·cascade·board…）+ repo/graph_repo.py
+│   ├── tests/                        # 纯逻辑单测（不连真实 Neo4j）
+│   └── settings.json                 # 本子项目配置（凭证，已 gitignore；与根 settings.json 密码双份）
 │
 ├── env/                              # 声音链环境（gitignore）：.venv-qwen（Qwen3-TTS）
 │

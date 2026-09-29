@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}写操作确认 · 代恋管理页{% endblock %}
+{% block content %}
+<h1>⚠ 写操作确认</h1>
+<div class="flash warn">这是<b>写操作</b>，执行前请核对语句与级联影响。</div>
+
+<h2>语句</h2>
+<pre class="doc">{{ cypher }}</pre>
+
+{% if no_ids %}
+<div class="flash warn">未能从语句中提取目标节点 id（全图/批量操作或未用 {id:'…'} 定位）——<b>无法预览级联影响</b>，确认你完全理解后果再继续。</div>
+{% elif preview %}
+<h2>sync 级联影响预览（{{ preview | length }} 个下游节点将置 -1）</h2>
+<table>
+  <tr><th>下游节点</th><th>类型</th><th>当前状态</th><th>经</th></tr>
+  {% for d in preview %}
+  <tr>
+    <td>{{ d.name }}</td>
+    <td><span class="tag">{{ d.label }}</span></td>
+    <td><span class="st {{ d.status | stclass }}">{{ d.status | sttext }}</span></td>
+    <td class="small muted">{{ d.from }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted small">级联规则：沿 sync=true 出边把所有可达下游 status 置 -1（作废重做）。此预览为只读计算。</p>
+{% else %}
+<p class="muted">目标节点无 sync=true 下游，无级联影响。</p>
+{% endif %}
+
+<div class="actions">
+  <form method="post" action="/data/cypher">
+    <input type="hidden" name="cypher" value="{{ cypher }}">
+    <input type="hidden" name="confirmed" value="true">
+    <button class="btn bad">我已理解级联风险，执行</button>
+  </form>
+  <a class="btn" href="{{ back or '/data' }}">取消</a>
+</div>
+{% endblock %}

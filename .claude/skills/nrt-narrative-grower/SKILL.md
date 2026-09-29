@@ -76,7 +76,7 @@ focus 传入时各查询走「focus 子图」版（WHERE 收窄到锚点 1-2 跳
 
 **报告**：文件路径 + 建议总条数与 priority 分布（high/medium/low 各几条）+ **迭代提示**：
 - 若本轮含**补节点类**建议（新增 Character/Event 等），列出建议新增的实体名，提示：「审批写回后，下轮可 `nrt-narrative-grower <新增实体名>` 聚焦为其补事件/关系。」
-- 提示审批入口：dashboard `narrative_review` 逐条审，通过即把 cypher 写库；留痕 `_reviewed.json`（键=文件名#index），天然区分多轮。
+- 提示审批入口：人工经 dashboard `/data` Cypher 控制台逐条审（写语句有两段确认+级联预览），通过即执行该条 cypher 写库；无 `_reviewed.json` 留痕，靠建议 cypher 本身 MERGE 幂等去重，执行前自查该条是否已写回。
 
 ---
 

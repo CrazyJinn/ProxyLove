@@ -1,114 +1,79 @@
-# CLAUDE.md
+# 55_dashboard/CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件为 Claude Code 提供本子项目（人工治理后台）的工作指南。
 
-## 这个项目是什么
+## 这是什么
 
-`55_dashboard` 是「代恋」项目的人工治理后台——一个直连 Neo4j 的 Streamlit 应用，与项目里的 Claude Skills 共享**同一个 Neo4j 实例**。职责分工：
+**FastAPI + Jinja2 + uvicorn 治理后台**（http://localhost:8502），与 skills 共享同一个 Neo4j：浏览生产链状态、审批（10→11）、Cypher 控制台、CSV 快照导入/导出、ECharts 生产看板与叙事图浏览。原 Streamlit 版已移除（git 历史可溯）。
 
-- **Skills**（项目根的 `.claude/`、`06_角色美术/` 等驱动）：自动化生产——组装 prompt、调 OfoxAI 出图、推进节点 `status` 0→1→2。
-- **本后台**：人工治理——浏览进度、编辑节点属性、审批（10→11/→0）、属性变更后沿 `sync` 边级联重置下游、审批叙事建议（把 Cypher 写库）、全库 CSV 备份。
+## 架构（三层，扁平）
 
-后台**不直接出图**。需要推进生产时，页面上的「推进」按钮生成 `vscode://anthropic.claude-code/open` deeplink 唤起 `char-design` / `scene-design` agent。
+```
+app/main.py          ← 唯一入口：全部 FastAPI 路由（无 router 拆分）
+app/services/*       ← 业务逻辑（status/cascade/board/queries/hints/ink/exporter/audit/artifacts/node_fields/snapshot_importer）
+app/repo/graph_repo.py ← 图访问层（连接 + 参数化查询封装）
+app/templates/*.html ← Jinja2 页面；app/static/ ← echarts.min.js（本地）/char_edit.js/mindmap.js/style.css
+```
+
+- **`app/services/status.py` 的 `NODE_STATUS` 是 status 白名单权威**：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准（根 CLAUDE.md、cypher_exec.py 均指向此处）。
+- **`app/services/cascade.py` 是 sync 级联权威**：写语句执行后沿 `sync=true` 出边 BFS 把可达下游置 `-1`。**审批动作（approve/reject/resubmit）不触发级联**；级联只由 Cypher 控制台与节点编辑确认卡触发。
+- **`app/services/node_fields.py` 硬编码各标签字段中文名**（抄自 `00_init/Schema/*.md`，无自动加载）——**改 Schema 字段中文名时须手工同步此文件**。Schema .md 仍是 skills 侧的权威。
+- **产物文件**（图片/音频/ink/md）经 `app/services/artifacts.py` 解析：按 settings.json 的 `artifact_roots`（当前 `[".."]` = 项目根）逐根找 `rel_path`，media 路由 `/media/{kind}/{rel}` 供页面展示；目录穿越由 `Path.is_relative_to` 守卫（跨平台）。
+
+## 配置：settings.json（本目录内，已 gitignore）
+
+唯一配置文件 `55_dashboard/settings.json`（**不向上搜索项目根**）。凭证优先级：环境变量 `NEO4J_URI`/`NEO4J_USER`/`NEO4J_PASSWORD` > 本文件。
+
+```json
+{
+  "neo4j_uri": "bolt://127.0.0.1:7687",
+  "neo4j_user": "neo4j",
+  "neo4j_password": "…",
+  "artifact_roots": [".."],
+  "csv_snapshot": "",
+  "port": 8502,
+  "webhook_url": "",
+  "webhook_secret": ""
+}
+```
+
+⚠ **`neo4j_password` 与项目根 `settings.json` 的 `neo4j_password` 是双份**——Neo4j 改密时两处都要改。`webhook_url`/`webhook_secret` 留空即禁用 /agent 触发（hermes gateway，本项目默认不部署）。
 
 ## 常用命令
 
 ```bash
-# 运行后台（http://localhost:8501）。脚本会自动检测 .venv、缺 streamlit 时自动装依赖
-bash run.sh          # Git Bash / Linux
-run.bat              # Windows 双击
-# 等价直跑：
-python -m streamlit run app.py --server.port 8501
-
-# 测试（必须在 55_dashboard 目录下，测试用 from core import ... 依赖 cwd 在 sys.path）
-python -m pytest                         # 全部（core 层纯单测，不连真实 Neo4j）
-python -m pytest tests/test_cascade.py   # 单个文件
-python -m pytest tests/test_cascade.py::test_xxx -v   # 单个用例
+bash 55_dashboard/run.sh        # 或 Windows 双击 run.bat；uv 优先，pip 兜底自装依赖
+cd 55_dashboard && uv run pytest   # 3 个测试文件（纯逻辑，不连真实库；真实快照用例自动 skip）
 ```
 
-无 lint / formatter 配置；无 `.venv`，用系统 Python（开发环境为 3.14）。
+启动需 cwd = 55_dashboard（`python -m uvicorn app.main:app --port 8502`）。
 
-## Neo4j 凭证（非显而易见的优先级）
+## 路由地图
 
-凭证来源与项目其他工具（`${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py`）保持一致，优先级：**环境变量 `NEO4J_PASSWORD` > 项目根 `settings.json` 的 `neo4j_password` 字段**。`URI`/`USER` 默认 `bolt://localhost:7687` / `neo4j`。本地可用 `55_dashboard/.env`（见 `.env.example`）覆盖。改凭证来源时要同步 `config/settings.py`。
+| 页面 | 路由 | 说明 |
+|---|---|---|
+| 总览 | `/` | 全链 status 计数 |
+| 审批中心 | `/approvals` + `/approvals/{script,voice,chapter,image,section}/{id}` | 各类待审；decision：approve(10→11) / reject(→0+attempts+1) / resubmit(0/1/11→10) / adopt(VoiceDesign 候选采用) |
+| 逐句音频审 | `/approvals/section/{sec_id}`、`/approvals/line/{id}/decision` | 读 `15_声音/` 母带试听 |
+| 生产看板 | `/board`（char/scene/plot 三 tab）、`/board/char/{id}` | ECharts 链图；节点属性卡 `/board/node/{id}/props`；内联审批 `/board/node/{id}/review` |
+| 叙事图浏览 | `/graph`、`/graph/{label}/{id}` | 全图/节点详情 |
+| 数据与设置 | `/data` | CSV 导出/导入（白名单限仓库内）、**Cypher 控制台**（写语句两段确认 + 级联预览）、BgmTrack 归档检测 `/bgm/{id}/check` |
+| agent 触发 | `/agent` | 需 webhook 配置，默认禁用 |
 
-## 架构：三层单向依赖 `ui → core → repo`
+审计流水追加写 `data/audit.jsonl`（已 gitignore）。
 
-| 层 | 职责 | 边界 |
-|----|------|------|
-| [repo/](repo/) | 封装 neo4j-driver，**全项目唯一写 Cypher 的地方** | 不含业务逻辑 |
-| [core/](core/) | 级联引擎、审批状态机、Schema 加载、status 规则 | 不渲染 UI、不耦合 Streamlit |
-| [ui/](ui/) | 页面与组件，把用户操作翻译成 core/repo 调用 | 不写 Cypher、不直接碰 driver |
+## 与 skills 的协作契约
 
-- [graph_repo.py](repo/graph_repo.py) 所有方法**接收/返回普通 dict**（不用 node 对象），便于 core 用内存 mock 测试。
-- core 通过 repo 接口（`get_sync_downstream` / `set_status_batch` 等）访问数据，所以 [tests/conftest.py](tests/conftest.py) 的 `MockRepo` 能让 [cascade.py](core/cascade.py)、[approval.py](core/approval.py)、[schema_loader.py](core/schema_loader.py) 完全脱库单测——这是测试重点。UI 层只做手动验证。
+- 审批/驳回/resubmit 的 status 语义必须与 `app/services/status.py` 一致；skills 侧文档（`.claude/agents/*`、`SKILL.md`）多处引用。
+- 角色美术链展示子图 = `app/services/board.py` 的 `char_art_graph`（`has_appearance|has_costume|has_voice_style|has_voice_design|produces|outfit_for|expands_to`，**不含 `ref_style`**）；skill 侧 8 边正则以 `.claude/agents/char-design.md` 为准。
+- 推进指令在 `/`、`/board` 的 hints 区（`app/services/hints.py`）生成**复制粘贴文本**（如「请运行 plot-design 编排（单节聚焦）：section_id=…」）——手动粘贴进 Claude Code 会话（原 Streamlit 版的 vscode deeplink 已移除）。
 
-## Schema 驱动：字段定义不硬编码
+## 与旧版（Streamlit）的能力差异
 
-[core/schema_loader.py](core/schema_loader.py) 在 `app.py` 启动时加载一次并缓存：
+缺失（人工流程替代）：叙事审批页（`02_剧情数据/*_建议.json` 写回 → 改用 /data Cypher 控制台逐条执行，无 `_reviewed.json` 去重，靠建议 cypher 本身 MERGE 幂等）；台词在线编辑器（直接外部编辑 `25_剧本/.../台词.ink` 后用 script_review 的「重新提交审批」）；Schema 驱动表单/标签库；VoiceDesign adopt 不再 move/清理 `14_声音设计/` 候选文件（人工清理）；环境音批准不再自动删 `15_声音/sfx_raw/` 素材（人工按 SOURCES.md 清理）。
 
-- **字段定义**：解析 `00_init/Schema/*.md` 里 `### 名称（Label）` 标题下的 markdown 表格（`|字段|中文|类型|必填|...|`）→ `FieldDef`/`NodeDef`/`SchemaDef`。表格列格式不符会抛 `SchemaError`（启动校验，防格式漂移静默出错）。
-- **标签词表**：直接读 [config/标签库.json](config/标签库.json)。
-- **status 流转规则 + enum 词表**：**刻意不解析 .md**（.md 中是散文式说明，格式不稳定），在 [core/status.py](core/status.py) 显式定义。改业务规则改这里。
+新增：Cypher 控制台、CSV 快照导入/导出、ECharts 看板/叙事图浏览、BgmTrack 归档检测、/agent 触发页。
 
-[ui/components/field_form.py](ui/components/field_form.py) 按 `FieldDef.type` + 是否命中 `tag_fields` 动态选组件（标签库→tag_picker、enum→selectbox、int→number_input、image_path→只读预览…）。**这是"加新节点类型近乎零成本"的预留策略**：schema_loader 已解析全部 Schema，加 label 通常只需在 `status.py` 补 status 规则 + 暴露 UI 入口。
+## ⚠ 严禁运行 `scripts/gen_mock_artifacts.py`
 
-## status 系统（治理的核心）
-
-`status` 值统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准（全图统一，无剧情专属值）。每个 label 的合法值、完成态、是否走审批，在 [status.py](core/status.py) 的 `NODE_STATUS` 显式定义：
-
-- 美术有审批（completion=2，可 submit→10→11）：`DesignSheet`/`IllusDesign`/`StandingIllustration`/`SceneLayer`
-- **VoiceDesign 生产完成直写 10（待审），无 submit 步**（completion=10）；`2` 为旧流程兼容值（存量可经编辑器 submit 迁 10）
-- 美术无审批（completion=1）：`AppearanceStyle`/`LanguageStyle`/`CostumeStyle`/`Scene`
-- **剧情产物链**：`Chapter` 章级结构段（`0→10→11`，结构审，completion=11，10 由 structurer 直写不经 submit）；节级三产物 `Section →has_outline→ SecOutline →produces→ SecScript -[:produces{order}]-> LineAudio(×N 逐句台词行)`——SecOutline（`0→1`，completion=1，无审批）、SecScript（`0→1→10→11`，定稿审 **台词.ink**，completion=11，10 由 dialoguer 直写不经 submit）、LineAudio 逐句行（say 行 `0→10→11` **行级音频审**——行 status 只代表音频（文字审批已在定稿审完成），10 由 section-voice-publisher 的 bind-graph 直写；非 say 行拆分即 11）。「节完成」= SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11（派生判断，无节级批准按钮）
-- `Character`/`Location`/`Section` **无 status 字段**（Section 是纯编排容器），只作级联触发源。
-
-> 判断节点"有无 status"必须用 `is not None`——`status=0`（待处理）是合法 falsy，真值判断会误隐藏。
-
-## sync 级联（属性变更的连锁反应）
-
-保存节点属性后，[cascade.py](core/cascade.py) 沿 `sync=true` 出边做 BFS，把可达下游 `status` **重置为 `-1`（作废重做）**，遇 `sync=false` 阻断（如叙事边 `wears`）。`get_sync_downstream` 只返回**一跳** sync 出边，多跳展开由 cascade 迭代完成。
-
-[page_node_editor.py](ui/page_node_editor.py) 的保存后置流程是固定四步，改动顺序要谨慎：
-1. `update_node` 写属性；
-2. `approval.on_edit(label, status)`：已批准（`11`）则自身回退 `0`（全通用，无 label 特例）；
-3. `cascade_reset` 重置下游为 `-1`（产物链上下游作废由这里完成：编辑已批 SecScript → LineAudio `-1`；编辑 SecOutline → SecScript/LineAudio 全 `-1`）；
-4. 弹 toast 反馈。
-
-> 注意：以代码为准，级联下游重置为 **`-1`**（设计文档 `docs/superpowers/specs/2026-06-17-dashboard-design.md` 验收标准里写成 `0` 是笔误）。
-
-## 剧情章节进度
-
-[page_chapter_overview.py](ui/page_chapter_overview.py) 是剧情模块唯一页面，按「章 + 节」两层展开：列出全部 `Chapter`（按 `chapter_no`），每章卡片下展示各 `Section`（按 `section_no`）的产物链状态（提纲/定稿/配音三段徽章，Section 无 status；音频段为该节 LineAudio 行状态聚合的瓶颈值，附行数）+ 编排子图（`has_section→Section→has_outline→SecOutline→produces→SecScript→produces→LineAudio`、`Section→contains→Scene→depicts→IllusDesign→expands_to→StandingIllustration`、`LineAudio→uses→StandingIllustration`——行级选绘边，配音判断期建立）+ 节级 **台词.ink 预览**（人读定稿格式，review 对白质量，区别于美术节点审批看图）。
-
-审批落点：
-- **Chapter 结构审**（`10→11`）：就地按钮（章卡片内）。
-- **SecScript 定稿审**（审 台词.ink，`10→11`）：走全局「审批中心」（[page_approval.py](ui/page_approval.py)），渲染 ink 全文。
-- **LineAudio 逐句音频审**（行 `10→11`）：审批中心把 status=10 的行节点**按节聚合**为一张卡（[script_lines_view.render_audio_review](ui/components/script_lines_view.py)）：试听 + 单句通过=11/驳回=0（写行节点 status，经 [core/script_lines.py](core/script_lines.py)）；「节完成」= 全部行 11（派生，无节级批准按钮）；整节驳回 = say 行全置 0。
-
-**台词全文编辑器**（人工微调回路的编辑入口，[page_chapter_overview.py](ui/page_chapter_overview.py) `_edit_script_dialog`）：各节「编辑台词」按钮（条件与「重新提交审批」相同：章已批 ∧ 有 script_path ∧ sc∈{0,1,11}；sc=10 在审不出现——审批对象须稳定）打开 @st.dialog 全文 text_area。输入变化即 [core/script_editor.py](core/script_editor.py) `validate`（经懒导入调 `script_splitter.parse_ink_text`——与拆分进图同一解析器，错误带行号+原文；成功给行型摘要）；「保存并送审」= `save`（tmp+replace **原子写**）→ `approval.resubmit`（0/1/11→10）→ toast → rerun（先产物后写图）。text_area key 带打开计数器后缀——取消/X 关闭后再开不残留未存草稿。方言 v3（标准合法 ink：ASCII 标识符、knot 行尾注释、结局两行式；音频三型 sfx:/bed±、llm: 占位、旧环境音两型废止）见 chapter-dialoguer references/ink方言规范.md；存量 chapter00 v1 `===` 行式解析器双格式兼容（[test_script_editor.py](tests/test_script_editor.py) 从 dashboard 侧再锁一次）。编辑器摘要含行型统计与 llm 占位警告。
-
-推进入口分两级（生成 `vscode://` deeplink 唤起 `plot-design` agent，见 [launch_button.py](ui/components/launch_button.py)）：
-- 章行「推进剧情创作」= **章节全量**（structurer 分节 / 结构审 / 全量循环推进，到全章就绪即止）。**发布（chapter-publisher）由用户直接触发，不在 plot-design 职责内**。
-- 各节「推进此节」（`ch.status==11` 且该节产物链未全就绪、且无待审项时出现）= **单节聚焦**（plot-design 按产物链当前段推进该节的提纲/定稿/拆分选绘配音；`SecScript=11` 时推该节台词 uses 边（`LineAudio-[:uses]->`，选绘在 section-voice-publisher 配音判断期建立）可达的立绘——depicts 枚举中未被本节台词引用的仅提示不推进（Scene 多节共享，多为后续节的活），不碰其他节、不做后续节的事情、不发布）。
-
-## 叙事审批（写 Cypher 进库）
-
-[page_narrative_approval.py](ui/page_narrative_approval.py) + [core/narrative_review.py](core/narrative_review.py)：扫描 `02_剧情数据/<日期>_建议.json`（`nrt-narrative-grower` 产出，每条含 `check/priority/reason/content/cypher`），逐条审阅。**通过 = 把该条 Cypher 写入 Neo4j**（[graph_repo.run_write_script](repo/graph_repo.py) 用 `split_cypher_script` 拆多语句、单事务执行、任一失败整体回滚）；驳回 = 仅记录。审批留痕写 `02_剧情数据/_reviewed.json`（键=`文件名#index`），跨会话保留，避免重复执行与重复展示。
-
-## 场景美术 = 角色美术的对称镜像
-
-[page_scene_overview.py](ui/page_scene_overview.py) 与 [page_overview.py](ui/page_overview.py) 结构对称：`Location` 替代 `Character`、`get_location_graph` 替代 `get_character_graph`、`_SCENE_EDGES`(`has_scene|has_layer`) 替代 `_ART_EDGES`(`has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to|ref_style`)，且**共用同一个 `_dialog_node` session_state key 和 [page_node_editor.py](ui/page_node_editor.py)**。这些边类型正则在 [graph_repo.py](repo/graph_repo.py) 里限定子图遍历范围，避免把叙事 `Event`/`Info` 或其他角色/地点混进来——加新链路类型时记得补这里的正则。
-
-## Streamlit rerun 陷阱（项目里反复踩过的坑）
-
-写新交互时务必注意，否则会出现"操作成功却无反馈"或"弹窗异常关闭"：
-
-- **保存/审批后用 `st.toast`，不要用 inline `st.success`/`st.info`**——紧跟其后的 `st.rerun()` 会丢弃本轮所有 inline 输出。代码注释里多处标了这条理由。
-- **dialog 跨 rerun 保持**：用 `session_state["_dialog_node"]` 持有当前编辑节点，每次 `render` 检查并重开弹窗；只有「关闭」按钮或切换节点才清状态。
-- **download_button 的 data 不要在每次 rerun 重算**：全库备份用两步法（点「生成备份」先扫描存 session_state，再用 download_button 下载）。
-- widget 清空（如 tag_picker 添加后清空输入框）必须在 widget 实例化**之前** `pop` session_state key，否则触发 "cannot be modified after widget instantiated"。
-
-## 数据备份
-
-[app.py](app.py) 侧边栏底部：优先 `export_csv_all`（`apoc.export.csv.all(null, {stream:true})`，无需文件系统访问），APOC 不可用时兜底 `export_csv_all_pure`（纯 Python，节点表 + 边表两段 CSV）。
+它是上游 dailian-dashboard 仓库的开发工具，会在**项目根生成 mock 产物树**（假图/假 wav）污染真实产物目录。仅随仓库保留，不要在本项目执行。

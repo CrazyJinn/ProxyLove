@@ -1,24 +1,27 @@
 @echo off
-REM Quick start 55_dashboard (Streamlit). Windows: double-click to run.
+rem 启动 55_dashboard（FastAPI/uvicorn，http://localhost:8502）。用法：双击或运行 run.bat
+setlocal
 cd /d "%~dp0"
 
-REM Use .venv if present, else system python
-if exist ".venv\Scripts\python.exe" (
-  set "PY=.venv\Scripts\python.exe"
-) else (
-  set "PY=python"
+if not exist settings.json (
+  echo [warn] 缺少 55_dashboard\settings.json（含 neo4j_password 等配置），请先创建
 )
 
-REM Dependency check: install requirements.txt if streamlit is missing
-"%PY%" -c "import streamlit" >nul 2>&1
-if errorlevel 1 (
-  echo [setup] streamlit not found, installing requirements.txt ...
-  "%PY%" -m pip install -r requirements.txt
+where uv >nul 2>&1
+if %errorlevel%==0 (
+  uv sync --quiet
+  uv run python -m uvicorn app.main:app --host 127.0.0.1 --port 8502
+  goto :eof
 )
 
-if not exist ".env" (
-  echo [warn] No .env found. See .env.example for Neo4j creds, or put settings.json in project root.
+rem pip 兜底（无 uv）
+if not exist ".venv\Scripts\python.exe" python -m venv .venv
+if not exist ".venv\Scripts\python.exe" (
+  echo [error] .venv 创建失败
+  exit /b 1
 )
-
-echo [run] Starting Streamlit at http://localhost:8501
-"%PY%" -m streamlit run app.py --server.port 8501 --server.headless false
+".venv\Scripts\python.exe" -c "import fastapi" >nul 2>&1
+if not %errorlevel%==0 (
+  ".venv\Scripts\python.exe" -m pip install fastapi uvicorn jinja2 neo4j python-multipart pytest
+)
+".venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8502

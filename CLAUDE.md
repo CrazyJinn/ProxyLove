@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 项目级文档，动手前按需读：
 - [README.md](README.md) — **编排流程视角**：三大编排 Agent（`char-design` / `scene-design` / `plot-design`）的时序图、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
-- 节点 status 流转 / 审批规则 / sync 级联的权威源：[55_dashboard/core/status.py](55_dashboard/core/status.py)（`NODE_STATUS`）、[core/cascade.py](55_dashboard/core/cascade.py)、[00_init/Schema/](00_init/Schema/)。**改任何节点/边/status 逻辑前必读。**
+- 节点 status 流转 / 审批规则 / sync 级联的权威源：[55_dashboard/app/services/status.py](55_dashboard/app/services/status.py)（`NODE_STATUS`）、[app/services/cascade.py](55_dashboard/app/services/cascade.py)、[00_init/Schema/](00_init/Schema/)。**改任何节点/边/status 逻辑前必读。**
 
 子项目各有自己的指南：[55_dashboard/CLAUDE.md](55_dashboard/CLAUDE.md)（人工治理后台）、[99_game/README.md](99_game/README.md)（Godot 工程）。
 
@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 子系统 | 位置 | 职责 |
 |-------|------|------|
 | **Skills + Agents** | `.claude/skills/`、`.claude/agents/` | 自动化生产：组装 prompt、调 OfoxAI 出图、推进节点 `status` |
-| **人工治理后台** | [55_dashboard/](55_dashboard/) | Streamlit 应用，浏览/编辑/审批/级联重置，与 skills 共享同一个 Neo4j |
+| **人工治理后台** | [55_dashboard/](55_dashboard/) | FastAPI 应用（审批中心/生产看板/叙事图浏览/Cypher 控制台/CSV 快照），与 skills 共享同一个 Neo4j |
 | **游戏运行时** | [99_game/](99_game/) | Godot 4.3+ Galgame，集中式 `ScriptInterpreter` 消费纯 JSON 剧本 |
 
 目录前缀的数字是**流水线阶段编号**（创作输入 `00_` → 叙事数据 `01_` → 剧情数据 `02_` → 美术 `06_/07_` → 声音 `14_/15_` → 后台 `55_` → 成品 `99_`），并非每个阶段都已落地，按编号即可判断某产物在链路中的位置。
@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 1. Neo4j 是数据脊柱，`cypher_exec.py` 是唯一读写入口
 
-所有 skill / 后台 / 脚本对图数据库的读写都收敛到 [.claude/scripts/cypher_exec.py](.claude/scripts/cypher_exec.py)（后台 `repo/` 层是它在本子项目内的等价物）。它只执行调用方（LLM）即时生成的 Cypher 并结构化返回，本身不含业务逻辑。连接 `bolt://localhost:7687`，user `neo4j`。
+所有 skill / 后台 / 脚本对图数据库的读写都收敛到 [.claude/scripts/cypher_exec.py](.claude/scripts/cypher_exec.py)（后台 `app/repo/graph_repo.py` 层是它在本子项目内的等价物）。它只执行调用方（LLM）即时生成的 Cypher 并结构化返回，本身不含业务逻辑。连接 `bolt://localhost:7687`，user `neo4j`。
 
 ```bash
 # skills 内部用相对 skill 的路径引用：
@@ -40,14 +40,14 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 2. Schema 是唯一事实来源
 
-节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（叙事基础 / 角色美术 / 场景美术 / 剧情 / 声音 五个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成。后台的 [core/schema_loader.py](55_dashboard/core/schema_loader.py) 在启动时解析这些 `.md` 表格驱动 UI 字段——**改 Schema 格式会同时影响 skills 和后台**。
+节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（叙事基础 / 角色美术 / 场景美术 / 剧情 / 声音 五个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成。后台展示用字段中文名硬编码在 [app/services/node_fields.py](55_dashboard/app/services/node_fields.py)（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须手工同步该文件**。
 
 ### 3. 生产链 = DAG + status + sync 级联
 
 每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级产物链：`Section →has_outline→ SecOutline →produces→ SecScript -[:produces {order}]-> LineAudio(×N 逐句台词行)`，Section 为纯编排容器**无 status**，三产物各用通用 status（SecOutline 0→1 / SecScript 0→1→10→11 / LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），链式 sync 级联——改提纲自动作废定稿+全部行、改定稿自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice key 末段，插入/删除行不漂移）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。两个核心机制：
 
-- **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准。规则在 [55_dashboard/core/status.py](55_dashboard/core/status.py) 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
-- **`sync` 边属性**：上游节点属性变更后，沿 `sync=true` 出边 BFS，把可达下游 `status` 重置为 **`-1`**（作废重做）；`sync=false` 阻断（如叙事边 `wears`、`relation`）。级联实现在 [55_dashboard/core/cascade.py](55_dashboard/core/cascade.py)。
+- **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准。规则在 [55_dashboard/app/services/status.py](55_dashboard/app/services/status.py) 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
+- **`sync` 边属性**：上游节点属性变更后，沿 `sync=true` 出边 BFS，把可达下游 `status` 重置为 **`-1`**（作废重做）；`sync=false` 阻断（如叙事边 `wears`、`relation`）。级联实现在 [55_dashboard/app/services/cascade.py](55_dashboard/app/services/cascade.py)（dashboard 审批动作不触发级联，级联只由 Cypher 控制台/节点编辑确认卡触发）。
 
 ### 4. Web 运行时与发布（全量主包模式）
 
@@ -92,7 +92,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 
 ## 凭证（settings.json，已 gitignore）
 
-`settings.json`（项目根，已在 `.gitignore`）持有 `neo4j_password`、`ofox_api_key`，以及 R2 部署凭证 `cloudflare_account_id` / `cloudflare_access_key_id` / `cloudflare_secret` / `cloudflare_bucket`（桶 `proxy-love`，token 限单桶无 ListBuckets 权限；[deploy_r2.py](99_game/tools/deploy_r2.py) 读，env `R2_*` 优先）。密码优先级：`--password` 参数 > `NEO4J_PASSWORD` 环境变量 > 向上搜索到的 `settings.json`。OfoxAI key 由 [infra-image-generator](.claude/skills/infra-image-generator/scripts/ofoxai_api.py) 从同一 `settings.json` 读。改凭证来源时要同步 [55_dashboard/config/settings.py](55_dashboard/config/settings.py)。
+`settings.json`（项目根，已在 `.gitignore`）持有 `neo4j_password`、`ofox_api_key`，以及 R2 部署凭证 `cloudflare_account_id` / `cloudflare_access_key_id` / `cloudflare_secret` / `cloudflare_bucket`（桶 `proxy-love`，token 限单桶无 ListBuckets 权限；[deploy_r2.py](99_game/tools/deploy_r2.py) 读，env `R2_*` 优先）。密码优先级：`--password` 参数 > `NEO4J_PASSWORD` 环境变量 > 向上搜索到的 `settings.json`。OfoxAI key 由 [infra-image-generator](.claude/skills/infra-image-generator/scripts/ofoxai_api.py) 从同一 `settings.json` 读。**dashboard 凭证单独在 [55_dashboard/settings.json](55_dashboard/settings.json)（env `NEO4J_*` 优先，不向上搜索）——`neo4j_password` 与项目根是双份，Neo4j 改密两处都要改**。
 
 ## ID 约定
 
@@ -110,10 +110,9 @@ python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
 # ── 图数据库（需本地 Neo4j 运行于 bolt://localhost:7687）──
 python .claude/scripts/cypher_exec.py -c "MATCH (n:Character) RETURN n.name AS name LIMIT 10" --json
 
-# ── 后台（http://localhost:8501，自动检测/安装依赖）──
+# ── 后台（http://localhost:8502，uv 优先自动装依赖）──
 bash 55_dashboard/run.sh                 # 或 Windows: 55_dashboard/run.bat
-cd 55_dashboard && python -m pytest                       # 全部（core 层纯单测，不连真实 Neo4j）
-cd 55_dashboard && python -m pytest tests/test_cascade.py::test_xxx -v   # 单用例
+cd 55_dashboard && uv run pytest         # 全部（纯逻辑单测，不连真实 Neo4j；无 uv 用 .venv 的 python -m pytest）
 
 # ── Godot 游戏（需 Godot 4.3+；Godot 4.7.1 在 D:\godot\）──
 #   编辑器导入 99_game/project.godot，F5 从标题→「开始游戏」进 chapter00_序章
@@ -127,7 +126,7 @@ python 99_game/tools/publish_web.py    # 子集化→headless 导出→(按开�
 python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计划
 ```
 
-无全局 lint / formatter；Python 用系统解释器（开发环境 3.14），无 `.venv`。后台测试**必须在 `55_dashboard/` 目录下跑**（`from core import ...` 依赖 cwd 在 `sys.path`）。
+无全局 lint / formatter；Python 用系统解释器（开发环境 3.14）。dashboard 自带 `.venv/`（run 脚本/`uv sync` 创建）；其余目录无 `.venv`。
 
 ## 何时用 skill / agent
 
@@ -135,4 +134,4 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
 - 要从创作文本提取叙事实体/关系 → `nrt-narrative-extractor`（离线产 CSV + import.cypher）。
 - 要手动加节点/边或发现图缺口 → `nrt-graph-builder`。
-- 要给叙事图做体检/补全缺口、按角色聚焦多轮增长 → `nrt-narrative-grower`（可选聚焦入参 + 多轮迭代，产 `02_剧情数据/<日期>_round<N>_建议.json`，dashboard 审批写回；范围限定基础节点 Character/Event/Location/Info/Choice）。
+- 要给叙事图做体检/补全缺口、按角色聚焦多轮增长 → `nrt-narrative-grower`（可选聚焦入参 + 多轮迭代，产 `02_剧情数据/<日期>_round<N>_建议.json`，人工经 dashboard Cypher 控制台逐条写回；范围限定基础节点 Character/Event/Location/Info/Choice）。

@@ -1,33 +1,23 @@
 #!/usr/bin/env bash
-# 快速启动 55_dashboard（Streamlit 后台）
-# 用法：bash run.sh   或在项目根  bash 55_dashboard/run.sh
+# 启动 55_dashboard（FastAPI/uvicorn，http://localhost:8502）。用法：bash run.sh
 set -e
-
-# 切到脚本所在目录，保证相对路径（config/ 等）可用
 cd "$(dirname "$0")"
 
-# 优先用虚拟环境，没有就用系统 python
-if [ -d ".venv" ]; then
-  # Windows Git Bash 下 venv 的解释器在 Scripts/
-  if [ -x ".venv/Scripts/python.exe" ]; then
-    PY=".venv/Scripts/python.exe"
-  else
-    PY=".venv/bin/python"
-  fi
-else
-  PY="python"
+if [ ! -f settings.json ]; then
+  echo "⚠ 缺少 55_dashboard/settings.json（含 neo4j_password 等配置），请先创建" >&2
 fi
 
-# 依赖自检：缺 streamlit 就装一次
-if ! "$PY" -c "import streamlit" >/dev/null 2>&1; then
-  echo "→ 未检测到 streamlit，安装依赖 requirements.txt ..."
-  "$PY" -m pip install -r requirements.txt
+if command -v uv >/dev/null 2>&1; then
+  uv sync --quiet   # 按 uv.lock 建 .venv（含 dev 组 pytest）
+  exec uv run python -m uvicorn app.main:app --host 127.0.0.1 --port 8502
 fi
 
-# .env 自检（仅提示，settings.py 也会从项目根 settings.json 读 neo4j 凭证）
-if [ ! -f ".env" ]; then
-  echo "⚠ 未找到 .env（参考 .env.example 配置 Neo4j 凭证；也可放在项目根 settings.json）"
+# pip 兜底（无 uv）
+if [ ! -x ".venv/Scripts/python.exe" ] && [ ! -x ".venv/bin/python" ]; then
+  python -m venv .venv
 fi
-
-echo "→ 启动 Streamlit：http://localhost:8501"
-exec "$PY" -m streamlit run app.py --server.port 8501 --server.headless false
+if [ -x ".venv/Scripts/python.exe" ]; then PY=".venv/Scripts/python.exe"; else PY=".venv/bin/python"; fi
+if ! "$PY" -c "import fastapi" >/dev/null 2>&1; then
+  "$PY" -m pip install fastapi uvicorn jinja2 neo4j python-multipart pytest
+fi
+exec "$PY" -m uvicorn app.main:app --host 127.0.0.1 --port 8502
