@@ -2,7 +2,7 @@
 name: chapter-dialoguer
 description: |
   推进 Section 图节点的定稿段：读 structurer 的章级设计简报 + outliner 的本节提纲 outline.md → 创作逐句对话 → 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 兜底建 SecScript（SecOutline-[:produces]->SecScript）写 script_path + status=10（定稿待审，直写不经 submit）。
-  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（SecScript 存在且 ink 含 llm: 行且 sc∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sc→10）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿审渲染/编辑器修改；审批通过（sc=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
+  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（SecScript 存在且 ink 含 llm: 行且 sc∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sc→10）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿审渲染；审批通过（sc=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
   前驱 SecOutline.status=1（提纲就绪）。创作中若发现 outline 戏剧性破碎（分支无本质差异/scene 无情绪推进），产出「结构性问题报告」回退 outliner，不写 status。
 argument-hint: <section_id>
 arguments:

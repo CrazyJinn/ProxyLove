@@ -27,7 +27,7 @@
 | **只读查全量，禁止过滤 -1** | 开局一次查询拿到本地状态表。`-1`（作废重做）与 `0`（待生成）都是待办，**禁止**在 WHERE 加 `status >= 0` 把 `-1` 滤掉。 |
 | **调度只看 status，不看产物文件** | 唯一判据是节点 `status` 是否到达该链最大门控。**禁止**因 `prompt_path`/`image_path`/`script_path` 已有值或磁盘文件已存在而跳过；`-1` 必须重生成并**覆盖**旧产物，重做时禁止读旧文件。 |
 | **全量循环推进，禁止只推一个就停** | 枚举所有 `status < 10` 的待办逐个委派，直到全部到达终态、撞上审批阻塞（`10` 待 dashboard 批）、或撞上需用户决策的分歧点，才返回（plot-design 单节聚焦模式只推目标节，不受此约束）。 |
-| **审批阻塞** | 生产节点产物完成即入待审 `10`（Chapter / VoiceDesign / SecScript / LineAudio 由生产 skill 直写，无 submit 步）；批准 `11` 才允许下游推进；驳回归 `0`。审批由 [55_dashboard](55_dashboard/) 人工触发，**详见 [§2 审批流程](#2-审批流程)**。 |
+| **审批阻塞** | 生产节点产物完成即入待审 `10`（Chapter / VoiceDesign / SecScript / LineAudio 由生产 skill 直写，无 submit 步）；批准 `11` 才允许下游推进；驳回归 `0`。审批由人工治理后台（独立项目 dailian-dashboard，gitee `crazyjinn/dailian-dashboard`）触发，**详见 [§2 审批流程](#2-审批流程)**。 |
 | **复查就地在内存表更新** | 仅在 skill/agent 返回（发生一次写入）后，对**该被推进节点**复查一次；禁止每推一个就重查整张子图。 |
 | **汇报逐节点交代** | 列出全部节点，逐个给 `status` + 本轮是否处理；未推进的说明原因；**禁止**把 `status=-1` 误报成"节点未创建"。 |
 
@@ -391,7 +391,7 @@ sequenceDiagram
 
 ## 项目文件夹结构
 
-> 目录前缀的数字是**流水线阶段编号**（创作输入 `00_` → 叙事数据 `01_` → 剧情数据 `02_` → 美术 `06_/07_` → 声音 `14_/15_` → 剧本 `25_` → 后台 `55_` → 成品 `99_`），按编号即可判断某产物在链路中的位置。`.claude/` 是 Claude Code 自动化层（skill / agent / 脚本），`env/` 是声音链隔离环境（gitignore）。
+> 目录前缀的数字是**流水线阶段编号**（创作输入 `00_` → 叙事数据 `01_` → 剧情数据 `02_` → 美术 `06_/07_` → 声音 `14_/15_` → 剧本 `25_` → 成品 `99_`），按编号即可判断某产物在链路中的位置。`.claude/` 是 Claude Code 自动化层（skill / agent / 脚本），`env/` 是声音链隔离环境（gitignore）。人工治理后台不在本仓库（独立项目 dailian-dashboard，共享同一图数据库）。
 
 ```
 代恋/
@@ -427,11 +427,6 @@ sequenceDiagram
 │
 ├── 25_剧本/                          # 剧本产出（章+节两层：structurer 出设计简报；outliner/dialoguer 按节产出）
 │   └── chapter<NN>_<章概述>/         # 每章一目录：设计简报.md + 各 sec<MM>_<节概述>/（outline.md + 台词.ink）
-│
-├── 55_dashboard/                     # 人工治理后台（FastAPI/uvicorn，http://localhost:8502）
-│   ├── app/                          # main.py（全部路由）+ services/（status·cascade·board…）+ repo/graph_repo.py
-│   ├── tests/                        # 纯逻辑单测（不连真实 Neo4j）
-│   └── settings.json                 # 本子项目配置（凭证，已 gitignore；与根 settings.json 密码双份）
 │
 ├── env/                              # 声音链环境（gitignore）：.venv-qwen（Qwen3-TTS）
 │

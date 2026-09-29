@@ -34,7 +34,7 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 **查询必须覆盖全部美术节点，尤其不得遗漏 `status=-1`/`0` 的待办节点**（这是最常见的失误源）：
 
 - **禁止**在 WHERE 加 `status >= 0` 之类过滤把 `-1` 滤掉——`-1`（作废重做）与 `0`（待生成）都是必须推进的待办，不是"已完成"也不是"不存在"。
-- 用**限定边类型的变长路径**一次查完全部：把美术+声音链 8 种边类型显式列入 `[:...]`（dashboard 展示层的等价遍历在 [board.py](55_dashboard/app/services/board.py) 的 `char_art_graph`，边集少 `ref_style`，仅作参考——skill 侧以本行的 8 边为准），既是"明确"的体现，又能阻止遍历越界到叙事 Event / 其他角色。Schema 中所有美术/声音边都是 Character 的下游方向，有向 `*1..5` 一路可达全部 6 类节点（含声音设计 VoiceDesign；`StandingIllustration` 已剥离至 plot-design，不在本链）；`IllusDesign` 有双上游（produces/outfit_for）会被重复命中，用 `DISTINCT` 去重：
+- 用**限定边类型的变长路径**一次查完全部：把美术+声音链 8 种边类型显式列入 `[:...]`，既是"明确"的体现，又能阻止遍历越界到叙事 Event / 其他角色。Schema 中所有美术/声音边都是 Character 的下游方向，有向 `*1..5` 一路可达全部 6 类节点（含声音设计 VoiceDesign；`StandingIllustration` 已剥离至 plot-design，不在本链）；`IllusDesign` 有双上游（produces/outfit_for）会被重复命中，用 `DISTINCT` 去重：
 
 ```cypher
 MATCH (:Character {id:'<角色ID>'})-[:has_appearance|has_voice_style|has_voice_design|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(n)

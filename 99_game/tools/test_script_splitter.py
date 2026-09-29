@@ -132,7 +132,7 @@ def test_parse_ink_malformed_ending_tag_rejected(tmp_path):
 
 
 def test_parse_ink_text_in_memory(tmp_path):
-    """parse_ink_text（dashboard 编辑器 in-memory 校验入口）与文件版输出一致。"""
+    """parse_ink_text（内存解析入口）与文件版输出一致。"""
     assert sp.parse_ink_text(INK) == sp.parse_ink(_write_ink(tmp_path))
 
 
