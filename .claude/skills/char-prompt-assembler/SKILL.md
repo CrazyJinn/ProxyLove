@@ -2,7 +2,7 @@
 name: char-prompt-assembler
 description: |
   从调用方传入的节点数据（设计元素 tags + 自由文本）组装图片生成提示词，派生为 prompt 文件并返回其路径。
-  四种模式：DesignSheet（文生图）、DesignSheetDelta（图生图增量版——同人物仅变更 delta.notes 口述维度）、IllusDesign（图生图）、StandingIllustration（图生图）。
+  四种模式：DesignSheet（参考图图生图——用户真人参考照片 + AppearanceStyle 补充特征，冲突以属性为准）、DesignSheetDelta（图生图增量版——同人物仅变更 delta.notes 口述维度）、IllusDesign（图生图）、StandingIllustration（图生图）。
   纯产出层：不读写图数据库、不写 status，所有数据由调用方通过 data 参数提供。
   在需要为美术节点组装提示词或被其他 skill 调用时使用。
 argument-hint: <mode> <data_json>
@@ -31,7 +31,7 @@ allowed-tools: Read, Bash, Write, Edit
 ## 编写原则
 
 - **标签展开为完整描述句**：转为自然语言（写"黑色长发"而非"hair_color:黑"）
-- **主体 → 细节 → 风格**：先写主体，再补细节，画风放末尾
+- **主体 → 细节 → 风格**：先写主体，再补细节，画风放末尾——适用于 A-delta/B/C；**模式 A 例外**：段序固定「参考图任务 → 画风 → 补充特征」（demo 实测段序勿调换——参考照片写实感渗透是本模式首要失败模式，渲染框架须先于属性细节建立）
 - **中文提示词**，按 reference 模板的 markdown 结构（标题/编号）组织
 - **只提取不创作**：内容来自 data 参数（tags + 自由文本）和 `00_init/美术风格.md`，不臆造
 - **去重不矛盾**：同维度的信息只在 tags 中表达一次（服装款式/颜色/材质统一在 `garment` 标签），避免提示词出现重复或矛盾描述
@@ -47,24 +47,25 @@ allowed-tools: Read, Bash, Write, Edit
 
 > prompt 文件路径由调用方在 `output_path` 入参中声明，assembler 透传使用；每个节点的路径唯一性由调用方保证。
 
-## 模式A：DesignSheet（文生图）
+## 模式A：DesignSheet（参考图图生图）
 
-为三视图设计稿组装提示词。聚焦角色外貌，不涉及衣着——角色统一穿着深色基础衣物（黑色长袖压缩上衣与深色全长压缩裤，措辞为安全审核实测过的固定值，勿改回贴身/背心/短裤类），与肤色形成高对比。详细维度映射见 [references/template-设计图提示词.md](references/template-设计图提示词.md)。
+为三视图设计稿组装提示词——以调用方传入的**单张真人参考照片**为外貌基础图生图，`appearance` 外貌属性**全量**作为补充特征附加（与照片不一致时以补充特征为准）。聚焦角色外貌，不涉及衣着——角色统一穿着深色基础衣物（黑色长袖压缩上衣与深色全长压缩裤，措辞为安全审核实测过的固定值，勿改回贴身/背心/短裤类），**赤足光脚、双足裸露**（2026-10-04 用户定规——参考照片的鞋履会渗透进转绘图，足部状态显式锚定为光脚），与肤色形成高对比。详细维度映射见 [references/template-设计图提示词.md](references/template-设计图提示词.md)。
 
 **data 参数结构**：
 ```json
 {
   "appearance": {
-    "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","hair":"...","eye":"...","lip_shape":"...","marks":"..."},
-    "appearance":"...(自由文本:综合气质/身高)","visual_tone":"...","first_impression":"..."
+    "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."},
+    "appearance":"...(自由文本:综合气质/身高)","visual_tone":"...","first_impression":"...", "height_cm":"(可选 int)"
   },
-  "character": {"id":"<char_id>","name":"...","color_direction":"...(自由文本:配色逻辑)"},
+  "character": {"id":"<char_id>","name":"..."},
+  "base": {"image":"06_角色美术/<char_name>/参考图.<png|jpg|jpeg>","summary":"真人参考照片（单张）"},
   "node": {"id":"<designsheet_node_id>"},
   "output_path": "06_角色美术/<char_name>/prompt.md"
 }
 ```
 
-组装：从 `appearance.tags` 展开各维度（体态/肤色/发长发型发色/眼型瞳色/唇形/特殊标记）为自然语言，结合 `appearance` 自由文本（综合气质、身高）与 `character.color_direction`（配色逻辑），加贴身基础衣物说明，画风放末尾。画风段背景行固定声明**不透明纯色背景**（白色，无渐变、无纹理、无场景元素——设计图产物非透明）；图面要求**无描述性文字**（无标签/注记/说明文字），三视图可附 3 宫格特写（面部、手部等，见模板三视图规则）；**画风段分辨率取美术风格.md 的「设计图 / 立绘设计图」条目（动态提取，不硬编码数值，ASCII `x` 分隔）。**
+组装（**段序固定勿调换**）：**参考图任务段**（措辞为 demo 实测值：一张真人参考照片为外貌依据、转绘为动画风格、照片仅作外貌参照外貌细节以下方补充特征为准、不得保留照片质感/真实皮肤纹理/摄影光影）→ **画风段**（从 `00_init/美术风格.md` 动态提取六条；背景行固定声明**不透明纯色背景**白色，无渐变、无纹理、无场景元素——设计图产物非透明；分辨率取「设计图 / 立绘设计图」条目动态提取，ASCII `x` 分隔；**色调行发色/瞳色/肤色写「按下方补充特征提纯为干净的固有色」，禁止写「按参考照片提取」**）→ **补充特征段**（AppearanceStyle 七条全量展开：①体型与身形比例（含身高——height_cm 数值优先，缺失取 appearance 文本，均无不写；含年龄感）②面部与五官（含面孔人种/肤色）③发型④基础衣物（固定措辞，含赤足光脚）⑤特殊标记⑥气质神态 ← visual_tone + first_impression + appearance 气质部分⑦姿态固定句「静态站姿，双手自然垂于身侧，无交叠、叉腰、持物等动作」。**不引用 `Character.color_direction`**——配色逻辑属造型/着装范畴，设计图聚焦外貌，配色渗透会污染底衣外貌基准（2026-10-06 用户定规）；**段首锚定句「以下补充特征与参考照片不一致时，一律以补充特征为准」**；各维度正文**正向陈述**属性，禁止「不采用照片中的XX、改为XX」式否定）。图面要求**无描述性文字**（无标签/注记/说明文字），三视图可附 3 宫格特写（面部、手部等，见模板三视图规则）。
 
 ## 模式A-delta：DesignSheetDelta（图生图增量版）
 
@@ -75,13 +76,13 @@ allowed-tools: Read, Bash, Write, Edit
 {
   "base": { "image": "06_角色美术/<char_name>/设计图.png", "summary": "参考版设计图（同人物）" },
   "delta": { "notes": "<口述改动原文>", "negation": "<对参考图旧特征的显式否定（只否定被变更维度）>" },
-  "character": {"id":"<char_id>","name":"...","color_direction":"..."},
+  "character": {"id":"<char_id>","name":"..."},
   "node": {"id":"<新designsheet_node_id>"},
   "output_path": "06_角色美术/<char_name>/<slug>/prompt.md"
 }
 ```
 
-组装（按模板四段顺序）：**同一人物开篇**（「与参考图为同一人物的角色设计图，全身三视图」）→ **保持段**（面部五官/体型肤色/特殊标记/黑色长袖压缩上衣+深色全长压缩裤底衣/静态姿态构图均与参考图完全一致不变）→ **变更段**（仅 `delta.notes` 展开为具体视觉描述句，唯一变更来源，禁止顺手改未口述项）→ **否定锚定段**（`delta.negation` 原样写入，压制参考图惯性）→ 画风段（同模式 A：三视图、无描述性文字、不透明纯色白背景、分辨率动态提取）。底衣措辞沿用模式 A 固定安全值。
+组装（按模板四段顺序）：**同一人物开篇**（「与参考图为同一人物的角色设计图，全身三视图」）→ **保持段**（面部五官/体型肤色/特殊标记/黑色长袖压缩上衣+深色全长压缩裤底衣+赤足/静态姿态构图均与参考图完全一致不变）→ **变更段**（仅 `delta.notes` 展开为具体视觉描述句，唯一变更来源，禁止顺手改未口述项）→ **否定锚定段**（`delta.negation` 原样写入，压制参考图惯性）→ 画风段（同模式 A：三视图、无描述性文字、不透明纯色白背景、分辨率动态提取）。底衣措辞沿用模式 A 固定安全值。
 
 ## 模式B：IllusDesign（图生图）
 
@@ -120,7 +121,7 @@ allowed-tools: Read, Bash, Write, Edit
 }
 ```
 
-组装：**首要依据 `stand.description`（变体氛围/情绪情境）定调表情强度、身体朝向、动作张力**；固定前缀 `[角色名]立绘，全身像，`（不写背景——透明措辞固化在画风段背景行，不放前缀），随后**据 description 氛围自主决定身体面对镜头的朝向**（正视镜头/3/4侧身/全侧身/背影——默认/微笑倾向正视镜头，战斗/愤怒等动态倾向 3/4侧身，回眸/悲伤等倾向全侧身或背影）写在「全身像」之后；再从 `stand.tags` 展开表情（eye/brow/mouth/head_angle）与动作（hand/foot）为自然语言，结合 `voice.emotion_patterns` 补充情绪；**动态/强情绪变体的动作幅度应更大、更有张力**（见 [references/template-立绘提示词.md](references/template-立绘提示词.md) 编写要点）。**默认站姿**：人物保持站立体态——跨步/走路/重心偏移/前倾/挥臂等站姿范围内的大幅动作均可，坐/卧/跪/躺/跳起腾空等非站立体态仅当 stand.description（或调用方数据）明确要求时使用。**手持物品保持不变**：参考图（IllusDesign 立绘设计图）上已有的手持物品不丢失、不改变、不替换、不新增；提示词不描述手持物本身（参考图已携带）。画风放末尾，**画风段背景行固化英文透明措辞（原样写入、一字不改）**：`**背景**：主体完整居中，fully transparent background with alpha channel, no background elements, no cast shadow on background`——立绘产物**必须透明**；透明触发需措辞与 API 参数双在场（2026-09-13 实测：仅措辞连续返 RGB），调用方生成时须同时传 `--background transparent`（png 已由 infra-image-generator 全局强制）。**身体朝向与动作幅度由 LLM 据 `stand.description` 氛围自主生成**（data 里无硬编码朝向字段，description 是氛围依据）。**画风段分辨率取美术风格.md 的「立绘」条目（动态提取，不硬编码数值）。**
+组装：**首要依据 `stand.description`（变体氛围/情绪情境）定调表情强度、身体朝向、动作张力**；固定前缀 `[角色名]立绘，全身像，`（不写背景——透明措辞固化在画风段背景行，不放前缀），随后**据 description 氛围自主决定身体面对镜头的朝向**（正视镜头/3/4侧身/全侧身/背影——默认/微笑倾向正视镜头，战斗/愤怒等动态倾向 3/4侧身，回眸/悲伤等倾向全侧身或背影）写在「全身像」之后；再从 `stand.tags` 展开表情（eye/brow/mouth/head_angle）与动作（hand/foot）为自然语言，结合 `voice.emotion_patterns` 补充情绪；**动态/强情绪变体的动作幅度应更大、更有张力**（见 [references/template-立绘提示词.md](references/template-立绘提示词.md) 编写要点）。**默认站姿**：人物保持站立体态——跨步/走路/重心偏移/前倾/挥臂等站姿范围内的大幅动作均可，坐/卧/跪/躺/跳起腾空等非站立体态仅当 stand.description（或调用方数据）明确要求时使用。**手持物品与交互禁令**：参考图（IllusDesign 立绘设计图）上已有的手持物品不丢失、不改变、不替换、不新增；提示词不描述手持物本身（参考图已携带）；**不得额外添加手持物品、道具或饰品，手部不得与外部物件或他人交互**（如为他人整理袖子/衣领、撑桌、扶门、递物、搭肩、指人等），手部动作仅限自体姿态（垂放/叉腰/抱臂/插兜/托腮等）——description 中涉及交互的情节仅领会情绪、不转化为画面动作，`stand.tags.hand` 与禁则冲突时忽略并回退自然垂放。画风放末尾，**画风段背景行固化英文透明措辞（原样写入、一字不改）**：`**背景**：主体完整居中，fully transparent background with alpha channel, no background elements, no cast shadow on background`——立绘产物**必须透明**；透明触发需措辞与 API 参数双在场（2026-09-13 实测：仅措辞连续返 RGB），调用方生成时须同时传 `--background transparent`（png 已由 infra-image-generator 全局强制）。**身体朝向与动作幅度由 LLM 据 `stand.description` 氛围自主生成**（data 里无硬编码朝向字段，description 是氛围依据）。**画风段分辨率取美术风格.md 的「立绘」条目（动态提取，不硬编码数值）。**
 
 ## 参考文档
 

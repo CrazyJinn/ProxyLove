@@ -27,9 +27,9 @@ MERGE (n:Event {id: 'QP23NrFZqq'}) SET n.title = '理发买衣吃面', n.time = 
 MERGE (n:Event {id: 'QP23NrFZqr'}) SET n.title = '林梦点单翻盘', n.time = 'Day 2', n.description = '老客户林梦「最后相信你一次」的点单——被翻盘打脸当场真香变回小迷妹；她没马上退语音，自顾自聊了半小时八卦，下线前说「你声音听起来精神多了」——陆择第一次「不想让人失望」', n.type = '交流';
 MERGE (n:Event {id: 'QP23NrFZqs'}) SET n.title = '陈念探望', n.time = 'Day 3', n.description = '陈念杀到出租屋：打量弟弟、摸到空冰箱开骂、塞满冻饺排骨汤、唠叨中红了眼；临走检查燃气、在碗底压一沓现金；她发现弟弟好像有点不一样了——晚饭多吃了一碗。陆择的落点是羡慕：陈默有人惦记', n.type = '交流';
 MERGE (n:Event {id: 'QP23NrFZqt'}) SET n.title = '晨跑搭讪碰壁', n.time = 'Day 4', n.description = '陆择按渣男剧本搭讪苏晓禾——话术、展现身材；她全程公事公办：「你这样跑膝盖要废」，开始纠正姿势。渣男方法论第一次碰壁，剧本失效（动因：误读任务为「帮陈默找个漂亮女朋友」）', n.type = '交流';
-MERGE (n:Event {id: 'QP23NrFZqu'}) SET n.title = '直播准备日', n.time = 'Day 4', n.description = '林梦提议直播；设备事故三连：麦克风静音、游戏闪退、远程大小姐口气指挥；升级配置的钱林梦出——「本小姐投资你，以后直播赚了十倍还我」', n.type = '行动';
+MERGE (n:Event {id: 'QP23NrFZqu'}) SET n.title = '直播准备日', n.time = 'Day 4', n.description = '林梦剪的圣剑美杜莎视频登上游戏区头条、趁热提议直播；设备事故三连：麦克风静音、游戏闪退、远程大小姐口气指挥；升级配置的钱林梦出——「本小姐投资你，以后直播赚了十倍还我」', n.type = '行动';
 MERGE (n:Event {id: 'QP23NrFZqv'}) SET n.title = '生存算账日', n.time = 'Day 5', n.description = '算陈默的人生账：代练收入、平台抽成、房租、欠林梦的设备款、碗底的现金、温蔓青的 66666 能要回多少——接下这个人生的人是他，擦屁股的也只能是他；收下姐姐的钱、收拾旧物、定三个闹钟，生活回到正轨', n.type = '转折';
-MERGE (n:Event {id: 'QP23NrFZqw'}) SET n.title = '首播破万', n.time = 'Day 6', n.description = '首场直播峰值 12000；下播后对着黑掉的屏幕发了一会儿呆——极轻的身份酸涩；当晚收到沈暮雪直球挖人私信（扫榜早标记了这个胜率异常的路人大神）', n.type = '行动';
+MERGE (n:Event {id: 'QP23NrFZqw'}) SET n.title = '首播破万', n.time = 'Day 6', n.description = '首场直播峰值 12000（观众相当部分循林梦剪的头条视频而来）；下播后对着黑掉的屏幕发了一会儿呆——极轻的身份酸涩；当晚收到沈暮雪直球挖人私信（她在游戏区头条看到了圣剑美杜莎的剪辑）', n.type = '行动';
 MERGE (n:Event {id: 'QP23NrFZqx'}) SET n.title = '星耀试训冲突', n.time = 'Day 7', n.description = '个人碾压但团队配合稀烂；双立场对峙——江烈的怒有职业道理，陆择的懒散有底层逻辑；错的是试训本身是沈暮雪单方面越级邀请；收场是观察期：「下周一再来，输一局滚蛋」', n.type = '交流';
 MERGE (n:Event {id: 'QP23NrFZqy'}) SET n.title = '晨跑双向确认', n.time = 'Day 8', n.description = '再遇苏晓禾是偶遇不是安排；他默默按她说的改了姿势，她在身后看了几秒把配速放慢半拍陪他跑完——两个人都不说破。治愈线第一次双向确认', n.type = '交流';
 MERGE (n:Event {id: 'QP23NrFZqz'}) SET n.title = '温蔓青质问电话', n.time = 'Day 9', n.description = '温蔓青反常来电质问为什么删她微信——语气不是愧疚是兴师问罪；陆择一句平淡的话挡回挂断；不翻旧账不心软不回收 66666——对过去的切割第一次接受外部检验，他通过了', n.type = '交流';
@@ -88,12 +88,13 @@ MERGE (n:Info {id: 'QP23NrFZrq'}) SET n.title = '温蔓青66666不回收', n.con
 MERGE (n:Info {id: 'QP23NrFZrr'}) SET n.title = '三选一机制', n.content = '三通未接来电各有内容——各带一句语音或短信邀约（苏晓禾问周末跑步路线、林梦说抢到了漫展志愿名额、沈暮雪邀他观礼二队首秀），玩家回拨谁就是选谁；未选的两个号码从此音讯渐稀，不写撕破脸，留白给二周目', n.knowledge_level = 1;
 MERGE (n:Info {id: 'QP23NrFZrs'}) SET n.title = '林梦漫展做局', n.content = '「恰好抽到」是林梦做的局——她提前买通了抽签、备好两套情侣角色，算准他会被抽到；漫展现场她紧张得手心冒汗，生怕被看穿。与 Day 12 嘴硬不下麦是同一性格：想靠近，只敢绕弯', n.knowledge_level = 2;
 MERGE (n:Info {id: 'QP23NrFZrt'}) SET n.title = '苏晓禾软肋', n.content = '照顾别人上瘾——她从小照顾生病/忙碌缺席的父母，习惯当照顾者，没人问过她累不累', n.knowledge_level = 2;
-MERGE (n:Info {id: 'QP23NrFZru'}) SET n.title = '沈暮雪软肋', n.content = '「没人押过她」的孤注——女经理、非职业选手出身、选人眼光怪，一路被质疑；她越级邀请陆择，是因为在榜单上看到了当年那个没人肯赌的自己。「押没人押的人」与陆择的「拯救弱者」任务构成同构暗线', n.knowledge_level = 2;
+MERGE (n:Info {id: 'QP23NrFZru'}) SET n.title = '沈暮雪软肋', n.content = '「没人押过她」的孤注——女经理、非职业选手出身、选人眼光怪，一路被质疑；她越级邀请陆择，是因为在那条头条剪辑里看到了当年那个没人肯赌的自己。「押没人押的人」与陆择的「拯救弱者」任务构成同构暗线', n.knowledge_level = 2;
 MERGE (n:Info {id: 'QP23NrFZrv'}) SET n.title = '渣男镜像', n.content = '上一世同时吊多个女孩、这一世同时暖三个人的同构；Day 11-20 陆择对此毫无自觉，纯然享受暖三人的状态——自我厌恶与反思全部留到 Day 22 三选一之后。镜像只从上帝视角可见，是玩家独享的讽刺，不进主角内心', n.knowledge_level = 2;
-MERGE (n:Info {id: 'QP23NrFZrw'}) SET n.title = '巅峰赛单排爬榜', n.content = '一个无车队、无公会的单排 ID 悄悄爬进巅峰赛排行榜前列——Day 6 沈暮雪扫榜时早标记了这个胜率异常的路人大神（挖人私信的由来）', n.knowledge_level = 2;
+MERGE (n:Info {id: 'QP23NrFZrw'}) SET n.title = '巅峰赛单排爬榜', n.content = '一个无车队、无公会的单排 ID 悄悄爬进巅峰赛排行榜前列——林梦把该 ID 的圣剑美杜莎对局剪成视频、两天后登上游戏区头条（Day 6 沈暮雪挖人私信的由来；头条视频同时为 Day 6 首播引流）', n.knowledge_level = 2;
 MERGE (n:Info {id: 'QP23NrFZrx'}) SET n.title = '设备款关系钩子', n.content = '直播设备升级的钱是林梦出的——「本小姐投资你，以后直播赚了十倍还我」；欠人情是关系钩子，为 Day 11-20 漫展戏的服从度提供经济解释；林梦线后日谈兑现十倍回收', n.knowledge_level = 2;
 MERGE (n:Info {id: 'QP23NrFZry'}) SET n.title = '观察期默认通过', n.content = '第二次试训（Day 10 之前的周一）江烈没再骂人，只是赛后多看了他两眼——观察期的默认通过，为二队邀请做铺垫', n.knowledge_level = 2;
 MERGE (n:Info {id: 'NvCkQmFPGb'}) SET n.title = '灵魂穿越者的控制与选择', n.content = '陆择可以直接控制宿主的言行；在他拿不准、两难、情绪冲突的节点，这份犹豫会演出为玩家面前的选择项——选择的不是替陈默做主，而是陆择自己内心的天平', n.knowledge_level = 1;
+MERGE (n:Info {id: 'R1UsenvIau'}) SET n.title = '圣剑美杜莎头条剪辑', n.content = '林梦 Day 3 晚把点单局的圣剑美杜莎对局剪成三分钟视频发布、两天后登上游戏视频区头条——Day 5 提议直播与 Day 6 星耀挖人私信的共同由头、首播一万二的引流来源（sec03 结尾扣子的兑现）', n.knowledge_level = 2;
 MERGE (n:Choice {id: 'QP23NrFZqn'}) SET n.name = '三选一', n.description = '三个未接来电后，选择一位女主回拨，进入该线恋爱剧情（全书第一次真正的选择爆发）', n.time = 'Day 22';
 MATCH (a:Character {id: 'QP23NrFZrz'}), (b:Character {id: 'NvCkQmFPFq'}) MERGE (a)-[:relation {type: '亲属', detail: '姐弟'}]->(b);
 MATCH (a:Character {id: 'QP23NrFZrz'}), (b:Event {id: 'QP23NrFZqo'}) MERGE (a)-[:involved {role: '当事人', detail: '来电'}]->(b);
@@ -263,6 +264,7 @@ MATCH (a) WHERE a.id = 'NvCkQmFPFu' MATCH (b:Info {id: 'QP23NrFZru'}) MERGE (a)-
 MATCH (a) WHERE a.id = 'NvCkQmFPFo' MATCH (b:Info {id: 'QP23NrFZrv'}) MERGE (a)-[:link {type: '涉及', detail: '上帝视角独享'}]->(b);
 MATCH (a) WHERE a.id = 'QP23NrFZqr' MATCH (b:Info {id: 'QP23NrFZrw'}) MERGE (a)-[:link {type: '涉及', detail: 'Day 2 埋点'}]->(b);
 MATCH (a) WHERE a.id = 'QP23NrFZqu' MATCH (b:Info {id: 'QP23NrFZrx'}) MERGE (a)-[:link {type: '涉及', detail: ''}]->(b);
+MATCH (a) WHERE a.id = 'QP23NrFZqr' MATCH (b:Info {id: 'R1UsenvIau'}) MERGE (a)-[:link {type: '涉及', detail: '剪辑由头'}]->(b);
 MATCH (a) WHERE a.id = 'QP23NrFZqx' MATCH (b:Info {id: 'QP23NrFZry'}) MERGE (a)-[:link {type: '涉及', detail: ''}]->(b);
 MATCH (a:Event {id: 'NvCkQmFPG0'}), (b:Event {id: 'QP23NrFZqp'}) MERGE (a)-[:evt_relation {type: '先后', detail: 'Day 0 深夜'}]->(b);
 MATCH (a:Event {id: 'QP23NrFZqp'}), (b:Event {id: 'QP23NrFZqq'}) MERGE (a)-[:evt_relation {type: '先后', detail: ''}]->(b);

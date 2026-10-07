@@ -6,13 +6,24 @@
       "characters": [
         "陆择",
         "陈念",
-        "陈默"
+        "陈默",
+        "Tony",
+        "季棠",
+        "林梦",
+        "苏晓禾",
+        "沈暮雪"
       ],
       "scenes": [
         "长江大桥-护栏段",
         "八楼出租屋-床铺区",
         "八楼出租屋-进门处",
-        "八楼出租屋-厨房餐区"
+        "八楼出租屋-厨房餐区",
+        "理发店-剪发区",
+        "服装店-店内",
+        "八楼出租屋-电脑桌直播位-更新设备前",
+        "南滨路-滨江步道",
+        "八楼出租屋-电脑桌直播位-更新设备后",
+        "连锁咖啡店-座位区"
       ],
       "portraits": [
         "陆择-商务休闲着装-错愕-QZYCCE55NY",
@@ -27,7 +38,53 @@
         "陈默-居家颓废着装-敛笑-QZYDLMIlJw",
         "陈念-探望休闲着装-哽咽-Qe7ZoIAMmx",
         "陈默-居家颓废着装-局促-QZd9MZHuUq",
-        "陈默-居家颓废着装-赧然-QZdA7KqOBs"
+        "陈默-居家颓废着装-赧然-QZdA7KqOBs",
+        "Tony-前卫手艺人着装-咋舌-QySwuoGZxA",
+        "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+        "Tony-前卫手艺人着装-热络-QySx79X8d6",
+        "Tony-前卫手艺人着装-得意-QySxJSWuGW",
+        "Tony-前卫手艺人着装-真诚-QySxVoeGKe",
+        "陈默-居家颓废着装-轻快-QmUUAPIqau",
+        "Tony-前卫手艺人着装-爽朗-QySxi2XFcu",
+        "季棠-店员清爽工作装-含笑-QySyIYGFxQ",
+        "陈默-廉价休闲新装-腼腆-QmUUYRWvTc",
+        "季棠-店员清爽工作装-干练-QySyUo8RA8",
+        "陈默-廉价休闲新装-探问-QmUUkUukxU",
+        "季棠-店员清爽工作装-亲和-QySyh7z0Bk",
+        "陈默-廉价休闲新装-轻快-QmUUwScbq4",
+        "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+        "陈默-居家颓废着装-疑惑-R1RrluG8GW",
+        "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+        "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+        "陈默-居家颓废着装-释然-R1RsM2i1vk",
+        "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+        "林梦-休闲电竞私服-赌气-R1Rq1TURcW",
+        "林梦-休闲电竞私服-紧张-R1RqDXRTMW",
+        "林梦-休闲电竞私服-震惊-R1RqPdNh0y",
+        "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+        "林梦-休闲电竞私服-兴奋-R1Rqnlqwl6",
+        "陈默-居家颓废着装-走神-R1Rti56vY0",
+        "林梦-休闲电竞私服-意犹未尽-R1Rqznomae",
+        "林梦-休闲电竞私服-温软-R1RrBrloKe",
+        "陆择-商务休闲着装-怔然-R0IrWLyolc",
+        "苏晓禾-晨跑运动装-爽利-QZd7qXEfvk",
+        "陈默-晨跑运动装-发懵-R1sx03ktRQ",
+        "苏晓禾-晨跑运动装-认真-QZd82F2zWi",
+        "陈默-晨跑运动装-微笑-R1sxBzBxHU",
+        "苏晓禾-晨跑运动装-轻快-QZd8PfEoym",
+        "陈默-晨跑运动装-雀跃-R1sxNzjnSi",
+        "苏晓禾-晨跑运动装-揶揄-QZd8Dxzhdw",
+        "陆择-商务休闲着装-凝思-R1vEHeQAPw",
+        "沈暮雪-电竞经理职业装-干练-R20y5j9fIO",
+        "沈暮雪-咖啡店小资休闲装-诚恳-R2r22Heaem",
+        "沈暮雪-咖啡店小资休闲装-利落-R2r2Rht7x2",
+        "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+        "沈暮雪-咖啡店小资休闲装-严肃-R2r2raVYFk",
+        "陈默-廉价休闲新装-自嘲-R2r4xRQMVc",
+        "沈暮雪-咖啡店小资休闲装-淡锋-R2r34VXZJo",
+        "陈默-廉价休闲新装-忐忑-R2r5APrZ8S",
+        "沈暮雪-咖啡店小资休闲装-柔和-R2r3HQZaNs",
+        "沈暮雪-咖啡店小资休闲装-叮嘱-R2r3UMSOq8"
       ]
     }
   },
@@ -234,7 +291,7 @@
     {
       "id": "s00_apartment",
       "scene": "八楼出租屋-床铺区",
-      "time": "白天",
+      "time": "夜晚",
       "lines": [
         {
           "op": "narrate",
@@ -607,6 +664,1760 @@
           "text": "屋里一下子静了。"
         }
       ]
+    },
+    {
+      "id": "s02_barber",
+      "scene": "理发店-剪发区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "left",
+          "text": "之前那个天使说我的任务是什么“拯救弱者”，看这哥们的情况就是帮他找个女朋友吧。这我可太在行了。",
+          "voice": "陆择-chapter01_新皮肤-s02_barber-QmU9d2C8um"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择晃荡着来到了一家理发店，找位置坐了下去。"
+        },
+        {
+          "op": "narrate",
+          "text": "Tony捏着他的发梢，表情像在鉴定出土文物。"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-咋舌-QySwuoGZxA",
+          "pos": "right",
+          "text": "哥，你这头发……你多久没打理过自己了？",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8up"
+        },
+        {
+          "op": "hide",
+          "who": "陆择"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "left",
+          "text": "有段时间了。大概……从分手开始。",
+          "voice": "陈默-chapter01_新皮肤-s02_barber-QmU9d2C8uq"
+        },
+        {
+          "op": "narrate",
+          "text": "镜子里，Tony的眼神从职业变成了同情，又从同情变成了欲言又止。"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-热络-QySx79X8d6",
+          "pos": "right",
+          "text": "分手啊……哥，我干这行八年了，分手来剪头的，十个里有八个，剪完就精神了。",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8us"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "left",
+          "text": "剩下两个呢？",
+          "voice": "陈默-chapter01_新皮肤-s02_barber-QmU9d2C8ut"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-热络-QySx79X8d6",
+          "pos": "right",
+          "text": "剩下两个剪完还是走不出来。",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8uu"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "left",
+          "text": "那给我剪个精神的。",
+          "voice": "陈默-chapter01_新皮肤-s02_barber-QmU9d2C8uv"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-热络-QySx79X8d6",
+          "pos": "right",
+          "text": "好嘞！",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8uw"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s02_barber-QmU9d2C8ux"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-热络-QySx79X8d6",
+          "pos": "right",
+          "text": "两边铲青，头顶打薄——哥你这发质其实不差，就是油，堵得慌。回去别用超市那种洗发水，买氨基酸的。平时熬夜不？",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8uy"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "left",
+          "text": "熬。",
+          "voice": "陈默-chapter01_新皮肤-s02_barber-QmU9d2C8uz"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-热络-QySx79X8d6",
+          "pos": "right",
+          "text": "看出来了，出油都带疲态。熬夜伤头发是真的，头发是气血的余——哎哥你别睡，坐着，还有十分钟。",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8v0"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择差点真在这把椅子上睡着，这具身体相当不适应早上出门活动。"
+        },
+        {
+          "op": "narrate",
+          "text": "镜子里的人一点一点精神起来。这张脸底子不差，只是太久没打理自己，像一把没保养的琴。"
+        },
+        {
+          "op": "narrate",
+          "text": "Tony摘下围布，吹掉碎发。"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-得意-QySxJSWuGW",
+          "pos": "right",
+          "text": "行了，自己看。",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8v4"
+        },
+        {
+          "op": "narrate",
+          "text": "镜子里的男人短发利落，眉眼被头发一让，居然有点轮廓。"
+        },
+        {
+          "op": "narrate",
+          "text": "Tony递过一张名片。"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-真诚-QySxVoeGKe",
+          "pos": "right",
+          "text": "哥，下个月这时候来，我给你做个造型，不收费。就当……看你重新开始。",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8v7"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-轻快-QmUUAPIqau",
+          "pos": "left",
+          "text": "到时候带新女友来你这做头发。",
+          "voice": "陈默-chapter01_新皮肤-s02_barber-QmU9d2C8v8"
+        },
+        {
+          "op": "say",
+          "who": "Tony",
+          "portrait": "Tony-前卫手艺人着装-爽朗-QySxi2XFcu",
+          "pos": "right",
+          "text": "哟，这话我爱听！",
+          "voice": "Tony-chapter01_新皮肤-s02_barber-QmU9d2C8v9"
+        }
+      ],
+      "bgm": {
+        "track": "转灯",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s02_clothing",
+      "scene": "服装店-店内",
+      "time": "上午",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "理完发，他钻进了隔壁一家服装店。"
+        },
+        {
+          "op": "narrate",
+          "text": "店面不大，挂杆上的衣服按颜色码得整整齐齐。店员正给橱窗边的模特调整围巾，见他进来，抬起头。"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-含笑-QySyIYGFxQ",
+          "pos": "left",
+          "text": "欢迎光临！",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2C8vC"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默在挂杆前站了一会儿。上一世给女孩挑衣服眼光毒辣，轮到自己，倒发现了盲区：他不知道这具身体穿什么码。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-腼腆-QmUUYRWvTc",
+          "pos": "right",
+          "text": "麻烦问一下，男士休闲装，有没有……显精神一点的？",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2C8vE"
+        },
+        {
+          "op": "narrate",
+          "text": "季棠放下围巾走过来，上下看了他一眼。"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-干练-QySyUo8RA8",
+          "pos": "left",
+          "text": "你自己穿，还是送人？",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2C8vG"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-腼腆-QmUUYRWvTc",
+          "pos": "right",
+          "text": "自己穿。",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2C8vH"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-干练-QySyUo8RA8",
+          "pos": "left",
+          "text": "平时什么风格？",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2C8vI"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-腼腆-QmUUYRWvTc",
+          "pos": "right",
+          "text": "以前……不太讲究。最近想重新开始了。",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2C8vJ"
+        },
+        {
+          "op": "narrate",
+          "text": "季棠点点头，没多问，转身从里侧挂杆上抽了几件，搭在手臂上带过来。"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-干练-QySyUo8RA8",
+          "pos": "left",
+          "text": "这件衬衫，浅灰的，不挑人，上身显干净。这件T恤打底，料子厚实，不显廉价。裤子我建议深色直筒——你那双鞋还行，配深色裤子正好。",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2C8vL"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "你怎么不推荐亮色的？",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2C8vM"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-干练-QySyUo8RA8",
+          "pos": "left",
+          "text": "你想显精神，是想让人觉得你状态好，不是想让人看你。亮色是让人看衣服的。你这种需求的，穿深色，人比衣服精神，才是真精神。",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2Tk2q"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默挑了下眉毛。这姑娘懂行。"
+        },
+        {
+          "op": "narrate",
+          "text": "试衣间的帘子拉上又拉开。他换好出来，季棠围着他转了半圈，伸手替他拽了拽衣角，又把领子翻好。"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-亲和-QySyh7z0Bk",
+          "pos": "left",
+          "text": "袖子挽一折。对，就这样。精神气儿就出来了。",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2Tk2t"
+        },
+        {
+          "op": "narrate",
+          "text": "镜子里那个人，短发利落，衣服合身，站姿都下意识直了几分。"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默看着镜子，忽然有点恍惚。昨晚在桥上翻回栏杆的时候，他没想到三十个小时之内，这具身体能重新像个样子。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-轻快-QmUUwScbq4",
+          "pos": "right",
+          "text": "就这套。再拿一套运动装。一共多少？",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2Tk2w"
+        },
+        {
+          "op": "narrate",
+          "text": "季棠报了个数，六百八。他刷卡，签字，手都没抖。"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-亲和-QySyh7z0Bk",
+          "pos": "left",
+          "text": "衣服回去记得熨。衬衫这东西，三分靠买，七分靠烫。",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2Tk2y"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-轻快-QmUUwScbq4",
+          "pos": "right",
+          "text": "美女，你这生意能做大。",
+          "voice": "陈默-chapter01_新皮肤-s02_clothing-QmU9d2Tk2z"
+        },
+        {
+          "op": "say",
+          "who": "季棠",
+          "portrait": "季棠-店员清爽工作装-含笑-QySyIYGFxQ",
+          "pos": "left",
+          "text": "借您吉言。",
+          "voice": "季棠-chapter01_新皮肤-s02_clothing-QmU9d2Tk30"
+        },
+        {
+          "op": "narrate",
+          "text": "出门的时候阳光正好。他拎着袋子站在街边，把刚才那句「最近想重新开始了」在心里过了一遍——说的时候顺理成章，居然不像撒谎。"
+        }
+      ],
+      "bgm": {
+        "track": "焕新",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s02_wallet",
+      "scene": "八楼出租屋-床铺区",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "下午回屋翻钱包：身份证，银行卡，还有微信里一个置顶的接单群。"
+        },
+        {
+          "op": "narrate",
+          "text": "群公告置顶了一条纪律——接单不交付，赔三倍，踢出群。"
+        },
+        {
+          "op": "narrate",
+          "text": "群里正好有人说话。"
+        },
+        {
+          "op": "narrate",
+          "text": "【群主·代练之家】:「@全体成员 重申：交付超时=警告一次，警告两次=移出+全平台通报。别怪群主没提醒。」"
+        },
+        {
+          "op": "narrate",
+          "text": "【上分如上坟】:「最近接单的兄弟悠着点，平台查得严。」"
+        },
+        {
+          "op": "narrate",
+          "text": "【上分如上坟】:「@陈默 老陈？你号还有人吗？你那两单挂了六天了。」"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默盯着自己的 ID 看了几秒，点开订单列表——两单待交付，一单明天到期。到期不交，三倍赔偿。"
+        },
+        {
+          "op": "narrate",
+          "text": "他的余额是八十六块二。"
+        },
+        {
+          "op": "narrate",
+          "text": "生存压力第一次有了形状。"
+        },
+        {
+          "op": "narrate",
+          "text": "他把这具身体的家底盘了一遍：一头债务，一肚子游戏理解，一身刚刚理过的头发。"
+        },
+        {
+          "op": "narrate",
+          "text": "他本来以为，穿越的任务是谈恋爱——「拯救弱者」四个字，他自行理解成了「帮陈默找个漂亮女朋友」。毕竟他自己最擅长的就是这个。"
+        },
+        {
+          "op": "narrate",
+          "text": "第一步，先让自己像个人样。第二步——"
+        },
+        {
+          "op": "narrate",
+          "text": "他点开了那个明天到期的订单。"
+        }
+      ]
+    },
+    {
+      "id": "s02_online",
+      "scene": "八楼出租屋-电脑桌直播位-更新设备前",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "晚上，他硬着头皮上线。"
+        },
+        {
+          "op": "narrate",
+          "text": "开局前五分钟，他的操作生涩得像刚学会走路——手感是别人的，肌肉不是他的。客户在旁观席，没说话，只发了个问号。"
+        },
+        {
+          "op": "narrate",
+          "text": "第六分钟，指尖忽然自己找到了节奏。走位、补刀、切视野，一气呵成，像沉在肌肉深处的东西被接通了。"
+        },
+        {
+          "op": "narrate",
+          "text": "那不是他的技术。那是陈默熬夜熬出来的几千个夜晚，还寄居在这双手里。"
+        },
+        {
+          "op": "narrate",
+          "text": "【客户】:「？」"
+        },
+        {
+          "op": "narrate",
+          "text": "【客户】:「可以啊」"
+        },
+        {
+          "op": "narrate",
+          "text": "【客户】:「之前两周你打的什么东西」"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默没回。第三十五分钟，结算界面弹出来，「胜利」两个大字漫了半个屏幕。"
+        },
+        {
+          "op": "narrate",
+          "text": "【客户】:「哥们再来一单吧，加钱」"
+        },
+        {
+          "op": "narrate",
+          "text": "【上分如上坟】:「？？？老陈你活的？」"
+        },
+        {
+          "op": "narrate",
+          "text": "【上分如上坟】:「这波操作是你？？」"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默盯着屏幕，有点想笑。手感好到藏不住。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "left",
+          "text": "这，只是热身。",
+          "voice": "陆择-chapter01_新皮肤-s02_online-QmU9d2Tk3S"
+        }
+      ],
+      "bgm": {
+        "track": "屏幕微光",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s03_order",
+      "scene": "八楼出租屋-电脑桌直播位-更新设备前",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "老客户的点单，第二天就来了。"
+        },
+        {
+          "op": "narrate",
+          "text": "代练这行的规矩，陆择在接单群公告里看明白了：登录客户的号上分，打完下线，客户长什么样都不知道。"
+        },
+        {
+          "op": "narrate",
+          "text": "但是林梦的单子不一样。她下单的备注写着：陪玩，带语音。价格比普通代练单高三成。"
+        },
+        {
+          "op": "narrate",
+          "text": "第一单是两个月前下的。当时她在备注里写：「不要动我号，就在我自己号上带我打。」"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默当时回了一个字：行。"
+        },
+        {
+          "op": "narrate",
+          "text": "于是之后成了惯例，林梦管这叫「雇佣关系里唯一有人情味的一种」。"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s03_order-R1RWOui914"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "陈默，我最后相信你一次。",
+          "voice": "林梦-chapter01_新皮肤-s03_order-R1RWOui915"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-疑惑-R1RrluG8GW",
+          "pos": "right",
+          "text": "嗯？",
+          "voice": "陈默-chapter01_新皮肤-s03_order-R1RWOui916"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "上次坑了我，今天要是再梦游，我就去平台挂你。听清楚没有？",
+          "voice": "林梦-chapter01_新皮肤-s03_order-R1RWOui917"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-轻快-QmUUAPIqau",
+          "pos": "right",
+          "text": "听清楚了。挂之前，麻烦配我的帅照。",
+          "voice": "陈默-chapter01_新皮肤-s03_order-R1RWOui918"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+          "pos": "left",
+          "text": "你还嘴硬。丑话说前头，你要是再跟上次一样，十分钟挂机，二十分钟开送的话……",
+          "voice": "林梦-chapter01_新皮肤-s03_order-R1RWOui919"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "那次不是现在的我。",
+          "voice": "陈默-chapter01_新皮肤-s03_order-R1RWOui91A"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+          "pos": "left",
+          "text": "那是鬼啊？",
+          "voice": "林梦-chapter01_新皮肤-s03_order-R1RWOui91B"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-释然-R1RsM2i1vk",
+          "pos": "right",
+          "text": "之前的我不太想活，现在想通了。",
+          "voice": "陈默-chapter01_新皮肤-s03_order-R1RWOui91C"
+        },
+        {
+          "op": "narrate",
+          "text": "语音那头静了半秒。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+          "pos": "left",
+          "text": "……神经病。少废话，开始。",
+          "voice": "林梦-chapter01_新皮肤-s03_order-R1RWOui91E"
+        }
+      ],
+      "bgm": {
+        "track": "屏幕微光",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s03_carry",
+      "scene": "八楼出租屋-电脑桌直播位-更新设备前",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "选人界面，陈默锁了美杜莎。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+          "pos": "left",
+          "text": "大娜迦？这版本还能玩么……前期你可别指望我。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91G"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "不指望。你站我后面就行。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91H"
+        },
+        {
+          "op": "bed_start",
+          "bed": "game",
+          "track": "bed-chapter01_新皮肤-s03_carry-R1RWOui91I"
+        },
+        {
+          "op": "narrate",
+          "text": "对局开始。前十分钟，美杜莎前期弱得像张纸，补刀被压，蓝量见底。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "game"
+        },
+        {
+          "op": "narrate",
+          "text": "十二分钟，一个走位失误，送了头。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+          "pos": "left",
+          "text": "陈默，你！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91M"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "冷静。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91N"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+          "pos": "left",
+          "text": "冷什么静，这是我的渡劫局！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91O"
+        },
+        {
+          "op": "narrate",
+          "text": "局面还是一路向崩。二十分钟，对面推掉两座外塔，经济领先六千，队友开始打字吵架。"
+        },
+        {
+          "op": "narrate",
+          "text": "【公屏】:「这个美杜莎会玩吗？」"
+        },
+        {
+          "op": "narrate",
+          "text": "第二十一分钟，陆择做了一件让所有人看不懂的事：他出了跳刀"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+          "pos": "left",
+          "text": "跳刀？美杜莎出跳刀？出这个干什么，跳进人堆送吗？",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91S"
+        },
+        {
+          "op": "narrate",
+          "text": "公屏也炸了。队友打了三个问号，对面在公屏打字：这美杜莎是人机吧，哈哈。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "别管我出什么。一会团战，你先上去卖一下。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91U"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+          "pos": "left",
+          "text": "你！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91V"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "信我一次。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91W"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-赌气-R1Rq1TURcW",
+          "pos": "left",
+          "text": "哼。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91X"
+        },
+        {
+          "op": "narrate",
+          "text": "局面继续恶化。三十四分钟，对面五个人抱成团，一路碾上高地。经济领先一万二，装备碾压，胜利只是走个流程。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择卖掉了鞋子，砸锅卖铁攒出一把圣剑。攻击力瞬间堆到最高，但是圣剑死一次就掉落，也意味着没有任何容错。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-紧张-R1RqDXRTMW",
+          "pos": "left",
+          "text": "圣剑？你这也太赌了吧，万一……",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91a"
+        },
+        {
+          "op": "narrate",
+          "text": "话还没说完，对面先手林梦。林梦瞬间被融化，血条从满到空只用了一秒半。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-震惊-R1RqPdNh0y",
+          "pos": "left",
+          "text": "啊！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91c"
+        },
+        {
+          "op": "narrate",
+          "text": "突然，美杜莎开大后跳入人群中央，圣剑配合分裂箭，对面如同麦子一般倒下。"
+        },
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s03_carry-R1RWOui91e"
+        },
+        {
+          "op": "narrate",
+          "text": "暴走！"
+        },
+        {
+          "op": "narrate",
+          "text": "公屏安静了两秒，然后对面打出三个问号。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+          "pos": "left",
+          "text": "哇塞这么帅，可以啊陈默。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91h"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-轻快-QmUUAPIqau",
+          "pos": "right",
+          "text": "小场面，都坐下。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91i"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+          "pos": "left",
+          "text": "太帅了，背靠世界树暴走——你等会儿，先别说话，我这局要赢。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91j"
+        },
+        {
+          "op": "narrate",
+          "text": "高地反推。兵线过河。对面头像一个一个灰掉。拿下胜利。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+          "pos": "left",
+          "text": "陈默！可以啊你！卖鞋买圣剑，你是怎么想到的！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91l"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-轻快-QmUUAPIqau",
+          "pos": "right",
+          "text": "灵感回来了。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91m"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "灵感？算你还有点良心。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91n"
+        },
+        {
+          "op": "narrate",
+          "text": "赢下这盘，订单时间还剩40多分钟。林梦没要求再排一盘，反而自顾自聊了半小时游戏圈八卦。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-兴奋-R1Rqnlqwl6",
+          "pos": "left",
+          "text": "你知道吗，星耀那个一队，有个队员跟经理吵翻了，拎着背包自顾自的跑了，下个比赛一号位估计得开天窗。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91p"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-走神-R1Rti56vY0",
+          "pos": "right",
+          "text": "哦。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91q"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-兴奋-R1Rqnlqwl6",
+          "pos": "left",
+          "text": "你哦什么哦，你知道那经理是谁吗，女的，三十不到，据说很漂亮，圈里都叫她雪姐——",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91r"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-走神-R1Rti56vY0",
+          "pos": "right",
+          "text": "哦。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91s"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-兴奋-R1Rqnlqwl6",
+          "pos": "left",
+          "text": "你除了哦还会什么！……对了对了，还有那个谁，上周直播间哭那事你看了没有？直接掉了5万粉！",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91t"
+        },
+        {
+          "op": "narrate",
+          "text": "陈默偶尔回一句，大部分时间在听。"
+        },
+        {
+          "op": "narrate",
+          "text": "他听得出来，她哪是有话说，就是不想下线。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "对了，跳刀那件事，我错怪你了。但是丑话说前头，下次再出这种装备，提前说一声，不然我还是挂你。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91w"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "right",
+          "text": "行。",
+          "voice": "陈默-chapter01_新皮肤-s03_carry-R1RWOui91x"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-意犹未尽-R1Rqznomae",
+          "pos": "left",
+          "text": "算了，下了。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui91y"
+        },
+        {
+          "op": "narrate",
+          "text": "她顿了顿，声音轻下来。"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-温软-R1RrBrloKe",
+          "pos": "left",
+          "text": "……你今天声音听起来，精神多了。",
+          "voice": "林梦-chapter01_新皮肤-s03_carry-R1RWOui920"
+        },
+        {
+          "op": "narrate",
+          "text": "语音挂断，出租屋里安静下来。陆择靠在椅背上，看着黑掉的语音窗口，愣了一会儿。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-怔然-R0IrWLyolc",
+          "pos": "center",
+          "text": "连面都没见过……听声音，就知道精神多了。",
+          "voice": "陆择-chapter01_新皮肤-s03_carry-R1RWOui922"
+        },
+        {
+          "op": "narrate",
+          "text": "他不知道的是，这一盘的录像即将被人剪成视频，并引起了一个人的关注。"
+        }
+      ],
+      "bgm": {
+        "track": "屏幕微光",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s04_riverside",
+      "scene": "南滨路-滨江步道",
+      "time": "清晨",
+      "lines": [
+        {
+          "op": "bed_start",
+          "bed": "riverside",
+          "track": "bed-chapter01_新皮肤-s04_riverside-R1shywLTUG"
+        },
+        {
+          "op": "narrate",
+          "text": "清晨六点半，南滨路上早锻炼的人已经不少。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "riverside"
+        },
+        {
+          "op": "narrate",
+          "text": "崭新的运动套装穿在陈默身上，混在队伍里。打量来往跑者的，是陆择"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "left",
+          "text": "想找个健康、阳光、自律的女朋友，从晨练的妹子下手准没错。",
+          "voice": "陆择-chapter01_新皮肤-s04_riverside-R1shywLTUK"
+        },
+        {
+          "op": "hide",
+          "who": "陆择"
+        },
+        {
+          "op": "narrate",
+          "text": "可惜这支队伍里，大爷大妈占了九成。符合「健康、阳光、自律」的，放眼望去就那么三两个。"
+        },
+        {
+          "op": "narrate",
+          "text": "他锁定了目标——前面的女生步伐轻盈，马尾随着步伐一蹦一跳。"
+        },
+        {
+          "op": "narrate",
+          "text": "他正准备上去搭讪，另一个女生从后面超了上来——步子又轻又密，几乎没有声音。超过去两三米，又放缓了配速，侧过头看了他一眼。"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-爽利-QZd7qXEfvk",
+          "pos": "right",
+          "text": "同学，照你这么跑，半个月内膝盖就要废啊。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUP"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-晨跑运动装-发懵-R1sx03ktRQ",
+          "pos": "center",
+          "text": "……啊？",
+          "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUQ"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-认真-QZd82F2zWi",
+          "pos": "right",
+          "text": "重心提起来，身子别往前够。脚掌落地，肩膀沉下去，步频提上去，步幅收回来。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUR"
+        },
+        {
+          "op": "narrate",
+          "text": "话头送上门了。他清了清嗓子。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-晨跑运动装-微笑-R1sxBzBxHU",
+          "pos": "center",
+          "text": "巧了嘛这不是，我刚开始晨跑，还没掌握要领，你教教我呗？",
+          "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUT"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-认真-QZd82F2zWi",
+          "pos": "right",
+          "text": "好呀。来，跟着我的节奏跑两步。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUU"
+        },
+        {
+          "op": "narrate",
+          "text": "他依样画葫芦——重心一提，差点绊自己一个趔趄。"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-轻快-QZd8PfEoym",
+          "pos": "right",
+          "text": "别急别急，慢慢来。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUW"
+        },
+        {
+          "op": "narrate",
+          "text": "江风顺着水面刮过来，太阳露出半个脸蛋。不知不觉，两人肩并肩慢慢跑了两百米。"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-轻快-QZd8PfEoym",
+          "pos": "right",
+          "text": "还不错，没那么别扭了。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUY"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-晨跑运动装-雀跃-R1sxNzjnSi",
+          "pos": "center",
+          "text": "是呀，感觉身体都变轻了。谢谢啊，加个微信呗，回头我请你吃饭。",
+          "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUZ"
+        },
+        {
+          "op": "narrate",
+          "text": "她短促地笑了一声。"
+        },
+        {
+          "op": "say",
+          "who": "苏晓禾",
+          "portrait": "苏晓禾-晨跑运动装-揶揄-QZd8Dxzhdw",
+          "pos": "right",
+          "text": "老土的搭讪套路。下次吧，你自己再适应一下，我走啦拜拜。",
+          "voice": "苏晓禾-chapter01_新皮肤-s04_riverside-R1shywLTUb"
+        },
+        {
+          "op": "narrate",
+          "text": "她没等他再说话，自顾自地跑远了。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择站在原地，看着那个越跑越远的背影，半天没回过神。"
+        },
+        {
+          "op": "narrate",
+          "text": "被拒绝得一点都不难堪——她笑着，语气轻快，像躲开一张递过来的传单。"
+        },
+        {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-怔然-R0IrWLyolc",
+          "pos": "left",
+          "text": "感觉一拳打进了棉花里。",
+          "voice": "陆择-chapter01_新皮肤-s04_riverside-R1shywLTUg"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择摇摇头，踢飞了路边的一颗石子。"
+        }
+      ]
+    },
+    {
+      "id": "s05_fridge",
+      "scene": "八楼出租屋-厨房餐区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "transition",
+          "track": "amb-chapter01_新皮肤-s05_fridge-R1usgtKN2O"
+        },
+        {
+          "op": "narrate",
+          "text": "中午，陆择正狼吞虎咽的吃着饺子，林梦的语音电话突然打了进来，劈头就是一句："
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+          "pos": "left",
+          "text": "陈默，你火了知道吗！",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2Q"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-疑惑-R1RrluG8GW",
+          "pos": "right",
+          "text": "……啊？",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2R"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-雀跃-R1RqbiBW9A",
+          "pos": "left",
+          "text": "游戏区头条就是前天你那盘美杜莎。你自己看看播放量，简直爆炸！",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2S"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-疑惑-R1RrluG8GW",
+          "pos": "right",
+          "text": "你剪的？",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2T"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-毒舌-R1RpdLIn0S",
+          "pos": "left",
+          "text": "废话，不然呢？三分钟全是精华，跳刀圣剑暴走一秒没浪费。",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2U"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-嗔怒-R1RppTVnhQ",
+          "pos": "left",
+          "text": "这么好的广告都替你打出去了，你还藏在家里代练，暴殄天物懂不懂？现在就趁热度开播，等凉了哭都来不及。",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2V"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "right",
+          "text": "可是……这电脑配置不太好，而且我的麦也有问题，也没摄像头。",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2W"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "行了行了。设备升级，钱我出。",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2X"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "right",
+          "text": "多少？我——",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2Y"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-娇嗔-R1RpRMAwTY",
+          "pos": "left",
+          "text": "本小姐投资你。等你以后红了，十倍还我。听见没有，十倍！",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2Z"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择握着手机，心中五味杂陈。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-轻快-QmUUAPIqau",
+          "pos": "right",
+          "text": "你这算高利贷了！",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2b"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-赌气-R1Rq1TURcW",
+          "pos": "left",
+          "text": "爱要不要！",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2c"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-讪讷-QmUTxm9Yiu",
+          "pos": "right",
+          "text": "要要要。富婆，饿饿，饭饭。",
+          "voice": "陈默-chapter01_新皮肤-s05_fridge-R1usgtKN2d"
+        },
+        {
+          "op": "say",
+          "who": "林梦",
+          "portrait": "林梦-休闲电竞私服-意犹未尽-R1Rqznomae",
+          "pos": "left",
+          "text": "哼，算你识趣。晚些我找一家靠谱的上门装机，直接送到你家。",
+          "voice": "林梦-chapter01_新皮肤-s05_fridge-R1usgtKN2e"
+        },
+        {
+          "op": "narrate",
+          "text": "不等回应，林梦就挂断了语音。"
+        },
+        {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "center",
+          "text": "这小妮子，这么强势。",
+          "voice": "陆择-chapter01_新皮肤-s05_fridge-R1usgtKN2h"
+        }
+      ],
+      "bgm": {
+        "track": "家常课",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s05_desk",
+      "scene": "八楼出租屋-电脑桌直播位-更新设备前",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "傍晚，屋里静下来。陆择把自己关在屋里，开始算账。"
+        },
+        {
+          "op": "narrate",
+          "text": "算的不是他自己的账，是陈默的人生账。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-凝思-R1vEHeQAPw",
+          "pos": "left",
+          "text": "代练收入一单几十到几百，平台还抽两成。",
+          "voice": "陆择-chapter01_新皮肤-s05_desk-R1usgtKN2k"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
+          "pos": "left",
+          "text": "直播嘛，也有风险，但是值得一试，万一火了呢。",
+          "voice": "陆择-chapter01_新皮肤-s05_desk-R1usgtKN2l"
+        },
+        {
+          "op": "narrate",
+          "text": "房租一千八，按季付。欠林梦的设备款：八千六。"
+        },
+        {
+          "op": "narrate",
+          "text": "最后是最扎心的一笔，温蔓青的六万六。"
+        },
+        {
+          "op": "narrate",
+          "text": "他一笔一笔地算。算的是把这个人翻开来给你看：挣的钱全转了出去，转出去的钱连个响都没有。饭钱八块，转账六万六。这个人的账上，自己永远排在最后。"
+        },
+        {
+          "op": "narrate",
+          "text": "要得回来吗？要回来的话，得撕破脸，得追债，得把结痂的地方一条一条撕开。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-淡漠-QeR7wDvsfo",
+          "pos": "left",
+          "text": "算了，送出去的钱如同泼出去的水。",
+          "voice": "陆择-chapter01_新皮肤-s05_desk-R1usgtKN2q"
+        },
+        {
+          "op": "narrate",
+          "text": "现在手头只有压在碗底的现金：三千。"
+        },
+        {
+          "op": "narrate",
+          "text": "他捏着碗底翻出来的那沓现金，放进抽屉，转身开始收拾屋子。堆积的外卖盒清掉，攒了两年的旧快递盒清掉，桌面露出了原本的颜色。"
+        },
+        {
+          "op": "narrate",
+          "text": "收拾完，他给自己定了三个闹钟：六点半，六点四十，六点五十，想着明天晨跑再偶遇到那个有趣的姑娘。"
+        }
+      ],
+      "bgm": {
+        "track": "屏幕微光",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s06_riverside",
+      "scene": "南滨路-滨江步道",
+      "time": "清晨",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "闹钟响了，他真在第一声响之前醒了。六点半出门，沿着江边溜达了三公里。"
+        },
+        {
+          "op": "narrate",
+          "text": "回家路上顺路买了鸡蛋和青菜，冰箱里的饺子已经吃完了。"
+        },
+        {
+          "op": "narrate",
+          "text": "中午新设备就到了，调试完毕后已经到了晚餐时间。"
+        },
+        {
+          "op": "narrate",
+          "text": "晚餐，他给自己下了碗面，多卧了一个蛋。林梦知道设备就绪后催着开播。"
+        }
+      ]
+    },
+    {
+      "id": "s06_desk",
+      "scene": "八楼出租屋-电脑桌直播位-更新设备后",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "开播十分钟，直播间涌进来六百人——不少是循着那条头条视频摸进来的。两个小时后，峰值停在了一个数字上：一万二。"
+        },
+        {
+          "op": "narrate",
+          "text": "弹幕滚得像下雪。"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「搜圣剑美杜莎进来的，头条那盘是真的猛」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「楼上+1，看完视频来蹲直播的」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「这操作是人干的？？」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「主播声音好好听，技术还贼强」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「楼上声音好听有什么用，又不露脸」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「不露脸好！不露脸全是实力！」"
+        },
+        {
+          "op": "narrate",
+          "text": "【弹幕】:「蹲一个明天，蹲一个后天，蹲一个天天」"
+        },
+        {
+          "op": "narrate",
+          "text": "有人刷礼物，特效糊了半个屏幕。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "left",
+          "text": "谢谢老板。",
+          "voice": "陈默-chapter01_新皮肤-s06_desk-R20n2hy1HT"
+        },
+        {
+          "op": "narrate",
+          "text": "弹幕齐刷刷滚过一排「主播好稳」「一点都不飘」。"
+        },
+        {
+          "op": "narrate",
+          "text": "他确实稳。但让他稳的，另有其人。"
+        },
+        {
+          "op": "narrate",
+          "text": "下播键按下去，在线人数的数字归零，屏幕黑掉。"
+        },
+        {
+          "op": "narrate",
+          "text": "黑屏上映出一张脸。微胖，戴着眼镜，眼下有点青黑，但眼睛是亮的。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择对着黑掉的屏幕，发了一会儿呆。"
+        },
+        {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "陆择-商务休闲着装-怔然-R0IrWLyolc",
+          "pos": "right",
+          "text": "……一万二。",
+          "voice": "陆择-chapter01_新皮肤-s06_desk-R20n2hy1Hb"
+        },
+        {
+          "op": "narrate",
+          "text": "这双手的主人，熬了那么多个夜晚，从没被人这么看见过。"
+        },
+        {
+          "op": "narrate",
+          "text": "他伸手关电脑，手指在电源键上停了两秒。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-电竞经理职业装-干练-R20y5j9fIO",
+          "pos": "center",
+          "text": "你好，我是星耀电竞战队经理沈暮雪。我看了你的视频和直播，觉得你挺有想法，有兴趣来战队试试吗？",
+          "voice": "沈暮雪-chapter01_新皮肤-s06_desk-R20n2hy1Hf"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择盯着那条私信看了几秒，回了一行。"
+        },
+        {
+          "op": "hide",
+          "who": "陆择"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-居家颓废着装-沉稳-R0IqL5CT56",
+          "pos": "left",
+          "text": "可以。什么时候？",
+          "voice": "陈默-chapter01_新皮肤-s06_desk-R20n2hy1Hh"
+        },
+        {
+          "op": "narrate",
+          "text": "对面几乎秒回。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-电竞经理职业装-干练-R20y5j9fIO",
+          "pos": "center",
+          "text": "明天下午三点，打这个号码联系。",
+          "voice": "沈暮雪-chapter01_新皮肤-s06_desk-R20n2hy1Hj"
+        },
+        {
+          "op": "narrate",
+          "text": "然后是一串号码。然后就没有了。没有寒暄，没有客套，连个表情都没有。"
+        },
+        {
+          "op": "narrate",
+          "text": "存好号码后，陆择满意的伸了个懒腰，接着狠狠的把自己摔回床上。"
+        }
+      ],
+      "bgm": {
+        "track": "盛亮",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "s09_pm",
+      "scene": "八楼出租屋-床铺区",
+      "time": "夜晚",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "刚起床，几条微信就跳了出来。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-诚恳-R2r22Heaem",
+          "pos": "left",
+          "text": "试训的事，是我考虑不周。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_pm-R2qT9zyTAH"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-诚恳-R2r22Heaem",
+          "pos": "left",
+          "text": "但我依然觉得你很有潜力。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_pm-R2qT9zyTAI"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-诚恳-R2r22Heaem",
+          "pos": "left",
+          "text": "下午三点，来这个咖啡店我们当面沟通一下？",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_pm-R2qT9zyTAJ"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择盯着「考虑不周」四个字。上次分开时她也说了这四个字——这位经理的词汇表里，道歉和预告用的是同一批词。"
+        }
+      ]
+    },
+    {
+      "id": "s09_cafe",
+      "scene": "连锁咖啡店-座位区",
+      "time": "白天",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "三点，陆择准时来到了咖啡店。靠窗的位置，沈暮雪已经坐在那里了，面前摆着两杯咖啡。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-利落-R2r2Rht7x2",
+          "pos": "left",
+          "text": "坐。我们长话短说。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAM"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-腼腆-QmUUYRWvTc",
+          "pos": "right",
+          "text": "请。",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAN"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-利落-R2r2Rht7x2",
+          "pos": "left",
+          "text": "我邀请你加入星耀二队。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAO"
+        },
+        {
+          "op": "narrate",
+          "text": "她把平板推过来，屏幕上是拟好的条款。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择扫了一眼。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "二队？星耀还有二队？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAR"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+          "pos": "left",
+          "text": "新组建的。基地还在装修，前两个月线上训练，效果不好随时散伙。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAS"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "散伙？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAT"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+          "pos": "left",
+          "text": "电竞队伍的常规操作。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAU"
+        },
+        {
+          "op": "narrate",
+          "text": "她把平板往回拉了半寸，直视着他。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-严肃-R2r2raVYFk",
+          "pos": "left",
+          "text": "训练表一旦定下，不许迟到、不许再接单到凌晨，有事得提前请假。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAW"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "条件不少。薪资呢？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAX"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+          "pos": "left",
+          "text": "底薪加赛绩奖金。数字在平板第三页。比你代练稳定，也比代练体面。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAY"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-自嘲-R2r4xRQMVc",
+          "pos": "right",
+          "text": "体面值多少钱？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAZ"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-淡锋-R2r34VXZJo",
+          "pos": "left",
+          "text": "不值钱。但代练打不了世界赛。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAa"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择抬眼看她。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-忐忑-R2r5APrZ8S",
+          "pos": "right",
+          "text": "江烈对我有看法。",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAc"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+          "pos": "left",
+          "text": "你试训的表现，对你有看法很正常。但这毕竟是新的队伍，他的看法没那么重要。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAd"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "那为什么顶着他挖我？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAe"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-淡锋-R2r34VXZJo",
+          "pos": "left",
+          "text": "等你值得得到答案的时候，我自然会告诉你。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAf"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-忐忑-R2r5APrZ8S",
+          "pos": "right",
+          "text": "要是始终不值得呢？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAg"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-淡锋-R2r34VXZJo",
+          "pos": "left",
+          "text": "那你就始终得不到答案。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAh"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择看着她，想起这一路：头条视频，私信，试训，眼前这张条件苛刻的入场券。"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-探问-QmUUkUukxU",
+          "pos": "right",
+          "text": "最后问一句，如果队伍两个月后没解散呢？",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R2qT9zyTAj"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-柔和-R2r3HQZaNs",
+          "pos": "left",
+          "text": "就有线下基地、有印有你名字的队服、有赛场上为你喝彩的观众。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAk"
+        },
+        {
+          "op": "narrate",
+          "text": "他答应得很干脆。答应完，转头看了一眼窗外——街上人来人往，谁也不知道玻璃里这个刚拿到职业合同口头邀约的人，十天前还站在大桥护栏的外侧。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-坦率-R2r2eecjnU",
+          "pos": "left",
+          "text": "合同等两个月之后签，现在算试用期，先按你代练的价格来算。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2xVnAvTyC"
+        },
+        {
+          "op": "say",
+          "who": "陈默",
+          "portrait": "陈默-廉价休闲新装-自嘲-R2r4xRQMVc",
+          "pos": "right",
+          "text": "有够黑的。",
+          "voice": "陈默-chapter01_新皮肤-s09_cafe-R348ymAjPE"
+        },
+        {
+          "op": "narrate",
+          "text": "沈暮雪起身，把没动的那杯咖啡留在桌上。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-利落-R2r2Rht7x2",
+          "pos": "left",
+          "text": "你的咖啡。我先走了，之后还有会。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2xVnAvTyD"
+        },
+        {
+          "op": "narrate",
+          "text": "她拎包，走了两步又停下，没回头。"
+        },
+        {
+          "op": "say",
+          "who": "沈暮雪",
+          "portrait": "沈暮雪-咖啡店小资休闲装-叮嘱-R2r3UMSOq8",
+          "pos": "left",
+          "text": "你天赋很高，别浪费了。",
+          "voice": "沈暮雪-chapter01_新皮肤-s09_cafe-R2qT9zyTAq"
+        },
+        {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择捏着那杯咖啡，坐了一会儿。端起来喝了一口，她细心的帮他加了糖，甜度刚好。"
+        }
+      ],
+      "bgm": {
+        "track": "入场券",
+        "mode": "play",
+        "loop": true
+      }
     }
   ]
 }

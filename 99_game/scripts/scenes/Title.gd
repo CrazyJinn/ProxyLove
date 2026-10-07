@@ -5,8 +5,10 @@ var _bg: ColorRect
 var _center: CenterContainer
 var _vbox: VBoxContainer
 var _chapter: OptionButton
+var _scene: OptionButton
 var _start: Button
 var _quit: Button
+var _loader = null  # ChapterLoader（懒建），读章 JSON 列小节
 
 func _ready() -> void:
 	_bg = ColorRect.new()
@@ -33,6 +35,14 @@ func _ready() -> void:
 	_chapter.custom_minimum_size = Vector2(160, 40)
 	_chapter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_vbox.add_child(_chapter)
+	# 小节选择：随所选章列出该章场景段（scene-block id，即发布侧的分节），
+	# 首项「从头开始」= 章首段；换章时联动刷新
+	_scene = OptionButton.new()
+	_scene.custom_minimum_size = Vector2(160, 40)
+	_scene.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_vbox.add_child(_scene)
+	_chapter.item_selected.connect(_on_chapter_selected)
+	_refresh_scene_options()
 	_start = Button.new()
 	_start.text = "开始游戏"
 	_start.custom_minimum_size = Vector2(160, 50)
@@ -75,9 +85,44 @@ func _chapter_stems() -> Array:
 			return stems
 	return [GameManager.start_chapter]
 
+func _on_chapter_selected(_index: int) -> void:
+	_refresh_scene_options()
+
+func _refresh_scene_options() -> void:
+	# 按所选章重填小节下拉：项文本 = scene-block id（章内唯一、自带序号，如 s01_咖啡店），
+	# metadata 存同名 id 供 start；首项「从头开始」metadata 空 = 章首段。
+	# 段清单经 ChapterLoader 读章 JSON（透明解密加密剧本、带结构校验）；
+	# 先 ensure_chapter（幂等；当前全量主包模式为 no-op）保证 Web 分包模式下章 JSON 可读。
+	# 读不到（未发布段/解析失败）降级为仅「从头开始」，不阻断开局。
+	_scene.clear()
+	_scene.add_item("从头开始")
+	_scene.set_item_metadata(0, "")
+	_scene.select(0)
+	if _chapter.item_count == 0:
+		return
+	var stem := _chapter.get_item_text(_chapter.selected)
+	await ChapterPackLoader.ensure_chapter(stem)
+	# await 后本节点可能已随切场景被释放（Web 分包下载耗时期间点开始/退出）
+	if not is_instance_valid(_scene):
+		return
+	if _loader == null:
+		_loader = preload("res://scripts/data/ChapterLoader.gd").new()
+	var ch: Dictionary = _loader.load_chapter(stem)
+	if ch.is_empty():
+		return
+	for blk in ch["scenes"]:
+		var sid: String = blk.get("id", "")
+		if sid == "":
+			continue
+		_scene.add_item(sid)
+		_scene.set_item_metadata(_scene.item_count - 1, sid)
+
 func _on_start_pressed() -> void:
 	if _chapter.item_count > 0:
-		GameManager.start_new_game(_chapter.get_item_text(_chapter.selected))
+		var stem := _chapter.get_item_text(_chapter.selected)
+		# 选中项 metadata 即起始段 id（首项空 = 章首段）
+		var scene_id: String = str(_scene.get_item_metadata(_scene.selected)) if _scene.item_count > 0 else ""
+		GameManager.start_new_game(stem, scene_id)
 	else:
 		GameManager.start_new_game()
 

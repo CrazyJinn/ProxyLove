@@ -19,6 +19,9 @@ __pycache__/
 !15_声音/requirements/
 !15_声音/sfx_raw/
 
+# 角色参考图（dashboard 上传的用户私有照片，上传时已压缩规范命名，不入 git；06_角色美术 其余产物仍跟踪）
+06_角色美术/*/参考图.*
+
 # 外部依赖统一收口 env/（venv + vendored 源码；不入 git，重建见各 venv 对应 requirements）
 env/
 

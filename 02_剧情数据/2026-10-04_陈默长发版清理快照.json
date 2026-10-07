@@ -1,0 +1,56 @@
+[
+  {
+    "id": "QUVhvJKplZ",
+    "type": "IllusDesign",
+    "props": {
+      "adaptation_notes": "自信期气质：站姿挺拔舒展，肩背打开不含胸，眼神坚定、神态从容，衣着平价但整洁合身、精神焕发；无萎靡倦怠感，不驼背佝偻，目光不躲闪不低垂",
+      "image_path": "06_角色美术/陈默/陈默-廉价休闲新装/立绘设计图.png",
+      "display_scale": 0.865,
+      "prompt_path": "06_角色美术/陈默/陈默-廉价休闲新装/prompt.md",
+      "id": "QUVhvJKplZ",
+      "status": -1
+    }
+  },
+  {
+    "id": "QUVhvJKpla",
+    "type": "IllusDesign",
+    "props": {
+      "adaptation_notes": "自信期气质：运动站姿挺拔有活力，肩背打开不含胸，眼神坚定、神态从容，体态轻盈利落；无萎靡倦怠感，不驼背佝偻，目光不躲闪不低垂",
+      "image_path": "06_角色美术/陈默/陈默-晨跑运动装/立绘设计图.png",
+      "display_scale": 0.865,
+      "prompt_path": "06_角色美术/陈默/陈默-晨跑运动装/prompt.md",
+      "id": "QUVhvJKpla",
+      "status": -1
+    }
+  },
+  {
+    "id": "QUVhvJKplb",
+    "type": "IllusDesign",
+    "props": {
+      "adaptation_notes": "自信期气质：日常外出状态，站姿挺拔舒展，肩背打开不含胸，眼神坚定、神态从容大方；无萎靡倦怠感，不驼背佝偻，目光不躲闪不低垂",
+      "image_path": "06_角色美术/陈默/陈默-日常户外休闲装/立绘设计图.png",
+      "display_scale": 0.865,
+      "prompt_path": "06_角色美术/陈默/陈默-日常户外休闲装/prompt.md",
+      "id": "QUVhvJKplb",
+      "status": -1
+    }
+  },
+  {
+    "id": "QZYD9bw3YO",
+    "type": "StandingIllustration",
+    "props": {
+      "eye": "眼神带兴味直视对方，目光清亮有神",
+      "variant_label": "哂笑",
+      "mouth": "嘴角单侧上扬，弧度明显",
+      "image_path": "06_角色美术/陈默/陈默-晨跑运动装/立绘/哂笑.png",
+      "brow": "眉梢轻扬，眉宇带笑意",
+      "description": "晨跑道上收步搭讪的玩味哂笑——刚停住脚步侧身面向对方，嘴角单侧上扬弧度明显，眉眼聚起兴味，带运动后的松弛与自信期的从容攻势",
+      "head_angle": "头部微偏侧向对方，下巴微抬",
+      "prompt_path": "06_角色美术/陈默/陈默-晨跑运动装/立绘/哂笑.md",
+      "id": "QZYD9bw3YO",
+      "foot": "刚收步的站立，双脚自然开立，重心沉稳",
+      "status": -1,
+      "hand": "一手叉腰，另一手抬起做轻松的比划手势，手指清晰分明"
+    }
+  }
+]

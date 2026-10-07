@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [README.md](README.md) — **编排流程视角**：三大编排 Agent（`char-design` / `scene-design` / `plot-design`）的时序图、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
 - 节点 status 流转 / 审批规则 / sync 级联的权威源：[00_init/Schema/](00_init/Schema/) 与治理后台 dailian-dashboard（独立项目，见下）的 `app/services/status.py`（`NODE_STATUS`）、`app/services/cascade.py`。**改任何节点/边/status 逻辑前必读。**
 
-子项目 [99_game/README.md](99_game/README.md)（Godot 工程）有自己的指南。人工治理后台不在本仓库——已外迁为独立项目 **dailian-dashboard**（gitee `crazyjinn/dailian-dashboard`，本地克隆 `D:\project\gitee\dailian-dashboard\`，指南见该仓库 CLAUDE.md）。
+子项目 [99_game/README.md](99_game/README.md)（Godot 工程）有自己的指南。人工治理后台不在本仓库——已外迁为独立项目 **dailian-dashboard**（gitee `crazyjinn/dailian-dashboard`，本地克隆 `D:\project\ProxyLove\Dashboard\`，与本仓库同处一个工作区，指南见该仓库 CLAUDE.md）。
 
 ## 三大子系统
 

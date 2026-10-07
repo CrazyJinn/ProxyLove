@@ -15,7 +15,7 @@
 ## 打开 / 运行
 1. 安装 **Godot 4.3+**（4.4 亦可，仅 `Image.create` 有 deprecation 警告，不影响运行）。
 2. Godot 导入本目录（`project.godot`）。
-3. F5 从标题 → 「开始游戏」进入 `chapter00_序章`（起始章配置见 `scripts/autoload/GameManager.gd` 的 `start_chapter`/`start_scene`，默认 `chapter00_序章`/`酒店`）。
+3. F5 从标题选章（下拉读 `data/chapter_packs.json`）+ 小节（下拉读所选章 JSON 的 scene-block id，首项「从头开始」= 章首段）→「开始游戏」从所选位置进入；起始值经 `GameManager.start_new_game(chapter, scene)` 传入。
 
 ## 验收点
 
@@ -26,6 +26,7 @@
 3. 背景：`scene` 切换时换背景图（缺图走绿色占位兜底）。
 4. 章末（末段末句后无 `jump`/`ending`）自动回标题。
 5. H / 滚轮上 开 Backlog；ESC/右键 系统菜单；F5/F9 快速存读档；A 自动；S 跳过。
+6. 标题章下拉切换时小节下拉联动刷新；选非首小节开局后回标题再选「从头开始」，应回章首段（不残留上一轮小节）。
 
 ## 输入键位（代码注册于 GameManager._ready）
 | 操作 | 键 |

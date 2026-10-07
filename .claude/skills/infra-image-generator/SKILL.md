@@ -23,12 +23,12 @@ allowed-tools: Read, Bash, Write, Edit
 prompt 经 stdin 管道直送（支持多行 markdown，不经 shell 字面量）。是否传 `--image` 决定生成方式——参考图路径由调用方从已存在的前驱节点查得后传入：
 
 ```bash
-# 文生图（如 DesignSheet / SceneLayer background，无参考图）
+# 文生图（如 SceneLayer background，无参考图）
 cat "<prompt_path>" \
   | python "${CLAUDE_SKILL_DIR}/scripts/ofoxai_api.py" submit --prompt-stdin \
       --size 1536x1024 -o "<output_path>"
 
-# 图生图（如 IllusDesign / StandingIllustration，以参考图为底图）
+# 图生图（如 DesignSheet 用户参考照片 / IllusDesign / StandingIllustration，以参考图为底图）
 cat "<prompt_path>" \
   | python "${CLAUDE_SKILL_DIR}/scripts/ofoxai_api.py" submit --prompt-stdin \
       --image "<ref_image_path>" --size 1024x1536 -o "<output_path>"

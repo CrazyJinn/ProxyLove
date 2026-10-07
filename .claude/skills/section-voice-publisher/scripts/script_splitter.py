@@ -434,6 +434,21 @@ def _purge_line_audio_files(g: dict, report: dict) -> None:
 
 # ── 对齐 ─────────────────────────────────────────────────────
 
+def _safe_id(seq: list) -> str:
+    """大小写折叠安全的行 id：新 id 的 lower 不得与本节已有行（keep/update 的
+    图行 id ∪ 本批先建 create id）折叠相同，冲突则重取下一枚雪花。
+
+    同毫秒批连续发号时，行距恰为 26（Base62 字母表大小写同字母索引差）的两行
+    id 仅末字符大小写不同（如 R2qT9zyTAM / R2qT9zyTAm）——图上合法共存，但
+    voice key 以 id 作 wav 文件名段，Windows NTFS 大小写不敏感会静默合并成同
+    一物理文件（后写覆盖先写）。源头避让，下游（落盘/试听/发布）零改动。"""
+    taken = {it["id"].lower() for it in seq if it.get("id")}
+    while True:
+        nid = _GEN.next_id_base62()
+        if nid.lower() not in taken:
+            return nid
+
+
 def align(script_rows: list, graph_rows: list) -> dict:
     """定稿行 vs 图行（须按 order 升序）→ {keep, update, create, delete} 计划。
 
@@ -482,7 +497,7 @@ def assign_orders(script_rows: list, plan: dict) -> tuple:
                         "order": it["graph"].get("ord")})
         else:
             seq.append({"md": m, "action": "create", "graph": None,
-                        "id": _GEN.next_id_base62(), "order": None})
+                        "id": _safe_id(seq), "order": None})
     if any(item["action"] != "create" and item["order"] is None for item in seq):
         for i, item in enumerate(seq, 1):  # 旧图行缺 order：直接全节重排
             item["order"] = i * ORDER_STEP

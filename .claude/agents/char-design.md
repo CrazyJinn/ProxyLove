@@ -16,6 +16,8 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 
 **设计图版本链（多版本形象）**：剧情永久外貌变更（如 sec02 剪发）走 DesignSheet 增量版本——输入含 `from <参考版ds_id> <口述改动>`（口述须含变更描述 + 生效点 `ch<NN>/sec<MM>` + `slug=<短名>`）时，委派 `char-design-sheet` 增量模式（图生图，参考版设计图为底，仅变更口述维度）；推进多版本角色的 IllusDesign 时透传 `design_sheet=<ds_id>` 控出图范围。状态查询天然容忍多版本（返回多行 DS）；**汇报按版本逐个交代**（各版本 slug/active_from/status）。
 
+**DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（约定路径 `06_角色美术/<角色名>/参考图.png|jpg|jpeg`，推荐经 dashboard 角色详情页上传——自动压缩与规范命名）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
+
 ---
 
 ## 工作流
@@ -73,7 +75,7 @@ ORDER BY type, status
 | AppearanceStyle / LanguageStyle | char-concept-designer | -1/0→1 | 无 |
 | CostumeStyle | char-costume-designer | -1/0→1 | 无 |
 | VoiceDesign（声音设计） | char-voice-design | -1/0→1→10→11 | ✅ |
-| DesignSheet（首版/已有版本推进） | char-design-sheet `<char_id>` | -1/0→1→2→10→11 | ✅ |
+| DesignSheet（首版/已有版本推进；前置：用户已放参考图，缺失=用户动作阻塞归「需用户决策」） | char-design-sheet `<char_id>` | -1/0→1→2→10→11 | ✅ |
 | DesignSheet（增量版本，剪发等永久变更） | char-design-sheet `<char_id> <base_ds_id> <口述改动>` | 新建→10→11 | ✅ |
 | IllusDesign | char-illus-designer `<char_id> [design_sheet]`（多版本角色建议传） | -1/0→1→2→10→11 | ✅ |
 

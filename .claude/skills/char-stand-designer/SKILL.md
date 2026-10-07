@@ -2,10 +2,10 @@
 name: char-stand-designer
 description: |
   推进 StandingIllustration 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  入参 stand_id——只推进指定的单个立绘变体，由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 description 变体氛围），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量。
-argument-hint: <stand_id>
+  入参 stand_id（单变体）或逗号分隔 stand_id 列表（批量模式——先逐个组装 prompt，再经 stand_batch.py 线程池并发出图+校验+写图），由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 description 变体氛围），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量（「批量」仅指同批缺口的出图并发，不是备货）。
+argument-hint: <stand_id[,stand_id,...]>
 arguments:
-  - stand_id
+  - stand_id: 单个或逗号分隔多个立绘变体 ID；多个时走批量模式
 allowed-tools: Read, Bash, Write, Edit
 ---
 
@@ -15,13 +15,16 @@ allowed-tools: Read, Bash, Write, Edit
 
 从 IllusDesign 拓展出不同表情、动作的单张立绘，表情和动作参考 LanguageStyle 生成。
 
-**按需单变体模式**（stand_id）：只推进指定的那一个 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `description` 变体氛围）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
+**按需变体模式**（stand_id，单个或逗号分隔列表）：只推进指定的 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `description` 变体氛围）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
+
+- **单变体**（1 个 id）：走下方三段式（子 skill 链：char-prompt-assembler → infra-image-generator → 校验 → 写图）。
+- **批量模式**（≥2 个 id，2026-10-06 起）：出图是 OfoxAI 纯 IO 等待（单张 30s~10min），串行会把整条编排链堵死——**prompt 组装仍由 LLM 逐个做（创作判断不可并发），出图/校验/写图交给 [scripts/stand_batch.py](scripts/stand_batch.py) 线程池并发**（默认 3 并发，单张超时 15min，透明不合格自动重试 2 次，先产物后写图铁律在每个 worker 内保持），见下方「批量模式流程」。
 
 ## 参数
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| stand_id | 单个立绘变体 ID（StandingIllustration 节点 id） | 必传 |
+| stand_id | 单个立绘变体 ID，或逗号分隔多个（≥2 走批量模式） | 必传 |
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
@@ -119,6 +122,32 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 ```
 
 **status 写入**：固定 `10`（待审）。StandingIllustration 是终端节点，无下游。
+
+## 批量模式流程（≥2 个 stand_id 时替代第 2~3 步的串行子 skill 链）
+
+1. **批量查状态**：第 1 步的查询把 `id:'<stand_id>'` 换成 `stand.id IN ['<id1>','<id2>',...]`，一次取回全部（含各自 illus/voice/cos/ds 上游）。前驱校验同单变体：`illus_status≠11` 的**剔除并在汇报中报警跳过**，不阻塞其余。
+2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char>/<dir>/立绘/<variant>.md`，Mode C 模板与画风段不变、透明措辞行原样保留）。
+3. **构造任务清单** Write 到 `.tmp/stand-batch-<stem>-sec<MM>.json`：
+
+   ```json
+   [{"stand_id": "...", "variant_label": "...",
+     "prompt_path": "06_角色美术/.../<variant>.md",
+     "output_path": "06_角色美术/.../<variant>.png",
+     "ref_image": "<illus_image>",
+     "illus_id": "...", "voice_id": "...",
+     "tags": {"eye": "...", "brow": "...", "mouth": "...",
+              "head_angle": "...", "hand": "...", "foot": "..."}}]
+   ```
+
+4. **并发出图+校验+写图（一条命令，长耗时建议后台跑）**：
+
+   ```bash
+   python "${CLAUDE_SKILL_DIR}/scripts/stand_batch.py" \
+     --tasks '.tmp/stand-batch-<stem>-sec<MM>.json' [--workers 3]
+   ```
+
+   stand_batch.py 内部：ThreadPoolExecutor 并发，每个 worker = ofoxai 出图（prompt 走 stdin、`--background transparent`、900s 超时）→ `check_transparency` 判定 → 通过才经 cypher_exec 写 tags/边/产物/`status=10`；透明不合格自动覆盖重出（默认重试 2 次），失败项**不写图**保持原 status。
+5. **读报告复查**：stdout 末行 JSON 的 `done/failed`——failed 项按 stage 处置（`preflight`=prompt/ref 路径错回 2 修正重跑；`generate`/`transparency`=OfoxAI 偶发，单独重跑该 stand 的单变体模式；`write_graph`=查 cypher 报错）。收尾 `rm -f '.tmp/stand-batch-<stem>-sec<MM>.json'`。
 
 ## 参考文档
 

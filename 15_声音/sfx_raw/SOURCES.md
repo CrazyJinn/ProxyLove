@@ -34,3 +34,14 @@
 
 | fs_487083_electric_tool_buzz | R18-20-Small Electric Tool Buzzing.wav | craigsmith | https://freesound.org/people/craigsmith/sounds/487083/ | CC0 | amb-chapter01_新皮肤-s02_barber-QmU9d2C8ux | 推剪贴后颈嗡鸣（小型电动工具）；峰值截取 1.5s |
 | fs_203371_glass_explosion | glass-explosion_01.ogg | C_Rogers | https://freesound.org/people/C_Rogers/sounds/203371/ | CC0 | amb-chapter01_新皮肤-s02_online-QmU9d2Tk3N | 胜利结算水晶爆炸；原长 1.2s 近原样 |
+
+| fs_730184_iphone_haptic_bop | Haptic Bop of the iPhone | CuriousTorvald | https://freesound.org/people/CuriousTorvald/sounds/730184/ | CC0 | — | sec03 复用同源 10-06 被用户驳回（不得同源重用）；素材本体仍由 s04 在用行（见上表）保留，勿按本行清理 |
+| fs_647991_male_monsterkill | Male-MonsterKill.wav | Juanca_rlos | https://freesound.org/people/Juanca_rlos/sounds/647991/ | CC0 | amb-chapter01_新皮肤-s03_carry-R1RWOui91e | 五杀暴走播报轰响（连杀播报人声系列，同作者全套 KillingSpree/Godlike/Ultrakill）；1.05s 整句保留；定稿迭代重拆后素材复用（原 R0IM6QHtIP 行已删） |
+| fs_647982_fem_monsterkill | Fem-MonsterKill.wav | Juanca_rlos | https://freesound.org/people/Juanca_rlos/sounds/647982/ | CC0 | — | 女声备选未采用（峰值靠后 finalize 截取会切首音节）；（待清） |
+| fs_178821_busy_europe | busy signal_europe.mp3 | Felfa | https://freesound.org/people/Felfa/sounds/178821/ | CC0 | amb-chapter01_新皮肤-s03_hook-R0IM6QHtIn | 挂断忙音（欧制 425Hz 断续，三连 beep）；全长 1.6s 原样 |
+| fs_805178_busy_signal | Busy Signal | mrspivey | https://freesound.org/people/mrspivey/sounds/805178/ | CC0 | — | 美式备选未采用（峰值电平 0.23 偏弱）；（待清） |
+| fs_668976_ansmachine_beep | answer machine beep - generated.wav | vestibule-door | https://freesound.org/people/vestibule-door/sounds/668976/ | CC0 | amb-chapter01_新皮肤-s03_order-R1RWOui914 | 语音接通提示重选（1.13kHz 正弦短音、电话线路语义，替代被驳回的 iPhone haptic 同源）；0.65s 原样+尾淡出；定稿迭代重拆后素材复用（原 R0IM6Q0I9m 行已删） |
+| fs_842513_triple_ping | Triple_Ping_Notification_Sound_Mobile_Optimized | PiesHelpfulOven | https://freesound.org/people/PiesHelpfulOven/sounds/842513/ | CC0 | — | App 消息三连 ping 备选未采用（电话线路语义弱于 668976）；（待清） |
+| fs_578853_trumpet_chimes | Triumphant Trumpet and Chimes | JellyDaisies | https://freesound.org/people/JellyDaisies/sounds/578853/ | CC0 | — | 凯旋号角备选未采用（MOBA 播报语义弱于 647991）；（待清） |
+| fs_571513_dingdong_notification | Soft-Notifications - Bell - Ding-Dong.mp3 | LegitCheese | https://freesound.org/people/LegitCheese/sounds/571513/ | CC0 | amb-chapter01_新皮肤-s05_fridge-R1usgtKN2O | 微信式叮咚来电提示（两声软铃，sec05 语音来电）；0.80s 全长原样+尾淡出 |
+| fs_666296_phone_chime | Phone chime.wav | ChristopherJngs | https://freesound.org/people/ChristopherJngs/sounds/666296/ | CC0 | — | sec05 首选被用户驳回（要微信式叮咚方向）；（待清） |

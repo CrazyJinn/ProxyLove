@@ -130,9 +130,9 @@ ORDER BY sec.section_no, c.order, scene_name, variant
 - **环境音**（`sc_status = 11` 且 `amb_count > 0` 且 `amb_done < amb_count`）→ `Skill ambient-sfx-designer <sec_id>`（产出待产 ambient 行 → status=10 待审），随后继续本节后续判定（立绘）。
 - 存在待审行（`line_done < line_count` 且其余行均 ≥10）→ 先推进该节 uses 立绘（见下），再汇报「该节逐句音频/环境音待审，请到 dashboard 审批中心逐句审（行级 10→11）」，退出。
 - `line_done = line_count > 0`（全部行已批）→ 推进该节 uses 立绘（见下）；本节 uses 立绘全 `11` → 汇报「该节提纲/定稿/配音/环境音/立绘均已就绪」，退出。
-- **推进本节立绘**（`sc_status=11` 定稿已批后通用动作，**独立于音频门控**——立绘不依赖配音，不应被逐句音频审阻塞）：推进范围 = **本节 say 行 `LineAudio-[:uses]->` 可达的 StandingIllustration**（单节 cypher 的 `used_pending` 已带回 id/变体/status 清单；选绘 apply 建边保证缺口新变体自带 uses 边、天然在范围内），对每个 `stand.status≠11`：
-  - **上游 `IllusDesign=11`** → `Skill char-stand-designer <stand_id>`（按需单变体出图 → 10 待审）；
-  - **`IllusDesign≠11`（或不存在）** → 报警「立绘上游 IllusDesign 未就绪，请先单独跑 `char-design`」，**跳过该立绘继续下一个**（不跨链调 char-design）。
+- **推进本节立绘**（`sc_status=11` 定稿已批后通用动作，**独立于音频门控**——立绘不依赖配音，不应被逐句音频审阻塞）：推进范围 = **本节 say 行 `LineAudio-[:uses]->` 可达的 StandingIllustration**（单节 cypher 的 `used_pending` 已带回 id/变体/status 清单；选绘 apply 建边保证缺口新变体自带 uses 边、天然在范围内），对每个 `stand.status≠11` 先查上游 IllusDesign（一次查询全部）：
+  - **上游 `IllusDesign=11`** 的收集为逗号分隔 id 列表，**一次** `Skill char-stand-designer <id1,id2,...>` 委派（传 ≥2 个 id 时 skill 走批量模式并发出图——OfoxAI 单张 30s~10min，串行会堵死编排链；传 1 个即单变体）→ 各自 10 待审；
+  - **`IllusDesign≠11`（或不存在）** → 报警「立绘上游 IllusDesign 未就绪，请先单独跑 `char-design`」，**剔除出列表**（不跨链调 char-design），不阻塞其余就绪变体。
   - **depicts 枚举仅作提示，不推进**：`Section-contains->Scene-depicts->IllusDesign-expands_to->stand` 枚举出的立绘若未被本节任何 say 行 uses 引用（Scene 是多节共享节点，这类立绘的消费方是其他节的台词行），**仅在汇报中列缺口，严禁出图**——单节聚焦不做后续节的事情（那是后续节自身聚焦或章全量模式的活）。
 - **不调 `chapter-publisher`**（发布由用户直接触发，不在 plot-design 职责内）。
 
@@ -173,9 +173,9 @@ ORDER BY sec.section_no, c.order, scene_name, variant
 **立绘委派方式**（StandingIllustration 已从 char-design 剥离至 plot-design，按需出图）：各节定稿已批（`sc_status=11`）后推进立绘，**推进范围按模式取**——章节全量 = depicts 引用且 `stand.status ≠ 11`（全章就绪 gate 要求全部 depicts 立绘 11）；单节聚焦 = 本节 say 行 uses 边可达且 `stand.status ≠ 11`（见单节决策，depicts 中未被本节引用的仅提示）。对范围内每个立绘：
 1. **先查其上游 IllusDesign 是否 = 11**（query 一次）。
 2. **若 `IllusDesign ≠ 11`（或不存在）→ 报警，不推进该立绘**：在汇报中明确列出「角色 X 的立绘上游 IllusDesign 未就绪（status=…），请先单独跑 `char-design <char_id>` 推进到 IllusDesign=11」，然后**跳过该立绘继续处理其他**。**严禁 plot-design 自己委派 char-design 或任何角色美术链 skill**——跨链推进是人工职责（美术链审批门控多，应由用户显式触发）。
-3. **若 `IllusDesign = 11`** → 用 **Skill 工具直调** `char-stand-designer <stand_id>`（按需单变体，单轮直推到 10 待审）。stand_id 来自 depicts 查询结果。
+3. **若 `IllusDesign = 11`** → 用 **Skill 工具直调** `char-stand-designer`，传逗号分隔的 stand_id 列表（≥2 个走批量模式并发出图，1 个即单变体；一次委派整批，**禁止逐个串行委派堵链**）。stand_id 来自 depicts 查询结果。
 
-> **plot-design 直调 `char-stand-designer` 合法**（传 stand_id，按需出图）。**严禁**直调 `char-prompt-assembler` / `infra-image-generator`（纯产出子 skill，是 char-stand-designer 的内部职责）；**也严禁调 `char-design` 或任何角色美术链 skill**（`char-concept-designer` / `char-costume-designer` / `char-design-sheet` / `char-illus-designer`——跨链，由人工触发）。**判定越界的标准**：工具调用里出现上述任一名字就是错的；立绘唯一正确动作是 `Skill char-stand-designer <stand_id>`，上游不就绪唯一正确动作是报警。
+> **plot-design 直调 `char-stand-designer` 合法**（传 stand_id 或逗号分隔列表，按需出图）。**严禁**直调 `char-prompt-assembler` / `infra-image-generator` / `stand_batch.py`（纯产出层，是 char-stand-designer 的内部职责——plot-design 不亲自绕过 skill 跑批量脚本）；**也严禁调 `char-design` 或任何角色美术链 skill**（`char-concept-designer` / `char-costume-designer` / `char-design-sheet` / `char-illus-designer`——跨链，由人工触发）。**判定越界的标准**：工具调用里出现上述任一名字就是错的；立绘唯一正确动作是 `Skill char-stand-designer <stand_id[,列表]>`，上游不就绪唯一正确动作是报警。
 
 **调度只看 status，不看产物文件**：决定是否调度时，唯一判据是节点 `status` 是否到达该链最大门控。**禁止**因 `outline_path`/`script_path`/`image_path` 已有值或磁盘文件已存在而判定「已完成」并跳过。`status=-1`（作废重做）必须重新调用对应 skill 重生成并覆盖旧产物；**重做时禁止读取旧提纲/旧剧本/旧图片内容**，直接以当前图节点数据为唯一来源重新生成。（SecScript=-1 重做后行节点由下次拆分对齐处置——未变句恢复，被改句重配，plot-design 无需关心行级细节。）
 
@@ -229,6 +229,6 @@ Chapter 判定规则：
 
 ## Skills
 
-`chapter-structurer`（skill，章级建结构 + 分节 + 统合 Scene + 建 Section 纯编排容器 + scene-block id 预分配）· `chapter-outliner`（skill，节级产提纲，兜底建 SecOutline，素材不足时报缺口）· `chapter-dialoguer`（skill，纯台词创作：节级产 台词.ink，兜底建 SecScript）· `section-voice-publisher`（skill，定稿已批后拆分进图 + 选绘建边 + 逐句配音——script_splitter 建逐句 LineAudio + portrait_binder 建 uses 边/变体缺口 + bind-graph 写行 10）· `char-stand-designer`（skill，按需单变体出立绘）
+`chapter-structurer`（skill，章级建结构 + 分节 + 统合 Scene + 建 Section 纯编排容器 + scene-block id 预分配）· `chapter-outliner`（skill，节级产提纲，兜底建 SecOutline，素材不足时报缺口）· `chapter-dialoguer`（skill，纯台词创作：节级产 台词.ink，兜底建 SecScript）· `section-voice-publisher`（skill，定稿已批后拆分进图 + 选绘建边 + 逐句配音——script_splitter 建逐句 LineAudio + portrait_binder 建 uses 边/变体缺口 + bind-graph 写行 10）· `char-stand-designer`（skill，按需出立绘——单变体或逗号分隔列表批量并发，出图层为 scripts/stand_batch.py）
 
 > `chapter-publisher`（章级发布 图→`99_game/`）由用户直接触发，**不是 plot-design 的调度对象**。
