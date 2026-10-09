@@ -1,0 +1,20 @@
+// 原子窗口：19 个 Scene 归位 realizes（Spot→Scene，sync 恒 false；Scene 节点不删不建，仅挂边）
+MATCH (sp:Spot {id:'R6YcFfBMWZ'}), (s:Scene {name:'长江大桥-护栏段'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWa'}), (s:Scene {name:'南滨路-滨江步道'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWb'}), (s:Scene {name:'马路-路口'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWc'}), (s:Scene {name:'街角咖啡店-点餐台'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWd'}), (s:Scene {name:'酒店-客房'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWe'}), (s:Scene {name:'理发店-剪发区'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWf'}), (s:Scene {name:'连锁咖啡店-座位区'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWJ'}), (s:Scene {name:'服装店-店内'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWT'}), (s:Scene {name:'灵魂夹缝-夹缝空间'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWg'}), (s:Scene {name:'八楼出租屋-电脑桌直播位-更新设备前'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWg'}), (s:Scene {name:'八楼出租屋-电脑桌直播位-更新设备后'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWh'}), (s:Scene {name:'八楼出租屋-厨房餐区'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWi'}), (s:Scene {name:'八楼出租屋-床铺区'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWj'}), (s:Scene {name:'八楼出租屋-进门处'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWk'}), (s:Scene {name:'星耀电竞基地-比赛场馆'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWk'}), (s:Scene {name:'星耀电竞基地-空场馆'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWl'}), (s:Scene {name:'星耀电竞基地-训练馆'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWm'}), (s:Scene {name:'星耀电竞基地-经理办公区'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
+MATCH (sp:Spot {id:'R6YcFfBMWn'}), (s:Scene {name:'星耀电竞基地-走廊'}) MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync=false;
