@@ -16,7 +16,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Info, Choice |
+| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Spot, Info, Choice |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Scene, SceneLayer |
 | [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/提纲/定稿/逐句台词行产物链） | Chapter, Section, SecOutline, SecScript, LineAudio |
@@ -34,6 +34,7 @@
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
+| Spot | snowflake Base62 | 地点内子空间（default/zone），事件定位锚点，无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
@@ -61,7 +62,8 @@
 | **叙事基础** | | | | |
 | relation | Character → Character | N:N | ❌ | 人物关系 |
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
-| occurred_at | Event → Location | N:1 | ❌ | 事件发生地点 |
+| occurs_at | Event → Spot | N:1 | ❌ | 事件发生子空间（anchor=spot/default） |
+| part_of | Spot → Location | N:1 | ❌ | 空间从属 |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
 | link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体） |
 | evt_relation | Event → Event | N:N | ❌ | 事件因果/时序 |
@@ -79,7 +81,7 @@
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
 | **场景美术** | | | | |
-| has_scene | Location → Scene | 1:N | ✅ | 地点→场景 |
+| realizes | Spot → Scene | 1:N | ❌ | Spot 实现场景（原 has_scene，sync 语义变更见场景美术.md） |
 | has_layer | Scene → SceneLayer | 1:N | ✅ | 场景→图层 |
 | **剧情** | | | | |
 | has_section | Chapter → Section | 1:N | ✅ | 章→节（组成关系，级联重做） |
@@ -103,6 +105,7 @@ flowchart LR
         Character["Character"]
         Event["Event"]
         Location["Location"]
+        Spot["Spot"]
         Info["Info"]
         Choice["Choice"]
     end
@@ -149,7 +152,8 @@ flowchart LR
     Choice -->|"option ❌ N:N"| Event
     IllusDesign -->|"expands_to ✅ 1:N"| StandingIllus
     Language -->|"ref_style ✅ 1:N"| StandingIllus
-    Location -->|"has_scene ✅ 1:N"| Scene
+    Spot -->|"part_of ❌ N:1"| Location
+    Spot -->|"realizes ❌ 1:N"| Scene
     Scene -->|"has_layer ✅ 1:N"| SceneLayer
     Chapter -->|"has_section ✅ 1:N"| Section
     Section -->|"has_outline ✅ 1:1"| SecOutline

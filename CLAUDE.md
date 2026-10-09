@@ -80,6 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
+9. **Event 定位一律 `occurs_at → Spot`**，禁止 Event 直挂 Location；「事件在某地点」查询经 `Spot -[:part_of]-> Location` 两跳；realizes 方向是 `Spot → Scene`（见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
