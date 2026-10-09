@@ -31,12 +31,15 @@ allowed-tools: Read, Bash, Write, Edit
 通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询上游 Location/Scene + 已有图层：
 
 ```cypher
-MATCH (l:Location)-[:has_scene]->(s:Scene {id: '<scene_id>'})
+MATCH (s:Scene {id: '<scene_id>'})<-[:realizes]-(sp:Spot)-[:part_of]->(l:Location)
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
-RETURN l.name AS loc_name, s.id AS scene_id, s.name AS scene_name,
+RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
+       s.id AS scene_id, s.name AS scene_name,
        s.scene_type AS scene_type, s.status AS scene_status,
        collect(sl) AS layers;
 ```
+
+> Spot 的 name/kind/description 是空间语义来源（构图与陈设的空间依据），随 Scene 字段一并交给 scene-prompt-assembler。
 
 - **前驱校验**：`scene_status >= 1`（Scene 已由 scene-designer 设计），否则停止并提示先推进场景设计。
 - **所需图层**（按 scene_type 查表，静态映射，不进图）：
