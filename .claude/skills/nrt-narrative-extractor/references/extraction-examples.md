@@ -154,10 +154,10 @@ from_id,to_id,role,detail
 <snowflake_id>,<snowflake_id>,参与者,在基地认识陆择
 ```
 
-edges_occurred_at.csv:
+edges_occurs_at.csv:
 ```csv
-from_id,to_id,detail
-<snowflake_id>,<snowflake_id>,入职地点
+from_id,to_id,anchor,detail
+<snowflake_id>,<snowflake_id>,spot,入职地点
 ```
 
 edges_relation.csv:

@@ -19,7 +19,7 @@ allowed-tools: Read, Bash, Write
 >
 > **输出**：`02_剧情数据/<YYYY-MM-DD>_round<N>_<主题>_建议.json`（顶层 JSON 数组）。对话仅报文件路径、建议条数、迭代提示，不展开内容。
 >
-> **范围限定**：产出 cypher 只操作**基础节点**（Character/Event/Location/Info/Choice）+ 基础层边（relation/involved/occurred_at/at/link/evt_relation/presents/option）。美术/场景/剧情生产链节点不在自增长范围。
+> **范围限定**：产出 cypher 只操作**基础节点**（Character/Event/Location/Spot/Info/Choice）+ 基础层边（relation/involved/occurs_at/part_of/at/link/evt_relation/presents/option；Event 定位一律 occurs_at→Spot，禁止直挂 Location）。美术/场景/剧情生产链节点与边（realizes 等）不在自增长范围。
 
 ## 前置
 

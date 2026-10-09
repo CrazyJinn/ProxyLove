@@ -101,15 +101,25 @@ Character → Event
 | role | 是 | 如"当事人""目击者""受害者""施害者""参与者" |
 | detail | 否 | 角色详情 |
 
-#### edges_occurred_at.csv
+#### edges_occurs_at.csv
 
-Event → Location
+Event → Spot（禁止 Event 直挂 Location；目标 Spot 按判定流选 zone/默认）
 
 | 列名 | 必填 | 说明 |
 |------|------|------|
 | from_id | 是 | Event id |
-| to_id | 是 | Location id |
+| to_id | 是 | Spot id |
+| anchor | 是 | `spot`（细分）/ `default`（未细化），与目标 Spot.kind 一致 |
 | detail | 否 | 如"跳江地点""约会地点" |
+
+#### edges_part_of.csv
+
+Spot → Location（建 Location 连带建默认 Spot `<名>-未细分`）
+
+| 列名 | 必填 | 说明 |
+|------|------|------|
+| from_id | 是 | Spot id |
+| to_id | 是 | Location id |
 
 #### edges_at.csv
 
@@ -182,7 +192,8 @@ MERGE (n:Info {id: '<id>'}) SET n.title = '<标题>', n.content = '<内容>', n.
 ```cypher
 MATCH (a:Character {id: '<from_id>'}), (b:Character {id: '<to_id>'}) MERGE (a)-[:relation {type: '<关系类型>', detail: '<详情>'}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:involved {role: '<角色>', detail: '<详情>'}]->(b);
-MATCH (a:Event {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:occurred_at {detail: '<详情>'}]->(b);
+MATCH (a:Event {id: '<from_id>'}), (b:Spot {id: '<to_id>'}) MERGE (a)-[:occurs_at {anchor: '<spot/default>', detail: '<详情>', sync: false}]->(b);
+MATCH (a:Spot {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:part_of {sync: false}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:at {type: '<关联类型>', detail: '<详情>'}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '涉及', detail: '<详情>', time: '<时间>'}]->(b);
 MATCH (a:Info {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '因果', detail: '<详情>'}]->(b);

@@ -50,21 +50,22 @@ ORDER BY shared_count DESC
 
 ---
 
-## 3. events-no-location — 事件无地点
+## 3. events-no-spot — 事件无空间
 
-**目的**：没有 `occurred_at` 边的事件。
+**目的**：没有 `occurs_at` 边的事件（Event 定位一律挂 Spot，禁止直挂 Location）。
 
 ```cypher
 MATCH (e:Event)
-WHERE NOT (e)-[:occurred_at]->(:Location)
+WHERE NOT (e)-[:occurs_at]->(:Spot)
 RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
 ORDER BY e.time
 ```
 
 **建议模板**：
 - priority: `medium`
-- "事件「title」(id, time) 缺少地点关联"
-- action: `ADD_EDGE occurred_at(evt_id, <location_id>) {detail: '?'}`
+- "事件「title」(id, time) 缺少空间关联（Spot）"
+- action: `ADD_EDGE occurs_at(evt_id, <spot_id>) {anchor: '?'}`
+- 指引：优先挂所属 Location 的默认 Spot（`<Location名>-未细分`，anchor='default'）；文本有子空间证据才建 zone Spot
 
 ---
 

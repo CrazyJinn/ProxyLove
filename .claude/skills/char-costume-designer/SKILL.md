@@ -34,12 +34,13 @@ OPTIONAL MATCH (ch)-[:has_appearance]->(app:AppearanceStyle)
 OPTIONAL MATCH (ch)-[:has_costume]->(cos:CostumeStyle)
 RETURN ch, app, collect(cos) AS costumes;
 
-// 事件 + 场景 + 已有着装绑定
+// 事件 + 空间 + 已有着装绑定
 MATCH (ch:Character {id: '<char_id>'})-[r:involved]->(e:Event)
-OPTIONAL MATCH (e)-[:occurred_at]->(s:Location)
+OPTIONAL MATCH (e)-[:occurs_at]->(s:Spot)
+OPTIONAL MATCH (s)-[:part_of]->(l:Location)
 OPTIONAL MATCH (e)-[:wears]->(cos:CostumeStyle)
 RETURN e.id AS event_id, e.title AS event_title, r.role AS role, r.detail AS detail,
-       s.id AS loc_id, s.name AS loc_name, s.description AS loc_desc,
+       s.id AS spot_id, s.name AS spot_name, s.kind AS spot_kind, l.name AS loc_name,
        cos.id AS costume_id, cos.name AS costume_name
 ORDER BY e.id;
 ```

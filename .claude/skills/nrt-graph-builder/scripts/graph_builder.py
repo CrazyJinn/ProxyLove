@@ -124,7 +124,8 @@ def cmd_add_edges(client, edges_json):
         "at":             ("Character", "Location"),
         "link":           (None, "Info"),        # from 可以是任意类型
         "involved":       ("Character", "Event"),
-        "occurred_at":    ("Event", "Location"),
+        "occurs_at":      ("Event", "Spot"),
+        "part_of":        ("Spot", "Location"),
         "evt_relation":   ("Event", "Event"),
         "BELONGS_TO":     ("Character", "Faction"),
         "CATEGORIZED_AS": ("Location", "LocationType"),
@@ -250,11 +251,11 @@ def discover_missing_relations(client):
     return {"findings": rows, "suggestions": suggestions}
 
 
-def discover_events_no_location(client):
-    """检查3: 无地点关联的事件"""
+def discover_events_no_spot(client):
+    """检查3: 无空间关联的事件（occurs_at → Spot；禁止 Event 直挂 Location）"""
     rows = client.run("""
         MATCH (e:Event)
-        WHERE NOT (e)-[:occurred_at]->(:Location)
+        WHERE NOT (e)-[:occurs_at]->(:Spot)
         RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
         ORDER BY e.time
     """)
@@ -262,9 +263,9 @@ def discover_events_no_location(client):
     for r in rows:
         suggestions.append({
             "priority": "medium",
-            "type": "event_no_location",
-            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 缺少地点关联",
-            "action": f"ADD_EDGE occurred_at({r['id']}, <location_id>) {{detail: '?'}}",
+            "type": "event_no_spot",
+            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 缺少空间关联（Spot）",
+            "action": f"ADD_EDGE occurs_at({r['id']}, <spot_id>) {{anchor: '?'}}",
             "event_id": r["id"],
         })
     return {"findings": rows, "suggestions": suggestions}
@@ -366,7 +367,7 @@ def cmd_discover(client, check_types=None):
     ALL_CHECKS = {
         "orphans":           ("孤立节点",       discover_orphans),
         "missing-relations": ("缺失人物关系",    discover_missing_relations),
-        "events-no-location":("事件无地点",      discover_events_no_location),
+        "events-no-spot":   ("事件无空间",      discover_events_no_spot),
         "temporal-gaps":     ("时间线缺口",      discover_temporal_gaps),
         "info-no-links":     ("信息未关联",      discover_info_no_links),
         "chars-no-faction":  ("角色无阵营",      discover_chars_no_faction),
@@ -437,7 +438,7 @@ def main():
     # discover
     p_disc = sub.add_parser("discover", help="图算法发现缺失实体和关系")
     p_disc.add_argument("--type", dest="check_type", default=None,
-                        help="指定检查类型: orphans, missing-relations, events-no-location, temporal-gaps, info-no-links, chars-no-faction, events-unlinked")
+                        help="指定检查类型: orphans, missing-relations, events-no-spot, temporal-gaps, info-no-links, chars-no-faction, events-unlinked")
     p_disc.add_argument("--all", dest="run_all", action="store_true", help="运行全部检查（默认）")
 
     args = parser.parse_args()

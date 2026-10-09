@@ -72,10 +72,13 @@ allowed-tools: Read, Bash
 |--------|------|------|
 | relation | Character → Character | 人物关系，可随时间变化 |
 | involved | Character → Event | 人物参与事件 |
-| occurred_at | Event → Location | 事件发生地点 |
+| occurs_at | Event → Spot | 事件发生子空间（anchor=spot/default；禁止 Event 直挂 Location） |
+| part_of | Spot → Location | 空间从属（建 Location 连带建默认 Spot） |
 | at | Character → Location | 人物—场景关联 |
 | link | Character/Event/Location → Info | 信息关联（因果仅限 Info→Info） |
 | evt_relation | Event → Event | 事件关联（因果/先后/包含） |
+
+**Spot 判定流**：文本有子空间线索（「电脑桌前」「点餐台」）→ 建/复用 zone Spot（命名 `<Location名>-<区域>`），anchor='spot'；无线索 → 挂该 Location 默认 Spot，anchor='default'（不硬猜）。
 
 - 完整内容：构建完整故事主线链
 - 碎片输入：信息直接用适当的边关联角色/场景

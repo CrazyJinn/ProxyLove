@@ -64,8 +64,8 @@ ORDER BY r.order;
 
 ```cypher
 // (2) 分支骨架：本节 Scene 相关地点的 Choice + 结局事件
-MATCH (s:Scene {name: '<scene名>'})<-[:has_scene]-(loc:Location)
-MATCH (e:Event)-[:occurred_at]->(loc)
+MATCH (s:Scene {name: '<scene名>'})<-[:realizes]-(sp:Spot)-[:part_of]->(loc:Location)
+MATCH (e:Event)-[:occurs_at]->(sp)
 OPTIONAL MATCH (e)-[:presents]->(choice:Choice)
 OPTIONAL MATCH (choice)-[op:option]->(target:Event)
 RETURN e.title AS event_title, e.time AS event_time, e.ending_kind AS ending_kind,
@@ -79,26 +79,26 @@ ORDER BY e.time LIMIT 100
 
 #### 1c. event 丰满度自检（素材不足门控）
 
-本节提纲的剧情密度靠 event 支撑。进入段 2 创作前，先体检**本节**范围内 event 的丰满度——**不足则拒绝产出提纲**，避免为空洞骨架浪费后续立绘出图。聚焦本节 Scene 所属 Location 的 Event：
+本节提纲的剧情密度靠 event 支撑。进入段 2 创作前，先体检**本节**范围内 event 的丰满度——**不足则拒绝产出提纲**，避免为空洞骨架浪费后续立绘出图。聚焦本节 Scene 所属 Spot（经 part_of 属 Location）的 Event：
 
 ```cypher
-// (1) 本节涉及的 Event 数量 + 清单（Section→contains→Scene<-has_scene-Location<-occurred_at-Event）
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:has_scene]-(loc:Location)
-MATCH (e:Event)-[:occurred_at]->(loc)
+// (1) 本节涉及的 Event 数量 + 清单（Section→contains→Scene<-realizes-Spot<-occurs_at-Event）
+MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
+MATCH (e:Event)-[:occurs_at]->(sp)
 RETURN count(DISTINCT e) AS event_count, collect(DISTINCT e.title) AS events;
 
 // (2) Event 之间的 evt_relation 链（事件是否连贯，非孤岛）
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:has_scene]-(loc:Location)<-[:occurred_at]-(e1:Event)
+MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)<-[:occurs_at]-(e1:Event)
 MATCH (e1)-[:evt_relation]->(e2:Event)
 RETURN count(*) AS relation_count;
 
 // (3) Choice option 指向的 target Event 是否存在（分支是否有落点）
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:has_scene]-(loc:Location)<-[:occurred_at]-(e:Event)
+MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)<-[:occurs_at]-(e:Event)
 MATCH (e)-[:presents]->(c:Choice)-[op:option]->(target:Event)
 RETURN c.name AS choice, collect(op.label) AS options, collect(target.title) AS targets;
 
 // (4) 出场角色在本节地点的 involved Event 数（角色弧有着落否）
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:has_scene]-(loc:Location)<-[:occurred_at]-(e:Event)<-[:involved]-(char:Character)
+MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)<-[:occurs_at]-(e:Event)<-[:involved]-(char:Character)
 RETURN char.name AS char, count(DISTINCT e) AS event_count;
 ```
 

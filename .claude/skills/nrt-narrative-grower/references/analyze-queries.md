@@ -105,7 +105,7 @@ ORDER BY e.time LIMIT 100
 
 ```cypher
 MATCH (l:Location)
-OPTIONAL MATCH (e:Event)-[:occurred_at]->(l)
+OPTIONAL MATCH (e:Event)-[:occurs_at]->(:Spot)-[:part_of]->(l)
 RETURN l.id AS id, l.name AS name, count(e) AS events
 ORDER BY events ASC LIMIT 100
 ```
@@ -134,7 +134,7 @@ RETURN i.id AS id, i.title AS title LIMIT 100
 
 ```cypher
 MATCH (c:Character)
-OPTIONAL MATCH (c)-[:involved]->(e:Event)-[:occurred_at]->(l:Location)
+OPTIONAL MATCH (c)-[:involved]->(e:Event)-[:occurs_at]->(:Spot)-[:part_of]->(l:Location)
 RETURN c.id AS id, c.name AS name,
        count(DISTINCT e) AS events, count(DISTINCT l) AS locations
 ORDER BY locations ASC LIMIT 100
@@ -160,7 +160,7 @@ LIMIT 100
 连接多个人物/故事线的场景（高价值枢纽）。
 
 ```cypher
-MATCH (l:Location)<-[:occurred_at]-(e:Event)<-[:involved]-(c:Character)
+MATCH (l:Location)<-[:part_of]-(:Spot)<-[:occurs_at]-(e:Event)<-[:involved]-(c:Character)
 WITH l, collect(DISTINCT c.name) AS chars, count(DISTINCT e) AS events
 WHERE size(chars) >= 3
 RETURN l.name AS location, chars, events
@@ -235,7 +235,7 @@ analyze 结果归纳为 JSON 数组（顶层 `[...]`），落盘 `02_剧情数�
 
 自增长只动**基础层**，产出的 cypher 只能操作：
 
-- **节点**：`Character` / `Event` / `Location` / `Info` / `Choice`
-- **边**：`relation` / `involved` / `occurred_at` / `at` / `link` / `evt_relation` / `presents` / `option`
+- **节点**：`Character` / `Event` / `Location` / `Spot` / `Info` / `Choice`
+- **边**：`relation` / `involved` / `occurs_at` / `part_of` / `at` / `link` / `evt_relation` / `presents` / `option`
 
 **禁止**在建议 cypher 里出现美术层（AppearanceStyle/CostumeStyle/DesignSheet/IllusDesign/StandingIllustration）、场景层（Scene/SceneLayer）、剧情编排层（Chapter）的节点或边——这些走各自的生产链，不在自增长范围。Choice 现属基础层，`presents`/`option` 边可纳入自增长（如补 Choice 的戏剧分化、补 option 落点事件）。

@@ -51,8 +51,8 @@ RETURN sc.script_path AS script_path, sc.status AS sc_status, sc.id AS sc_id,
 
 ```cypher
 // (2) 本节出场角色 VoiceDesign——图关系遍历，不按名字列表猜
-MATCH (sec:Section {id:'<section_id>'})-[:contains]->(s:Scene)<-[:has_scene]-(loc:Location)
-MATCH (loc)<-[:occurred_at]-(e:Event)<-[:involved]-(c:Character)
+MATCH (sec:Section {id:'<section_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
+MATCH (sp)<-[:occurs_at]-(e:Event)<-[:involved]-(c:Character)
 OPTIONAL MATCH (c)-[:has_voice_design]->(v:VoiceDesign)
 RETURN DISTINCT c.name AS char, v.status AS vstatus, v.instruct AS instruct,
        v.ref_text AS ref_text, v.ref_audio_path AS ref_audio_path;

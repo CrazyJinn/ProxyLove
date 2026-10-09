@@ -53,14 +53,26 @@ MATCH (a:Character {id: $from}), (b:Event {id: $to})
 MERGE (a)-[:involved {role: $role, detail: $detail}]->(b)
 ```
 
-### 5. occurred_at — 事件—地点
+### 5. occurs_at — 事件—空间
 
-- **方向**：`Event → Location`
-- **属性**：`detail`（如"跳江地点""约会地点"）
+- **方向**：`Event → Spot`（**禁止 Event 直挂 Location**）
+- **属性**：`anchor`（必填：`spot`=细分 Spot / `default`=默认 Spot，与目标 Spot.kind 一致）、`detail`（如"跳江地点""约会地点"）
+- 目标 Spot：文本有子空间线索 → 建/复用 zone Spot（命名 `<Location名>-<区域>`）；无线索 → 该 Location 默认 Spot（`<Location名>-未细分`）
 
 ```cypher
-MATCH (a:Event {id: $from}), (b:Location {id: $to})
-MERGE (a)-[:occurred_at {detail: $detail}]->(b)
+MATCH (a:Event {id: $from}), (b:Spot {id: $to})
+MERGE (a)-[:occurs_at {anchor: $anchor, detail: $detail, sync: false}]->(b)
+```
+
+### 5b. part_of — 空间—地点
+
+- **方向**：`Spot → Location`
+- **属性**：`sync` 恒 false
+- 建 Location 必须连带建默认 Spot（kind='default'，name=`<Location名>-未细分`）+ 本边
+
+```cypher
+MATCH (a:Spot {id: $from}), (b:Location {id: $to})
+MERGE (a)-[:part_of {sync: false}]->(b)
 ```
 
 ### 6. evt_relation — 事件—事件
@@ -108,7 +120,8 @@ MERGE (a)-[:CATEGORIZED_AS]->(b)
 | from 标签 | 允许的边类型 | to 标签 |
 |-----------|------------|---------|
 | Character | relation, at, link, involved, BELONGS_TO | → Character / Location / Info / Event / Faction |
-| Event | occurred_at, evt_relation, link | → Location / Event / Info |
+| Event | occurs_at, evt_relation, link | → Spot / Event / Info |
+| Spot | part_of | → Location |
 | Location | CATEGORIZED_AS, link | → LocationType / Info |
 | Info | link | → Info |
 | Faction | — | — |

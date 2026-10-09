@@ -1,3 +1,5 @@
+// ⚠️ 退役（2026-10-09 Spot 迁移）：本文件是 schema-v1 历史导入产物，其中 L210-244 的 occurred_at 边
+// 已由 02_剧情数据/Spot迁移-20261009/ 的 occurs_at 迁移取代。禁止再整体执行——会复活已退役的旧边。
 MERGE (n:Character {id: 'NvCkQmFPFo'}) SET n.name = '陆择', n.gender = '男', n.description = '男主角。灵魂穿越者，生前是个渣男', n.character_tags = '渣男, 灵魂穿越者', n.priority = 'P0';
 MERGE (n:Character {id: 'NvCkQmFPFq'}) SET n.name = '陈默', n.gender = '男', n.description = '代练高手，陆择的宿主。舔狗、游戏高手、宅男，微胖，戴眼镜', n.character_tags = '舔狗, 代练, 宅男', n.priority = 'P0';
 MERGE (n:Character {id: 'NvCkQmFPFs'}) SET n.name = '苏晓禾', n.gender = '女', n.description = '晨跑偶遇的运动康复师。运动、阳光、心思细腻，马甲线，马尾', n.character_tags = '运动, 阳光, 心思细腻', n.priority = 'P0';

@@ -43,7 +43,8 @@ SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 
 **实体**（新节点）：
 - 人物：姓名、性别、描述、标签、出生年份等
-- 地点：名称、描述
+- 地点：名称、描述（**建 Location 必须连带建默认 Spot `<名>-未细分`（kind='default'）+ part_of 边**）
+- 空间细分（Spot）：仅当文本明确给出地点内子空间（如「电脑桌前」「点餐台」）时建 zone Spot，命名强制 `<Location名>-<区域>`
 - 事件：标题、时间、类型、描述
 - 信息：标题、内容、知识层
 - 阵营/地点类型（如用户提及）
@@ -51,7 +52,7 @@ SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 **关系**（新边，从文本中推断）：
 - "是星耀电竞的选手" → `BELONGS_TO(char, faction_id) {role: "选手"}`
 - "参与了第5天的聚会" → `involved(char_id, event_id) {role: "参与者"}`
-- "发生在咖啡店" → `occurred_at(event_id, location_id)`
+- "发生在咖啡店" → `occurs_at(event_id, spot_id) {anchor:'default'}`（无子空间线索挂默认 Spot；有线索则建/复用 zone Spot，anchor='spot'；**禁止 Event 直挂 Location**）
 - "和XX是恋人" → `relation(char_A_id, char_B_id) {type: "恋爱"}`
 - "导致XX事件" → `evt_relation(event_A_id, event_B_id) {type: "因果"}`
 
@@ -125,7 +126,7 @@ python $SCRIPT discover --type missing-relations --password 12345678
 |------|---------|--------|
 | `orphans` | 零边的孤立节点 | 🟡 medium |
 | `missing-relations` | 共享事件但无 relation 边的角色对 | 🔴 high |
-| `events-no-location` | 无 occurred_at 边的事件 | 🟡 medium |
+| `events-no-spot` | 无 occurs_at 边的事件 | 🟡 medium |
 | `temporal-gaps` | 时间线上超过3天的空缺区间 | 🔴 high |
 | `info-no-links` | 未被 link 边关联的 Info 节点 | 🟡 medium |
 | `chars-no-faction` | 有活动但无 BELONGS_TO 边的角色 | 🟢 low |
@@ -145,7 +146,7 @@ python $SCRIPT discover --type missing-relations --password 12345678
 
 🟡 中优先级 (2条)
   1. 事件「陆择车祸死亡」缺少地点关联
-     → ADD_EDGE occurred_at(<event_id>, <location_id>) {detail: '?'}
+     → ADD_EDGE occurs_at(<event_id>, <spot_id>) {anchor: '?'}
   ...
 
 🟢 低优先级 (1条)
@@ -169,7 +170,8 @@ python $SCRIPT discover --type missing-relations --password 12345678
 | at | Character → Location | type, detail |
 | link | 任意 → Info | type, detail, time |
 | involved | Character → Event | role, detail |
-| occurred_at | Event → Location | detail |
+| occurs_at | Event → Spot | anchor, detail |
+| part_of | Spot → Location | — |
 | evt_relation | Event → Event | type, detail |
 | BELONGS_TO | Character → Faction | role |
 | CATEGORIZED_AS | Location → LocationType | 无 |
