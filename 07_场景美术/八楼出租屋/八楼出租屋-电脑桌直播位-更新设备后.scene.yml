@@ -1,0 +1,191 @@
+# Scene YAML（视锥剔除版，供文生图直用）
+# 源：八楼出租屋.room.yml → scene: 八楼出租屋-电脑桌直播位-更新设备后
+# 物件 7/8 在相机视锥内（竖直fov 60° · 宽高比 1.5）
+# 派生产物：改布局请改 room.yml 再重跑 slice_scenes.py
+
+location:
+  id: QP23NrFZqb
+  name: 八楼出租屋
+  description: 陈默的住所，十几平米；爬楼梯气喘（身体缺乏锻炼）
+room:
+  floor:
+  - 4.2
+  - 3.4
+  height: 2.6
+  wall_color: '#8a9484'
+  floor_color: '#6b5f52'
+  deco: 灰绿墙面斑驳，贴着几张卷边褪色的游戏海报；天花一盏白炽灯，深夜未开
+  windows:
+  - id: w2
+    pos:
+    - 0.6
+    - 1.6
+    - -1.69
+    size:
+    - 0.6
+    - 0.5
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 后墙高处小窗（厨房天光窗），深夜无光
+objects:
+- id: desk
+  spot: 电脑桌区
+  name: 旧电脑桌
+  type: box
+  pos:
+  - -1.75
+  - 0.375
+  - -0.9
+  size:
+  - 0.6
+  - 0.75
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a5c3e'
+  desc: 老旧木桌，长边沿左墙贴到后墙转角，桌面高0.75
+- id: bed
+  spot: 床铺区
+  name: 单人床
+  type: box
+  pos:
+  - -1.55
+  - 0.25
+  - 0.45
+  size:
+  - 1.0
+  - 0.5
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3d4854'
+  desc: 沿左侧墙的单人床，深色皱褶床品，床头朝后墙方向
+- id: bed_head
+  spot: 床铺区
+  name: 床头杂物
+  type: box
+  pos:
+  - -1.75
+  - 0.55
+  - -0.55
+  size:
+  - 0.6
+  - 0.1
+  - 0.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7c7468'
+  desc: 床头靠墙堆着旧抱枕与缠乱的充电线
+- id: suitcase
+  spot: 床铺区
+  name: 旧行李箱
+  type: box
+  pos:
+  - -0.75
+  - 0.3
+  - 1.35
+  size:
+  - 0.4
+  - 0.6
+  - 0.65
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5c5147'
+  desc: 兼作边几的旧行李箱，立在床尾
+- id: fridge
+  spot: 厨房餐区
+  name: 冰箱
+  type: box
+  pos:
+  - 1.8
+  - 0.85
+  - -0.2
+  size:
+  - 0.6
+  - 1.7
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c9c4b8'
+  desc: 半人高冰箱，门上贴着几张外卖单
+- id: dining_table
+  spot: 厨房餐区
+  name: 折叠小方桌
+  type: box
+  pos:
+  - 0.3
+  - 0.375
+  - -1.1
+  size:
+  - 0.8
+  - 0.75
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7a60'
+  desc: 靠左后墙的折叠小方桌配两把椅子，桌面收拾得空荡
+- id: shoe_cabinet
+  spot: 进门处
+  name: 窄鞋柜
+  type: box
+  pos:
+  - 0.55
+  - 0.4
+  - 1.45
+  size:
+  - 0.5
+  - 0.8
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6e6455'
+  desc: 沿房门左侧墙的窄鞋柜，柜面堆着钥匙串与外卖传单
+scene:
+  id: desk_after
+  scene_id: R22lVGrBuC
+  scene_name: 八楼出租屋-电脑桌直播位-更新设备后
+  spot: 电脑桌区
+  camera:
+    pos:
+    - 1.55
+    - 1.55
+    - 1.45
+    look_at:
+    - -1.2
+    - 0.9
+    - -0.95
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -1.83
+    - 1.0
+    - -1.0
+    color: '#dff0ff'
+    intensity: 3.2
+  - type: ambient
+    color: '#3a4450'
+    intensity: 0.25
+  deco: 桌面收拾得干干净净，只摆着崭新的直播设备——崭新的大屏显示器盛亮（屏面朝房内，深灰黑边框），崭新的麦克风立在支架上，线缆收束得整整齐齐再无杂物；桌前同一把办公椅，背对镜头
+  atmosphere: 打扫过后焕然一新的深夜直播位，崭新的直播设备是屋里最亮眼的存在，桌面空净利落，透着生活回到正轨的秩序感，屏幕盛亮里藏着首播之夜的期待
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

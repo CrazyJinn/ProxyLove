@@ -1,0 +1,158 @@
+# Scene 2D YAML（3D→2D 投影布局，供文生图直用）
+# 源：长江大桥.room.yml → scene: 长江大桥-护栏段（竖直fov 60° · 宽高比 1.5）
+# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标
+
+scene_name: 长江大桥-护栏段
+scene_id: QW6yYoIiSu
+canvas: 百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）
+room_regions:
+  ground_desc: 江面：暗青色，反射对岸城市灯火成模糊光斑，无岸线细节
+  sky_desc: 深夜阴天夜空，无星无月，近地平线处被城市光污染染出微弱暖橙
+lights:
+- name: 光源
+  pos: &id009
+  - 42
+  - -29
+  color: '#cfe0ee'
+  intensity: 2.6
+  out_of_frame: true
+objects:
+- id: railing_far
+  name: 金属护栏·远段
+  spot: 护栏段
+  bbox: &id001
+  - 52
+  - 48
+  - 4
+  - 5
+  depth: 37.63
+- id: road_far
+  name: 桥面人行道·远段
+  spot: 护栏段
+  bbox: &id002
+  - 39
+  - 50
+  - 58
+  - 17
+  depth: 26.57
+- id: lamp_head_2
+  name: 灯头·远
+  spot: 护栏段
+  bbox: &id003
+  - 51
+  - 12
+  - 2
+  - 4
+  depth: 18.83
+- id: railing_mid
+  name: 金属护栏·中段
+  spot: 护栏段
+  bbox: &id004
+  - 46
+  - 49
+  - 6
+  - 8
+  depth: 18.77
+- id: lamppost_2
+  name: 桥面路灯·远
+  spot: 护栏段
+  bbox: &id005
+  - 51
+  - 15
+  - 1
+  - 40
+  depth: 17.82
+- id: lamppost_1
+  name: 桥面路灯·近
+  spot: 护栏段
+  bbox: &id006
+  - 41
+  - 0
+  - 2
+  - 64
+  depth: 8.22
+  clipped: 上缘越出
+- id: railing_near
+  name: 金属护栏·近段
+  spot: 护栏段
+  bbox: &id007
+  - 39
+  - 51
+  - 1
+  - 11
+  depth: 4.03
+- id: road_near
+  name: 桥面人行道·近段
+  spot: 护栏段
+  bbox: &id008
+  - 39
+  - 62
+  - 58
+  - 5
+  depth: 3.13
+deco: 桥面人行道边缘的沥青质感与路灯光影；护栏边缘望出去是江面，对岸模糊成片的灯火隔江而望；桥上空无一人，江风灌过护栏
+atmosphere: 深夜桥面空无一人，江风灌过护栏，对岸灯火隔江模糊成一片——世界与这段桥面无关的冰冷死寂
+preview:
+  aspect: 1.5
+  fov: 60
+  camera:
+    pos:
+    - -4.5
+    - 1.55
+    - -0.9
+    look_at:
+    - 16.0
+    - 0.8
+    - -4.2
+    fov: 60
+  objects:
+  - id: railing_far
+    name: 金属护栏·远段
+    spot: 护栏段
+    bbox: *id001
+    depth: 37.63
+  - id: road_far
+    name: 桥面人行道·远段
+    spot: 护栏段
+    bbox: *id002
+    depth: 26.57
+  - id: lamp_head_2
+    name: 灯头·远
+    spot: 护栏段
+    bbox: *id003
+    depth: 18.83
+  - id: railing_mid
+    name: 金属护栏·中段
+    spot: 护栏段
+    bbox: *id004
+    depth: 18.77
+  - id: lamppost_2
+    name: 桥面路灯·远
+    spot: 护栏段
+    bbox: *id005
+    depth: 17.82
+  - id: lamppost_1
+    name: 桥面路灯·近
+    spot: 护栏段
+    bbox: *id006
+    depth: 8.22
+    clipped: 上缘越出
+  - id: railing_near
+    name: 金属护栏·近段
+    spot: 护栏段
+    bbox: *id007
+    depth: 4.03
+  - id: road_near
+    name: 桥面人行道·近段
+    spot: 护栏段
+    bbox: *id008
+    depth: 3.13
+  lights:
+  - name: 光源
+    pos: *id009
+    color: '#cfe0ee'
+    intensity: 2.6
+    out_of_frame: true
+  room_regions:
+    ground_desc: 江面：暗青色，反射对岸城市灯火成模糊光斑，无岸线细节
+    sky_desc: 深夜阴天夜空，无星无月，近地平线处被城市光污染染出微弱暖橙

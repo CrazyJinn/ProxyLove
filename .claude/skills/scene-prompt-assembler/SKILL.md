@@ -2,7 +2,7 @@
 name: scene-prompt-assembler
 description: |
   从调用方传入的场景数据（Scene 字段 + Location 名）组装场景图层提示词，派生为 prompt 文件并返回其路径。
-  按 layer_type 分模式（background/floor/decor/mask）；当前实现 background，其余为 V2 TODO。
+  按 layer_type 分模式（background/floor/decor/mask）+ dsl_2d（模式 E：Room DSL v3 → 2D 布局，Scene 有 dsl_path 时优先）。
   纯产出层：不读写图数据库、不写 status，所有数据由调用方通过 data 参数提供。
   在需要为场景图层节点组装提示词或被其他 skill 调用时使用。
 argument-hint: <layer_type> <data_json>
@@ -70,6 +70,32 @@ Scene 的视觉维度以**自由文本 + 标签**存储。组装时将各维度�
 3. **环境**：展开 `composition` 的远/中/近景为连贯描述——**室内 dialogue 场景只展开远/中两句，composition 意外含近景描述也丢弃近景段**；若 composition 未体现机位/家具靠边/中下部留空，以前缀表 dialogue 构图要点固定句兜底（固定句兜底，不为 Scene 数据加戏）
 4. **光影**：展开 `lighting`（主光源方向+色温+环境光）
 5. **风格**：`color_direction`（如有），末尾拼接美术风格.md「提示词硬约束」的风格收尾串（含「无角色」，动态读取不写死；风格全局统一，无 per-scene 风格标签）；随后按「图面无文字」条件式硬约束收尾——scene 数据未提及物件文字时追加「图面无描述性文字」，明确提及某物件带文字时在环境段写明其上文字内容（『』标出），此处改追加「除<该物件>上的文字外，图面无其他描述性文字」
+
+## 模式E：dsl_2d（Room DSL v3 → 2D 布局出图）✅ V1 实现
+
+**触发**：调用方在 data 中传 `dsl_path`（Scene 节点字段，指向 `07_场景美术/<Location>/<Location>.room.yml`）。无 `dsl_path` 一律走模式 A（自由文本）。
+
+**data 参数结构**（在模式 A 基础上增加 dsl_path）：
+```json
+{
+  "scene": {"id": "<scene_id>", "name": "...", "dsl_path": "07_场景美术/<loc>/<loc>.room.yml", "scene_type": "...", "text_passthrough_hint": "可选：图面文字放行说明"},
+  "node": {"id": "<scenelayer_node_id>"},
+  "output_path": "07_场景美术/<loc>/<scene_name>/background/prompt.md"
+}
+```
+
+**组装（程序化拼接，零 LLM 重组）**：
+1. **派生检查**：读 `dsl_path` 对应 room.yml → 按 `scene.id`（scene_id）定位 scene 条目 → 调 `python3 07_场景美术/slice_scenes.py <room.yml> --mode 2d` 重切（幂等）→ 读 `<scene_name>.scene2d.yml`
+2. **prompt = 导语（固定文案）+ scene2d.yml 全文（verbatim，含 preview 块之外的全部内容）+ 收尾串**：
+   - 导语（逐字使用，不改动）：
+     `以下 YAML 描述一张游戏场景背景图的画幅布局：objects 的 bbox [x,y,w,h] 为物件在画面中的位置与大小（百分比，y 向下），列表由远及近（遮挡序）；room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色（out_of_frame 表示光源在画外但光照有效）；deco 与 atmosphere 为氛围与细节描述。请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。`
+   - scene2d.yml 全文：**原样粘贴**（去掉文件头 `#` 注释行亦可，正文数据一字不改）
+   - 收尾串：从 `00_init/美术风格.md`「提示词硬约束」节动态读取风格收尾串，原样拼接；「图面无文字」条件式收尾规则同模式 A 第 5 步（scene2d 无 text_passthrough 内容时追加「图面无描述性文字」）
+3. **用途前缀**：导语前按 scene_type 加一句用途（dialogue→「游戏对话背景图。」）
+4. **Write 落盘**到 `output_path`，返回路径（与模式 A 相同）
+
+**边界**：纯产出层不变——不读写图、不写 status；dsl_path 的登记与投影写回（atmosphere 等叙事字段 MERGE 回 Scene）由调用方（scene-layer-designer / scene-designer）在「保存结果」步完成。
+**新鲜度**：若 `slice_scenes.py --check` 报派生过期，仍正常重切后组装（重切即修复新鲜度）；报几何校验失败则**中止并原样返回错误**，不产 prompt。
 
 ## 模式B/C/D：floor / decor / mask 🚧 V2 TODO
 

@@ -1,0 +1,361 @@
+# Room DSL v3 —— 八楼出租屋（整房间 3D 建模）
+# 真源文件：改这里，图节点字段是编译投影（不一致=图落后，重新编译落图）
+# 规范：00_init/SpotDSL-场景生产线设计.md（v3）
+# 坐标：米；原点=房间地面中心；X右 Y上 Z朝房门(+Z)；rot单位度
+# 粒度：影响构图的大件用几何；氛围细节用 deco 文字
+# 尺寸：box=[w,h,d]；plane 贴墙[w,h]（rot绕Y定朝向）；cylinder=[直径,高]
+
+location:
+  id: QP23NrFZqb
+  name: 八楼出租屋
+  description: 陈默的住所，十几平米；爬楼梯气喘（身体缺乏锻炼）
+room:
+  floor:
+  - 4.2
+  - 3.4
+  height: 2.6
+  wall_color: '#8a9484'
+  floor_color: '#6b5f52'
+  door:
+    side: z+
+    pos:
+    - 1.3
+    - 0
+    - 1.7
+    size:
+    - 0.85
+    - 1.95
+  windows:
+  - id: w1
+    pos:
+    - 2.09
+    - 1.4
+    - -0.3
+    size:
+    - 1.0
+    - 1.2
+    rot:
+    - 0
+    - 90
+    - 0
+    desc: 右墙旧窗，深夜窗外无光，窗帘半拉
+  - id: w2
+    pos:
+    - 0.6
+    - 1.6
+    - -1.69
+    size:
+    - 0.6
+    - 0.5
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 后墙高处小窗（厨房天光窗），深夜无光
+  deco: 灰绿墙面斑驳，贴着几张卷边褪色的游戏海报；天花一盏白炽灯，深夜未开
+objects:
+- id: desk
+  spot: 电脑桌区
+  name: 旧电脑桌
+  type: box
+  pos:
+  - -1.75
+  - 0.375
+  - -0.9
+  size:
+  - 0.6
+  - 0.75
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a5c3e'
+  desc: 老旧木桌，长边沿左墙贴到后墙转角，桌面高0.75
+- id: bed
+  spot: 床铺区
+  name: 单人床
+  type: box
+  pos:
+  - -1.55
+  - 0.25
+  - 0.45
+  size:
+  - 1.0
+  - 0.5
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3d4854'
+  desc: 沿左侧墙的单人床，深色皱褶床品，床头朝后墙方向
+- id: bed_head
+  spot: 床铺区
+  name: 床头杂物
+  type: box
+  pos:
+  - -1.75
+  - 0.55
+  - -0.55
+  size:
+  - 0.6
+  - 0.1
+  - 0.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7c7468'
+  desc: 床头靠墙堆着旧抱枕与缠乱的充电线
+- id: suitcase
+  spot: 床铺区
+  name: 旧行李箱
+  type: box
+  pos:
+  - -0.75
+  - 0.3
+  - 1.35
+  size:
+  - 0.4
+  - 0.6
+  - 0.65
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5c5147'
+  desc: 兼作边几的旧行李箱，立在床尾
+- id: kitchen_stove
+  spot: 厨房餐区
+  name: 旧单灶台与水槽
+  type: box
+  pos:
+  - 1.85
+  - 0.45
+  - -0.95
+  size:
+  - 0.5
+  - 0.9
+  - 1.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9aa0a6'
+  desc: 沿右后墙角排开的旧单灶台与水槽
+- id: fridge
+  spot: 厨房餐区
+  name: 冰箱
+  type: box
+  pos:
+  - 1.8
+  - 0.85
+  - -0.2
+  size:
+  - 0.6
+  - 1.7
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c9c4b8'
+  desc: 半人高冰箱，门上贴着几张外卖单
+- id: dining_table
+  spot: 厨房餐区
+  name: 折叠小方桌
+  type: box
+  pos:
+  - 0.3
+  - 0.375
+  - -1.1
+  size:
+  - 0.8
+  - 0.75
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7a60'
+  desc: 靠左后墙的折叠小方桌配两把椅子，桌面收拾得空荡
+- id: shoe_cabinet
+  spot: 进门处
+  name: 窄鞋柜
+  type: box
+  pos:
+  - 0.55
+  - 0.4
+  - 1.45
+  size:
+  - 0.5
+  - 0.8
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6e6455'
+  desc: 沿房门左侧墙的窄鞋柜，柜面堆着钥匙串与外卖传单
+scenes:
+- id: desk_before
+  scene_id: QW77oRdOwS
+  scene_name: 八楼出租屋-电脑桌直播位-更新设备前
+  spot: 电脑桌区
+  camera:
+    pos:
+    - 1.55
+    - 1.55
+    - 1.45
+    look_at:
+    - -1.2
+    - 0.9
+    - -0.95
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -1.83
+    - 0.95
+    - -1.0
+    color: '#bcd4f0'
+    intensity: 2.2
+  - type: ambient
+    color: '#3a4450'
+    intensity: 0.25
+  deco: 桌上一台旧显示器亮着（屏面朝房内），老式动圈麦克风支在杂乱桌面，乱线、外卖盒与空能量饮料罐沿桌沿堆叠；桌前一把旧办公椅，背对镜头
+  atmosphere: 旧设备堆出的深夜直播角，屏幕冷光是这间小屋唯一醒着的东西，局促里透着独居主播的专注
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: desk_after
+  scene_id: R22lVGrBuC
+  scene_name: 八楼出租屋-电脑桌直播位-更新设备后
+  spot: 电脑桌区
+  camera:
+    pos:
+    - 1.55
+    - 1.55
+    - 1.45
+    look_at:
+    - -1.2
+    - 0.9
+    - -0.95
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -1.83
+    - 1.0
+    - -1.0
+    color: '#dff0ff'
+    intensity: 3.2
+  - type: ambient
+    color: '#3a4450'
+    intensity: 0.25
+  deco: 桌面收拾得干干净净，只摆着崭新的直播设备——崭新的大屏显示器盛亮（屏面朝房内，深灰黑边框），崭新的麦克风立在支架上，线缆收束得整整齐齐再无杂物；桌前同一把办公椅，背对镜头
+  atmosphere: 打扫过后焕然一新的深夜直播位，崭新的直播设备是屋里最亮眼的存在，桌面空净利落，透着生活回到正轨的秩序感，屏幕盛亮里藏着首播之夜的期待
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: bed_view
+  scene_id: QW77oRdOwU
+  scene_name: 八楼出租屋-床铺区
+  spot: 床铺区
+  camera:
+    pos:
+    - 0.9
+    - 1.55
+    - 1.5
+    look_at:
+    - -1.3
+    - 0.6
+    - 0.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.45
+    - 0.4
+    color: '#e8d9b0'
+    intensity: 1.2
+  - type: ambient
+    color: '#4a4f58'
+    intensity: 0.3
+  deco: 后墙以半旧蓝灰床帘与斑驳墙皮为主，墙上贴着一张褪色的电竞海报；床头靠墙堆着旧抱枕与缠乱的充电线；床尾立着一只兼作边几的旧行李箱
+  atmosphere: 深夜睡域，旧吸顶灯昏黄微亮，床铺皱褶透着居住痕迹，安静中带着压抑的沉默
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: kitchen_view
+  scene_id: QW77oRdOwT
+  scene_name: 八楼出租屋-厨房餐区
+  spot: 厨房餐区
+  camera:
+    pos:
+    - -0.6
+    - 1.55
+    - 1.3
+    look_at:
+    - 1.4
+    - 0.9
+    - -1.1
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0.6
+    - 2.3
+    - -1.2
+    color: '#dfe8f0'
+    intensity: 1.0
+  - type: ambient
+    color: '#4a4f58'
+    intensity: 0.3
+  deco: 泛旧发黄的白色小瓷砖墙面，低矮吊柜压在画面上部；冰箱门上贴着几张外卖单；折叠小方桌桌面收拾得空荡
+  atmosphere: 泛旧而整洁的窄小厨房角，天光窗无光，靠室内灯光照明，安静中带着生活的烟火气
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: door_view
+  scene_id: QW77oRdOwV
+  scene_name: 八楼出租屋-进门处
+  spot: 进门处
+  camera:
+    pos:
+    - -0.4
+    - 1.55
+    - -0.2
+    look_at:
+    - 1.2
+    - 1.0
+    - 1.6
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.45
+    - 1.2
+    color: '#e8d9b0'
+    intensity: 1.2
+  - type: ambient
+    color: '#4a4f58'
+    intensity: 0.3
+  deco: 一扇磨旧的薄铁门位于前方（即房门），门旁墙面刷着半截褪色绿漆，猫眼与锁扣泛着钝光；门侧窄鞋柜上堆着钥匙串与外卖传单，柜边立着一柄收拢的雨伞与吸水地垫，门后挂着一件微湿的薄外套
+  atmosphere: 进门瞬间的局部特写氛围，白炽灯亮着，门后外套微湿暗示刚有人进出，平凡日常里的细节感
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

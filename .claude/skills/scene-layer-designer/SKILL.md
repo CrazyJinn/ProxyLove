@@ -57,6 +57,7 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
   ```
   已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
 - 记录 `loc_name`（产物路径用）。
+- **查询 Scene 属性时必含 `dsl_path`**（模式 E 触发依据；为空走旧链）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
 
@@ -66,13 +67,15 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
 
 #### 组装提示词
 
-使用 Skill 工具调用 `scene-prompt-assembler`，参数 `background '<data_json>'`：
+使用 Skill 工具调用 `scene-prompt-assembler`，参数 `background '<data_json>'`（**有 dsl_path 走模式 E，无走模式 A**）：
 
 ```json
 {
   "scene": {
+    "id": "<scene_id>",
     "scene_type": "<scene_type>", "name": "<scene_name>",
     "time_of_day": "...", "weather": "...", "atmosphere": "...",
+    "dsl_path": "07_场景美术/<loc_name>/<loc_name>.room.yml",
     "composition": "...", "lighting": "...",
     "color_direction": "..."
   },
@@ -82,7 +85,9 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
 }
 ```
 
-scene 字段的值从步骤 1 查询的 Scene 节点属性读取。在 data 中声明 `output_path`；scene-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
+scene 字段的值从步骤 1 查询的 Scene 节点属性读取（`dsl_path` 也从节点读——**查询须含该字段**，空则整个键不传，assembler 自动走模式 A 旧自由文本链）。在 data 中声明 `output_path`；scene-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
+
+> **模式 E 分支**（dsl_path 非空时）：assembler 自行读 room.yml → 按 scene.id 定位 → 调 slice_scenes.py 重切 → 拼导语+scene2d+收尾串。此模式下 data 里的 composition/lighting/color_direction 会被忽略（真源在 room.yml）——传了也无害。
 
 #### 生成图片
 
@@ -112,6 +117,7 @@ SET sl.name = '<scene_name>-背景',
 
 ## 参考文档
 
-- 提示词组装：[scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式A
+- 提示词组装：[scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式A（自由文本）/ 模式E（dsl_path → scene2d 2D 布局）
+- [Room DSL v3 方案](00_init/RoomDSL-v3-正式修改方案.md) — dsl_path/派生文件契约
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
 - [场景美术 Schema](00_init/Schema/场景美术.md) — scene_type 与所需图层映射

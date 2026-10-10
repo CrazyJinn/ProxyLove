@@ -1,0 +1,182 @@
+# Scene 2D YAML（3D→2D 投影布局，供文生图直用）
+# 源：八楼出租屋.room.yml → scene: 八楼出租屋-电脑桌直播位-更新设备前（竖直fov 60° · 宽高比 1.5）
+# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标
+
+scene_name: 八楼出租屋-电脑桌直播位-更新设备前
+scene_id: QW77oRdOwS
+canvas: 百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）
+room_regions:
+  floor:
+  - 0
+  - 62
+  - 100
+  - 38
+  back_wall:
+  - 50
+  - 0
+  - 50
+  - 100
+  left_wall:
+  - 0
+  - 0
+  - 50
+  - 83
+  ceiling:
+  - 0
+  - 0
+  - 100
+  - 14
+lights:
+- name: 光源
+  pos: &id008
+  - 45
+  - 47
+  color: '#bcd4f0'
+  intensity: 2.2
+objects:
+- id: desk
+  name: 旧电脑桌
+  spot: 电脑桌区
+  bbox: &id001
+  - 35
+  - 49
+  - 19
+  - 23
+  depth: 4.22
+- id: bed_head
+  name: 床头杂物
+  spot: 床铺区
+  bbox: &id002
+  - 35
+  - 54
+  - 10
+  - 6
+  depth: 3.99
+- id: bed
+  name: 单人床
+  spot: 床铺区
+  bbox: &id003
+  - 2
+  - 57
+  - 45
+  - 40
+  depth: 3.51
+- id: dining_table
+  name: 折叠小方桌
+  spot: 厨房餐区
+  bbox: &id004
+  - 61
+  - 56
+  - 25
+  - 38
+  depth: 3.07
+- id: suitcase
+  name: 旧行李箱
+  spot: 床铺区
+  bbox: &id005
+  - 0
+  - 71
+  - 21
+  - 29
+  depth: 2.62
+  clipped: 左下缘越出
+- id: fridge
+  name: 冰箱
+  spot: 厨房餐区
+  bbox: &id006
+  - 98
+  - 2
+  - 2
+  - 98
+  depth: 1.81
+  clipped: 右下缘越出
+- id: shoe_cabinet
+  name: 窄鞋柜
+  spot: 进门处
+  bbox: &id007
+  - 0
+  - 91
+  - 28
+  - 9
+  depth: 1.52
+  clipped: 左下缘越出
+deco: 桌上一台旧显示器亮着（屏面朝房内），老式动圈麦克风支在杂乱桌面，乱线、外卖盒与空能量饮料罐沿桌沿堆叠；桌前一把旧办公椅，背对镜头
+atmosphere: 旧设备堆出的深夜直播角，屏幕冷光是这间小屋唯一醒着的东西，局促里透着独居主播的专注
+preview:
+  aspect: 1.5
+  fov: 60
+  camera:
+    pos:
+    - 1.55
+    - 1.55
+    - 1.45
+    look_at:
+    - -1.2
+    - 0.9
+    - -0.95
+    fov: 60
+  objects:
+  - id: desk
+    name: 旧电脑桌
+    spot: 电脑桌区
+    bbox: *id001
+    depth: 4.22
+  - id: bed_head
+    name: 床头杂物
+    spot: 床铺区
+    bbox: *id002
+    depth: 3.99
+  - id: bed
+    name: 单人床
+    spot: 床铺区
+    bbox: *id003
+    depth: 3.51
+  - id: dining_table
+    name: 折叠小方桌
+    spot: 厨房餐区
+    bbox: *id004
+    depth: 3.07
+  - id: suitcase
+    name: 旧行李箱
+    spot: 床铺区
+    bbox: *id005
+    depth: 2.62
+    clipped: 左下缘越出
+  - id: fridge
+    name: 冰箱
+    spot: 厨房餐区
+    bbox: *id006
+    depth: 1.81
+    clipped: 右下缘越出
+  - id: shoe_cabinet
+    name: 窄鞋柜
+    spot: 进门处
+    bbox: *id007
+    depth: 1.52
+    clipped: 左下缘越出
+  lights:
+  - name: 光源
+    pos: *id008
+    color: '#bcd4f0'
+    intensity: 2.2
+  room_regions:
+    floor:
+    - 0
+    - 62
+    - 100
+    - 38
+    back_wall:
+    - 50
+    - 0
+    - 50
+    - 100
+    left_wall:
+    - 0
+    - 0
+    - 50
+    - 83
+    ceiling:
+    - 0
+    - 0
+    - 100
+    - 14

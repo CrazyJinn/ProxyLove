@@ -1,0 +1,108 @@
+# Scene 2D YAML（3D→2D 投影布局，供文生图直用）
+# 源：八楼出租屋.room.yml → scene: 八楼出租屋-进门处（竖直fov 60° · 宽高比 1.5）
+# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标
+
+scene_name: 八楼出租屋-进门处
+scene_id: QW77oRdOwV
+canvas: 百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）
+room_regions:
+  floor:
+  - 0
+  - 71
+  - 100
+  - 29
+  right_wall:
+  - 0
+  - 0
+  - 40
+  - 100
+lights:
+- name: 光源
+  pos: &id004
+  - 84
+  - -44
+  color: '#e8d9b0'
+  intensity: 1.2
+  out_of_frame: true
+objects:
+- id: fridge
+  name: 冰箱
+  spot: 厨房餐区
+  bbox: &id001
+  - 0
+  - 16
+  - 13
+  - 84
+  depth: 2.31
+  clipped: 左下缘越出
+- id: shoe_cabinet
+  name: 窄鞋柜
+  spot: 进门处
+  bbox: &id002
+  - 52
+  - 60
+  - 18
+  - 40
+  depth: 2.22
+  clipped: 下缘越出
+- id: suitcase
+  name: 旧行李箱
+  spot: 床铺区
+  bbox: &id003
+  - 97
+  - 87
+  - 3
+  - 13
+  depth: 2.02
+  clipped: 右下缘越出
+deco: 一扇磨旧的薄铁门位于前方（即房门），门旁墙面刷着半截褪色绿漆，猫眼与锁扣泛着钝光；门侧窄鞋柜上堆着钥匙串与外卖传单，柜边立着一柄收拢的雨伞与吸水地垫，门后挂着一件微湿的薄外套
+atmosphere: 进门瞬间的局部特写氛围，白炽灯亮着，门后外套微湿暗示刚有人进出，平凡日常里的细节感
+preview:
+  aspect: 1.5
+  fov: 60
+  camera:
+    pos:
+    - -0.4
+    - 1.55
+    - -0.2
+    look_at:
+    - 1.2
+    - 1.0
+    - 1.6
+    fov: 60
+  objects:
+  - id: fridge
+    name: 冰箱
+    spot: 厨房餐区
+    bbox: *id001
+    depth: 2.31
+    clipped: 左下缘越出
+  - id: shoe_cabinet
+    name: 窄鞋柜
+    spot: 进门处
+    bbox: *id002
+    depth: 2.22
+    clipped: 下缘越出
+  - id: suitcase
+    name: 旧行李箱
+    spot: 床铺区
+    bbox: *id003
+    depth: 2.02
+    clipped: 右下缘越出
+  lights:
+  - name: 光源
+    pos: *id004
+    color: '#e8d9b0'
+    intensity: 1.2
+    out_of_frame: true
+  room_regions:
+    floor:
+    - 0
+    - 71
+    - 100
+    - 29
+    right_wall:
+    - 0
+    - 0
+    - 40
+    - 100

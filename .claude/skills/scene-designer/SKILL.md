@@ -1,7 +1,7 @@
 ---
 name: scene-designer
 description: |
-  推进 Scene 图节点：查询状态 → 按 Location 的 Spot 树与各 Spot 事件量决定视觉实现（含 default 事件的子空间细化归位）→ 保存结果（Scene 节点 MERGE + Spot-realizes->Scene 边重建，status=1 已完成）。
+  推进 Scene 图节点：查询状态 → 按 Location 的 Spot 树与各 Spot 事件量决定视觉实现（含 default 事件的子空间细化归位）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（Scene MERGE + dsl_path 登记 + realizes 边，status=1 已完成）。
   在需要为地点创建/追加场景视觉设定、或细化 anchor='default' 事件时使用。
 argument-hint: <loc_id>
 arguments:
@@ -79,6 +79,17 @@ ORDER BY e.time;
 2. 光影（lighting）须含主光源方向+色温+环境光，是提示词光影段来源。
 3. 配色与光效由 color_direction/lighting 自由定调。
 
+### 2b. 维护 Room DSL（room.yml —— 3D 布局真源）
+
+> 规范见 `00_init/RoomDSL-v3-正式修改方案.md`；**room.yml 是空间事实的唯一真源，图是投影**。
+
+- **读**：`07_场景美术/<Location名>/<Location名>.room.yml`（存在则必须复用——房间只建模一次）。
+- **产（不存在时）**：按 v3 结构写 room.yml（location/room/objects/scenes 四块）。粒度铁律：**影响构图/光源的大件用几何（每房间 ≤8 件）**，氛围细节（海报/线缆/杂物）全进 `deco` 文字；光源（lights）保留数值。外景用 `shell: open` + `ground/sky`（方案 §8.1），**沿轴延伸物（护栏/长路）必须拆近/中/远段**（整件投影退化成线）。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
+- **校验**：写后必跑 `python3 07_场景美术/slice_scenes.py <room.yml> --check`（几何/结构/新鲜度三检），报错必须修复后才进段 3。
+- **新 Scene（机位）**：`scenes[]` 追加条目（scene_id/camera{pos,look_at,fov}/lights/deco/atmosphere）。**机位即构图**：室内对话机位自门口平视略高（旧「机位后退、家具沿墙、中下部留空」规则改由 camera 数值保证）；调机位先在 dashboard /room3d 相机预览看效果。
+- **重切派生**：room.yml 任何改动后重跑 `python3 07_场景美术/slice_scenes.py <room.yml> --mode 2d`（幂等覆盖全部派生）——**改 room.yml 必同提交重切**（派生进 git）。
+- **投影回填**：time_of_day/weather/atmosphere 等叙事字段 MERGE 回 Scene；composition/lighting/color_direction **不再手写**（由 room.yml 的 deco/lights 承载，SceneLayer 走模式 E 出图）。存量旧字段保留不删。
+
 ### 3. 保存结果
 
 #### 细化迁挂（若段 2 建了 zone Spot 并迁挂 default 事件）
@@ -105,17 +116,17 @@ MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...', s.weather = '...',
-    s.atmosphere = '...', s.composition = '...', s.lighting = '...',
-    s.color_direction = '...',
-    s.description = '...',
+    s.atmosphere = '...',
+    s.dsl_path = '07_场景美术/<Location名>/<Location名>.room.yml',
     s.status = 1;
+// DSL 路线下 composition/lighting/color_direction 不再手写（由 room.yml 承载；dsl_path 登记后 SceneLayer 走 assembler 模式 E）；存量旧字段保留（无 dsl_path 消费方仍读）。
 ```
 
 > realizes 重建以 Location 为单位时先清后建（幂等模板见 00_init/Schema/场景美术.md 引用；Scene 节点不删，层链由 scene-layer-designer 管理）。
 
 **status 写入**：新建场景创建即 `status = 1`（已完成，无审批）。
 
-**验收**：每个新建 Scene 恰好 1 条 realizes 入边；realize default Spot 的 Scene 必须是「整点 Scene」决策（name=Location 名）；迁挂后无 anchor='default' 事件残留在已细分的 zone 上（anchor 与目标 Spot.kind 一致）。
+**验收**：每个新建 Scene 恰好 1 条 realizes 入边；realize default Spot 的 Scene 必须是「整点 Scene」决策（name=Location 名）；迁挂后无 anchor='default' 事件残留在已细分的 zone 上（anchor 与目标 Spot.kind 一致）。**DSL 验收**：room.yml `--check` 通过且派生新鲜；room.yml 内每个 scenes[].scene_id 与图节点一一对应；改 room.yml 的提交必含重切后的派生文件。
 
 最后汇总：细化了哪些 zone Spot（迁挂几个事件）、跳过了哪些已有 Scene、新建了哪些（status=1 已完成）、哪些 zone 暂不出图。
 
@@ -124,3 +135,4 @@ SET s.name = '<Location名-区域>',
 - [场景美术 Schema](00_init/Schema/场景美术.md) — Scene 节点字段、realizes 边、scene_type 与所需图层
 - [叙事基础 Schema](00_init/Schema/叙事基础.md) — Spot 节点、occurs_at/part_of 边
 - [场景美术风格](00_init/美术风格.md) — 渲染与色彩基调、提示词硬约束（风格收尾串）
+- [Room DSL v3 方案](00_init/RoomDSL-v3-正式修改方案.md) — room.yml 结构/粒度/外景规范/派生纪律（scene-designer 的空间真源职责）

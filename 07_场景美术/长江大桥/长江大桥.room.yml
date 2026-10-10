@@ -1,0 +1,216 @@
+# Room DSL v3 —— 长江大桥（外景·open shell）
+# 真源文件：改这里，图节点字段是编译投影（不一致=图落后，重新编译落图）
+# 规范：00_init/RoomDSL-v3-正式修改方案.md §1.2 + §8.4 外景退化规则
+# 坐标：米；原点=桥面中心；X沿桥身（画面深处为+X） Y上 Z桥宽（-Z江侧）
+# 外景说明：shell=open 无墙无天花；floor=桥面板；ground=江面（y=-20）；sky=夜空
+# 粒度：桥面/护栏/路灯用几何；江面灯火/天空/桥身透视用 ground/sky/deco 文字
+
+location:
+  id: QP23NrFZrA
+  name: 长江大桥
+  description: 陈默跳江的地方；苏晓禾支线 D28 两人并肩跑过的护栏段
+room:
+  shell: open
+  floor:
+  - 60.0
+  - 8.0
+  height: 9.0
+  floor_color: '#4a4d52'
+  ground:
+    y: -20.0
+    color: '#16202b'
+    desc: 江面：暗青色，反射对岸城市灯火成模糊光斑，无岸线细节
+  sky:
+    color: '#0d1420'
+    desc: 深夜阴天夜空，无星无月，近地平线处被城市光污染染出微弱暖橙
+  deco: 桥面为老旧沥青，白漆人行横道线磨损斑驳；桥身向画面深处延伸，没入夜色
+objects:
+- id: road_near
+  spot: 护栏段
+  name: 桥面人行道·近段
+  type: box
+  pos:
+  - -2
+  - -0.1
+  - 0
+  size:
+  - 12.0
+  - 0.2
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a4d52'
+  desc: 近处桥面，沥青质感与磨损白线清晰
+- id: road_far
+  spot: 护栏段
+  name: 桥面人行道·远段
+  type: box
+  pos:
+  - 22
+  - -0.1
+  - 0
+  size:
+  - 36.0
+  - 0.2
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#43464b'
+  desc: 桥面向画面深处延伸，没入夜色
+- id: railing_near
+  spot: 护栏段
+  name: 金属护栏·近段
+  type: box
+  pos:
+  - -2
+  - 0.55
+  - -3.9
+  size:
+  - 12.0
+  - 1.1
+  - 0.08
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6a7078'
+  desc: 近处护栏，立柱与横杆细节可辨
+- id: railing_mid
+  spot: 护栏段
+  name: 金属护栏·中段
+  type: box
+  pos:
+  - 14
+  - 0.55
+  - -3.9
+  size:
+  - 10.0
+  - 1.1
+  - 0.08
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5d636b'
+  desc: 中景护栏连贯排列
+- id: railing_far
+  spot: 护栏段
+  name: 金属护栏·远段
+  type: box
+  pos:
+  - 33
+  - 0.55
+  - -3.9
+  size:
+  - 26.0
+  - 1.1
+  - 0.08
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d535b'
+  desc: 远端护栏渐细，没入夜色
+- id: lamppost_1
+  spot: 护栏段
+  name: 桥面路灯·近
+  type: cylinder
+  pos:
+  - 3.0
+  - 4.0
+  - -3.2
+  size:
+  - 0.18
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#39404a'
+  desc: 近处路灯杆
+- id: lamp_head_1
+  spot: 护栏段
+  name: 灯头·近
+  type: sphere
+  pos:
+  - 3.0
+  - 8.1
+  - -3.2
+  size:
+  - 0.5
+  - 0.5
+  - 0.5
+  color: '#cfe0ee'
+  cname: 路灯冷白光
+  desc: 主光源灯头，冷白
+- id: lamppost_2
+  spot: 护栏段
+  name: 桥面路灯·远
+  type: cylinder
+  pos:
+  - 13.0
+  - 4.0
+  - -3.2
+  size:
+  - 0.18
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#39404a'
+  desc: 远处路灯杆
+- id: lamp_head_2
+  spot: 护栏段
+  name: 灯头·远
+  type: sphere
+  pos:
+  - 13.0
+  - 8.1
+  - -3.2
+  size:
+  - 0.5
+  - 0.5
+  - 0.5
+  color: '#cfe0ee'
+  desc: 远处灯头
+scenes:
+- id: bridge_night
+  scene_id: QW6yYoIiSu
+  scene_name: 长江大桥-护栏段
+  spot: 护栏段
+  scene_type: dialogue
+  time_of_day: 夜晚
+  weather: 阴
+  camera:
+    pos:
+    - -4.5
+    - 1.55
+    - -0.9
+    look_at:
+    - 16.0
+    - 0.8
+    - -4.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 3.0
+    - 8.1
+    - -3.2
+    color: '#cfe0ee'
+    intensity: 2.6
+  - type: ambient
+    color: '#1a2530'
+    intensity: 0.35
+  deco: 桥面人行道边缘的沥青质感与路灯光影；护栏边缘望出去是江面，对岸模糊成片的灯火隔江而望；桥上空无一人，江风灌过护栏
+  atmosphere: 深夜桥面空无一人，江风灌过护栏，对岸灯火隔江模糊成一片——世界与这段桥面无关的冰冷死寂
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
