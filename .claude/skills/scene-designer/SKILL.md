@@ -23,7 +23,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
-> 本 skill 是 Scene 内容与 status 的唯一写入点，也是 default 事件细化归位（anchor→spot）的执行者。派生文件（scene2d.yml，唯一派生物）**不在本 skill 产出**——由 scene-prompt-assembler 模式 E 消费时经 slice_scenes.py 重切。
+> 本 skill 是 Scene 内容与 status 的唯一写入点，也是 default 事件细化归位（anchor→spot）的执行者。出图 prompt 由 scene-layer-designer 消费时**现场投影生成**（`slice_scenes.py --emit-prompt`：room.yml + 机位 → prompt.md 直写），本 skill 与出图链均无派生中间文件。
 
 ### 1. 查询目标节点状态
 

@@ -202,7 +202,7 @@ sequenceDiagram
         Scene-->>A: Scene → 1
 
         A->>Layer: Skill scene-layer-designer scene_id
-        Note right of Layer: assembler 模式 E：slice_scenes.py 重切（唯一调用方）<br/>→ scene2d 组 prompt → infra-image-generator 出图
+        Note right of Layer: DSL 链：slice_scenes.py --emit-prompt<br/>现场投影直写 prompt.md → infra-image-generator 出图<br/>（dsl_path 空的存量走 assembler 模式 A 自由文本）
         Layer-->>A: SceneLayer → 10 待审
         Note over A: ⏸ 待审 → 批准 11（见 §2 审批流程）
 
@@ -368,7 +368,7 @@ sequenceDiagram
 |-------|------|------|---------|-------------------|
 | scene-designer | ① 场景（spot 粒度） | 定位 spot → Location 关联（或新建）→ 按事件复用/新建 Scene（新建立机位）→ 维护 room.yml（--check 校验，不重切派生） | Scene 字段 + room.yml | ✅ |
 | scene-layer-designer | ② 图层 | 场景图层（文生图/图生图） | SceneLayer prompt + 图 | ✅ |
-| scene-prompt-assembler | 纯产出 | 组装场景提示词 | prompt 文件 | ❌ |
+| scene-prompt-assembler | 纯产出 | 组装场景提示词（模式 A 自由文本——服务 dsl_path 为空的存量；DSL 链已代码化为 slice_scenes.py --emit-prompt 现场投影直写） | prompt 文件 | ❌ |
 
 ### 剧情层（Chapter + Section 产物链 → 运行时）
 

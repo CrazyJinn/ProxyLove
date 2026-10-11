@@ -98,7 +98,7 @@ ORDER BY loc, spot
 
 **依赖顺序**：scene-designer（建 Scene，spot 粒度）→ scene-layer-designer / bgm-designer（并列，均锚定 Scene 粒度）
 
-**节点由 skill 创建**：agent 不直接创建任何图节点或边；节点/边由各 skill 在「保存结果」步用 MERGE 兜底创建（BgmTrack 缺口由 `bgm-designer` 自行兜底建节点 + has_bgm 边），status 由该步统一写入。子 skill（scene-prompt-assembler / infra-image-generator）为**纯产出层**——只产 prompt/图片文件、不读写图、不写 status。
+**节点由 skill 创建**：agent 不直接创建任何图节点或边；节点/边由各 skill 在「保存结果」步用 MERGE 兜底创建（BgmTrack 缺口由 `bgm-designer` 自行兜底建节点 + has_bgm 边），status 由该步统一写入。子 skill（scene-prompt-assembler / infra-image-generator）与 DSL 投影脚本（`slice_scenes.py --emit-prompt`，scene-layer-designer 模式 E 直调）为**纯产出层**——只产 prompt/图片文件、不读写图、不写 status。
 
 ### 4. 审批检查
 

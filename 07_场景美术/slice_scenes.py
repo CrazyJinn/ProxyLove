@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
-"""slice_scenes.py — Room DSL v3 → 各 scene 的 2D 投影布局（scene2d.yml，唯一派生物）。
+"""slice_scenes.py — Room DSL v3 → 出图 prompt（投影 + 拼装，现场计算，零中间文件）。
 
-用法：python slice_scenes.py 07_场景美术/<Location>/<Spot目录>/<Spot短名>.room.yml [--aspect 1.5] [--mode 2d]
+用法：
+  python slice_scenes.py <room.yml> --check
+      几何/结构校验（scene-designer 写 room.yml 后的质量门）。
+  python slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type dialogue] [--aspect 1.5]
+      出图 prompt 现场生成直写 prompt.md（scene-layer-designer 模式 E 出图链）：
+      用途前缀 + 导语（固定文案）+ scene2d 投影正文 + 收尾串（动态读 00_init/美术风格.md）。
+  python slice_scenes.py <room.yml> --stdout --scene <scene_id>
+      打印 scene2d 布局 YAML（含 # 头注释）——/room3d 复制通道、人眼检视。
 
-产出：与 room.yml 同目录，每个 scene 一份 <scene_name>.scene2d.yml —— 3D→2D 投影后的画幅布局：
+模型：Scene = room.yml 一条机位（camera）；prompt 从房间 3D 数据 + 机位现场投影生成，
+不再有 scene2d.yml / scene.yml 派生文件（投影确定性，随时可重算；零中间文件无新鲜度问题）。
+
+投影规则：
   - 物件：先视锥剔除（包围盒 8 角全在视锥同一侧外 → 剔除；fov 为竖直，水平按宽高比换算），
     再投影为画幅百分比 bbox [x,y,w,h]（y 向下）+ 相机距离 depth（远近排序=遮挡序）+ 越缘标记
   - 房间结构：地板/后墙/左墙/右墙/天花的 2D 投影区域（外景 shell:open 为 ground/sky）
   - 光源：画面内位置（画外标 out_of_frame）
   rationale：t2i 模型理解 2D 构图远好于 3D 坐标；投影是确定性数学，由代码完成。
-  （旧 .scene.yml 3D 剔除版已废弃停产出——无消费方，被 scene2d 取代；preview 块同因删除——
-  /room3d 相机预览实际走前端 projectPoint 自算，从未读它。）
-
---mode 2d：兼容参数（现为唯一行为，scene2d 即产出，可不传）。
---check：只校验几何/结构（质量门，scene-designer 写后跑；此时派生可能尚不存在属正常）。
---check --fresh：附加派生新鲜度核对（仅供人工核对快照，非质量门）。
-重切时机 = 消费侧驱动：scene-prompt-assembler 出图前（或 dashboard /room3d 保存链路）调用。
 """
 from __future__ import annotations
 
@@ -267,113 +270,167 @@ def validate_room(data: dict) -> list[str]:
     return errs
 
 
-def freshness_check(room_path: Path, out_dir: Path | None = None) -> list[str]:
-    """派生新鲜度：room.yml 改动后未重切（scene2d 比真源旧）即报。git 提交前跑。"""
-    errs = []
-    out_dir = out_dir or room_path.parent
-    src_mtime = room_path.stat().st_mtime
-    data = yaml.safe_load(room_path.read_text(encoding="utf-8"))
-    for scn in data.get("scenes", []):
-        for suffix in (".scene2d.yml",):
-            p = out_dir / f"{scn['scene_name']}{suffix}"
-            if not p.exists():
-                errs.append(f"缺派生文件: {p.name}")
-            elif p.stat().st_mtime < src_mtime:
-                errs.append(f"派生过期（room.yml 更新后未重切）: {p.name}")
-    return errs
+# ── 出图 prompt 拼装（原 scene-prompt-assembler 模式 E 规则的代码化——零 LLM 转抄）──
+
+MODE_E_LEAD = (
+    "以下 YAML 描述一张游戏场景背景图的画幅布局：objects 的 bbox [x,y,w,h] 为物件在画面中的位置与大小"
+    "（百分比，y 向下），列表由远及近（遮挡序）；room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色"
+    "（out_of_frame 表示光源在画外但光照有效）；deco 与 atmosphere 为氛围与细节描述。"
+    "请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。"
+)
+
+USE_PREFIX = {  # 按 scene_type（assembler 模式 A 前缀表）
+    "dialogue": "游戏对话背景图。",
+    "functional": "游戏场景背景图。",
+    "combat": "游戏场景背景图。",
+    "ui": "游戏UI背景",
+}
 
 
-def slice_room(room_path: Path, aspect: float = 1.5, mode_2d: bool = True,
-               skip_validate: bool = False) -> list[Path]:
-    """派生 scene2d.yml（唯一派生物；旧 .scene.yml 3D 剔除版已废弃停产出——无消费方）。"""
-    data = yaml.safe_load(room_path.read_text(encoding="utf-8"))
-    if not skip_validate:
-        errs = validate_room(data)
-        if errs:
-            raise ValueError("room.yml 校验失败:\n  " + "\n  ".join(errs))
-    if not mode_2d:
-        raise ValueError("派生仅支持 --mode 2d（scene2d 唯一产出）")
-    out_files = []
-    for scn in data.get("scenes", []):
-        cull = make_culler(scn["camera"], aspect)
-        objs = [o for o in data["objects"] if not cull(corners(o))]
-        dropped = [o["id"] for o in data["objects"] if o not in objs]
-        print(f"{scn['scene_name']}: 保留 {len(objs)} 件 {sorted(o['id'] for o in objs)} | 剔除 {dropped}")
+def style_tail() -> str:
+    """从 00_init/美术风格.md「提示词硬约束」节动态提取风格收尾串（唯一来源，不写死）。"""
+    import re
+    art = Path(__file__).resolve().parents[1] / "00_init" / "美术风格.md"
+    m = re.search(r"风格收尾串[^\n]*\n\s*`([^`]+)`", art.read_text(encoding="utf-8"))
+    if not m:
+        raise ValueError("美术风格.md 未找到风格收尾串（『提示词硬约束』节）")
+    return m.group(1).strip()
 
-        cam = scn["camera"]
-        pos, f, _, _ = basis(cam)
-        proj = make_projector(cam, aspect)
-        items = []
-        for o in objs:
-            pts_proj = [proj(p) for p in corners(o)]
-            pts_proj = [p for p in pts_proj if p]
-            rect, clipped = bbox_pct(pts_proj)
-            if not rect:
-                continue
-            d_mid = math.sqrt(sum((a - b) ** 2 for a, b in zip(o["pos"], pos)))
-            item = {
-                "id": o["id"], "name": o["name"], "spot": o["spot"],
-                "bbox": rect,                     # [x,y,w,h] 画幅百分比，y 向下
-                "depth": round(d_mid, 2),          # 相机距离（m），小=近=后画
-            }
-            if o.get("cname"):
-                item["cname"] = o["cname"]
-            if clipped:
-                item["clipped"] = "".join(clipped) + "缘越出"
-            items.append(item)
-        items.sort(key=lambda it: -it["depth"])  # 远→近（绘制/遮挡序）
-        lights2d = []
-        for l in scn.get("lights", []):
-            if l.get("type") != "point":
-                continue
-            p = proj(l["pos"])
-            if not p:
-                continue
-            sx, sy = p[0] * 100, p[1] * 100
-            entry = {
-                "name": "光源", "pos": [round(sx), round(sy)],
-                "color": l["color"], "intensity": l["intensity"],
-            }
-            if not (0 <= sx <= 100 and 0 <= sy <= 100):
-                entry["out_of_frame"] = True  # 灯头在画外（如近处高杆灯）——光照效果仍有效
-            lights2d.append(entry)
-        out2d = {
-            "scene_name": scn["scene_name"],
-            "scene_id": scn["scene_id"],
-            "canvas": f"百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）",
-            "room_regions": room_shell_regions(data["room"], cam),
-            "lights": lights2d,
-            "objects": items,
-            "deco": scn.get("deco", ""),
-            "atmosphere": scn.get("atmosphere", ""),
+
+def project_scene(data: dict, scn: dict, aspect: float, room_name: str) -> tuple[dict, str]:
+    """单 scene 投影（单实现）：→ (scene2d dict, YAML 文本[含 # 头注释——人读])。
+
+    prompt 用正文请走 body_of()（去 # 注释行）。
+    """
+    cull = make_culler(scn["camera"], aspect)
+    objs = [o for o in data["objects"] if not cull(corners(o))]
+    cam = scn["camera"]
+    pos, _, _, _ = basis(cam)
+    proj = make_projector(cam, aspect)
+    items = []
+    for o in objs:
+        pts_proj = [proj(p) for p in corners(o)]
+        pts_proj = [p for p in pts_proj if p]
+        rect, clipped = bbox_pct(pts_proj)
+        if not rect:
+            continue
+        d_mid = math.sqrt(sum((a - b) ** 2 for a, b in zip(o["pos"], pos)))
+        item = {
+            "id": o["id"], "name": o["name"], "spot": o["spot"],
+            "bbox": rect,                     # [x,y,w,h] 画幅百分比，y 向下
+            "depth": round(d_mid, 2),          # 相机距离（m），小=近=后画
         }
-        hdr2 = (
-            f"# Scene 2D YAML（3D→2D 投影布局，供文生图直用）\n"
-            f"# 源：{room_path.name} → scene: {scn['scene_name']}（竖直fov {cam['fov']}° · 宽高比 {aspect}）\n"
-            f"# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标\n\n"
-        )
-        dst2 = room_path.parent / f"{scn['scene_name']}.scene2d.yml"
-        dst2.write_text(hdr2 + yaml.safe_dump(out2d, allow_unicode=True, sort_keys=False, width=110), encoding="utf-8")
-        print(f"  2D → {dst2.name}: {len(items)} 件布局 + {len(lights2d)} 光源")
-        out_files.append(dst2)
-    return out_files
+        if o.get("cname"):
+            item["cname"] = o["cname"]
+        if clipped:
+            item["clipped"] = "".join(clipped) + "缘越出"
+        items.append(item)
+    items.sort(key=lambda it: -it["depth"])  # 远→近（绘制/遮挡序）
+    lights2d = []
+    for l in scn.get("lights", []):
+        if l.get("type") != "point":
+            continue
+        p = proj(l["pos"])
+        if not p:
+            continue
+        sx, sy = p[0] * 100, p[1] * 100
+        entry = {
+            "name": "光源", "pos": [round(sx), round(sy)],
+            "color": l["color"], "intensity": l["intensity"],
+        }
+        if not (0 <= sx <= 100 and 0 <= sy <= 100):
+            entry["out_of_frame"] = True  # 灯头在画外（如近处高杆灯）——光照效果仍有效
+        lights2d.append(entry)
+    out2d = {
+        "scene_name": scn["scene_name"],
+        "scene_id": scn["scene_id"],
+        "canvas": f"百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）",
+        "room_regions": room_shell_regions(data["room"], cam),
+        "lights": lights2d,
+        "objects": items,
+        "deco": scn.get("deco", ""),
+        "atmosphere": scn.get("atmosphere", ""),
+    }
+    hdr = (
+        f"# Scene 2D YAML（3D→2D 投影布局，供文生图直用）\n"
+        f"# 源：{room_name} → scene: {scn['scene_name']}（竖直fov {cam['fov']}° · 宽高比 {aspect}）\n"
+        f"# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标\n\n"
+    )
+    return out2d, hdr + yaml.safe_dump(out2d, allow_unicode=True, sort_keys=False, width=110)
+
+
+def body_of(yaml_text: str) -> str:
+    """YAML 文本去 # 注释行（prompt 正文——导语已解释读法，注释冗余）。"""
+    return "\n".join(l for l in yaml_text.splitlines() if not l.startswith("#")).strip()
+
+
+def _load_scene(room_path: Path, scene_id: str) -> tuple[dict, dict]:
+    data = yaml.safe_load(room_path.read_text(encoding="utf-8"))
+    errs = validate_room(data)
+    if errs:
+        raise ValueError("room.yml 校验失败:\n  " + "\n  ".join(errs))
+    for scn in data.get("scenes", []):
+        if scn.get("scene_id") == scene_id or scn.get("scene_name") == scene_id:
+            return data, scn
+    avail = [f"{s.get('scene_id')}({s.get('scene_name')})" for s in data.get("scenes", [])]
+    raise ValueError(f"scene 未找到: {scene_id}；可用: {', '.join(avail) or '（无）'}")
+
+
+def emit_prompt(room_path: Path, scene_id: str, out_path: Path | None, aspect: float = 1.5,
+                scene_type: str | None = None) -> str:
+    """出图 prompt 现场生成：用途前缀 + 导语 + scene2d 投影正文 + 收尾串。
+
+    out_path 给定则写盘并打印 PROMPT_PATH；始终返回 prompt 全文（dashboard 内存调用不落盘）。
+    scene_type 优先级：参数 > scene 条目 > dialogue（room.yml 的 scene 条目常省略此键）。
+    """
+    data, scn = _load_scene(room_path, scene_id)
+    _, yaml_text = project_scene(data, scn, aspect, room_path.name)
+    st = scene_type or scn.get("scene_type") or "dialogue"
+    tp = " ".join(scn.get("text_passthrough") or []).strip()  # v3 预留：物件文字放行（如招牌/屏幕）
+    if tp:
+        tail = f"{style_tail()}，除{tp}上的文字外，图面无其他描述性文字。"
+    else:
+        tail = f"{style_tail()}，图面无描述性文字。"
+    prompt = f"{USE_PREFIX.get(st, USE_PREFIX['dialogue'])}\n\n{MODE_E_LEAD}\n\n{body_of(yaml_text)}\n\n{tail}\n"
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(prompt, encoding="utf-8")
+        print(f"PROMPT_PATH: {out_path}")
+    return prompt
+
+
+def scene2d_text(room_path: Path, scene_id: str, aspect: float = 1.5) -> str:
+    """投影 → scene2d YAML 全文（含 # 头注释）——stdout 通道：/room3d 复制、人眼检视。"""
+    data, scn = _load_scene(room_path, scene_id)
+    _, yaml_text = project_scene(data, scn, aspect, room_path.name)
+    return yaml_text
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    ap = 1.5
-    if "--aspect" in sys.argv:
-        ap = float(sys.argv[sys.argv.index("--aspect") + 1])
+
+    def _val(flag: str) -> str | None:
+        return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv else None
+
+    ap = float(_val("--aspect") or 1.5)
     rp = Path(sys.argv[1])
     if "--check" in sys.argv:
         data = yaml.safe_load(rp.read_text(encoding="utf-8"))
-        # 默认只做几何/结构校验（质量门）；--fresh 才附新鲜度核对（scene-designer 写后不重切，
-        # 派生由 scene-prompt-assembler 消费时生成，刚写完时派生尚不存在属正常）
-        errs = validate_room(data) + (freshness_check(rp) if "--fresh" in sys.argv else [])
+        errs = validate_room(data)  # 几何/结构质量门（无派生文件，无新鲜度问题）
         if errs:
             print("\n".join(errs)); sys.exit(1)
-        print("✅ 校验通过（几何/结构" + ("/新鲜度" if "--fresh" in sys.argv else "") + "）")
-        sys.exit(0)
-    for f in slice_room(rp, ap):
-        print("  →", f)
+        print("✅ 校验通过（几何/结构）")
+    elif "--emit-prompt" in sys.argv:
+        scene = _val("--scene") or ""
+        out = _val("--out")
+        if not scene or not out:
+            sys.exit("--emit-prompt 需要 --scene <scene_id> 与 --out <prompt.md 路径>")
+        emit_prompt(rp, scene, Path(out), ap, _val("--scene-type"))
+    elif "--stdout" in sys.argv:
+        scene = _val("--scene") or ""
+        if not scene:
+            sys.exit("--stdout 需要 --scene <scene_id>")
+        print(scene2d_text(rp, scene, ap))
+    else:
+        sys.exit(__doc__)
