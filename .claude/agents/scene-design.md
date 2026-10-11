@@ -56,7 +56,8 @@ RETURN l.name AS loc, sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, evt_cn
 ORDER BY loc, spot
 ```
 
-- **待办 spot 定义** = `need_scene`（有事件但缺 Scene）∨ `todo_scene_cnt > 0` ∨ `todo_layer_cnt > 0` ∨ Scene 缺 has_bgm。无事件且无 Scene 的 spot 非待办（zone Spot 无事件不建 Scene，美术按需）。
+- **待办 spot 定义** = `need_scene`（有事件但缺 Scene）∨ `todo_scene_cnt > 0` ∨ `todo_layer_cnt > 0` ∨ Scene 缺图层 ∨ Scene 缺 has_bgm。无事件且无 Scene 的 spot 非待办（zone Spot 无事件不建 Scene，美术按需）。
+- **图层缺口排查**需单独一查（SceneLayer 节点不存在时主查询查不到；dialogue 型 Scene=1 即需 background 层）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.status = 1 AND s.scene_type = 'dialogue' AND NOT (s)-[:has_layer]->(:SceneLayer {layer_type:'background'}) RETURN s.id AS scene_id, s.name AS name`，命中的按其 realizes 源 spot 归组，委派 `scene-layer-designer <scene_id>`。
 - **BgmTrack 缺口排查**需单独一查（has_bgm 是边，节点不存在时查不到）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.id IN [...] OPTIONAL MATCH (s)-[:has_bgm]->(b) RETURN s.name, b.id, b.status`，`b IS NULL` 的即缺口，由 `bgm-designer` 兜底建。
 
 **写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/场景美术.md](00_init/Schema/场景美术.md) 与 [00_init/Schema/声音.md](00_init/Schema/声音.md) 的「方向验证」表。`SceneLayer` 是 `has_layer`(Scene→)、`BgmTrack` 是 `has_bgm`(Scene→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
