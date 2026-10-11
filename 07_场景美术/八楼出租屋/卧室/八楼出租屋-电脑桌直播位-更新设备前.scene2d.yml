@@ -28,7 +28,7 @@ room_regions:
   - 6
 lights:
 - name: 光源
-  pos: &id004
+  pos:
   - 50
   - 49
   color: '#bcd4f0'
@@ -37,7 +37,7 @@ objects:
 - id: desk
   name: 旧电脑桌
   spot: 卧室
-  bbox: &id001
+  bbox:
   - 38
   - 51
   - 23
@@ -46,7 +46,7 @@ objects:
 - id: bed_head
   name: 床头杂物
   spot: 卧室
-  bbox: &id002
+  bbox:
   - 0
   - 71
   - 4
@@ -56,7 +56,7 @@ objects:
 - id: bed
   name: 单人床
   spot: 卧室
-  bbox: &id003
+  bbox:
   - 0
   - 74
   - 26
@@ -65,60 +65,3 @@ objects:
   clipped: 左下缘越出
 deco: 桌上一台旧显示器亮着（屏面朝房内），老式动圈麦克风支在杂乱桌面，乱线、外卖盒与空能量饮料罐沿桌沿堆叠；桌前一把旧办公椅，背对镜头
 atmosphere: 旧设备堆出的深夜直播角，屏幕冷光是这间小屋唯一醒着的东西，局促里透着独居主播的专注
-preview:
-  aspect: 1.5
-  fov: 60
-  camera:
-    pos:
-    - -0.9
-    - 1.55
-    - 1.2
-    look_at:
-    - 1.2
-    - 0.9
-    - -1.2
-    fov: 60
-  objects:
-  - id: desk
-    name: 旧电脑桌
-    spot: 卧室
-    bbox: *id001
-    depth: 3.4
-  - id: bed_head
-    name: 床头杂物
-    spot: 卧室
-    bbox: *id002
-    depth: 2.7
-    clipped: 左缘越出
-  - id: bed
-    name: 单人床
-    spot: 卧室
-    bbox: *id003
-    depth: 2.14
-    clipped: 左下缘越出
-  lights:
-  - name: 光源
-    pos: *id004
-    color: '#bcd4f0'
-    intensity: 2.2
-  room_regions:
-    floor:
-    - 0
-    - 66
-    - 100
-    - 34
-    back_wall:
-    - 0
-    - 0
-    - 54
-    - 100
-    right_wall:
-    - 54
-    - 0
-    - 46
-    - 100
-    ceiling:
-    - 0
-    - 0
-    - 100
-    - 6

@@ -8,9 +8,9 @@
     再投影为画幅百分比 bbox [x,y,w,h]（y 向下）+ 相机距离 depth（远近排序=遮挡序）+ 越缘标记
   - 房间结构：地板/后墙/左墙/右墙/天花的 2D 投影区域（外景 shell:open 为 ground/sky）
   - 光源：画面内位置（画外标 out_of_frame）
-  - 内嵌 preview 块：/room3d 相机预览直接消费（后端算，前端展示——投影单实现）
   rationale：t2i 模型理解 2D 构图远好于 3D 坐标；投影是确定性数学，由代码完成。
-  （旧 .scene.yml 3D 剔除版已废弃停产出——无消费方，被 scene2d 取代。）
+  （旧 .scene.yml 3D 剔除版已废弃停产出——无消费方，被 scene2d 取代；preview 块同因删除——
+  /room3d 相机预览实际走前端 projectPoint 自算，从未读它。）
 
 --mode 2d：兼容参数（现为唯一行为，scene2d 即产出，可不传）。
 --check：只校验几何/结构（质量门，scene-designer 写后跑；此时派生可能尚不存在属正常）。
@@ -346,14 +346,6 @@ def slice_room(room_path: Path, aspect: float = 1.5, mode_2d: bool = True,
             "objects": items,
             "deco": scn.get("deco", ""),
             "atmosphere": scn.get("atmosphere", ""),
-            "preview": {   # /room3d 相机预览直接消费（后端算，前端展示——投影单实现）
-                "aspect": aspect,
-                "fov": cam["fov"],
-                "camera": cam,
-                "objects": [dict(it) for it in items],
-                "lights": [dict(l) for l in lights2d],
-                "room_regions": room_shell_regions(data["room"], cam),
-            },
         }
         hdr2 = (
             f"# Scene 2D YAML（3D→2D 投影布局，供文生图直用）\n"

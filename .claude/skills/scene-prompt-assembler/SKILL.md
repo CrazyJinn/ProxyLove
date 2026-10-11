@@ -86,7 +86,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储。组装时将各维度�
 
 **组装（程序化拼接，零 LLM 重组）**：
 1. **派生检查**：读 `dsl_path` 对应 room.yml → 按 `scene.id`（scene_id）定位 scene 条目 → 调 `python3 07_场景美术/slice_scenes.py <room.yml> --mode 2d` 重切（幂等；**本 skill 是 slice_scenes.py 的唯一调用方**，scene-designer 只写真源不重切）→ 读 `<scene_name>.scene2d.yml`（与 room.yml 同目录，spot 目录内）
-2. **prompt = 导语（固定文案）+ scene2d.yml 全文（verbatim，含 preview 块之外的全部内容）+ 收尾串**：
+2. **prompt = 导语（固定文案）+ scene2d.yml 全文（verbatim）+ 收尾串**：
    - 导语（逐字使用，不改动）：
      `以下 YAML 描述一张游戏场景背景图的画幅布局：objects 的 bbox [x,y,w,h] 为物件在画面中的位置与大小（百分比，y 向下），列表由远及近（遮挡序）；room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色（out_of_frame 表示光源在画外但光照有效）；deco 与 atmosphere 为氛围与细节描述。请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。`
    - scene2d.yml 全文：**原样粘贴**（去掉文件头 `#` 注释行亦可，正文数据一字不改）
