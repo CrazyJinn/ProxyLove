@@ -7,18 +7,20 @@
 
 ## 0. 模型一句话
 
-**一个 Location 一个 3D 房间 YAML（真源）；一个 Scene = 该房间的一次取景（camera）+ 物件状态（lights/deco）；出图时按 scene 相机做视锥剔除并投影成 2D 百分比布局（scene2d.yml），YAML 直接作为文生图输入。**
+**一个物理房间一个 3D 房间 YAML（真源）；一个 Location 可含多个物理隔离的房间（如八楼出租屋 = 卧室 + 门厅）；一个 Scene = 所在房间的一次取景（camera）+ 物件状态（lights/deco）；出图时按 scene 相机做视锥剔除并投影成 2D 百分比布局（scene2d.yml），YAML 直接作为文生图输入。**
 
 三个已验证的关键判断：
 1. **房间级建模优于 Spot 级**：桌和床同房间，机位决定谁入镜——一 Spot 一文件会割裂空间。
 2. **视锥剔除必要**：整房 YAML 喂模型会导致相机外物件也被渲染（实测问题）。
 3. **2D 投影优于 3D 坐标**：t2i 模型理解画幅百分比布局远好于 3D 坐标（实测确认）；投影是确定性数学，由代码完成，模型不脑算透视。
 
+**粒度约定（2026-10-11 八楼出租屋拆分时拍板）**：room.yml 的挂靠单元是**物理房间**（一个自洽几何空间，机位不跨文件），不是 Location 也不是 Spot——Location 通常恰为一个房间；物理隔离的多间 Location（八楼出租屋 = 卧室 + 门厅）按房间拆多文件，文件名 = 该房间 zone Spot 名后半段。Spot 划分是叙事锚（事件密度驱动、渐进生长），与房间边界**不强制一一对应**：文件内 `spot` 字段引用 zone Spot、图上 `dsl_path` 落 Scene 节点，Spot 不持有文件所有权——将来房间内叙事再细分（如卧室分直播位/床位）只改 spot 字段与 realizes 边，不动 room.yml。
+
 ## 1. 数据模型（已定稿格式）
 
 ### 1.1 文件布局
 ```
-07_场景美术/<Location>/<Location>.room.yml        ← 真源（手写/scene-designer 产）
+07_场景美术/<Location>/<房间名>.room.yml           ← 真源（手写/scene-designer 产；一 Location 多房间时每间一文件，房间名=zone Spot 名后半段，单房间亦可用 Location 名）
 07_场景美术/slice_scenes.py                        ← 派生器（已存在，转正）
 07_场景美术/<Location>/<Scene 名>.scene.yml        ← 派生：视锥剔除后的 3D 切片（调试/白模用）
 07_场景美术/<Location>/<Scene 名>.scene2d.yml      ← 派生：2D 投影布局（文生图直接输入）
