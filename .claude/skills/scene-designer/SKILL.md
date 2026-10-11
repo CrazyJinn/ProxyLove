@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 场景设计（Scene · spot 粒度）
 
-为单个 spot 决定视觉实现：spot 提供空间语义（name/kind/description），Scene 只补视觉维度（scene_type/time_of_day/weather/机位）。推进 Scene 节点并绑定 `realizes` 边（**Spot → Scene**）。新建场景写入内容后即 `status=1`（已完成，无审批），直接参与下游 SceneLayer 生产。
+为单个 spot 决定视觉实现：spot 提供空间语义（name/kind/description），Scene 只补视觉维度（scene_type/time_of_day/机位）。推进 Scene 节点并绑定 `realizes` 边（**Spot → Scene**）。新建场景写入内容后即 `status=1`（已完成，无审批），直接参与下游 SceneLayer 生产。
 
 ## 参数
 
@@ -106,21 +106,14 @@ MERGE (sp)-[r2:part_of]->(l) ON CREATE SET r2.sync = false;
 |------|------|------|------|
 | 名称 | name | `咖啡店-点餐台` | `[Location名]-[区域]`（可与 zone Spot 同名）；时段/版本后缀（-更新设备后/-夜晚）只出现在 Scene 名 |
 | 场景类型 | scene_type | dialogue / functional / combat / ui | 按事件性质：纯对话→dialogue，功能交互→functional，战斗→combat，界面→ui |
-| 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time 和描述推导 |
-| 天气 | weather | 晴/阴/雨/雪/雾 | 从事件描述推导 |
-| 氛围 | atmosphere | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话 |
+| 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time 和描述推导（出图经 --tod 进模式 E prompt；运行时契约） |
+| 氛围 | atmosphere | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话（含天气，如「雨幕笼罩的路口」） |
 | 陈设细节 | deco | `桌上一台旧显示器亮着，麦克风支在杂乱桌面，外卖盒沿桌沿堆叠` | 自由文本：该机位画面里的陈设/小物描述（可移动小物与杂物堆**不建几何**，全写此处） |
-| 构图 | composition | `远景：店内墙面与菜单牌；中景：点餐台沿右侧墙面排开，台前地面空旷` | 自由文本：远/中/近景分层（分号分隔）；室内对话场景仅远/中两段（见生成规则 1） |
-| 光影 | lighting | `主光源从右上方照射，暖黄色调，环境光柔和偏橙` | 自由文本：主光源方向+色温+环境光 |
-| 配色逻辑 | color_direction | `主色咖啡棕，辅色奶白，点缀暖橙` | 自由文本：主辅点缀色与明暗逻辑 |
 | 概要 | description | `咖啡店的点餐区域` | 1-2 句 |
 
 **内容生成规则**：
-1. 构图（composition）是下游 SceneLayer 背景提示词的主体来源，按室内外分叉：
-   - **室内 dialogue 场景只写远景/中景两段，去掉近景段**——画面中下部是角色立绘站位带（运行时立绘贴底、左右分列，高占满屏），必须保持空旷，让地面/墙面自然延伸。机位从房间入口/门洞处平视略高取全景，透视灭点位于画面中上部；家具全部进中景并沿墙/靠画面两侧布置（措辞标明方位，如「沿左侧墙面」「靠右墙」），画面中央留空；狭窄/拥挤/压抑等氛围由远景与画面上部元素承载（低矮吊柜、墙面污渍、边缘堆叠物），不由中下部拥堵承载。
-   - 室外 dialogue 场景沿用远/中/近三段分层，中下部同样避免放置大型物体。
-2. 光影（lighting）须含主光源方向+色温+环境光，是提示词光影段来源。
-3. 配色与光效由 color_direction/lighting 自由定调。
+1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
+2. atmosphere 一句话承担整体氛围与天气表达；deco 承担机位画面内可移动小物与杂物堆。
 
 **2d. 维护 Room DSL（room.yml —— 3D 布局真源）**
 
@@ -134,7 +127,7 @@ MERGE (sp)-[r2:part_of]->(l) ON CREATE SET r2.sync = false;
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线）。
 - 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
-- **文字归图**：deco/atmosphere/time_of_day/weather 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；composition/lighting/color_direction **不再手写**（由 room.yml 几何 + 图 deco/atmosphere 承载，SceneLayer 走模式 E 出图）。存量旧字段保留不删。
+- **文字归图**：deco/atmosphere/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
 
 **2e. 校验（写后质量门）**：写/改 room.yml 后必跑 `python3 07_场景美术/slice_scenes.py <room.yml> --check`（几何/结构校验），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py 由 scene-prompt-assembler 模式 E 出图前调用（消费侧重切）。
 
@@ -163,10 +156,10 @@ MATCH (sp:Spot {id: '<spot_id>'}), (s:Scene {id: '<snowflake_id>'})
 MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
-    s.scene_type = '...', s.time_of_day = '...', s.weather = '...',
+    s.scene_type = '...', s.time_of_day = '...',
     s.atmosphere = '...', s.deco = '...',
     s.status = 1;
-// DSL 路线下 composition/lighting/color_direction 不再手写（由 room.yml 承载）；存量旧字段保留（模式 A 消费方仍读）。
+// 构图/光影/配色无字段（真源=room.yml 几何 + 美术风格.md；weather/composition/lighting/color_direction 已废止清理）。
 // Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）
 MATCH (sp:Spot {id: '<spot_id>'})
 SET sp.dsl_path = '07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.room.yml';

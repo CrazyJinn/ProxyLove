@@ -82,7 +82,7 @@ objects:
   name: 旧行李箱
   type: box
   pos:
-  - -1.3
+  - -1.6
   - 0.3
   - 0.85
   size:
@@ -90,9 +90,9 @@ objects:
   - 0.6
   - 0.65
   rot:
-  - 0
-  - 0
-  - 0
+  - 0.0
+  - 0.0
+  - 0.0
   color: '#5c5147'
   desc: 兼作边几的旧行李箱，立在床尾沿西墙
 scenes:
@@ -169,7 +169,7 @@ scenes:
     - -1.2
     - 0.6
     - -0.5
-    fov: 60
+    fov: 55
   lights:
   - type: point
     pos:

@@ -55,7 +55,7 @@ LIMIT 1
 MATCH (s:Scene)
 WHERE s.name STARTS WITH '<地点名>'
 RETURN s.name AS name, s.scene_type AS scene_type, s.atmosphere AS atmosphere,
-       s.time_of_day AS time_of_day, s.composition AS composition, s.lighting AS lighting,
+       s.time_of_day AS time_of_day,
        s.description AS description, s.status AS status
 ORDER BY s.name LIMIT 50
 ```

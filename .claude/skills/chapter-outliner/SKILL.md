@@ -57,7 +57,7 @@ LIMIT 1
 // (1) 本节统合的 Scene（结构段已建 Section→contains 边）+ 视觉上下文，按 order
 MATCH (sec:Section {id:'<sec_id>'})-[r:contains]->(s:Scene)
 RETURN s.name AS name, s.scene_type AS scene_type, s.atmosphere AS atmosphere,
-       s.time_of_day AS time_of_day, s.composition AS composition, s.lighting AS lighting,
+       s.time_of_day AS time_of_day,
        s.description AS description, r.order AS order
 ORDER BY r.order;
 ```
