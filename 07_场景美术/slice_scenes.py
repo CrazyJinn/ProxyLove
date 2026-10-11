@@ -141,6 +141,17 @@ def make_projector(cam, aspect):
     return proj
 
 
+class FlowList(list):
+    """流式（内联）输出 list——bbox/pos 等数字列表紧凑为 [a, b, c, d]，省 token。"""
+
+
+def _flow_list_dumper(dumper, data):
+    return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+
+
+yaml.SafeDumper.add_representer(FlowList, _flow_list_dumper)
+
+
 def bbox_pct(pts_proj):
     """可见角点 → (x0,y0,x1,y1) 百分比 + 越缘边列表。"""
     if len(pts_proj) < 2:
@@ -159,7 +170,7 @@ def bbox_pct(pts_proj):
         clipped.append("下")
     x0c, y0c = max(0.0, x0), max(0.0, y0)
     x1c, y1c = min(1.0, x1), min(1.0, y1)
-    rect = [round(x0c * 100), round(y0c * 100), round((x1c - x0c) * 100), round((y1c - y0c) * 100)]
+    rect = FlowList([round(x0c * 100), round(y0c * 100), round((x1c - x0c) * 100), round((y1c - y0c) * 100)])
     return rect, clipped
 
 
@@ -201,6 +212,43 @@ def room_shell_regions(room, cam):
         rect, _ = bbox_pct(pp)
         if rect and rect[2] >= 3 and rect[3] >= 3:  # 过小的投影省略
             out[name] = rect
+    return out
+
+
+def room_openings(room: dict) -> list[dict]:
+    """room.door + room.windows 归一化为 plane 物件（参与投影，kind=opening）。
+
+    door.pos.y 为底边贴地高度（side 推 rotY：z+→0 / x+→90 / z-→180 / x-→270）；
+    windows[].pos 为中心形式，rot 直接沿用。归一化项带内部标记 _opening。
+    """
+    out: list[dict] = []
+    door = room.get("door")
+    if door and door.get("pos") and door.get("size"):
+        side_rot = {"z+": 0, "x+": 90, "z-": 180, "x-": 270}
+        w, h = door["size"]
+        out.append({
+            "id": door.get("id") or "door",
+            "name": door.get("name") or "入户门",
+            "type": "plane",
+            "pos": [door["pos"][0], door["pos"][1] + h / 2, door["pos"][2]],
+            "size": [w, h],
+            "rot": [0, side_rot.get(door.get("side", "z+"), 0), 0],
+            "desc": door.get("desc"),
+            "_opening": True,
+        })
+    for w in room.get("windows") or []:
+        if not (w.get("pos") and w.get("size")):
+            continue
+        out.append({
+            "id": w.get("id") or "window",
+            "name": w.get("name") or "窗",
+            "type": "plane",
+            "pos": list(w["pos"]),
+            "size": list(w["size"]),
+            "rot": list(w.get("rot") or [0, 0, 0]),
+            "desc": w.get("desc"),
+            "_opening": True,
+        })
     return out
 
 
@@ -256,6 +304,46 @@ def validate_room(data: dict) -> list[str]:
                 errs.append(f"{o['id']} Z 出墙 [{z0:.2f},{z1:.2f}] (墙 ±{fz/2:.2f})")
             if y1 > h + 0.05:
                 errs.append(f"{o['id']} 穿天花 {y1:.2f} > {h}")
+    # 开口（door/windows）：缺字段报错；室内须贴墙且不出墙不越层
+    if room.get("door") and not (room["door"].get("pos") and room["door"].get("size")):
+        errs.append("room.door 缺 pos/size")
+    if room.get("door") and room["door"].get("side") not in (None, "z+", "z-", "x+", "x-"):
+        errs.append(f"room.door.side 非法 {room['door'].get('side')}")
+    for w in room.get("windows") or []:
+        if not (w.get("pos") and w.get("size")):
+            errs.append(f"window {w.get('id')} 缺 pos/size")
+    for o in room_openings(room):
+        if o["id"] in ids:
+            errs.append(f"开口 id 重复: {o['id']}")
+        ids.add(o["id"])
+        if open_shell:
+            continue
+        pts = corners(o)
+        xs = [p[0] for p in pts]
+        zs = [p[2] for p in pts]
+        ys = [p[1] for p in pts]
+        x0, x1, z0, z1 = min(xs), max(xs), min(zs), max(zs)
+        outside = x0 > fx / 2 + 0.05 or x1 < -fx / 2 - 0.05 or z0 > fz / 2 + 0.05 or z1 < -fz / 2 - 0.05
+        touching = x1 >= fx / 2 - 0.2 or x0 <= -fx / 2 + 0.2 or z1 >= fz / 2 - 0.2 or z0 <= -fz / 2 + 0.2
+        if outside or not touching:
+            errs.append(f"开口 {o['id']} 未贴墙 x∈[{x0:.2f},{x1:.2f}] z∈[{z0:.2f},{z1:.2f}] (墙 x±{fx/2:.2f} z±{fz/2:.2f})")
+        if max(ys) > h + 0.05 or min(ys) < -0.05:
+            errs.append(f"开口 {o['id']} 高度越界 y∈[{min(ys):.2f},{max(ys):.2f}] (层高 {h})")
+    # objects_delta（机位级增减）：remove/replace 的 id 须存在于 objects；add 项走物件同规则
+    all_ids = set(ids)
+    for scn in data["scenes"]:
+        dl = scn.get("objects_delta") or {}
+        for rid in dl.get("remove") or []:
+            if rid not in all_ids:
+                errs.append(f"{scn.get('id')} objects_delta.remove 未知物件: {rid}")
+        for p in dl.get("replace") or []:
+            if p.get("id") not in all_ids:
+                errs.append(f"{scn.get('id')} objects_delta.replace 未知物件: {p.get('id')}")
+        for o in dl.get("add") or []:
+            if not o.get("id") or not o.get("pos") or not o.get("size"):
+                errs.append(f"{scn.get('id')} objects_delta.add 缺 id/pos/size")
+            elif o["id"] in all_ids:
+                errs.append(f"{scn.get('id')} objects_delta.add id 与现有物件重复: {o['id']}")
     scene_ids = set()
     for scn in data["scenes"]:
         if scn.get("scene_id") in scene_ids:
@@ -274,8 +362,9 @@ def validate_room(data: dict) -> list[str]:
 # ── 出图 prompt 拼装（原 scene-prompt-assembler 模式 E 规则的代码化——零 LLM 转抄）──
 
 MODE_E_LEAD = (
-    "以下 YAML 描述一张游戏场景背景图的画幅布局：objects 的 bbox [x,y,w,h] 为物件在画面中的位置与大小"
-    "（百分比，y 向下），列表由远及近（遮挡序）；room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色"
+    "以下 YAML 描述一张游戏场景背景图的画幅布局：坐标百分比，原点=画幅左上角，x 向右、y 向下"
+    "（图像像素坐标系）；objects 的 bbox [x,y,w,h] 为物件包围盒左上角位置与宽高，列表由远及近（遮挡序）；"
+    "room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色"
     "（out_of_frame 表示光源在画外但光照有效）；time_of_day 为时段；deco 与 atmosphere 为氛围与细节描述。"
     "请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。"
 )
@@ -308,7 +397,20 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
     prompt 用正文请走 body_of()（去 # 注释行）。
     """
     cull = make_culler(scn["camera"], aspect)
-    objs = [o for o in data["objects"] if not cull(corners(o))]
+    # objects_delta（机位级物件增减）：remove 按 id 剔除、replace 同 id 部分键覆盖、add 追加
+    delta = scn.get("objects_delta") or {}
+    remove_ids = set(delta.get("remove") or [])
+    repl = {p["id"]: {k: v for k, v in p.items() if k != "id"}
+            for p in (delta.get("replace") or []) if p.get("id")}
+    objs = []
+    for o in data["objects"] + room_openings(data["room"]):
+        if o["id"] in remove_ids:
+            continue
+        if o["id"] in repl:
+            o = {**o, **repl[o["id"]]}
+        objs.append(o)
+    objs += list(delta.get("add") or [])
+    objs = [o for o in objs if not cull(corners(o))]
     cam = scn["camera"]
     pos, _, _, _ = basis(cam)
     proj = make_projector(cam, aspect)
@@ -320,11 +422,15 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
         if not rect:
             continue
         d_mid = math.sqrt(sum((a - b) ** 2 for a, b in zip(o["pos"], pos)))
-        item = {
-            "id": o["id"], "name": o["name"], "spot": o["spot"],
-            "bbox": rect,                     # [x,y,w,h] 画幅百分比，y 向下
-            "depth": round(d_mid, 2),          # 相机距离（m），小=近=后画
-        }
+        item = {"id": o["id"], "name": o["name"]}
+        if o.get("spot"):
+            item["spot"] = o["spot"]
+        item["bbox"] = rect                    # [x,y,w,h] 画幅百分比，y 向下
+        item["depth"] = round(d_mid, 2)        # 相机距离（m），小=近=后画
+        if o.get("_opening"):
+            item["kind"] = "opening"
+            if o.get("desc"):
+                item["desc"] = o["desc"]
         if o.get("cname"):
             item["cname"] = o["cname"]
         if clipped:
@@ -340,7 +446,7 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
             continue
         sx, sy = p[0] * 100, p[1] * 100
         entry = {
-            "name": "光源", "pos": [round(sx), round(sy)],
+            "name": "光源", "pos": FlowList([round(sx), round(sy)]),
             "color": l["color"], "intensity": l["intensity"],
         }
         if not (0 <= sx <= 100 and 0 <= sy <= 100):
@@ -349,7 +455,7 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
     out2d = {
         "scene_name": scn["scene_name"],
         "scene_id": scn["scene_id"],
-        "canvas": f"百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）",
+        "canvas": f"百分比布局（原点=画幅左上角，x 向右、y 向下；depth=距相机米数，列表由远及近=遮挡序）",
         "room_regions": room_shell_regions(data["room"], cam),
         "lights": lights2d,
         "objects": items,
