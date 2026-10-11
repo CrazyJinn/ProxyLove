@@ -56,7 +56,7 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
   python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n <缺几个> -q
   ```
   已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
-- 记录 `loc_name`（产物路径用）。
+- 记录 `loc_name` 与 **spot 目录名**（产物路径用）：spot_name 去掉 `<loc_name>-` 前缀得短名；spot_name 为 `<loc_name>-未细分`（default Spot）时用 loc_name。
 - **查询 Scene 属性时必含 `dsl_path`**（模式 E 触发依据；为空走旧链）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
@@ -75,13 +75,13 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
     "id": "<scene_id>",
     "scene_type": "<scene_type>", "name": "<scene_name>",
     "time_of_day": "...", "weather": "...", "atmosphere": "...",
-    "dsl_path": "07_场景美术/<loc_name>/<loc_name>.room.yml",
+    "dsl_path": "07_场景美术/<loc_name>/<spot目录名>/<spot短名>.room.yml",
     "composition": "...", "lighting": "...",
     "color_direction": "..."
   },
   "location": {"name": "<loc_name>"},
   "node": {"id": "<layer_id>"},
-  "output_path": "07_场景美术/<loc_name>/<scene_name>/background/prompt.md"
+  "output_path": "07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/prompt.md"
 }
 ```
 
@@ -93,7 +93,7 @@ scene 字段的值从步骤 1 查询的 Scene 节点属性读取（`dsl_path` �
 
 使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH>`（文生图，无参考图）：
 
-`OUTPUT_PATH = 07_场景美术/<loc_name>/<scene_name>/background/background.png`（与 background/prompt.md 同层——图层子目录内配对）。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
+`OUTPUT_PATH = 07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/background.png`（与 background/prompt.md 同层——图层子目录内配对；spot 目录名规则见步骤 1）。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 

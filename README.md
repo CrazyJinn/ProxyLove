@@ -164,14 +164,14 @@ sequenceDiagram
 
 ## scene-design —— 场景美术 + BGM 生产链
 
-> **职责**：对场景进行基础设计，包括整体氛围设计、背景图、BGM（BgmTrack 人工生成链：skill 产描述 → 用户外部工具生成 wav 归档）。
+> **职责**：对场景进行基础设计，包括整体氛围设计、背景图、BGM（BgmTrack 人工生成链：skill 产描述 → 用户外部工具生成 wav 归档）。**编排粒度 = spot**：agent 决定要推进的 spot（新建流程或推进已有流程），逐 spot 委派。
 
 ### 节点 → Skill 映射
 
 | 图节点 | Skill | Status 流程 | 审批 |
 |--------|-------|------------|------|
-| Scene | scene-designer | -1/0 → 1 | 无 |
-| SceneLayer | scene-layer-designer | -1/0→1→2→10→11 | ✅ |
+| Scene | scene-designer `<spot_id 或 spot 名>`（spot 粒度） | -1/0 → 1 | 无 |
+| SceneLayer | scene-layer-designer `<scene_id>` | -1/0→1→2→10→11 | ✅ |
 | BgmTrack | bgm-designer（缺口兜底自建） | -1/0→1（描述产出）→2（用户放 wav 后检测） | 无 |
 
 ### 时序图
@@ -185,32 +185,35 @@ sequenceDiagram
     participant Layer as scene-layer-designer
     participant BGM as bgm-designer
 
-    U->>A: 地点名 / ID（如"咖啡店"）
+    U->>A: spot 名/ID（如「卧室」）<br/>或地点名/ID（枚举其待办 spot）或无参（全图扫描）
 
     rect rgb(235, 245, 255)
-    Note over A,DB: ① 解析 + 只读查全量状态
-    A->>DB: MATCH (l:Location{name}) RETURN l.id
-    A->>DB: 无方向变长路径查全部场景节点 status<br/>含 -1/0 + BgmTrack 缺口排查（只读）
-    DB-->>A: 本地状态表（Scene + SceneLayer + BgmTrack）
+    Note over A,DB: ① 解析入参（spot 三态）+ 只读查待办 spot
+    A->>DB: Spot.id → Spot.name 全名 → 短名 ENDS WITH<br/>→ Location.id/name（枚举模式）→ 无参全图扫描
+    A->>DB: spot 待办判定查（事件量 + Scene/SceneLayer/BgmTrack status）<br/>含 -1/0，禁止过滤 + has_bgm 缺口排查（只读）
+    DB-->>A: 待办 spot 清单（need_scene / 待重做 Scene / 缺层 / BGM 缺口）
     end
 
     rect rgb(240, 255, 240)
-    Note over A,BGM: ② 按依赖顺序逐节点整体委派 Skill
-    A->>Scene: Skill scene-designer loc_id
-    Note right of Scene: 内部三段式：查→组装→MERGE 写 status
-    Scene-->>A: Scene → 1
+    Note over A,BGM: ② 逐 spot 按依赖顺序委派 Skill
+    loop 每个待办 spot
+        A->>Scene: Skill scene-designer spot_id
+        Note right of Scene: 定位 spot → Location 关联（或新建）<br/>→ 按事件复用/新建 Scene（新建立机位）<br/>→ 维护 room.yml（--check 校验，不重切）→ MERGE 写 status
+        Scene-->>A: Scene → 1
 
-    A->>Layer: Skill scene-layer-designer scene_id 2
-    Layer-->>A: SceneLayer → 10 待审
-    Note over A: ⏸ 待审 → 批准 11（见 §2 审批流程）
+        A->>Layer: Skill scene-layer-designer scene_id
+        Note right of Layer: assembler 模式 E：slice_scenes.py 重切（唯一调用方）<br/>→ scene2d 组 prompt → infra-image-generator 出图
+        Layer-->>A: SceneLayer → 10 待审
+        Note over A: ⏸ 待审 → 批准 11（见 §2 审批流程）
 
-    A->>BGM: Skill bgm-designer scene 名（缺口或 -1/0）
-    Note right of BGM: 无节点自行兜底建 BgmTrack(0)+has_bgm<br/>产音乐描述文字 → status=1
-    BGM-->>A: 描述已产出（等用户外部生成 wav 归档 13_BGM/）
-    Note over A,U: 🎵 用户动作阻塞：用户生成 wav 放入后<br/>再触发 bgm-designer 检测置 2（无审批）
+        A->>BGM: Skill bgm-designer scene 名（缺口或 -1/0）
+        Note right of BGM: 无节点自行兜底建 BgmTrack(0)+has_bgm<br/>产音乐描述文字 → status=1
+        BGM-->>A: 描述已产出（等用户外部生成 wav 归档 13_BGM/）
+        Note over A,U: 🎵 用户动作阻塞：用户生成 wav 放入后<br/>再触发 bgm-designer 检测置 2（无审批）
+    end
     end
 
-    A-->>U: 逐节点汇报 status
+    A-->>U: 按 spot 分组逐节点汇报 status
 ```
 
 ---
@@ -363,7 +366,7 @@ sequenceDiagram
 
 | Skill | 阶段 | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|------|---------|-------------------|
-| scene-designer | ① 场景 | 场景设计 | Scene 字段 | ✅ |
+| scene-designer | ① 场景（spot 粒度） | 定位 spot → Location 关联（或新建）→ 按事件复用/新建 Scene（新建立机位）→ 维护 room.yml（--check 校验，不重切派生） | Scene 字段 + room.yml | ✅ |
 | scene-layer-designer | ② 图层 | 场景图层（文生图/图生图） | SceneLayer prompt + 图 | ✅ |
 | scene-prompt-assembler | 纯产出 | 组装场景提示词 | prompt 文件 | ❌ |
 
@@ -416,10 +419,12 @@ sequenceDiagram
 │   ├── 陆择/
 │   └── …                             # 其余角色（林梦 / 苏晓禾 / 陈默 / 顾盈 …）
 │
-├── 07_场景美术/                      # 场景美术产出（Scene / SceneLayer）
+├── 07_场景美术/                      # 场景美术产出（Scene / SceneLayer；每 Spot 一目录收拢）
 │   └── 酒店/
-│       └── 酒店-客房/
-│           └── background/           # 图层目录：prompt.md + background.png 同层配对
+│       └── 客房/                     # Spot 目录（zone 短名；default 用 Location 名）
+│           ├── 客房.room.yml         # 3D 布局真源 + 派生 酒店-客房.scene.yml/.scene2d.yml（同层）
+│           └── 酒店-客房/
+│               └── background/       # 图层目录：prompt.md + background.png 同层配对
 │
 ├── 14_声音设计/                      # char-voice-design 产出（<char>/candidates/ 多候选 ref + 情绪试听；采用后固化 <char>_ref.wav）
 │

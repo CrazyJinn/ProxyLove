@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Skill, Write
 场景美术 + BGM 生产链的**纯编排层**。只负责查询图状态、决定下一步、调度 skill。所有节点的创建、更新、删除由各 skill 自行完成。
 
 Schema 文件：`00_init/Schema/场景美术.md`（Scene/SceneLayer）+ `00_init/Schema/声音.md`（BgmTrack / `Scene-has_bgm->BgmTrack`）
-输入：**地点名或 ID**（如"咖啡店"、snowflake ID）。场景子图节点类型固定，一次 cypher 查询即可拿到全部节点的 status，据 status 决定下一步。
+输入三态：**spot 名/ID**（如「卧室」、「八楼出租屋-卧室」、Spot snowflake ID）→ 直推该 spot 的链；**地点名/ID**（如"咖啡店"，兼容旧用法）→ 枚举其下全部待办 spot 逐个推进；**无参** → 全图扫描待办 spot 汇报清单。一次 cypher 查询即可拿到全部节点的 status，据 status 决定要推进的 spot。
 
 > **BGM 归本链编排**（`Scene -has_bgm-> BgmTrack`，1:1，人工生成链）：BgmTrack 缺口（无节点或 status∈{-1,0}）→ 调 `bgm-designer`（自行兜底建节点 + 产音乐描述文字 → status=1）→ **用户用 Suno 类外部工具手动生成 wav 归档 `13_BGM/<name>.wav`** → 再次调 `bgm-designer`（或 dashboard 编辑器）检测文件存在 → status=2（音频已归档，completion）。无审批。plot-design 不查不调 BgmTrack（发布时 publisher 对 status<2 的警告跳过）。
 
@@ -20,39 +20,55 @@ Schema 文件：`00_init/Schema/场景美术.md`（Scene/SceneLayer）+ `00_init
 
 ## 工作流
 
-### 1. 解析地点
+### 1. 解析入参（三态）
 
-从用户输入提取地点标识：
-- snowflake ID → 直接使用
-- 名称（如"咖啡店"）→ 通过数据库按名称查找：`MATCH (l:Location) WHERE l.name='咖啡店' RETURN l.id AS id`
-- 无指定 → 列出所有地点的场景进度概览
+从用户输入按**优先级**判定目标（命中即止）：
+- snowflake ID → `MATCH (sp:Spot {id:'<输入>'}) RETURN sp.id AS id`（按 Spot.id）
+- spot 全名（如「八楼出租屋-卧室」）→ `MATCH (sp:Spot {name:'<输入>'}) RETURN sp.id AS id`
+- spot 短名（如「卧室」）→ `MATCH (sp:Spot) WHERE sp.name ENDS WITH '-<输入>' RETURN sp.id AS id, sp.name`（多条命中=歧义，报错并列出候选让用户给全名或 ID）
+- 都不是 → 按 **Location** 走枚举模式：snowflake ID 直接用；名称 `MATCH (l:Location) WHERE l.name='咖啡店' RETURN l.id AS id`（兼容旧用法，枚举其下待办 spot 逐个推进）
+- 无指定 → 全图扫描待办 spot，汇报清单（见下）
+
+> spot 查不到时**报错退出，不在 agent 层自动新建**——spot 的兜底新建（含 Location 关联）是 scene-designer 的段 2a 职责。
 
 ### 2. 查询当前状态
 
-通过 `python .claude/scripts/cypher_exec.py -c "<cypher>" --json`（只读查询）查询地点的场景子图，了解每个节点的 status 状态。
+通过 `python .claude/scripts/cypher_exec.py -c "<cypher>" --json`（只读查询）查询 spot 维度的场景子图，了解每个节点的 status 并判定待办 spot。
 
 **查询必须覆盖全部场景节点，尤其不得遗漏 `status=-1`/`0` 的待办节点**（这是最常见的失误源）：
 
 - **禁止**在 WHERE 加 `status >= 0` 之类过滤把 `-1` 滤掉——`-1`（作废重做）与 `0`（待生成）都是必须推进的待办，不是"已完成"也不是"不存在"。
-- 用**无方向变长路径**查询，避免因边方向写反或只走单条路径而漏连。一次查询拿到全部节点 + status（Location→Scene→SceneLayer/BgmTrack 最深 2 跳，故 `*1..3`）：
+- **待办 spot 判定**（spot 直推模式去掉 Location 过滤即查全图；location 模式加 `WHERE l.id = '<地点ID>'`）：
 
 ```cypher
-MATCH (l:Location {id:'<地点ID>'})-[*1..3]-(n)
-WHERE labels(n)[0] IN ['Scene','SceneLayer','BgmTrack']
-RETURN labels(n)[0] AS type, n.id AS id, n.name AS name, n.status AS status,
-       n.scene_type AS scene_type, n.layer_type AS layer_type,
-       n.prompt_path AS prompt_path, n.image_path AS image_path,
-       n.audio_path AS audio_path, n.description AS description
-ORDER BY type, n.status
+MATCH (sp:Spot)-[:part_of]->(l:Location)
+OPTIONAL MATCH (e:Event)-[oa:occurs_at]->(sp)
+OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
+OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
+WITH l, sp, count(DISTINCT e) AS evt_cnt, collect(DISTINCT s) AS scenes,
+     [x IN collect(DISTINCT sl) WHERE x.status IS NULL OR x.status < 10] AS todo_layers
+WITH l, sp, evt_cnt, scenes, todo_layers,
+     [s IN scenes WHERE s.status IS NULL OR s.status < 1] AS todo_scenes
+RETURN l.name AS loc, sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, evt_cnt,
+       [s IN scenes | s.name] AS scene_names,
+       (evt_cnt > 0 AND size(scenes) = 0) AS need_scene,
+       size(todo_scenes) AS todo_scene_cnt, size(todo_layers) AS todo_layer_cnt
+ORDER BY loc, spot
 ```
 
-- **BgmTrack 缺口排查**需单独一查（has_bgm 是边，节点不存在时变长路径查不到）：对每个 status=1 的 Scene 查 `MATCH (s:Scene) WHERE s.id IN [...] OPTIONAL MATCH (s)-[:has_bgm]->(b) RETURN s.name, b.id, b.status`，`b IS NULL` 的即缺口，由 `bgm-designer` 兜底建。
+- **待办 spot 定义** = `need_scene`（有事件但缺 Scene）∨ `todo_scene_cnt > 0` ∨ `todo_layer_cnt > 0` ∨ Scene 缺 has_bgm。无事件且无 Scene 的 spot 非待办（zone Spot 无事件不建 Scene，美术按需）。
+- **BgmTrack 缺口排查**需单独一查（has_bgm 是边，节点不存在时查不到）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.id IN [...] OPTIONAL MATCH (s)-[:has_bgm]->(b) RETURN s.name, b.id, b.status`，`b IS NULL` 的即缺口，由 `bgm-designer` 兜底建。
 
 **写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/场景美术.md](00_init/Schema/场景美术.md) 与 [00_init/Schema/声音.md](00_init/Schema/声音.md) 的「方向验证」表。`SceneLayer` 是 `has_layer`(Scene→)、`BgmTrack` 是 `has_bgm`(Scene→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
 
 ### 3. 决策与调度
 
-**通过 Skill 工具委派执行，scene-design 不亲自跑生成脚本**：决策后用 `Skill` 工具调用下表对应 skill。Scene 用 `scene-designer <loc_id>`；SceneLayer 用 `scene-layer-designer <scene_id>`（单轮直推到最大门控，无推进目标参数）；BgmTrack 用 `bgm-designer <scene 名 或 bgm_id>`。被调 skill 在自己的上下文里完成三段式【查询目标节点 → 组装提示词/生成图片/产音乐描述 → MERGE 兜底建节点+边并写 status】，仅向 scene-design 返回产物路径与最终 status。**scene-design 自身禁止用 Bash 执行 cypher 写入、snowflake、图片生成、提示词组装、音乐描述写作**——这些是各 skill 的职责；scene-design 只用 Bash 执行第 2 步的只读状态查询。
+**通过 Skill 工具委派执行，scene-design 不亲自跑生成脚本**：决策后用 `Skill` 工具调用下表对应 skill。Scene 缺口/待重做用 `scene-designer <spot_id>`（spot 粒度——skill 内部自行完成 Location 关联、按事件复用/新建 Scene、机位决策与 room.yml 维护）；SceneLayer 用 `scene-layer-designer <scene_id>`（单轮直推到最大门控，无推进目标参数）；BgmTrack 用 `bgm-designer <scene 名 或 bgm_id>`。被调 skill 在自己的上下文里完成三段式【查询目标节点 → 组装提示词/生成图片/产音乐描述 → MERGE 兜底建节点+边并写 status】，仅向 scene-design 返回产物路径与最终 status。**scene-design 自身禁止用 Bash 执行 cypher 写入、snowflake、图片生成、提示词组装、音乐描述写作**——这些是各 skill 的职责；scene-design 只用 Bash 执行第 2 步的只读状态查询。
+
+**逐 spot 推进**：对每个待办 spot 按依赖顺序处理：
+① `need_scene` 或 `todo_scene_cnt > 0` → `scene-designer <spot_id>`；
+② 复查后（就地更新内存表）对该 spot 下每个 status=1 的 Scene：缺层或 SceneLayer status<10 → `scene-layer-designer <scene_id>`；has_bgm 缺口或 BgmTrack status<2 → `bgm-designer <scene 名>`。
+全部待办 spot 处理完（或撞上审批阻塞/用户决策点）才汇报；汇报按 spot 分组逐节点交代 status（沿用下方汇报铁律）。
 
 **调度只看 status，不看产物文件**：决定是否调度某 skill 时，唯一判据是节点 `status` 是否到达该链最大门控（数据节点 `1`、生产节点 `10`、BgmTrack `2`）。**禁止**因 `prompt_path`/`image_path`/`audio_path` 已有值或磁盘文件已存在而判定"已完成"并跳过调度。`status=-1`（作废重做）必须重新调用对应 skill 重生成并覆盖旧产物；**重做时禁止读取旧 prompt / 旧图片 / 旧描述内容**，直接以当前图节点数据为唯一来源重新组装并覆盖写入。
 
@@ -62,7 +78,7 @@ ORDER BY type, n.status
 
 **复查策略（避免冗余查询）**：仅在 skill 返回（即发生了一次写入）后，对**该被推进节点**做一次复查确认 status 到位；**禁止**在未发生写操作时重复执行第 2 步的全量 MATCH 查询，也**禁止**每推一个节点就重查整张子图。状态表在内存中维护，复查结果就地更新。
 
-**汇报必须逐节点交代**（不得只说"已完成 X"）：列出该地点**全部**场景节点，对每个给出 `status` 及本轮是否处理；未推进的节点必须说明原因（待审批 / 依赖未满足 / 已完成 / 需用户决策 / 等用户归档 wav）。**尤其不得把"status=-1 待重做"误报成"节点未创建"或"未在链上"**——节点存在与否以图查询为准，`-1` 是状态值不是不存在。
+**汇报必须逐节点交代**（不得只说"已完成 X"）：按 spot 分组列出所涉 spot 的**全部**场景节点，对每个给出 `status` 及本轮是否处理；未推进的节点必须说明原因（待审批 / 依赖未满足 / 已完成 / 需用户决策 / 等用户归档 wav）。**尤其不得把"status=-1 待重做"误报成"节点未创建"或"未在链上"**——节点存在与否以图查询为准，`-1` 是状态值不是不存在。
 
 #### 节点 → Skill 映射
 
@@ -79,7 +95,7 @@ ORDER BY type, n.status
 - BgmTrack：`0` 待设计 → `1` 描述已产出（等用户手动生成 wav 归档）→ `2` 音频已归档（completion，无审批）。
 - 审批专属 `10`/`11`；驳回归 `0`
 
-**依赖顺序**：scene-designer（建 Scene）→ scene-layer-designer / bgm-designer（并列，均锚定 Scene）
+**依赖顺序**：scene-designer（建 Scene，spot 粒度）→ scene-layer-designer / bgm-designer（并列，均锚定 Scene 粒度）
 
 **节点由 skill 创建**：agent 不直接创建任何图节点或边；节点/边由各 skill 在「保存结果」步用 MERGE 兜底创建（BgmTrack 缺口由 `bgm-designer` 自行兜底建节点 + has_bgm 边），status 由该步统一写入。子 skill（scene-prompt-assembler / infra-image-generator）为**纯产出层**——只产 prompt/图片文件、不读写图、不写 status。
 

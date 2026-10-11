@@ -16,6 +16,10 @@
   - 房间结构：地板/后墙/左墙/右墙/天花的 2D 投影区域
   - 光源：画面内位置
   rationale：t2i 模型理解 2D 构图远好于 3D 坐标；投影是确定性数学，由代码完成。
+
+--check：只校验几何/结构（质量门，scene-designer 写后跑；此时派生可能尚不存在属正常）。
+--check --fresh：附加派生新鲜度核对（仅供人工核对快照，非质量门）。
+重切时机 = 消费侧驱动：scene-prompt-assembler 出图前（或 dashboard /room3d 保存链路）调 --mode 2d。
 """
 from __future__ import annotations
 
@@ -398,10 +402,12 @@ if __name__ == "__main__":
     rp = Path(sys.argv[1])
     if "--check" in sys.argv:
         data = yaml.safe_load(rp.read_text(encoding="utf-8"))
-        errs = validate_room(data) + freshness_check(rp)
+        # 默认只做几何/结构校验（质量门）；--fresh 才附新鲜度核对（scene-designer 写后不重切，
+        # 派生由 scene-prompt-assembler 消费时生成，刚写完时派生尚不存在属正常）
+        errs = validate_room(data) + (freshness_check(rp) if "--fresh" in sys.argv else [])
         if errs:
             print("\n".join(errs)); sys.exit(1)
-        print("✅ 校验通过（几何/结构/新鲜度）")
+        print("✅ 校验通过（几何/结构" + ("/新鲜度" if "--fresh" in sys.argv else "") + "）")
         sys.exit(0)
     for f in slice_room(rp, ap, mode_2d=m2):
         print("  →", f)
