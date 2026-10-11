@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
-"""slice_scenes.py — Room DSL v3 → 各 scene 自包含 YAML（相机视锥剔除版）。
+"""slice_scenes.py — Room DSL v3 → 各 scene 的 2D 投影布局（scene2d.yml，唯一派生物）。
 
-用法：python slice_scenes.py 07_场景美术/八楼出租屋/八楼出租屋.room.yml [--aspect 1.5]
+用法：python slice_scenes.py 07_场景美术/<Location>/<Spot目录>/<Spot短名>.room.yml [--aspect 1.5] [--mode 2d]
 
-产出：与 room.yml 同目录，每个 scene 一份 <scene_name>.scene.yml：
-  location + room（壳常留；windows/door 按视锥剔除） + objects（仅视锥内） + scene 块（原样）
-
-剔除规则：
-  - 物件/窗/门：取包围盒 8 角（含 rot Y 旋转），全部角在视锥同一侧外 → 剔除
-  - 视锥：camera.fov 为竖直 fov，水平按宽高比换算（默认 1.5 = 1536x1024）
-  - 不做遮挡剔除：视锥内但被挡住的物件保留（对 t2i 更安全）
-
---mode 2d：额外产出 <scene>.scene2d.yml —— 3D→2D 投影后的画幅布局：
-  - 物件：画幅百分比 bbox [x,y,w,h]（y 向下）+ 相机距离（远近排序=遮挡序）+ 越缘标记
-  - 房间结构：地板/后墙/左墙/右墙/天花的 2D 投影区域
-  - 光源：画面内位置
+产出：与 room.yml 同目录，每个 scene 一份 <scene_name>.scene2d.yml —— 3D→2D 投影后的画幅布局：
+  - 物件：先视锥剔除（包围盒 8 角全在视锥同一侧外 → 剔除；fov 为竖直，水平按宽高比换算），
+    再投影为画幅百分比 bbox [x,y,w,h]（y 向下）+ 相机距离 depth（远近排序=遮挡序）+ 越缘标记
+  - 房间结构：地板/后墙/左墙/右墙/天花的 2D 投影区域（外景 shell:open 为 ground/sky）
+  - 光源：画面内位置（画外标 out_of_frame）
+  - 内嵌 preview 块：/room3d 相机预览直接消费（后端算，前端展示——投影单实现）
   rationale：t2i 模型理解 2D 构图远好于 3D 坐标；投影是确定性数学，由代码完成。
+  （旧 .scene.yml 3D 剔除版已废弃停产出——无消费方，被 scene2d 取代。）
 
+--mode 2d：兼容参数（现为唯一行为，scene2d 即产出，可不传）。
 --check：只校验几何/结构（质量门，scene-designer 写后跑；此时派生可能尚不存在属正常）。
 --check --fresh：附加派生新鲜度核对（仅供人工核对快照，非质量门）。
-重切时机 = 消费侧驱动：scene-prompt-assembler 出图前（或 dashboard /room3d 保存链路）调 --mode 2d。
+重切时机 = 消费侧驱动：scene-prompt-assembler 出图前（或 dashboard /room3d 保存链路）调用。
 """
 from __future__ import annotations
 
@@ -272,13 +268,13 @@ def validate_room(data: dict) -> list[str]:
 
 
 def freshness_check(room_path: Path, out_dir: Path | None = None) -> list[str]:
-    """派生新鲜度：room.yml 改动后未重切（scene/scene2d 比真源旧）即报。git 提交前跑。"""
+    """派生新鲜度：room.yml 改动后未重切（scene2d 比真源旧）即报。git 提交前跑。"""
     errs = []
     out_dir = out_dir or room_path.parent
     src_mtime = room_path.stat().st_mtime
     data = yaml.safe_load(room_path.read_text(encoding="utf-8"))
     for scn in data.get("scenes", []):
-        for suffix in (".scene.yml", ".scene2d.yml"):
+        for suffix in (".scene2d.yml",):
             p = out_dir / f"{scn['scene_name']}{suffix}"
             if not p.exists():
                 errs.append(f"缺派生文件: {p.name}")
@@ -287,108 +283,87 @@ def freshness_check(room_path: Path, out_dir: Path | None = None) -> list[str]:
     return errs
 
 
-def slice_room(room_path: Path, aspect: float = 1.5, mode_2d: bool = False,
+def slice_room(room_path: Path, aspect: float = 1.5, mode_2d: bool = True,
                skip_validate: bool = False) -> list[Path]:
+    """派生 scene2d.yml（唯一派生物；旧 .scene.yml 3D 剔除版已废弃停产出——无消费方）。"""
     data = yaml.safe_load(room_path.read_text(encoding="utf-8"))
     if not skip_validate:
         errs = validate_room(data)
         if errs:
             raise ValueError("room.yml 校验失败:\n  " + "\n  ".join(errs))
+    if not mode_2d:
+        raise ValueError("派生仅支持 --mode 2d（scene2d 唯一产出）")
     out_files = []
     for scn in data.get("scenes", []):
         cull = make_culler(scn["camera"], aspect)
         objs = [o for o in data["objects"] if not cull(corners(o))]
-        wins = [w for w in data["room"].get("windows", []) if not cull(corners(w))]
-        keep_door = data["room"].get("door") and not cull(corners(
-            {"pos": data["room"]["door"]["pos"], "size": [*data["room"]["door"]["size"], 0.06]}, y_center=0))
-        room_out = {k: v for k, v in data["room"].items() if k not in ("windows", "door")}
-        if wins:
-            room_out["windows"] = wins
-        if keep_door:
-            room_out["door"] = data["room"]["door"]
-        out = {
-            "location": data["location"],
-            "room": room_out,
-            "objects": objs,
-            "scene": scn,
-        }
-        hdr = (
-            f"# Scene YAML（视锥剔除版，供文生图直用）\n"
-            f"# 源：{room_path.name} → scene: {scn['scene_name']}\n"
-            f"# 物件 {len(objs)}/{len(data['objects'])} 在相机视锥内（竖直fov {scn['camera']['fov']}° · 宽高比 {aspect}）\n"
-            f"# 派生产物：改布局请改 room.yml 再重跑 slice_scenes.py\n\n"
-        )
-        dst = room_path.parent / f"{scn['scene_name']}.scene.yml"
-        dst.write_text(hdr + yaml.safe_dump(out, allow_unicode=True, sort_keys=False, width=110), encoding="utf-8")
         dropped = [o["id"] for o in data["objects"] if o not in objs]
         print(f"{scn['scene_name']}: 保留 {len(objs)} 件 {sorted(o['id'] for o in objs)} | 剔除 {dropped}")
-        out_files.append(dst)
 
-        if mode_2d:
-            cam = scn["camera"]
-            pos, f, _, _ = basis(cam)
-            proj = make_projector(cam, aspect)
-            items = []
-            for o in objs:
-                pts_proj = [proj(p) for p in corners(o)]
-                pts_proj = [p for p in pts_proj if p]
-                rect, clipped = bbox_pct(pts_proj)
-                if not rect:
-                    continue
-                d_mid = math.sqrt(sum((a - b) ** 2 for a, b in zip(o["pos"], pos)))
-                item = {
-                    "id": o["id"], "name": o["name"], "spot": o["spot"],
-                    "bbox": rect,                     # [x,y,w,h] 画幅百分比，y 向下
-                    "depth": round(d_mid, 2),          # 相机距离（m），小=近=后画
-                }
-                if o.get("cname"):
-                    item["cname"] = o["cname"]
-                if clipped:
-                    item["clipped"] = "".join(clipped) + "缘越出"
-                items.append(item)
-            items.sort(key=lambda it: -it["depth"])  # 远→近（绘制/遮挡序）
-            lights2d = []
-            for l in scn.get("lights", []):
-                if l.get("type") != "point":
-                    continue
-                p = proj(l["pos"])
-                if not p:
-                    continue
-                sx, sy = p[0] * 100, p[1] * 100
-                entry = {
-                    "name": "光源", "pos": [round(sx), round(sy)],
-                    "color": l["color"], "intensity": l["intensity"],
-                }
-                if not (0 <= sx <= 100 and 0 <= sy <= 100):
-                    entry["out_of_frame"] = True  # 灯头在画外（如近处高杆灯）——光照效果仍有效
-                lights2d.append(entry)
-            out2d = {
-                "scene_name": scn["scene_name"],
-                "scene_id": scn["scene_id"],
-                "canvas": f"百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）",
-                "room_regions": room_shell_regions(data["room"], cam),
-                "lights": lights2d,
-                "objects": items,
-                "deco": scn.get("deco", ""),
-                "atmosphere": scn.get("atmosphere", ""),
-                "preview": {   # /room3d 相机预览直接消费（后端算，前端展示——投影单实现）
-                    "aspect": aspect,
-                    "fov": cam["fov"],
-                    "camera": cam,
-                    "objects": [dict(it) for it in items],
-                    "lights": [dict(l) for l in lights2d],
-                    "room_regions": room_shell_regions(data["room"], cam),
-                },
+        cam = scn["camera"]
+        pos, f, _, _ = basis(cam)
+        proj = make_projector(cam, aspect)
+        items = []
+        for o in objs:
+            pts_proj = [proj(p) for p in corners(o)]
+            pts_proj = [p for p in pts_proj if p]
+            rect, clipped = bbox_pct(pts_proj)
+            if not rect:
+                continue
+            d_mid = math.sqrt(sum((a - b) ** 2 for a, b in zip(o["pos"], pos)))
+            item = {
+                "id": o["id"], "name": o["name"], "spot": o["spot"],
+                "bbox": rect,                     # [x,y,w,h] 画幅百分比，y 向下
+                "depth": round(d_mid, 2),          # 相机距离（m），小=近=后画
             }
-            hdr2 = (
-                f"# Scene 2D YAML（3D→2D 投影布局，供文生图直用）\n"
-                f"# 源：{room_path.name} → scene: {scn['scene_name']}（竖直fov {cam['fov']}° · 宽高比 {aspect}）\n"
-                f"# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标\n\n"
-            )
-            dst2 = room_path.parent / f"{scn['scene_name']}.scene2d.yml"
-            dst2.write_text(hdr2 + yaml.safe_dump(out2d, allow_unicode=True, sort_keys=False, width=110), encoding="utf-8")
-            print(f"  2D → {dst2.name}: {len(items)} 件布局 + {len(lights2d)} 光源")
-            out_files.append(dst2)
+            if o.get("cname"):
+                item["cname"] = o["cname"]
+            if clipped:
+                item["clipped"] = "".join(clipped) + "缘越出"
+            items.append(item)
+        items.sort(key=lambda it: -it["depth"])  # 远→近（绘制/遮挡序）
+        lights2d = []
+        for l in scn.get("lights", []):
+            if l.get("type") != "point":
+                continue
+            p = proj(l["pos"])
+            if not p:
+                continue
+            sx, sy = p[0] * 100, p[1] * 100
+            entry = {
+                "name": "光源", "pos": [round(sx), round(sy)],
+                "color": l["color"], "intensity": l["intensity"],
+            }
+            if not (0 <= sx <= 100 and 0 <= sy <= 100):
+                entry["out_of_frame"] = True  # 灯头在画外（如近处高杆灯）——光照效果仍有效
+            lights2d.append(entry)
+        out2d = {
+            "scene_name": scn["scene_name"],
+            "scene_id": scn["scene_id"],
+            "canvas": f"百分比布局（x/y/w/h，y 向下；depth=距相机米数，列表由远及近=遮挡序）",
+            "room_regions": room_shell_regions(data["room"], cam),
+            "lights": lights2d,
+            "objects": items,
+            "deco": scn.get("deco", ""),
+            "atmosphere": scn.get("atmosphere", ""),
+            "preview": {   # /room3d 相机预览直接消费（后端算，前端展示——投影单实现）
+                "aspect": aspect,
+                "fov": cam["fov"],
+                "camera": cam,
+                "objects": [dict(it) for it in items],
+                "lights": [dict(l) for l in lights2d],
+                "room_regions": room_shell_regions(data["room"], cam),
+            },
+        }
+        hdr2 = (
+            f"# Scene 2D YAML（3D→2D 投影布局，供文生图直用）\n"
+            f"# 源：{room_path.name} → scene: {scn['scene_name']}（竖直fov {cam['fov']}° · 宽高比 {aspect}）\n"
+            f"# bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标\n\n"
+        )
+        dst2 = room_path.parent / f"{scn['scene_name']}.scene2d.yml"
+        dst2.write_text(hdr2 + yaml.safe_dump(out2d, allow_unicode=True, sort_keys=False, width=110), encoding="utf-8")
+        print(f"  2D → {dst2.name}: {len(items)} 件布局 + {len(lights2d)} 光源")
+        out_files.append(dst2)
     return out_files
 
 
@@ -398,7 +373,6 @@ if __name__ == "__main__":
     ap = 1.5
     if "--aspect" in sys.argv:
         ap = float(sys.argv[sys.argv.index("--aspect") + 1])
-    m2 = "--mode" in sys.argv and sys.argv[sys.argv.index("--mode") + 1] == "2d"
     rp = Path(sys.argv[1])
     if "--check" in sys.argv:
         data = yaml.safe_load(rp.read_text(encoding="utf-8"))
@@ -409,5 +383,5 @@ if __name__ == "__main__":
             print("\n".join(errs)); sys.exit(1)
         print("✅ 校验通过（几何/结构" + ("/新鲜度" if "--fresh" in sys.argv else "") + "）")
         sys.exit(0)
-    for f in slice_room(rp, ap, mode_2d=m2):
+    for f in slice_room(rp, ap):
         print("  →", f)

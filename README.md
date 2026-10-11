@@ -422,7 +422,7 @@ sequenceDiagram
 ├── 07_场景美术/                      # 场景美术产出（Scene / SceneLayer；每 Spot 一目录收拢）
 │   └── 酒店/
 │       └── 客房/                     # Spot 目录（zone 短名；default 用 Location 名）
-│           ├── 客房.room.yml         # 3D 布局真源 + 派生 酒店-客房.scene.yml/.scene2d.yml（同层）
+│           ├── 客房.room.yml         # 3D 布局真源 + 派生 酒店-客房.scene2d.yml（同层，唯一派生物）
 │           └── 酒店-客房/
 │               └── background/       # 图层目录：prompt.md + background.png 同层配对
 │
