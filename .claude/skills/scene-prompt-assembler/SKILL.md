@@ -2,7 +2,7 @@
 name: scene-prompt-assembler
 description: |
   从调用方传入的场景数据（Scene 字段 + Location 名）组装场景图层提示词，派生为 prompt 文件并返回其路径。
-  按 layer_type 分模式（background/floor/decor/mask）+ dsl_2d（模式 E：Room DSL v3 → 2D 布局，Scene 有 dsl_path 时优先）。
+  按 layer_type 分模式（background/floor/decor/mask）+ dsl_2d（模式 E：Room DSL v3 → 2D 布局，data 带 dsl_path（源自 Spot 节点）时优先）。
   纯产出层：不读写图数据库、不写 status，所有数据由调用方通过 data 参数提供。
   在需要为场景图层节点组装提示词或被其他 skill 调用时使用。
 argument-hint: <layer_type> <data_json>
@@ -73,7 +73,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储。组装时将各维度�
 
 ## 模式E：dsl_2d（Room DSL v3 → 2D 布局出图）✅ V1 实现
 
-**触发**：调用方在 data 中传 `dsl_path`（Scene 节点字段，指向 `07_场景美术/<Location>/<Spot目录名>/<Spot短名>.room.yml`——每 Spot 一份，Spot 目录名：zone 取短名 / default 取 Location 名）。无 `dsl_path` 一律走模式 A（自由文本）。
+**触发**：调用方在 data 中传 `dsl_path`（**源 Spot 节点字段**——scene-layer-designer 从 realizes 源 Spot 读出透传；指向 `07_场景美术/<Location>/<Spot目录名>/<Spot短名>.room.yml`，每 Spot 一份，Spot 目录名：zone 取短名 / default 取 Location 名）。无 `dsl_path` 一律走模式 A（自由文本）。
 
 **data 参数结构**（在模式 A 基础上增加 dsl_path）：
 ```json
@@ -94,7 +94,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储。组装时将各维度�
 3. **用途前缀**：导语前按 scene_type 加一句用途（dialogue→「游戏对话背景图。」）
 4. **Write 落盘**到 `output_path`，返回路径（与模式 A 相同）
 
-**边界**：纯产出层不变——不读写图、不写 status；dsl_path 的登记与投影写回（atmosphere 等叙事字段 MERGE 回 Scene）由调用方（scene-layer-designer / scene-designer）在「保存结果」步完成。
+**边界**：纯产出层不变——不读写图、不写 status；dsl_path 的登记（在**源 Spot 节点**上）与投影写回（atmosphere 等叙事字段 MERGE 回 Scene）由调用方（scene-layer-designer / scene-designer）在「保存结果」步完成。
 **新鲜度**：本 skill 每次组装前无条件重切（幂等），派生天然新鲜；若几何/结构校验失败则**中止并原样返回错误**，不产 prompt。
 
 ## 模式B/C/D：floor / decor / mask 🚧 V2 TODO

@@ -1,7 +1,7 @@
 ---
 name: scene-designer
 description: |
-  推进 Scene 图节点（spot 粒度）：定位 spot → 确保 Location 关联（关联既有或新建）→ 检查 spot 关联 event 决定复用或新建 Scene（新建时显式决定机位）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（Scene MERGE + dsl_path 登记 + realizes 边，status=1 已完成）。
+  推进 Scene 图节点（spot 粒度）：定位 spot → 确保 Location 关联（关联既有或新建）→ 检查 spot 关联 event 决定复用或新建 Scene（新建时显式决定机位）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（Scene MERGE + realizes 边 + Spot.dsl_path 登记，status=1 已完成）。
   在需要为某 spot 创建/追加场景视觉设定、推进已有 spot 流程、或细化 anchor='default' 事件时使用。
 argument-hint: <spot_id 或 spot 名>
 arguments:
@@ -50,6 +50,7 @@ OPTIONAL MATCH (e:Event)-[oa:occurs_at]->(sp)
 OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
 RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc,
        sp.name AS spot_name, sp.kind AS kind, sp.description AS spot_desc,
+       sp.dsl_path AS dsl_path,
        count(DISTINCT e) AS evt_cnt,
        count(DISTINCT CASE WHEN oa.anchor='default' THEN e END) AS pending_cnt,
        collect(DISTINCT {id: s.id, name: s.name, status: s.status}) AS scenes;
@@ -60,8 +61,7 @@ RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.time AS tim
 ORDER BY e.time;
 ```
 
-**1c. 探测本 spot 的 room.yml**（Bash/Read，非 cypher）：
-`07_场景美术/<loc_name>/<Spot目录名>/<Spot短名>.room.yml`——Spot 目录名规则见 2d。存在则必须复用（空间只建模一次）。
+**1c. 探测本 spot 的 room.yml**：1b 返回的 `dsl_path` 非空 → 直接用该路径（spot 已建模）；为空则按规则探测磁盘 `07_场景美术/<loc_name>/<Spot目录名>/<Spot短名>.room.yml`（Spot 目录名规则见 2d）。存在则必须复用（空间只建模一次）。
 
 **1d. 探测同 Location 其他 spot 的既有 yaml**（拷贝起步候选）：
 `ls 07_场景美术/<loc_name>/*/*.room.yml`。
@@ -164,16 +164,18 @@ MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...', s.weather = '...',
     s.atmosphere = '...',
-    s.dsl_path = '07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.room.yml',
     s.status = 1;
-// DSL 路线下 composition/lighting/color_direction 不再手写（由 room.yml 承载；dsl_path 登记后 SceneLayer 走 assembler 模式 E）；存量旧字段保留（无 dsl_path 消费方仍读）。
+// DSL 路线下 composition/lighting/color_direction 不再手写（由 room.yml 承载）；存量旧字段保留（模式 A 消费方仍读）。
+// Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）
+MATCH (sp:Spot {id: '<spot_id>'})
+SET sp.dsl_path = '07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.room.yml';
 ```
 
 > realizes 重建时先清后建（幂等模板见 00_init/Schema/场景美术.md 引用；Scene 节点不删，层链由 scene-layer-designer 管理）。
 
 **status 写入**：新建场景创建即 `status = 1`（已完成，无审批）。
 
-**验收**：每个新建 Scene 恰好 1 条 realizes 入边；realize default Spot 的 Scene 必须是「整点 Scene」决策（name=Location 名）；迁挂后无 anchor='default' 事件残留在已细分的 zone 上（anchor 与目标 Spot.kind 一致）。**DSL 验收**：room.yml `--check` 通过；room.yml 内每个 scenes[].scene_id 与图节点一一对应。
+**验收**：每个新建 Scene 恰好 1 条 realizes 入边；realize default Spot 的 Scene 必须是「整点 Scene」决策（name=Location 名）；迁挂后无 anchor='default' 事件残留在已细分的 zone 上（anchor 与目标 Spot.kind 一致）。**DSL 验收**：room.yml `--check` 通过；room.yml 内每个 scenes[].scene_id 与图节点一一对应；源 Spot.dsl_path 已登记（Scene 节点不持有 dsl_path）。
 
 最后汇总：Location 关联了哪个（或新建）、复用了哪些已有 Scene、细化了哪些 zone Spot（迁挂几个事件）、新建了哪些（status=1 已完成）、哪些 zone 暂不出图。
 

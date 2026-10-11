@@ -198,7 +198,7 @@ sequenceDiagram
     Note over A,BGM: ② 逐 spot 按依赖顺序委派 Skill
     loop 每个待办 spot
         A->>Scene: Skill scene-designer spot_id
-        Note right of Scene: 定位 spot → Location 关联（或新建）<br/>→ 按事件复用/新建 Scene（新建立机位）<br/>→ 维护 room.yml（--check 校验，不重切）→ MERGE 写 status
+        Note right of Scene: 定位 spot → Location 关联（或新建）<br/>→ 按事件复用/新建 Scene（新建立机位）<br/>→ 维护 room.yml（--check 校验，不重切）<br/>→ MERGE 写 status + Spot 登记 dsl_path
         Scene-->>A: Scene → 1
 
         A->>Layer: Skill scene-layer-designer scene_id

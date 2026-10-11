@@ -34,6 +34,7 @@ allowed-tools: Read, Bash, Write, Edit
 MATCH (s:Scene {id: '<scene_id>'})<-[:realizes]-(sp:Spot)-[:part_of]->(l:Location)
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
 RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
+       sp.dsl_path AS dsl_path,
        s.id AS scene_id, s.name AS scene_name,
        s.scene_type AS scene_type, s.status AS scene_status,
        collect(sl) AS layers;
@@ -57,7 +58,7 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
   ```
   已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
 - 记录 `loc_name` 与 **spot 目录名**（产物路径用）：spot_name 去掉 `<loc_name>-` 前缀得短名；spot_name 为 `<loc_name>-未细分`（default Spot）时用 loc_name。
-- **查询 Scene 属性时必含 `dsl_path`**（模式 E 触发依据；为空走旧链）。
+- **查询必含源 Spot 的 `dsl_path`**（模式 E 触发依据：非空 = 该 spot 已 3D 建模，走模式 E；为空 = 未建模，走模式 A 旧自由文本链。Scene 节点不持有 dsl_path）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
 
@@ -85,9 +86,9 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
 }
 ```
 
-scene 字段的值从步骤 1 查询的 Scene 节点属性读取（`dsl_path` 也从节点读——**查询须含该字段**，空则整个键不传，assembler 自动走模式 A 旧自由文本链）。在 data 中声明 `output_path`；scene-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
+scene 字段的值从步骤 1 查询的 Scene 节点属性读取；`dsl_path` 取**源 Spot** 的值（步骤 1 查询已返回）——为空则整个键不传，assembler 自动走模式 A 旧自由文本链。在 data 中声明 `output_path`；scene-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
 
-> **模式 E 分支**（dsl_path 非空时）：assembler 自行读 room.yml → 按 scene.id 定位 → 调 slice_scenes.py 重切 → 拼导语+scene2d+收尾串。此模式下 data 里的 composition/lighting/color_direction 会被忽略（真源在 room.yml）——传了也无害。
+> **模式 E 分支**（源 Spot 的 dsl_path 非空时）：assembler 自行读 room.yml → 按 scene.id 定位 → 调 slice_scenes.py 重切 → 拼导语+scene2d+收尾串。此模式下 data 里的 composition/lighting/color_direction 会被忽略（真源在 room.yml）——传了也无害。
 
 #### 生成图片
 
@@ -117,7 +118,7 @@ SET sl.name = '<scene_name>-背景',
 
 ## 参考文档
 
-- 提示词组装：[scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式A（自由文本）/ 模式E（dsl_path → scene2d 2D 布局）
-- [Room DSL v3 方案](00_init/RoomDSL-v3-正式修改方案.md) — dsl_path/派生文件契约
+- 提示词组装：[scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式A（自由文本）/ 模式E（源 Spot dsl_path → scene2d 2D 布局）
+- [场景美术 Schema](../../00_init/Schema/场景美术.md) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
 - [场景美术 Schema](00_init/Schema/场景美术.md) — scene_type 与所需图层映射
