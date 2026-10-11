@@ -2,7 +2,8 @@
 # 真源文件：改这里，图节点字段是编译投影（不一致=图落后，重新编译落图）
 # 规范：00_init/RoomDSL-v3-正式修改方案.md（v3）
 # 坐标：米；原点=房间地面中心；X右 Y上 Z朝房门(+Z 内门)；rot单位度
-# 粒度：影响构图的大件用几何；氛围细节用 deco 文字
+# 粒度：只建不移动的固定大件（床/桌/柜/门窗结构）；可移动小物与杂物堆不建几何，其表现写入图 Scene.deco
+# 文字归图：deco/atmosphere/time_of_day/weather 等 Scene 文字字段在图节点（本文件 scene 条目只留 camera/lights/objects_delta）
 # 尺寸：box=[w,h,d]；plane 贴墙[w,h]（rot绕Y定朝向）；cylinder=[直径,高]
 location:
   id: QP23NrFZqb
@@ -58,24 +59,6 @@ objects:
   - 0
   color: '#3d4854'
   desc: 窗左侧沿西墙的单人床，深色皱褶床品，床头朝窗墙方向
-- id: bed_head
-  spot: 卧室
-  name: 床头杂物
-  type: box
-  pos:
-  - -1.3
-  - 0.55
-  - -1.28
-  size:
-  - 0.8
-  - 0.1
-  - 0.35
-  rot:
-  - 0
-  - 0
-  - 0
-  color: '#7c7468'
-  desc: 床头靠窗墙堆着旧抱枕与缠乱的充电线
 - id: desk
   spot: 卧室
   name: 旧电脑桌
@@ -138,8 +121,6 @@ scenes:
   - type: ambient
     color: '#3a4450'
     intensity: 0.25
-  deco: 桌上一台旧显示器亮着（屏面朝房内），老式动圈麦克风支在杂乱桌面，乱线、外卖盒与空能量饮料罐沿桌沿堆叠；桌前一把旧办公椅，背对镜头
-  atmosphere: 旧设备堆出的深夜直播角，屏幕冷光是这间小屋唯一醒着的东西，局促里透着独居主播的专注
   objects_delta:
     add: []
     remove: []
@@ -170,8 +151,6 @@ scenes:
   - type: ambient
     color: '#3a4450'
     intensity: 0.25
-  deco: 桌面收拾得干干净净，只摆着崭新的直播设备——崭新的大屏显示器盛亮（屏面朝房内，深灰黑边框），崭新的麦克风立在支架上，线缆收束得整整齐齐再无杂物；桌前同一把办公椅，背对镜头
-  atmosphere: 打扫过后焕然一新的深夜直播位，崭新的直播设备是屋里最亮眼的存在，桌面空净利落，透着生活回到正轨的秩序感，屏幕盛亮里藏着首播之夜的期待
   objects_delta:
     add: []
     remove: []
@@ -202,8 +181,6 @@ scenes:
   - type: ambient
     color: '#4a4f58'
     intensity: 0.3
-  deco: 窗墙以半旧蓝灰床帘与斑驳墙皮为主，窗右是贴墙的旧电脑桌一角，墙上贴着一张褪色的电竞海报；床头靠窗墙堆着旧抱枕与缠乱的充电线；床尾立着一只兼作边几的旧行李箱
-  atmosphere: 深夜睡域，旧吸顶灯昏黄微亮，床铺皱褶透着居住痕迹，安静中带着压抑的沉默
   objects_delta:
     add: []
     remove: []

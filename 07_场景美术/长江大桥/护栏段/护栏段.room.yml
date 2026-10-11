@@ -184,8 +184,6 @@ scenes:
   scene_name: 长江大桥-护栏段
   spot: 护栏段
   scene_type: dialogue
-  time_of_day: 夜晚
-  weather: 阴
   camera:
     pos:
     - -4.5
@@ -207,8 +205,6 @@ scenes:
   - type: ambient
     color: '#1a2530'
     intensity: 0.35
-  deco: 桥面人行道边缘的沥青质感与路灯光影；护栏边缘望出去是江面，对岸模糊成片的灯火隔江而望；桥上空无一人，江风灌过护栏
-  atmosphere: 深夜桥面空无一人，江风灌过护栏，对岸灯火隔江模糊成一片——世界与这段桥面无关的冰冷死寂
   objects_delta:
     add: []
     remove: []

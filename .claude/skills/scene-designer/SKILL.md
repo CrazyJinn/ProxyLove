@@ -109,6 +109,7 @@ MERGE (sp)-[r2:part_of]->(l) ON CREATE SET r2.sync = false;
 | 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time 和描述推导 |
 | 天气 | weather | 晴/阴/雨/雪/雾 | 从事件描述推导 |
 | 氛围 | atmosphere | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话 |
+| 陈设细节 | deco | `桌上一台旧显示器亮着，麦克风支在杂乱桌面，外卖盒沿桌沿堆叠` | 自由文本：该机位画面里的陈设/小物描述（可移动小物与杂物堆**不建几何**，全写此处） |
 | 构图 | composition | `远景：店内墙面与菜单牌；中景：点餐台沿右侧墙面排开，台前地面空旷` | 自由文本：远/中/近景分层（分号分隔）；室内对话场景仅远/中两段（见生成规则 1） |
 | 光影 | lighting | `主光源从右上方照射，暖黄色调，环境光柔和偏橙` | 自由文本：主光源方向+色温+环境光 |
 | 配色逻辑 | color_direction | `主色咖啡棕，辅色奶白，点缀暖橙` | 自由文本：主辅点缀色与明暗逻辑 |
@@ -129,11 +130,11 @@ MERGE (sp)-[r2:part_of]->(l) ON CREATE SET r2.sync = false;
 - **复用（文件已存在）**：只追加 scenes[] 条目（新 Scene=新机位），objects 除非有新事件证据不动。
 - **产（不存在时）三分支**：
   - ① 同 Location 其他 Spot 已有 yaml → 拷贝其房间壳与共享物件起步（显式复制，禁止跨文件引用），删与本 spot 无关物件、聚焦子空间；
-  - ② 全 Location 无 yaml → 按 v3 结构新建（location/room/objects/scenes 四块），objects 建模依据 = 本 spot 事件 description（陈设证据）+ Spot.description + Location.description，**证据不足的物件不建几何、写进 deco 文字（禁止硬猜）**；
+  - ② 全 Location 无 yaml → 按 v3 结构新建（location/room/objects/scenes 四块），objects 建模依据 = 本 spot 事件 description（陈设证据）+ Spot.description + Location.description，**证据不足的物件不建几何、写进图 Scene.deco（禁止硬猜）**；
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线）。
-- 粒度铁律：**影响构图/光源的大件用几何（每房间 ≤8 件）**，氛围细节（海报/线缆/杂物）全进 `deco` 文字；光源（lights）保留数值。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
-- **新 Scene（机位）**：`scenes[]` 追加条目（scene_id/camera{pos,look_at,fov}/lights/deco/atmosphere），机位来自 2c 的决策。
-- **投影回填**：time_of_day/weather/atmosphere 等叙事字段 MERGE 回 Scene；composition/lighting/color_direction **不再手写**（由 room.yml 的 deco/lights 承载，SceneLayer 走模式 E 出图）。存量旧字段保留不删。
+- 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
+- **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
+- **文字归图**：deco/atmosphere/time_of_day/weather 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；composition/lighting/color_direction **不再手写**（由 room.yml 几何 + 图 deco/atmosphere 承载，SceneLayer 走模式 E 出图）。存量旧字段保留不删。
 
 **2e. 校验（写后质量门）**：写/改 room.yml 后必跑 `python3 07_场景美术/slice_scenes.py <room.yml> --check`（几何/结构校验），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py 由 scene-prompt-assembler 模式 E 出图前调用（消费侧重切）。
 
@@ -163,7 +164,7 @@ MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...', s.weather = '...',
-    s.atmosphere = '...',
+    s.atmosphere = '...', s.deco = '...',
     s.status = 1;
 // DSL 路线下 composition/lighting/color_direction 不再手写（由 room.yml 承载）；存量旧字段保留（模式 A 消费方仍读）。
 // Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）

@@ -156,8 +156,6 @@ scenes:
   - type: ambient
     color: '#4a4f58'
     intensity: 0.3
-  deco: 泛旧发黄的白色小瓷砖墙面，低矮吊柜压在画面上部；东墙高处一扇厨房天光小窗无光；冰箱门上贴着几张外卖单
-  atmosphere: 泛旧而整洁的窄小厨房角，天光窗无光，靠室内灯光照明，安静中带着生活的烟火气
   objects_delta:
     add: []
     remove: []
@@ -188,8 +186,6 @@ scenes:
   - type: ambient
     color: '#4a4f58'
     intensity: 0.3
-  deco: 一扇磨旧的薄铁门位于前方（即入户门），门旁墙面刷着半截褪色绿漆，猫眼与锁扣泛着钝光；门侧窄鞋柜上堆着钥匙串与外卖传单，柜边立着一柄收拢的雨伞与吸水地垫，门后挂着一件微湿的薄外套
-  atmosphere: 进门瞬间的局部特写氛围，白炽灯亮着，门后外套微湿暗示刚有人进出，平凡日常里的细节感
   objects_delta:
     add: []
     remove: []
