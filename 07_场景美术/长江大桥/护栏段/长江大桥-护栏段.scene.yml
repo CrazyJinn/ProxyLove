@@ -1,5 +1,5 @@
 # Scene YAML（视锥剔除版，供文生图直用）
-# 源：长江大桥.room.yml → scene: 长江大桥-护栏段
+# 源：护栏段.room.yml → scene: 长江大桥-护栏段
 # 物件 8/9 在相机视锥内（竖直fov 60° · 宽高比 1.5）
 # 派生产物：改布局请改 room.yml 再重跑 slice_scenes.py
 

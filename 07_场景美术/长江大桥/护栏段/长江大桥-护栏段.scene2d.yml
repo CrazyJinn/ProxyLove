@@ -1,5 +1,5 @@
 # Scene 2D YAML（3D→2D 投影布局，供文生图直用）
-# 源：长江大桥.room.yml → scene: 长江大桥-护栏段（竖直fov 60° · 宽高比 1.5）
+# 源：护栏段.room.yml → scene: 长江大桥-护栏段（竖直fov 60° · 宽高比 1.5）
 # bbox 为画幅百分比 [x,y,w,h]；由确定性投影计算，模型无需理解 3D 坐标
 
 scene_name: 长江大桥-护栏段
