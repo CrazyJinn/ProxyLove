@@ -63,4 +63,9 @@ OR (e.time STARTS WITH 'Day' AND toInteger(split(e.time, ' ')[1]) IS NOT NULL
   - P1 每 label 重复 id = **0 行**；P3 Event title 缺失 = 0；P4 基线 Event 64 / Info 26 / Choice 2 / 全库 950。
   - D1 待删 Event = **41 行**（Day 11~30 的 38 + 后日谈 3，标题清单核对一致）；D2 = **1**（三选一）；D3 = **4**（拯救的定义/林梦漫展做局/三选一机制/试炼好处）。
   - 边余量实测（总数-将删）：evt_relation 22(62-40)、involved 39(125-86)、link 24(28-4)、occurs_at 22(47-25)、option 2(5-3)、presents 1(2-1)、wears 19(33-14)；生产层各边（produces/uses/contains/has_* 等）将删数全为 0。
-- （开窗后回填：窗口执行结果、约束清单、verify 结果）
+- 2026-10-12 开窗执行（用户确认无并发写）：
+  - window_prune / window_info_merge 单事务执行成功；
+  - 21 条约束全部建成（每个 label 一条 `<label小写>_id_unique`：character/location/spot/info/event/choice/scene/scenelayer/costumestyle/languagestyle/appearancestyle/designsheet/illusdesign/standingillustration/voicedesign/chapter/section/secoutline/secscript/bgmtrack/lineaudio）；
+  - verify_post 全绿：全库 904（950-46）/ Info 超集 46 / :Info:Event 23 / :Info:Choice 1 / 纯 Info 22 / 漏打 0 / 残留 name 0；边计数 link 24 / presents 1 / option 2 / evt_relation 22 / involved 39 / occurs_at 22 / wears 19，与 dry-run 预测逐项一致；
+  - 抽样：跳江选择 labels=[Info, Choice] title 正常；沈暮雪邀约二队（Day 10）与陆择酒店醒来（开场）labels=[Info, Event]。
+- 遗留数据质量问题（本次只报告不修，留 gap-filler）：「陈默跳江陆择灵魂挤入」缺 occurs_at 边；Day 2 内部 3 条 evt_relation 的 rtype 为 null。
