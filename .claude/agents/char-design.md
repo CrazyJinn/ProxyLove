@@ -40,13 +40,11 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 
 ```cypher
 MATCH (:Character {id:'<角色ID>'})-[:has_appearance|has_voice_style|has_voice_design|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(n)
-WHERE any(l IN labels(n) WHERE l IN ['AppearanceStyle','LanguageStyle','VoiceDesign','CostumeStyle','DesignSheet','IllusDesign'])
+WHERE labels(n)[0] IN ['AppearanceStyle','LanguageStyle','VoiceDesign','CostumeStyle','DesignSheet','IllusDesign']
 RETURN DISTINCT labels(n)[0] AS type, n.id AS id, n.name AS name, n.status AS status,
        n.prompt_path AS prompt_path, n.image_path AS image_path
 ORDER BY type, status
 ```
-
-> 多 label 纪律（2026-10-12 Info 合并后）：匹配 label 用 `any(l IN labels(n) WHERE l IN [...])` 顺序无关写法（禁止 `labels(n)[0]` 参与匹配）；上图目标均为单 label 生产节点，RETURN 取 `labels(n)[0]` 无歧义。
 
 **写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md) 的「方向验证」表。`IllusDesign` 是 `outfit_for`(CostumeStyle→) 与 `produces`(DesignSheet→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
 

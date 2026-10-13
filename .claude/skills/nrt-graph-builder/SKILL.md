@@ -45,9 +45,8 @@ SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 - 人物：姓名、性别、描述、标签、出生年份等
 - 地点：名称、描述（**建 Location 必须连带建默认 Spot `<名>-未细分`（kind='default'）+ part_of 边**）
 - 空间细分（Spot）：仅当文本明确给出地点内子空间（如「电脑桌前」「点餐台」）时建 zone Spot，命名强制 `<Location名>-<区域>`
-- 事件：标题、时间、类型、描述——**图上为多 label `:Info:Event`**（基础 label `:Info` + 附加 label，2026-10-12 合并；graph_builder 的 LABEL_MAP 自动映射，手写 Cypher 时必须写双 label）
-- 信息：标题、内容、知识层——纯 `:Info`
-- 选择分叉（Choice）：标题（title，不是 name）、情境描述、时间——**多 label `:Info:Choice`**；由 Event `presents` 抛出、`option` 边指向候选事件
+- 事件：标题、时间、类型、描述
+- 信息：标题、内容、知识层
 - 阵营/地点类型（如用户提及）
 
 **关系**（新边，从文本中推断）：
@@ -63,11 +62,9 @@ SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 
 ```bash
 $CYPHER_EXEC \
-  -c "MATCH (c:Character) WHERE c.name='陈默' RETURN c.id AS id, c.name AS name, labels(c) AS labels" \
+  -c "MATCH (c:Character) WHERE c.name='陈默' RETURN c.id AS id, c.name AS name, labels(c)[0] AS label" \
   --json
 ```
-
-> 取主显示 label 用优先级解析（Event > Choice > Info），**禁止 `labels(n)[0]`**——多 label 节点（如 `:Info:Event`）的 labels() 顺序无保证。
 
 如果实体已存在，复用其 snowflake ID。如果不存在，标记为待创建。
 
@@ -165,7 +162,7 @@ python $SCRIPT discover --type missing-relations --password 12345678
 
 ## 边方向速查
 
-创建边时必须遵守方向规则（Event/Choice 端点即 `:Info:Event` / `:Info:Choice` 节点——按附加 label 匹配，集合语义）：
+创建边时必须遵守方向规则：
 
 | 边类型 | From → To | 属性 |
 |--------|-----------|------|
@@ -176,9 +173,6 @@ python $SCRIPT discover --type missing-relations --password 12345678
 | occurs_at | Event → Spot | anchor, detail |
 | part_of | Spot → Location | — |
 | evt_relation | Event → Event | type, detail |
-| presents | Event → Choice | — |
-| option | Choice → Event | label（选项文本，必填）, leads_to_ending, detail |
-| wears | Event → CostumeStyle | — |
 | BELONGS_TO | Character → Faction | role |
 | CATEGORIZED_AS | Location → LocationType | 无 |
 

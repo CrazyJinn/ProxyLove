@@ -1,18 +1,10 @@
 # 边创建指南
 
-11 种边类型的方向规则、属性 schema 和 Cypher 模板。
-
-> **多 label 说明（2026-10-12 Info 合并）**：事件/选择节点图上为 `:Info:Event` / `:Info:Choice`。
-> 端点 MATCH 用附加 label（`:Event` / `:Choice`）即可命中（Cypher 标签匹配是集合语义）；
-> **建点**则必须写双 label 形态，否则新节点缺基础 `:Info`：
-> ```cypher
-> MERGE (n:Info:Event {id: '<snowflake>'}) SET n.title = '…', n.time = '…', n.description = '…';
-> MERGE (n:Info:Choice {id: '<snowflake>'}) SET n.title = '…', n.description = '…', n.time = '…';  // title 不是 name
-> ```
+8 种边类型的方向规则、属性 schema 和 Cypher 模板。
 
 ---
 
-## 叙事关系边（9 种）
+## 叙事关系边（6种）
 
 ### 1. relation — 人物关系
 
@@ -85,45 +77,13 @@ MERGE (a)-[:part_of {sync: false}]->(b)
 
 ### 6. evt_relation — 事件—事件
 
-- **方向**：`Event → Event`（即 `:Info:Event → :Info:Event`）
+- **方向**：`Event → Event`
 - **属性**：`type`（`因果`/`先后`/`包含`）、`detail`
 - **方向语义**：`因果` = 前因→后果；`先后` = 时间顺序；`包含` = 大事件→子事件
 
 ```cypher
 MATCH (a:Event {id: $from}), (b:Event {id: $to})
 MERGE (a)-[:evt_relation {type: $type, detail: $detail}]->(b)
-```
-
-### 6b. presents — 事件触发选择
-
-- **方向**：`Event → Choice`（`:Info:Event → :Info:Choice`）
-- **属性**：`sync`（默认 false）
-- 某事件播放到此呈现选择；事件是源头（上游），选择由事件触发（下游）。
-
-```cypher
-MATCH (a:Event {id: $from}), (b:Choice {id: $to})
-MERGE (a)-[:presents]->(b)
-```
-
-### 6c. option — 选项导向后续
-
-- **方向**：`Choice → Event`（`:Info:Choice → :Info:Event`）
-- **属性**：`label`（必填，玩家看到的选项文本，如"再想想"/"跳江"/"选苏晓禾"）、`leads_to_ending`（默认 false；true 表示该选项进入结局）、`detail`
-- 选择是因（上游），选完进入的事件是果（下游）；`option{leads_to_ending:true}` 指向的事件即结局事件（ending_kind 标注 BE/TE/HE/NE）。
-
-```cypher
-MATCH (a:Choice {id: $from}), (b:Event {id: $to})
-MERGE (a)-[:option {label: $label, leads_to_ending: $leads_to_ending, detail: $detail}]->(b)
-```
-
-### 6d. wears — 事件—着装
-
-- **方向**：`Event → CostumeStyle`（`:Info:Event → CostumeStyle`；边定义见 [角色美术.md](../../../../00_init/Schema/角色美术.md)）
-- **属性**：`sync`（恒 false，纯叙事域边）
-
-```cypher
-MATCH (a:Event {id: $from}), (b:CostumeStyle {id: $to})
-MERGE (a)-[:wears {sync: false}]->(b)
 ```
 
 ---
@@ -155,13 +115,12 @@ MERGE (a)-[:CATEGORIZED_AS]->(b)
 
 ## 方向验证规则
 
-创建边前必须验证方向正确（Event/Choice 即 `:Info:Event` / `:Info:Choice` 节点）：
+创建边前必须验证方向正确：
 
 | from 标签 | 允许的边类型 | to 标签 |
 |-----------|------------|---------|
 | Character | relation, at, link, involved, BELONGS_TO | → Character / Location / Info / Event / Faction |
-| Event | occurs_at, evt_relation, link, presents, wears | → Spot / Event / Info / Choice / CostumeStyle |
-| Choice | option | → Event |
+| Event | occurs_at, evt_relation, link | → Spot / Event / Info |
 | Spot | part_of | → Location |
 | Location | CATEGORIZED_AS, link | → LocationType / Info |
 | Info | link | → Info |

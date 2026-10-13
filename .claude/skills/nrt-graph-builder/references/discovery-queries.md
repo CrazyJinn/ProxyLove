@@ -10,12 +10,9 @@
 
 ```cypher
 MATCH (n) WHERE NOT (n)--()
-RETURN CASE WHEN n:Event THEN 'Event' WHEN n:Choice THEN 'Choice' WHEN n:Info THEN 'Info'
-            ELSE labels(n)[0] END AS label, n.id AS id,
+RETURN labels(n)[0] AS label, n.id AS id,
        COALESCE(n.name, n.title) AS name
 ```
-
-> 多 label 节点（`:Info:Event` / `:Info:Choice`）的 `labels()` 顺序无保证，主显示 label 用上面的 CASE 优先级解析（Event > Choice > Info），禁止 `labels(n)[0]`。
 
 **建议模板**：
 - priority: `medium`

@@ -24,16 +24,12 @@ from snowflake_base62 import SnowflakeGenerator
 _id_gen = SnowflakeGenerator()
 
 # ─── 标签映射 ─────────────────────────────────────────────────
-# 2026-10-12 Info 合并迁移：Event/Choice 为 :Info 的附加 label，
-# 建点须写多 label 形态（MERGE (n:Info:Event {...})），Cypher 标签串天然支持。
 LABEL_MAP = {
     "char":                "Character",
     "Character":           "Character",
     "Location":            "Location",
-    "Spot":                "Spot",
-    "Event":               "Info:Event",
+    "Event":               "Event",
     "Info":                "Info",
-    "Choice":              "Info:Choice",
     "Faction":             "Faction",
     "LocationType":        "LocationType",
     "AppearanceStyle":     "AppearanceStyle",
@@ -46,24 +42,13 @@ LABEL_MAP = {
 
 # 显示名映射
 DISPLAY_NAME = {
-    "char": "name", "Character": "name", "Location": "name", "Spot": "name",
-    "Event": "title", "Info": "title", "Choice": "title", "Faction": "name",
+    "char": "name", "Character": "name", "Location": "name",
+    "Event": "title", "Info": "title", "Faction": "name",
     "LocationType": "name",
     "AppearanceStyle": "name", "CostumeStyle": "name",
     "DesignSheet": "name", "IllusDesign": "name",
     "StandingIllustration": "name", "LanguageStyle": "name",
 }
-
-
-def _primary_label(labels):
-    """多 label 主显示：带附加 label 的显示 Event/Choice，纯的显示 Info。
-
-    Neo4j labels() 顺序无保证，禁止 labels(n)[0]（与 dashboard app/services/labels.py 同逻辑）。
-    """
-    for lb in ("Event", "Choice", "Info"):
-        if lb in labels:
-            return lb
-    return labels[0] if labels else ""
 
 
 def get_password(args):
@@ -134,7 +119,6 @@ def cmd_add_edges(client, edges_json):
     created, skipped, errors = [], [], []
 
     # 边方向规则: edge_type -> (from_label_pattern, to_label_pattern)
-    # 端点按附加 label 匹配（:Event 对 :Info:Event 节点依然命中，集合语义）
     EDGE_RULES = {
         "relation":       ("Character", "Character"),
         "at":             ("Character", "Location"),
@@ -143,9 +127,6 @@ def cmd_add_edges(client, edges_json):
         "occurs_at":      ("Event", "Spot"),
         "part_of":        ("Spot", "Location"),
         "evt_relation":   ("Event", "Event"),
-        "presents":       ("Event", "Choice"),
-        "option":         ("Choice", "Event"),
-        "wears":          ("Event", "CostumeStyle"),
         "BELONGS_TO":     ("Character", "Faction"),
         "CATEGORIZED_AS": ("Location", "LocationType"),
     }
@@ -226,12 +207,11 @@ def _parse_day(time_str):
 
 def discover_orphans(client):
     """检查1: 孤立节点（零边）"""
-    raw = client.run("""
+    rows = client.run("""
         MATCH (n) WHERE NOT (n)--()
-        RETURN labels(n) AS labels, n.id AS id,
+        RETURN labels(n)[0] AS label, n.id AS id,
                COALESCE(n.name, n.title) AS name
     """)
-    rows = [{"label": _primary_label(r["labels"]), "id": r["id"], "name": r["name"]} for r in raw]
     suggestions = []
     for r in rows:
         suggestions.append({
@@ -441,8 +421,7 @@ def main():
 
     # auto-ids
     p_ids = sub.add_parser("auto-ids", help="为指定标签生成雪花 ID")
-    p_ids.add_argument("--labels", default="char,Location,Event,Info",
-                       help="逗号分隔的标签列表（Event/Choice 经 LABEL_MAP 映射为 Info:Event / Info:Choice 多 label 建点形态）")
+    p_ids.add_argument("--labels", default="char,Location,Event,Info", help="逗号分隔的标签列表")
 
     # add-nodes
     p_nodes = sub.add_parser("add-nodes", help="原子创建节点")

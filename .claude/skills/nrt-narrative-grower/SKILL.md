@@ -2,7 +2,7 @@
 name: nrt-narrative-grower
 description: |
   叙事图自增长：用图算法（10 种检查）识别叙事基础层缺口，产出结构化修改建议——一个 JSON 数组，每项含简短描述 + 开箱可执行 cypher。
-  支持**可选聚焦入参**（角色名/id 或实体，限定检查子图）+ **多轮迭代**（每轮文件名带 round，审批写回后人工触发下一轮聚焦上轮新增节点）。范围限定**基础节点**（Character/Location/Spot/Info + 基础层边；Event/Choice 为 :Info 的附加 label 形态 `:Info:Event` / `:Info:Choice`，建点 cypher 须写双 label）。
+  支持**可选聚焦入参**（角色名/id 或实体，限定检查子图）+ **多轮迭代**（每轮文件名带 round，审批写回后人工触发下一轮聚焦上轮新增节点）。范围限定**基础节点**（Character/Event/Location/Info/Choice + 8 条基础边）。
   只读图、不写图、不产 MD 草案。跑检查 → 落盘 02_剧情数据/<日期>_round<N>_<主题>_建议.json → 对话仅报路径与迭代提示。
   在需要给叙事图做体检、补全缺口、按角色/实体聚焦增长时使用。
 argument-hint: [focus]
@@ -19,7 +19,7 @@ allowed-tools: Read, Bash, Write
 >
 > **输出**：`02_剧情数据/<YYYY-MM-DD>_round<N>_<主题>_建议.json`（顶层 JSON 数组）。对话仅报文件路径、建议条数、迭代提示，不展开内容。
 >
-> **范围限定**：产出 cypher 只操作**基础节点**（Character/Event/Location/Spot/Info/Choice；Event/Choice 图上为 `:Info:Event` / `:Info:Choice` 多 label，2026-10-12 合并）+ 基础层边（relation/involved/occurs_at/part_of/at/link/evt_relation/presents/option；Event 定位一律 occurs_at→Spot，禁止直挂 Location）。美术/场景/剧情生产链节点与边（realizes 等）不在自增长范围。
+> **范围限定**：产出 cypher 只操作**基础节点**（Character/Event/Location/Spot/Info/Choice）+ 基础层边（relation/involved/occurs_at/part_of/at/link/evt_relation/presents/option；Event 定位一律 occurs_at→Spot，禁止直挂 Location）。美术/场景/剧情生产链节点与边（realizes 等）不在自增长范围。
 
 ## 前置
 

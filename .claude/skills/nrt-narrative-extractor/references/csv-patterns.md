@@ -65,8 +65,6 @@ id,title,content,knowledge_level
 
 #### nodes_event.csv
 
-图上为多 label `:Info:Event`（import.cypher 的 MERGE 须写双 label）。
-
 | 列名 | 必填 | 类型 | 说明 |
 |------|------|------|------|
 | id | 是 | string | snowflake Base62 |
@@ -74,18 +72,6 @@ id,title,content,knowledge_level
 | time | 是 | string | 日期格式，如 2024-04-11 |
 | description | 否 | string | |
 | type | 否 | string | 行动/交流/转折/状态变化 |
-| ending_kind | 否 | string | BE/TE/HE/NE（非结局留空） |
-
-#### nodes_choice.csv
-
-图上为多 label `:Info:Choice`；显示名字段是 **title**（不是 name）。
-
-| 列名 | 必填 | 类型 | 说明 |
-|------|------|------|------|
-| id | 是 | string | snowflake Base62 |
-| title | 是 | string | 如「跳江选择」「三选一」 |
-| description | 否 | string | 选择发生的情境描述 |
-| time | 否 | string | 如 `Day 0 深夜` |
 
 ### 边 CSV
 
@@ -176,27 +162,6 @@ Event → Event
 
 > type 方向语义：因果 = 前因→后果；先后 = 时间顺序；包含 = 大事件→子事件
 
-#### edges_presents.csv
-
-Event → Choice（事件播放到此呈现选择）
-
-| 列名 | 必填 | 说明 |
-|------|------|------|
-| from_id | 是 | Event id |
-| to_id | 是 | Choice id |
-
-#### edges_option.csv
-
-Choice → Event（选择是因，选完进入的事件是果；`leads_to_ending=true` 指向的 Event 即结局事件）
-
-| 列名 | 必填 | 说明 |
-|------|------|------|
-| from_id | 是 | Choice id |
-| to_id | 是 | Event id |
-| label | 是 | 玩家看到的选项文本，如"再想想"/"跳江" |
-| leads_to_ending | 否 | true/false，默认 false |
-| detail | 否 | 选项说明 |
-
 ## LOAD CSV 导入模板
 
 ### import.cypher 格式规则
@@ -206,7 +171,7 @@ Choice → Event（选择是因，选完进入的事件是果；`leads_to_ending
 | 格式 | **内联 MERGE**，所有数据直接写在 cypher 中，不使用 LOAD CSV |
 | 分隔符 | `;`（单分号），每条语句以 `;` 结尾 |
 | 注释 | **不使用 `//` 注释**，说明写在 `_summary.md` |
-| 导入顺序 | 节点在前，边在后；节点按 Character → Location → Event → Info → Choice 排列 |
+| 导入顺序 | 节点在前，边在后；节点按 Character → Location → Event → Info 排列 |
 | 字符串 | Cypher 单引号 `'...'`，内容中的 `'` 需转义为 `\'` |
 
 > 不使用 LOAD CSV 的原因：LOAD CSV 的 `file:///` 依赖 Neo4j import 目录，内联 MERGE 可直接用 `cypher_exec.py -f --multi --json` 执行，零文件路径依赖。
@@ -218,9 +183,8 @@ Choice → Event（选择是因，选完进入的事件是果；`leads_to_ending
 ```cypher
 MERGE (n:Character {id: '<id>'}) SET n.name = '<姓名>', n.gender = '<性别>', n.description = '<简介>', n.character_tags = '<标签>';
 MERGE (n:Location {id: '<id>'}) SET n.name = '<名称>', n.description = '<描述>';
-MERGE (n:Info:Event {id: '<id>'}) SET n.title = '<标题>', n.time = '<时间>', n.description = '<描述>', n.type = '<类型>';
+MERGE (n:Event {id: '<id>'}) SET n.title = '<标题>', n.time = '<时间>', n.description = '<描述>', n.type = '<类型>';
 MERGE (n:Info {id: '<id>'}) SET n.title = '<标题>', n.content = '<内容>', n.knowledge_level = <1/2/3>;
-MERGE (n:Info:Choice {id: '<id>'}) SET n.title = '<标题>', n.description = '<情境>', n.time = '<时间>';
 ```
 
 ### 边模板
@@ -234,6 +198,4 @@ MATCH (a:Character {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:
 MATCH (a:Character {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '涉及', detail: '<详情>', time: '<时间>'}]->(b);
 MATCH (a:Info {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '因果', detail: '<详情>'}]->(b);
 MATCH (a:Event {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:evt_relation {type: '<因果/先后/包含>', detail: '<详情>'}]->(b);
-MATCH (a:Event {id: '<from_id>'}), (b:Choice {id: '<to_id>'}) MERGE (a)-[:presents]->(b);
-MATCH (a:Choice {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:option {label: '<选项文本>', leads_to_ending: <true/false>, detail: '<详情>'}]->(b);
 ```

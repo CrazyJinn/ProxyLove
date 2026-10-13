@@ -35,12 +35,11 @@ allowed-tools: Read, Bash
 
 按叙事基础中的节点类型逐类扫描内容，提取匹配的实例。已有编号的直接复用，不新建重复节点。
 
-节点类型（5 种；Event/Choice 图上为 `:Info` 的附加 label 形态，导入 MERGE 须写双 label）：
+节点类型（4 种）：
 - **角色（Character）** — 每个有名字的真实人物
-- **事件（Event，`:Info:Event`）** — 某时某刻发生的某件事
+- **事件（Event）** — 某时某刻发生的某件事
 - **地点（Location）** — 具体地点/游戏场景
-- **信息（Info，纯 `:Info`）** — 每条对读者有意义的新认知
-- **选择分叉（Choice，`:Info:Choice`）** — 玩家选择分叉点（title/情境描述/时间）
+- **信息（Info）** — 每条对读者有意义的新认知
 
 ### 3. 信息提取（核心步骤）
 
@@ -67,7 +66,7 @@ allowed-tools: Read, Bash
 
 ### 4. 关系提取
 
-按叙事基础的边类型连边（8 种；Event/Choice 端点即 `:Info:Event` / `:Info:Choice` 节点）：
+按叙事基础的边类型连边（6 种）：
 
 | 边类型 | 方向 | 说明 |
 |--------|------|------|
@@ -78,8 +77,6 @@ allowed-tools: Read, Bash
 | at | Character → Location | 人物—场景关联 |
 | link | Character/Event/Location → Info | 信息关联（因果仅限 Info→Info） |
 | evt_relation | Event → Event | 事件关联（因果/先后/包含） |
-| presents | Event → Choice | 事件触发选择 |
-| option | Choice → Event | 选项导向后续（label 必填；leads_to_ending=true 指向结局事件） |
 
 **Spot 判定流**：文本有子空间线索（「电脑桌前」「点餐台」）→ 建/复用 zone Spot（命名 `<Location名>-<区域>`），anchor='spot'；无线索 → 挂该 Location 默认 Spot，anchor='default'（不硬猜）。
 

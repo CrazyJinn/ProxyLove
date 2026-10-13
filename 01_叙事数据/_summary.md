@@ -2,10 +2,6 @@
 
 源：新版第一章大纲（Day 0-30 三段 + 三支线 + Day 30 揭晓 + 后日谈）。生成脚本 .tmp/narrative_extract_gen.py。
 
-> ⚠️ 历史存档（2026-10-12）：本摘要对应 schema-v1（Event/Info/Choice 独立 label、含 Day 11+ 剧情）。
-> 现行图上：三种节点已合并为 `:Info` 基础 label + 附加 label（Choice 用 title），且 Day 11+ 叙事节点已剪枝删除
-> （图内叙事截至 ch01 开场~Day 10）。见 02_剧情数据/Info合并迁移-20261012/README.md。
-
 ## 产出（01_叙事数据/csv/）
 
 | 文件 | 行数 | 说明 |

@@ -220,10 +220,10 @@ analyze 结果归纳为 JSON 数组（顶层 `[...]`），落盘 `02_剧情数�
    MERGE (a)-[:relation{type:'恋爱',detail:'待确认'}]->(b);
    ```
 
-2. **补节点类**（temporal_gaps / character_arcs 需新增 Event）：`$SF_GEN -n 1 -q` 生成新 id，创意字段（title/time/type/description）LLM 推断建议值；需挂边时节点语句在前、边语句在后，`;` 分隔，合为同一条 cypher。**建点必须写多 label 双 label 形态**（`:Info:Event` / `:Info:Choice`，2026-10-12 合并——漏基础 `:Info` 会让新节点游离在 Info 家族之外）；边端点 MATCH 用附加 label（`:Event`）即可。
+2. **补节点类**（temporal_gaps / character_arcs 需新增 Event）：`$SF_GEN -n 1 -q` 生成新 id，创意字段（title/time/type/description）LLM 推断建议值；需挂边时节点语句在前、边语句在后，`;` 分隔，合为同一条 cypher。
 
    ```cypher
-   MERGE (n:Info:Event{id:'<new_id>'}) SET n.title='训练间隙的日常', n.time='Day 6', n.type='交流';
+   MERGE (n:Event{id:'<new_id>'}) SET n.title='训练间隙的日常', n.time='Day 6', n.type='交流';
    MATCH (n:Event{id:'<new_id>'}),(c:Character{id:'<id_c>'}) MERGE (c)-[:involved{role:'参与者'}]->(n);
    ```
 
@@ -235,7 +235,7 @@ analyze 结果归纳为 JSON 数组（顶层 `[...]`），落盘 `02_剧情数�
 
 自增长只动**基础层**，产出的 cypher 只能操作：
 
-- **节点**：`Character` / `Event`（`:Info:Event`）/ `Location` / `Spot` / `Info` / `Choice`（`:Info:Choice`）
+- **节点**：`Character` / `Event` / `Location` / `Spot` / `Info` / `Choice`
 - **边**：`relation` / `involved` / `occurs_at` / `part_of` / `at` / `link` / `evt_relation` / `presents` / `option`
 
 **禁止**在建议 cypher 里出现美术层（AppearanceStyle/CostumeStyle/DesignSheet/IllusDesign/StandingIllustration）、场景层（Scene/SceneLayer）、剧情编排层（Chapter）的节点或边——这些走各自的生产链，不在自增长范围。Choice 现属基础层，`presents`/`option` 边可纳入自增长（如补 Choice 的戏剧分化、补 option 落点事件）。

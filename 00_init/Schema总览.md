@@ -16,7 +16,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Location, Spot, Info（含 :Info:Event / :Info:Choice 附加形态，2026-10-12 多 label 合并） |
+| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Spot, Info, Choice |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Scene, SceneLayer |
 | [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/提纲/定稿/逐句台词行产物链） | Chapter, Section, SecOutline, SecScript, LineAudio |
@@ -32,11 +32,11 @@
 | 节点 | ID 格式 | 一句话说明 |
 |------|---------|-----------|
 | Character | snowflake Base62 | 有名字的人物 |
-| Info | snowflake Base62 | 叙事认知基础节点：一条有意义的认知碎片（多 label 基座） |
-| Event | snowflake Base62 | 某时某刻发生的某件事（Info 附加形态 `:Info:Event`） |
-| Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项；Info 附加形态 `:Info:Choice`） |
+| Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
 | Spot | snowflake Base62 | 地点内子空间（default/zone），事件定位锚点，无 status |
+| Info | snowflake Base62 | 一条有意义的认知碎片 |
+| Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
 | AppearanceStyle | snowflake Base62 | 角色固定外貌（脸、体型、发色） |
 | CostumeStyle | snowflake Base62 | 角色默认着装（衣物、配饰） |
@@ -61,14 +61,14 @@
 |----|---------|------|------|------|
 | **叙事基础** | | | | |
 | relation | Character → Character | N:N | ❌ | 人物关系 |
-| involved | Character → :Info:Event | N:N | ❌ | 人物参与事件 |
-| occurs_at | :Info:Event → Spot | N:1 | ❌ | 事件发生子空间（anchor=spot/default） |
+| involved | Character → Event | N:N | ❌ | 人物参与事件 |
+| occurs_at | Event → Spot | N:1 | ❌ | 事件发生子空间（anchor=spot/default） |
 | part_of | Spot → Location | N:1 | ❌ | 空间从属 |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
-| link | Character/:Info:Event/Location → :Info | N:N | ❌ | 信息关联（仅 3 大实体） |
-| evt_relation | :Info:Event → :Info:Event | N:N | ❌ | 事件因果/时序 |
-| presents | :Info:Event → :Info:Choice | N:N | ❌ | 事件触发选择 |
-| option | :Info:Choice → :Info:Event | N:N | ❌ | 选项导向后续事件 |
+| link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体） |
+| evt_relation | Event → Event | N:N | ❌ | 事件因果/时序 |
+| presents | Event → Choice | N:N | ❌ | 事件触发选择 |
+| option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
 | **角色美术** | | | | |
 | has_appearance | Character → AppearanceStyle | 1:1 | ✅ | 角色外貌 |
 | has_costume | Character → CostumeStyle | 1:N | ✅ | 角色着装 |
@@ -77,7 +77,7 @@
 | produces | AppearanceStyle → DesignSheet | 1:N | ✅ | 外貌产出设计图（版本链：永久变更图生图新增版本） |
 | produces | DesignSheet → IllusDesign | 1:N | ✅ | 设计图→立绘设计图 |
 | outfit_for | CostumeStyle → IllusDesign | 1:N | ✅ | 着装→立绘设计图（每 (DesignSheet, CostumeStyle) 组合一个） |
-| wears | :Info:Event → CostumeStyle | N:N | ❌ | 事件着装 |
+| wears | Event → CostumeStyle | N:N | ❌ | 事件着装 |
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
 | **场景美术** | | | | |
@@ -103,11 +103,11 @@
 flowchart LR
     subgraph 叙事["叙事基础"]
         Character["Character"]
+        Event["Event"]
         Location["Location"]
         Spot["Spot"]
-        Info["Info（基础 label）"]
-        Event["Event（:Info:Event）"]
-        Choice["Choice（:Info:Choice）"]
+        Info["Info"]
+        Choice["Choice"]
     end
 
     subgraph 角色数据["角色数据"]

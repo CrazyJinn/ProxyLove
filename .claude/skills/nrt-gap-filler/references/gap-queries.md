@@ -118,11 +118,10 @@ RETURN a.id AS a_id, a.name AS a_name, b.id AS b_id, b.name AS b_name, shared, s
 ORDER BY shared DESC LIMIT 50
 ```
 
-### V4 · 孤立 Info（low，确定性补边）——无任何边的信息节点（仅纯 Info；多 label 后排除 Event/Choice 形态）
+### V4 · 孤立 Info（low，确定性补边）——无任何边的信息节点
 
 ```cypher
-MATCH (i:Info) WHERE NOT (i)--() AND NOT i:Event AND NOT i:Choice
-RETURN i.id AS id, i.title AS title, i.content AS content LIMIT 100
+MATCH (i:Info) WHERE NOT (i)--() RETURN i.id AS id, i.title AS title, i.content AS content LIMIT 100
 ```
 
 ---
@@ -214,13 +213,7 @@ MERGE (c)-[r:involved]->(e) SET r.role = '<建议值：当事人/目击者/参�
 
 ### X1 补 evt_relation / X2 补落点事件
 
-X1 沿用 grower 模板（MATCH 两端真实 id + MERGE 边 + 创意字段建议值）。X2 新建目标 Event 须写多 label 双 label 形态 `MERGE (n:Info:Event {id:'<new_id>'})`（2026-10-12 合并，漏基础 `:Info` 会让新节点游离）+ `MATCH (c:Choice {id:'<cid>'})` 端点按附加 label 匹配 + `[op:option]` 置 `op.label`/`op.leads_to_ending`（ending_kind 按选项语义）。
-
-```cypher
-MERGE (n:Info:Event {id:'<new_id>'}) SET n.title='<建议值>', n.time='<建议值>', n.description='<建议值>', n.ending_kind='<按选项语义/留空>';
-MATCH (c:Choice {id:'<cid>'}), (n:Event {id:'<new_id>'})
-MERGE (c)-[op:option]->(n) SET op.label='<选项文本>', op.leads_to_ending=<true/false>;
-```
+X1 沿用 grower 模板（MATCH 两端真实 id + MERGE 边 + 创意字段建议值）。X2 新建目标 Event（`$SF_GEN` id + ending_kind 按选项语义）+ `MERGE (c:Choice {id:'<cid>'})-[op:option]->(t)` 置 `op.label`/`op.leads_to_ending`。
 
 ---
 
