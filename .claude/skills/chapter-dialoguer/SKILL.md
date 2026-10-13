@@ -64,9 +64,9 @@ SecScript 已存在且有 `script_path` 时，Read 该 台词.ink 并检查是�
 
 ```cypher
 // 出场角色 + 语言习惯（创作对话的核心依据）——图关系遍历，不按名字列表猜：
-// 本节包含的场景 ← Spot（空间细分，经 part_of 属地点） ← 在此发生的事件 ← 参与的角色
+// 本节包含的场景 ← Spot（空间细分，经 part_of 属地点） ← 归组到此的事件（anchored_at） ← 参与的角色
 MATCH (sec:Section {id:'<input>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
-MATCH (sp)<-[:occurs_at]-(e:Event)<-[:involved]-(char:Character)
+MATCH (sp)<-[:anchored_at]-(e:Event)<-[:involved]-(char:Character)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
 RETURN DISTINCT char.name AS name, char.description AS description, char.character_tags AS tags,
        voice.vocabulary AS vocabulary, voice.rhythm AS rhythm,

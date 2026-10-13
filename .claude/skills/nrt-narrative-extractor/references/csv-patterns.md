@@ -69,7 +69,7 @@ id,title,content,knowledge_level
 |------|------|------|------|
 | id | 是 | string | snowflake Base62 |
 | title | 是 | string | |
-| time | 是 | string | 日期格式，如 2024-04-11 |
+| time | 是 | string | `yyyy-MM-dd HH:mm:ss`，自时间锚点推算（Day N = 锚点 + N×24h；开场 = 锚点 −1 天；后日谈 = 锚点 +31 天；时段词：清晨 06/上午 09/下午 15/傍晚 18/晚上 20/深夜 23 点，无时段词默认 12:00:00） |
 | description | 否 | string | |
 | type | 否 | string | 行动/交流/转折/状态变化 |
 
@@ -103,23 +103,13 @@ Character → Event
 
 #### edges_occurs_at.csv
 
-Event → Spot（禁止 Event 直挂 Location；目标 Spot 按判定流选 zone/默认）
+Event → Location（一跳直挂；不建 Spot——子空间归组是 scene-designer 职责）
 
 | 列名 | 必填 | 说明 |
 |------|------|------|
 | from_id | 是 | Event id |
-| to_id | 是 | Spot id |
-| anchor | 是 | `spot`（细分）/ `default`（未细化），与目标 Spot.kind 一致 |
-| detail | 否 | 如"跳江地点""约会地点" |
-
-#### edges_part_of.csv
-
-Spot → Location（建 Location 连带建默认 Spot `<名>-未细分`）
-
-| 列名 | 必填 | 说明 |
-|------|------|------|
-| from_id | 是 | Spot id |
 | to_id | 是 | Location id |
+| detail | 否 | 如"跳江地点""约会地点" |
 
 #### edges_at.csv
 
@@ -136,18 +126,29 @@ Character → Location
 
 #### edges_link.csv
 
-Character / Event / Location → Info（因果仅限 Info → Info）
+Character / Event / Location → Info
 
 | 列名 | 必填 | 说明 |
 |------|------|------|
-| from_id | 是 | Character/Event/Location/Info id |
+| from_id | 是 | Character/Event/Location id |
 | to_id | 是 | Info id |
-| type | 是 | "涉及" 或 "因果" |
+| type | 是 | 如"涉及"（因果不在 link 上，用 edges_leads_to.csv） |
 | detail | 否 | 关联说明 |
-| time | 否 | 信息关联发生的时间 |
+| time | 否 | `yyyy-MM-dd HH:mm:ss`，自时间锚点推算 |
 
-> type=`因果` 仅用于 Info → Info，表示原因→结果。
-> from_id 仅限 Character、Event、Location、Info 四种节点。
+> from_id 仅限 Character、Event、Location 三种节点；因果一律走 leads_to。
+
+#### edges_leads_to.csv
+
+(Event | Info) → (Event | Info)——四向全通
+
+| 列名 | 必填 | 说明 |
+|------|------|------|
+| from_id | 是 | Event/Info id（原因） |
+| to_id | 是 | Event/Info id（结果） |
+| detail | 否 | 因果语境（如"剪辑发布后流量爆发"） |
+
+> 叙事层唯一因果边。例：Event(翻盘局) → Event(剪辑成视频) → Info(视频火了) → Event(提议直播)。
 
 #### edges_evt_relation.csv
 
@@ -157,10 +158,10 @@ Event → Event
 |------|------|------|
 | from_id | 是 | Event id |
 | to_id | 是 | Event id |
-| type | 是 | "因果"/"先后"/"包含" |
+| type | 是 | "先后"/"包含"（因果已归 leads_to） |
 | detail | 否 | 关联说明 |
 
-> type 方向语义：因果 = 前因→后果；先后 = 时间顺序；包含 = 大事件→子事件
+> type 方向语义：先后 = 时间顺序；包含 = 大事件→子事件
 
 ## LOAD CSV 导入模板
 
@@ -192,10 +193,10 @@ MERGE (n:Info {id: '<id>'}) SET n.title = '<标题>', n.content = '<内容>', n.
 ```cypher
 MATCH (a:Character {id: '<from_id>'}), (b:Character {id: '<to_id>'}) MERGE (a)-[:relation {type: '<关系类型>', detail: '<详情>'}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:involved {role: '<角色>', detail: '<详情>'}]->(b);
-MATCH (a:Event {id: '<from_id>'}), (b:Spot {id: '<to_id>'}) MERGE (a)-[:occurs_at {anchor: '<spot/default>', detail: '<详情>', sync: false}]->(b);
-MATCH (a:Spot {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:part_of {sync: false}]->(b);
+MATCH (a:Event {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:occurs_at {detail: '<详情>', sync: false}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Location {id: '<to_id>'}) MERGE (a)-[:at {type: '<关联类型>', detail: '<详情>'}]->(b);
 MATCH (a:Character {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '涉及', detail: '<详情>', time: '<时间>'}]->(b);
-MATCH (a:Info {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:link {type: '因果', detail: '<详情>'}]->(b);
-MATCH (a:Event {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:evt_relation {type: '<因果/先后/包含>', detail: '<详情>'}]->(b);
+MATCH (a:Event {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:leads_to {detail: '<详情>', sync: false}]->(b);
+MATCH (a:Info {id: '<from_id>'}), (b:Info {id: '<to_id>'}) MERGE (a)-[:leads_to {detail: '<详情>', sync: false}]->(b);
+MATCH (a:Event {id: '<from_id>'}), (b:Event {id: '<to_id>'}) MERGE (a)-[:evt_relation {type: '<先后/包含>', detail: '<详情>'}]->(b);
 ```

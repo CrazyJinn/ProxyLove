@@ -37,7 +37,7 @@ OPTIONAL MATCH (c)-[:has_voice_style]->(ls:LanguageStyle)
 OPTIONAL MATCH (c)-[:has_voice_design]->(vd:VoiceDesign)
 OPTIONAL MATCH (c)-[:link]->(info:Info)
 OPTIONAL MATCH (c)-[iv:involved]->(evt:Event)
-OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:link]->(evtInfo:Info)
+OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:leads_to]-(evtInfo:Info)
 RETURN c, ls, vd,
        collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos,
        collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos,

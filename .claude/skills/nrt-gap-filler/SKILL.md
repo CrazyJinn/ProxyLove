@@ -1,7 +1,7 @@
 ---
 name: nrt-gap-filler
 description: |
-  叙事链路缺口的交互式补全：用图算法发现 event→spot→scene→char 链路断点（缺定位/待场景化/缺参与人/断链），
+  叙事链路缺口的交互式补全：用图算法发现 event→location→scene→char 链路断点（缺定位/待场景化/缺参与人/断链），
   逐个向用户提问确认修法（每题附推荐答案），全部敲定后组装修改建议 JSON 落盘 → dashboard 待审。
   与 nrt-narrative-grower 的分工：grower 是无人值守体检+LLM 创意推断（不交互、建议直接落盘）；
   本 skill 是有人值守的逐缺口修复对话——每条修法经用户确认才进建议，且推荐答案可解释（带理由标签与数据依据）。
@@ -51,18 +51,19 @@ OUTPUT_DIR="02_剧情数据"
 
 | 组 | 缺口类型 | 判定 | 修复动作空间 |
 |---|---|---|---|
-| E1 | Event 缺 occurs_at | `NOT (e)-[:occurs_at]->()` | 挂既有 Spot / 新建 Location+default Spot / 新建 zone |
-| E2 | Event 挂的 Spot 无 realizes | `(e)-[:occurs_at]->(sp)` 且 `NOT (sp)-[:realizes]->()` | 挂别的既有 Spot / 场景化派单（建 Scene，交 scene-design） |
+| E1 | Event 缺 occurs_at | `NOT (e)-[:occurs_at]->(:Location)` | 挂既有 Location / 新建 Location（**不连带建 Spot**） |
+| E2 | Location 完全未场景化 | 有 occurs_at 事件但 `NOT (l)<-[:part_of]-(:Spot)-[:realizes]->(:Scene)` | 场景化派单（交 scene-design agent，Location 模式） |
 | E3 | Event 缺 involved（非结局事件） | 无 involved 且 ending_kind 空 | 挂既有角色 / 新建角色 |
-| S1 | Spot 有事件待场景化 | E2 的 Spot 视角聚合 | 建 Scene+realizes（场景化派单） |
-| S2 | Location 缺 default Spot | 无 `kind='default'` 子节点 | 建 default Spot |
+| S1 | 已归组但 Spot 无 realizes | `(e)-[:anchored_at]->(sp)` 且 `NOT (sp)-[:realizes]->()` | 场景化派单（scene-designer spot 直推） |
+| S2 | Location 已场景化但有事件漏归组 | 有 occurs_at ∧ `NOT (e)-[:anchored_at]->()` ∧ Location 已有 realizes Scene | 重跑 scene-designer（Location 模式）归组 / 确认留待后归 |
+| S3 | 死 Spot | 无 realizes ∧ 无 dsl_path ∧ 无 anchored_at 入边 | 删除建议 / 确认保留 |
 | C1 | 角色零事件 | Character 无 involved 出边 | 补事件（转 grower 职责）或确认为背景角色 |
-| X1 | evt_relation 断链 | 孤立事件 | 补链 / 确认独立 |
+| X1 | 因果/时序断链 | 孤立事件（无 evt_relation / leads_to 出入边） | 补 leads_to / evt_relation 链 / 确认独立 |
 | X2 | Choice 无落点 | option 指向的 Event 缺失 | 补目标事件 |
 | V1 | 时间线密度不足 | 日差 ≥3 大间隔 / 单日仅 1 事件 | 补桥接事件（创作）/ 接受留白 |
 | V2 | 角色弧薄弱 | P0/P1 involved<5 或活动地点<2 | 补事件（创作）/ 确认背景 |
 | V3 | 隐含关系 | 共同参与 ≥2 事件但无 relation | 补 relation 边（type/detail 建议值可调） |
-| V4 | 孤立 Info | 无任何边的 Info | 补 link 边 / 确认孤立 |
+| V4 | 孤立 Info | 无任何边的 Info | 补 link / leads_to 边 / 确认孤立 |
 
 > **V 组与 E/S/C/X 的性质差异**：E/S/C/X 查的是「已有实体的链路断点」（缺口修法是确定性的：挂边/建骨架）；V 查的是「该有而没有的」（修法含**创作**：新事件 title/description 是 LLM 编的）。V 组建议项的 content 必须显式标「创意推断，可调整」。
 >
@@ -76,8 +77,8 @@ OUTPUT_DIR="02_剧情数据"
 
 - **每个缺口 = 一个 decision**（怎么修这个缺口）。
 - **依赖边**：一个缺口的修法依赖另一个缺口的答案时挂子问题。典型依赖：
-  - E1（缺定位）的推荐 Spot 是「不存在的地点」→ 子问题「新建 Location + default Spot 吗？」（S2 随之解锁）
-  - E2 聚合出的 S1（多个事件同 Spot）→ 子问题「整组场景化派单还是逐事件改挂？」
+  - E1（缺定位）的推荐 Location 是「不存在的地点」→ 子问题「新建 Location 吗？」（不建 Spot——场景化时 scene-designer 兜底）
+  - E2 聚合出的整 Location 场景化 → 子问题「派单 scene-design agent 还是接受暂不场景化？」
   - E3 与 C1 连锁（唯一候选角色是零事件角色）→ 先问 C1 的定性（主角/背景）再定 E3 修法
 - **frontier** = prerequisites 已敲定的问题——现在就能问、无需猜测未听到答案的那些。
 - **facts 自己查，decisions 问用户**：推荐候选、历史足迹、同日活动都是 facts（cypher 现查，承 grilling 的 sub-agent 原则为「不拿能查到的东西问用户」）；只有修法取舍是 decision。
@@ -86,30 +87,29 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 3. rounds — 逐个提问（一题一答）
 
-**一次只问一个问题**，等用户回答后再问下一个（用户明确要求的节奏，不用 grilling 的整条 frontier 批量问）。聚合组（同类型+同动作+同理由模式的缺口合并）仍算一题。每个答复落到工作表——确认修法 / 改选 / 跳过（记录跳过理由，跳过也是一种敲定）。答复可能：解锁追问（如选「细分新 zone」→ 追问 zone 名与空间描述）、作废下游问题、或把已问过的推荐推翻（用户改主意就更新工作表）。
+**一次只问一个问题**，等用户回答后再问下一个（用户明确要求的节奏，不用 grilling 的整条 frontier 批量问）。聚合组（同类型+同动作+同理由模式的缺口合并）仍算一题。每个答复落到工作表——确认修法 / 改选 / 跳过（记录跳过理由，跳过也是一种敲定）。答复可能：解锁追问（如 E1 选「新建 Location」→ 追问名称与描述）、作废下游问题、或把已问过的推荐推翻（用户改主意就更新工作表）。
 
 **提问纪律**：每题必附推荐答案且可归因（理由标签 + 数据依据）；facts 不问用户（候选现查）；答案依赖前一题答复的问题必须排在其后；用户答非所问时先澄清再继续；每题开头一句回显「这是第 N 题 / 共约 M 题」让用户知道进度。
 
 ```
-❓ **Q1** - **八楼出租屋的 6 个事件挂法**：
-以下 6 个 Event 挂在「八楼出租屋-未细分」（default，无 Scene）：
+❓ **Q1** - **八楼出租屋的 6 个事件定位**：
+以下 6 个 Event 缺 occurs_at（叙事明示发生在八楼出租屋）：
 发现转账删除温蔓青 / 温蔓青质问电话 / 三个未接来电 / 出租屋庆祝 / 伊芙现身三揭晓 / …
 选项：
-a) 整组场景化派单（为该 Spot 建 Scene + realizes，转 scene-design 出图）
-b) 改挂既有 zone「八楼出租屋-电脑桌区/床铺区/进门处」（各自已有 Scene）
-c) 细分新 zone（如「厨房区」）后场景化
+a) 整组挂既有 Location「八楼出租屋」（场景化归组留给 scene-designer 推进时判断）
+b) 挂其他既有 Location
+c) 新建 Location
 
-➡️ 推荐 b 的逐事件拆挂：6 个事件里 4 个叙述场景明确在电脑桌/床铺（理由标签见下），
-   其余 2 个叙述笼统的建议留在 default 走 a) 场景化。依据：该 Location 已有 3 个 zone 全部
-   realizes，改挂即达绿档；新建 zone 成本一张图起。
+➡️ 推荐 a：6 个事件的 title/description 均明示在出租屋（理由标签「文案提及」），
+   该 Location 已场景化（3 个 zone Spot 全部 realizes），挂上即达绿档。
 ```
 
 **推荐答案的生成规则**（全部可解释，回测依据见 gap-queries.md）：
 
-- **Spot 推荐**（按置信度）：① 文本地名匹配（title/description 含 Location 名或去前缀核心词，命中即排首）→ ② involved 角色历史足迹（occurs_at 次数排序 top-5）→ ③ 角色 at 边（居住/工作地）→ ④ 同 Day 已出现 Spot（仅作并列加分，不单独成题）。每条推荐附理由标签（「文案提及」「陆择常来×7」「陆择居住地」）。
-- **Char 推荐**（已定 Spot 后联动）：① 该 Spot 历史参与者（次数降序 top-3）→ ② at 边挂此 Location 的居民 → ③ 同 Day 参与者。
-- **冷启动兜底**：四路信号全空（一次性/首访地点，回测占 11%）时，推荐「新建 Location+default Spot」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
-- **evt_relation 邻居信号禁用**（回测 16%，事件链跨空间推进，无效）。
+- **Location 推荐**（按置信度）：① 文本地名匹配（title/description 含 Location 名，命中即排首）→ ② involved 角色历史足迹（occurs_at→Location 次数排序 top-5）→ ③ 角色 at 边（居住/工作地）→ ④ 同日已出现 Location（datetime 取 date 部分组，仅作并列加分，不单独成题）。每条推荐附理由标签（「文案提及」「陆择常来×7」「陆择居住地」）。
+- **Char 推荐**（已定 Location 后联动）：① 该 Location 历史参与者（次数降序 top-3）→ ② at 边挂此 Location 的居民 → ③ 同日参与者。
+- **冷启动兜底**：四路信号全空（一次性/首访地点）时，推荐「新建 Location」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
+- **evt_relation / leads_to 邻居信号禁用**（事件链跨空间推进，无效）。
 
 **收尾复述**：每敲定 5 个决定左右复述一次已定清单（一句话一条），防长对话漂移；全部问完后 commit 前做最终复述。
 
@@ -119,8 +119,8 @@ c) 细分新 zone（如「厨房区」）后场景化
 
 1. **推导轮次 N**：扫描 `${OUTPUT_DIR}/*round*_建议.json`（与 grower 共用轮次计数器）取 max+1；主题 = focus 名或「全图」。
 2. **组装数组**：每个「修复」决定一项，`{check, priority, reason, content, cypher, source}`：
-   - `check` = 缺口类型标识（`E1_missing_occurs_at` / `E2_spot_no_scene` / `E3_no_involved` / `S2_missing_default_spot` / `X1_isolated_event` / `X2_choice_no_target` / `V1_thin_timeline` / `V2_weak_arc` / `V3_implicit_relation` / `V4_orphan_info`）
-   - `priority` = E1/E2/S2 high（直接阻断生产）、E3/X1/V1/V2 medium、V3/V4 low、X2/C1 按影响定
+   - `check` = 缺口类型标识（`E1_missing_occurs_at` / `E2_location_no_scene` / `E3_no_involved` / `S1_spot_no_scene` / `S2_ungrouped_events` / `S3_dead_spot` / `X1_isolated_event` / `X2_choice_no_target` / `V1_thin_timeline` / `V2_weak_arc` / `V3_implicit_relation` / `V4_orphan_info`）
+   - `priority` = E1/E2/S2 high（直接阻断生产）、E3/X1/V1/V2/S1 medium、S3/V3/V4 low、X2/C1 按影响定
    - `reason` = 缺口事实（图算法查出什么）+ 用户在对话中敲定的依据
    - `content` = 人读修法描述（含理由标签）
    - `cypher` = 开箱可执行（MERGE 幂等、内联值、节点语句在前边语句在后；新建节点用 `$SF_GEN` 生成 id）
@@ -131,7 +131,7 @@ c) 细分新 zone（如「厨房区」）后场景化
 4. **汇报收尾**：文件路径 + 建议条数与 priority 分布 + 跳过清单 + 审批入口提示：
    - dashboard `/events` 页「📥 grower 建议」弹窗查看（本文件与 grower 建议同通道）；
    - 逐条审过后经 `/data` Cypher 控制台执行写库（两段确认 + 级联预览）；MERGE 幂等，执行前自查该条是否已写回。
-   - **场景化派单类决定**（E2/S1 选 a 的）：cypher 只建 Scene+realizes 骨架并置 status=0，出图归 scene-design agent——提示用户写回后可从生产看板一键派单，本 skill 不越界出图。
+   - **场景化派单类决定**（E2/S1/S2）：**不手工建 Scene/anchored_at 骨架**——新流程中 Spot 归组、Scene、机位、room.yml 是 scene-designer 一体化的三段式，手工骨架=半成品。建议项 cypher 留空串，content 写派单指引（「写回后从生产看板一键派单 scene-design agent，入参 Location/spot ID」），出图归 scene-design 链，本 skill 不越界。
 
 ---
 
@@ -142,7 +142,7 @@ c) 细分新 zone（如「厨房区」）后场景化
 3. **facts 不问用户**：候选、历史、同日活动全部现查；只有修法取舍问用户。
 4. **聚合提问**：同类型+同动作+同理由模式的缺口合并成一题；单题列全实体。
 5. **跳过要留痕**：结束判据是「每个缺口都有处置」，跳过项进汇报清单。
-6. **cypher 契约**：MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Spot 禁直挂 Location；范围限定叙事基础层（生产链节点只碰 Scene 骨架 status=0，不碰 realizes 以外的美术边）。
+6. **cypher 契约**：MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Location（一跳直挂），**本 skill 禁建 Spot/anchored_at**（scene-designer 独占）；叙事因果一律 leads_to；范围限定叙事基础层（场景化派单只出指引不建骨架）。
 7. **一题一答**：一次只问一个，答完再问下一个；依赖前一题答复的问题排在其后。
 
 ## 与 grower 的分工（grower 已废弃，2026-10-12 合并）

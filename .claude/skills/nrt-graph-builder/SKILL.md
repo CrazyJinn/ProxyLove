@@ -43,18 +43,17 @@ SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 
 **实体**（新节点）：
 - 人物：姓名、性别、描述、标签、出生年份等
-- 地点：名称、描述（**建 Location 必须连带建默认 Spot `<名>-未细分`（kind='default'）+ part_of 边**）
-- 空间细分（Spot）：仅当文本明确给出地点内子空间（如「电脑桌前」「点餐台」）时建 zone Spot，命名强制 `<Location名>-<区域>`
-- 事件：标题、时间、类型、描述
+- 地点：名称、描述（只建 Location 节点；**不建 Spot**——子空间细分是 scene-designer 场景化推进时的职责）
+- 事件：标题、时间（`yyyy-MM-dd HH:mm:ss`，自时间锚点推算）、类型、描述
 - 信息：标题、内容、知识层
 - 阵营/地点类型（如用户提及）
 
 **关系**（新边，从文本中推断）：
 - "是星耀电竞的选手" → `BELONGS_TO(char, faction_id) {role: "选手"}`
 - "参与了第5天的聚会" → `involved(char_id, event_id) {role: "参与者"}`
-- "发生在咖啡店" → `occurs_at(event_id, spot_id) {anchor:'default'}`（无子空间线索挂默认 Spot；有线索则建/复用 zone Spot，anchor='spot'；**禁止 Event 直挂 Location**）
+- "发生在咖啡店" → `occurs_at(event_id, loc_id) {detail}`（**Event 一跳直挂 Location**；文本中的子空间线索写进 detail 或 Event.description，不建 Spot）
 - "和XX是恋人" → `relation(char_A_id, char_B_id) {type: "恋爱"}`
-- "导致XX事件" → `evt_relation(event_A_id, event_B_id) {type: "因果"}`
+- "导致XX事件" → `leads_to(event_A_id, event_B_id) {detail}`（因果一律 leads_to，端点可为 Event 或 Info）
 
 ### Step 2: 查找已有实体
 
@@ -126,11 +125,11 @@ python $SCRIPT discover --type missing-relations --password 12345678
 |------|---------|--------|
 | `orphans` | 零边的孤立节点 | 🟡 medium |
 | `missing-relations` | 共享事件但无 relation 边的角色对 | 🔴 high |
-| `events-no-spot` | 无 occurs_at 边的事件 | 🟡 medium |
+| `events-no-location` | 无 occurs_at 边（→Location）的事件 | 🟡 medium |
 | `temporal-gaps` | 时间线上超过3天的空缺区间 | 🔴 high |
-| `info-no-links` | 未被 link 边关联的 Info 节点 | 🟡 medium |
+| `info-no-links` | 未被 link / leads_to 边关联的 Info 节点 | 🟡 medium |
 | `chars-no-faction` | 有活动但无 BELONGS_TO 边的角色 | 🟢 low |
-| `events-unlinked` | 无 evt_relation 边的事件 | 🟢 low |
+| `events-unlinked` | 无 evt_relation / leads_to 边的事件 | 🟢 low |
 
 ### Step 2: 呈现建议
 
@@ -146,7 +145,7 @@ python $SCRIPT discover --type missing-relations --password 12345678
 
 🟡 中优先级 (2条)
   1. 事件「陆择车祸死亡」缺少地点关联
-     → ADD_EDGE occurs_at(<event_id>, <spot_id>) {anchor: '?'}
+     → ADD_EDGE occurs_at(<event_id>, <loc_id>) {detail: '?'}
   ...
 
 🟢 低优先级 (1条)
@@ -168,13 +167,15 @@ python $SCRIPT discover --type missing-relations --password 12345678
 |--------|-----------|------|
 | relation | Character → Character | type, detail |
 | at | Character → Location | type, detail |
-| link | 任意 → Info | type, detail, time |
+| link | Character/Event/Location → Info | type, detail, time |
 | involved | Character → Event | role, detail |
-| occurs_at | Event → Spot | anchor, detail |
-| part_of | Spot → Location | — |
-| evt_relation | Event → Event | type, detail |
+| occurs_at | Event → Location | detail |
+| leads_to | (Event\|Info) → (Event\|Info) | detail |
+| evt_relation | Event → Event | type（先后/包含）, detail |
 | BELONGS_TO | Character → Faction | role |
 | CATEGORIZED_AS | Location → LocationType | 无 |
+
+> anchored_at（Event → Spot）为 scene 域边，**本 skill 禁建**（scene-designer 独占写入）。
 
 ---
 

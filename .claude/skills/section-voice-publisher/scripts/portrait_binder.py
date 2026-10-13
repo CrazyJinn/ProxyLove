@@ -156,7 +156,7 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
         "OPTIONAL MATCH (scn)<-[:realizes]-(sp:Spot) "
         "OPTIONAL MATCH (c0)-[:involved]->(e:Event)-[:wears]->(wc:CostumeStyle), "
         "(c0)-[:has_costume]->(wc), (wc)-[:outfit_for]->(wi:IllusDesign), "
-        "(e)-[:occurs_at]->(sp) "
+        "(e)-[:anchored_at]->(sp) "
         "OPTIONAL MATCH (wi)<-[:produces]-(dsw:DesignSheet) "
         "OPTIONAL MATCH (c0)-[:has_costume]->(:CostumeStyle)-[:outfit_for]->(di:IllusDesign) "
         "OPTIONAL MATCH (di)<-[:produces]-(dsx:DesignSheet) "

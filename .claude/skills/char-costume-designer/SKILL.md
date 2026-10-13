@@ -36,11 +36,12 @@ RETURN ch, app, collect(cos) AS costumes;
 
 // 事件 + 空间 + 已有着装绑定
 MATCH (ch:Character {id: '<char_id>'})-[r:involved]->(e:Event)
-OPTIONAL MATCH (e)-[:occurs_at]->(s:Spot)
-OPTIONAL MATCH (s)-[:part_of]->(l:Location)
+OPTIONAL MATCH (e)-[:occurs_at]->(l:Location)
+OPTIONAL MATCH (e)-[:anchored_at]->(sp:Spot)
 OPTIONAL MATCH (e)-[:wears]->(cos:CostumeStyle)
 RETURN e.id AS event_id, e.title AS event_title, r.role AS role, r.detail AS detail,
-       s.id AS spot_id, s.name AS spot_name, s.kind AS spot_kind, l.name AS loc_name,
+       l.id AS loc_id, l.name AS loc_name,
+       sp.id AS spot_id, sp.name AS spot_name, sp.kind AS spot_kind,
        cos.id AS costume_id, cos.name AS costume_name
 ORDER BY e.id;
 ```

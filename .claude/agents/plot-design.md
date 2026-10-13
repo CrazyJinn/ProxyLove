@@ -22,7 +22,7 @@ Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section + 产物链 SecOutl
 - **LineAudio 行级审批**（行节点 status，只代表音频——文字审批已在定稿审完成）：say 行 `0` 待配/被驳回 → `10` 配完待审 → `11` 已通过；非 say 行拆分即 11。「节完成」gate = 该节全部行 status=11（派生判断）；单句驳回后审批卡出现「重生成」deeplink 唤起本 agent 单节聚焦（voice-publisher `--nodes <行id>` 只重做该句）。
 - **SecScript 人工微调回路（不经 plot-design）**：用户在 dashboard 定稿编辑器直改 `台词.ink` → 「保存并同步 LineAudio」（写文件 + 对齐进图：被改句置 0、删行清 wav、新行入图，未变句审批结果不动）→ **sc=11（保存即定稿，人工编辑免定稿审）** → 重跑 voice-publisher 重拆：text_sha1 匹配的行原样保留审批结果（含 11），只有被改句置 0 重配——手改不丢。审批中心的「重新提交审批」（**仅 sc 0/1/11→10，不动行节点**）仍走定稿审路径。**plot-design 看到行 status≠11 即需推配音**。注意 sc=0 可能是「驳回后人工编辑中」——重跑 dialoguer 会整篇覆盖手改，用户被明确提示过（按钮 help 文案），此时以 status 为准正常调度。
 - **节完成**（派生判断）= SecOutline=1 ∧ SecScript=11 ∧ 该节全部 LineAudio 行=11；**Section 本身无 status**（纯编排容器）。
-- 立绘由 plot-design 按引用直调 `char-stand-designer` 推进（已从 char-design 剥离；推进范围按模式取——章节全量 = depicts 枚举，单节聚焦 = 本节 say 行 uses 边可达，严禁做后续节的事情）。**立绘上游 IllusDesign 未就绪时报警，不跨链调 char-design**。**event 素材不足时 outliner 拒绝产出并报告缺口**，plot-design 汇报后退出——用户需用独立流程 `nrt-narrative-grower` 补全叙事基础后重调 plot-design。
+- 立绘由 plot-design 按引用直调 `char-stand-designer` 推进（已从 char-design 剥离；推进范围按模式取——章节全量 = depicts 枚举，单节聚焦 = 本节 say 行 uses 边可达，严禁做后续节的事情）。**立绘上游 IllusDesign 未就绪时报警，不跨链调 char-design**。**event 素材不足时 outliner 拒绝产出并报告缺口**，plot-design 汇报后退出——用户需用独立流程 `nrt-gap-filler` 补全叙事基础后重调 plot-design（原 grower 已废弃合并入 gap-filler）。
 - **BGM 不归 plot-design 编排**：BgmTrack（`Scene -has_bgm-> BgmTrack`，0→1→2 无审批）由 **scene-design agent 编排 `bgm-designer`** 推进（缺口兜底建 + 产描述 → 用户手动生成 wav 归档 `13_BGM/`）。plot-design 不调 bgm-designer、不检查 BgmTrack status（发布时 publisher 对 status<2 的警告跳过）。
 - **发布不在 plot-design 职责内**：全章就绪（ch=11 ∧ 全节产物就绪 ∧ 立绘全 11）后汇报并退出；`chapter-publisher` 由**用户直接触发**，plot-design **任何情况下不调它**（如同不跨链调 char-design）。
 

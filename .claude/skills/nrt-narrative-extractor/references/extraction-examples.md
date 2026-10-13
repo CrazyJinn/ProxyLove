@@ -33,7 +33,12 @@ edges_link.csv:
 from_id,to_id,type,detail,time
 <snowflake_id>,<snowflake_id>,涉及,事件发生地,
 <snowflake_id>,<snowflake_id>,涉及,消息传递地,
-<snowflake_id>,<snowflake_id>,因果,南方扫荡导致魔物向北迁徙,
+```
+
+edges_leads_to.csv:
+```csv
+from_id,to_id,detail
+<snowflake_id>,<snowflake_id>,南方扫荡导致魔物向北迁徙
 ```
 
 **实体 .md 输出**：
@@ -118,11 +123,11 @@ id,title,content,knowledge_level
 ## 示例 4：事件片段 → 完整节点 + 边
 
 **输入**：
-> "2024年4月11日，陆择正式加入星耀电竞战队，成为战队队长。入职当天他在战队基地认识了经理林薇。"
+> "2024年6月14日，陆择正式加入星耀电竞战队，成为战队队长。入职当天他在战队基地认识了经理林薇。"（设时间锚点 Day 0 = 2024-06-01 22:00:00，则该事件为锚点后第 13 天前后，time 取 `2024-06-14 12:00:00`）
 
 **提取过程**：
 
-1. "陆择正式加入星耀电竞" → 事件（行动），时间 2024-04-11
+1. "陆择正式加入星耀电竞" → 事件（行动），时间 2024-06-14 12:00:00（自时间锚点推算）
 2. "成为战队队长" → 信息：陆择是队长（知识层 1）
 3. "在战队基地认识了林薇" → relation: 认识
 
@@ -138,7 +143,7 @@ id,name,gender,description,birth_year,character_tags
 nodes_event.csv:
 ```csv
 id,title,time,description,type
-<snowflake_id>,陆择加入星耀电竞,2024-04-11,陆择正式加入星耀电竞战队，成为队长,行动
+<snowflake_id>,陆择加入星耀电竞,2024-06-14 12:00:00,陆择正式加入星耀电竞战队，成为队长,行动
 ```
 
 nodes_location.csv:
@@ -156,20 +161,20 @@ from_id,to_id,role,detail
 
 edges_occurs_at.csv:
 ```csv
-from_id,to_id,anchor,detail
-<snowflake_id>,<snowflake_id>,spot,入职地点
+from_id,to_id,detail
+<snowflake_id>,<snowflake_id>,入职地点
 ```
 
 edges_relation.csv:
 ```csv
 from_id,to_id,type,detail,start_time,end_time
-<snowflake_id>,<snowflake_id>,同事,战队队长与经理,2024-04-11,
+<snowflake_id>,<snowflake_id>,同事,战队队长与经理,2024-06-14 12:00:00,
 ```
 
 edges_link.csv:
 ```csv
 from_id,to_id,type,detail,time
-<snowflake_id>,<snowflake_id>,涉及,陆择身份,2024-04-11
+<snowflake_id>,<snowflake_id>,涉及,陆择身份,2024-06-14 12:00:00
 <snowflake_id>,<snowflake_id>,涉及,事件关联信息,
 ```
 

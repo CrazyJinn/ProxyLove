@@ -50,28 +50,28 @@ ORDER BY shared_count DESC
 
 ---
 
-## 3. events-no-spot — 事件无空间
+## 3. events-no-location — 事件无空间
 
-**目的**：没有 `occurs_at` 边的事件（Event 定位一律挂 Spot，禁止直挂 Location）。
+**目的**：没有 `occurs_at` 边的事件（Event 定位一律一跳直挂 Location）。
 
 ```cypher
 MATCH (e:Event)
-WHERE NOT (e)-[:occurs_at]->(:Spot)
+WHERE NOT (e)-[:occurs_at]->(:Location)
 RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
 ORDER BY e.time
 ```
 
 **建议模板**：
 - priority: `medium`
-- "事件「title」(id, time) 缺少空间关联（Spot）"
-- action: `ADD_EDGE occurs_at(evt_id, <spot_id>) {anchor: '?'}`
-- 指引：优先挂所属 Location 的默认 Spot（`<Location名>-未细分`，anchor='default'）；文本有子空间证据才建 zone Spot
+- "事件「title」(id, time) 缺少空间关联（Location）"
+- action: `ADD_EDGE occurs_at(evt_id, <loc_id>) {detail: '?'}`
+- 指引：挂事件发生的 Location；子空间线索写 detail，不建 Spot（scene-designer 职责）
 
 ---
 
 ## 4. temporal-gaps — 时间线缺口
 
-**目的**：连续事件之间超过 N 天的空白区间。由于本项目的 Event.时间 是混合格式（"开场"、"Day 5 上午"），需要在 Python 中解析。
+**目的**：连续事件之间超过 N 天的空白区间。Event.time 统一 `yyyy-MM-dd HH:mm:ss`（自时间锚点推算，字符串序即时间序），在 Python 中解析排序。
 
 ```cypher
 MATCH (e:Event) RETURN e.id AS id, e.title AS title, e.time AS time
@@ -79,23 +79,26 @@ MATCH (e:Event) RETURN e.id AS id, e.title AS title, e.time AS time
 
 **Python 后处理逻辑**：
 ```python
-def parse_day(time_str):
-    if time_str == "开场": return -1
-    m = re.match(r"Day\s*(\d+)", time_str)
-    return int(m.group(1)) if m else None
+from datetime import datetime
+
+def parse_time(time_str):
+    try:
+        return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None  # 格式异常本身即缺口信号
 
 # 排序后计算相邻事件的间隔
-events.sort(key=lambda x: x["day_num"])
+events.sort(key=lambda x: x["ts"])
 for i in range(len(events)-1):
-    gap = events[i+1]["day_num"] - events[i]["day_num"]
+    gap = (events[i+1]["ts"] - events[i]["ts"]).days
     if gap > threshold:  # 默认 3
         # 报告缺口
 ```
 
 **建议模板**：
 - priority: `high`
-- "Day X 到 Day Y 之间有 N 天空缺（from_event → to_event）"
-- action: "建议在 Day X+1 ~ Day Y-1 之间补充事件"
+- "X 到 Y 之间有 N 天空缺（from_event → to_event）"
+- action: "建议在 X+1天 ~ Y-1天 之间补充事件（从时间锚点推算具体时刻）"
 
 **阈值说明**：
 - 默认 threshold=3（超过3天无事件视为缺口）
@@ -147,11 +150,12 @@ ORDER BY event_count DESC
 
 ## 7. events-unlinked — 事件未入链
 
-**目的**：没有 `evt_relation` 出入边的事件（孤立于事件链之外）。
+**目的**：没有 `evt_relation` / `leads_to` 出入边的事件（孤立于事件链之外）。
 
 ```cypher
 MATCH (e:Event)
 WHERE NOT (e)-[:evt_relation]-()
+  AND NOT (e)-[:leads_to]-()
 RETURN e.id AS id, e.title AS title, e.time AS time
 ORDER BY e.time
 ```
@@ -159,7 +163,7 @@ ORDER BY e.time
 **建议模板**：
 - priority: `low`（事件可以独立存在）
 - "事件「title」(id, time) 未接入事件链（无因果/先后/包含关系）"
-- action: `ADD_EDGE evt_relation(<evt_id>, id) {type: '因果|先后|包含', detail: '?'}`
+- action: `ADD_EDGE leads_to(<event_or_info_id>, id) {detail: '?'}（因果）或 evt_relation(<evt_id>, id) {type: '先后|包含', detail: '?'}`
 
 ---
 

@@ -66,19 +66,21 @@ allowed-tools: Read, Bash
 
 ### 4. 关系提取
 
-按叙事基础的边类型连边（6 种）：
+按叙事基础的边类型连边（7 种）：
 
 | 边类型 | 方向 | 说明 |
 |--------|------|------|
 | relation | Character → Character | 人物关系，可随时间变化 |
 | involved | Character → Event | 人物参与事件 |
-| occurs_at | Event → Spot | 事件发生子空间（anchor=spot/default；禁止 Event 直挂 Location） |
-| part_of | Spot → Location | 空间从属（建 Location 连带建默认 Spot） |
+| occurs_at | Event → Location | 事件发生地点（一跳直挂） |
 | at | Character → Location | 人物—场景关联 |
-| link | Character/Event/Location → Info | 信息关联（因果仅限 Info→Info） |
-| evt_relation | Event → Event | 事件关联（因果/先后/包含） |
+| link | Character/Event/Location → Info | 信息关联（type=涉及等；因果不在 link 上） |
+| leads_to | (Event\|Info) → (Event\|Info) | 导致——叙事层唯一因果边，四向全通（事件→事件、事件→信息、信息→信息、信息→事件） |
+| evt_relation | Event → Event | 事件关联（先后/包含；因果已归 leads_to） |
 
-**Spot 判定流**：文本有子空间线索（「电脑桌前」「点餐台」）→ 建/复用 zone Spot（命名 `<Location名>-<区域>`），anchor='spot'；无线索 → 挂该 Location 默认 Spot，anchor='default'（不硬猜）。
+**不建 Spot**：叙事提取只建 Character/Event/Location/Info/Choice 节点，Event 定位一律 `occurs_at → Location`。子空间细分（Spot）与事件归组（anchored_at）是 scene-designer 场景化推进时的职责（见 `00_init/Schema/场景美术.md`），文本里的子空间线索（「电脑桌前」「点餐台」）写进 Event.description 供下游参考，不建图。
+
+**时间推算**：Event.time 等 `yyyy-MM-dd HH:mm:ss`，从 `00_init/游戏概览.md`「时间锚点」推算（Day N = 锚点 + N×24h；开场 = 锚点 −1 天；后日谈 = 锚点 +31 天；时段词：清晨 06 / 上午 09 / 下午 15 / 傍晚 18 / 晚上 20 / 深夜 23 点，无时段词默认 12:00:00）。
 
 - 完整内容：构建完整故事主线链
 - 碎片输入：信息直接用适当的边关联角色/场景

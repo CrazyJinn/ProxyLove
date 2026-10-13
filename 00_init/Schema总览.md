@@ -16,9 +16,9 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Spot, Info, Choice |
+| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Info, Choice |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
-| [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Scene, SceneLayer |
+| [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Spot, Scene, SceneLayer |
 | [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/提纲/定稿/逐句台词行产物链） | Chapter, Section, SecOutline, SecScript, LineAudio |
 | [声音.md](Schema/声音.md) | 角色如何从文字变成声音 + 场景 BGM | VoiceDesign, BgmTrack |
 
@@ -34,7 +34,7 @@
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
-| Spot | snowflake Base62 | 地点内子空间（default/zone），事件定位锚点，无 status |
+| Spot | snowflake Base62 | 地点内子空间（default/zone）；场景化时由 scene-designer 建/归组（anchored_at），无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
@@ -57,16 +57,18 @@
 
 ## 全局边速查
 
+> **时间字段全局约定**：时间类字段（Event.time、link.time、relation/at 起止、Choice.time）统一 `yyyy-MM-dd HH:mm:ss` 字符串，自 [游戏概览.md](游戏概览.md)「时间锚点」推算；字符串序即时间序，计算用 `datetime()` 现场转换。
+
 | 边 | 从 → 到 | 基数 | sync | 说明 |
 |----|---------|------|------|------|
 | **叙事基础** | | | | |
 | relation | Character → Character | N:N | ❌ | 人物关系 |
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
-| occurs_at | Event → Spot | N:1 | ❌ | 事件发生子空间（anchor=spot/default） |
-| part_of | Spot → Location | N:1 | ❌ | 空间从属 |
+| occurs_at | Event → Location | N:1 | ❌ | 事件发生地点（一跳；子空间归组见 anchored_at） |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
-| link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体） |
-| evt_relation | Event → Event | N:N | ❌ | 事件因果/时序 |
+| link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体；因果归 leads_to） |
+| leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通 |
+| evt_relation | Event → Event | N:N | ❌ | 事件先后/包含（因果已归 leads_to） |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
 | **角色美术** | | | | |
@@ -81,6 +83,8 @@
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
 | **场景美术** | | | | |
+| anchored_at | Event → Spot | N:1 | ❌ | 事件子空间归组（scene-designer 细化时建，叙事层禁建） |
+| part_of | Spot → Location | N:1 | ❌ | 空间从属 |
 | realizes | Spot → Scene | 1:N | ❌ | Spot 实现场景（原 has_scene，sync 语义变更见场景美术.md） |
 | has_layer | Scene → SceneLayer | 1:N | ✅ | 场景→图层 |
 | **剧情** | | | | |
@@ -89,7 +93,6 @@
 | produces | SecOutline → SecScript | 1:1 | ✅ | 提纲产出定稿（改提纲→定稿/全部行作废） |
 | produces | SecScript → LineAudio | 1:N | ✅ | 定稿产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；改定稿→全部行作废，重拆按 text_sha1 恢复未变句） |
 | contains | Section → Scene | N:M | ❌ | 节编排场景顺序 |
-| stages | LineAudio(op=scene) → Scene | N:1 | ❌ | 场景块行→场景实体（块时段投影读 Scene.time_of_day） |
 | depicts | Scene → IllusDesign | N:N | ❌ | 场景需要的着装立绘（按需出图门控；变体经 expands_to 跟踪） |
 | **声音** | | | | |
 | has_voice_design | Character → VoiceDesign | 1:1 | ✅ | 角色基线音色设计 |
@@ -105,7 +108,6 @@ flowchart LR
         Character["Character"]
         Event["Event"]
         Location["Location"]
-        Spot["Spot"]
         Info["Info"]
         Choice["Choice"]
     end
@@ -123,6 +125,7 @@ flowchart LR
     end
 
     subgraph 场景美术["场景美术"]
+        Spot["Spot"]
         Scene["Scene"]
         SceneLayer["SceneLayer"]
     end
@@ -147,7 +150,12 @@ flowchart LR
     Appearance -->|"produces ✅ 1:N 版本链"| DesignSheet
     Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
+    Event -->|"occurs_at ❌ N:1"| Location
+    Event -.->|"anchored_at ❌ N:1（scene-designer）"| Spot
     Event -->|"wears ❌ N:N"| Costume
+    Event -->|"leads_to ❌ N:N"| Event
+    Event -->|"leads_to ❌ N:N"| Info
+    Info -->|"leads_to ❌ N:N"| Event
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
     IllusDesign -->|"expands_to ✅ 1:N"| StandingIllus
@@ -160,7 +168,6 @@ flowchart LR
     SecOutline -->|"produces ✅ 1:1"| SecScript
     SecScript -->|"produces ✅ 1:N order"| LineAudio
     Section -->|"contains ❌ N:M"| Scene
-    LineAudio -->|"stages ❌ (scene行)"| Scene
     Scene -->|"depicts ❌ N:N"| IllusDesign
     Scene -->|"has_bgm ❌ 1:1"| BgmTrack
 ```

@@ -8,8 +8,8 @@ ID 生成：使用雪花算法 Base62 编码，全局唯一，无前缀。
 import argparse
 import json
 import os
-import re
 import sys
+from datetime import datetime
 
 # 共享脚本目录（.claude/scripts）：cypher_exec.py + snowflake_base62.py
 _SCRIPTS_DIR = os.path.normpath(os.path.join(
@@ -119,17 +119,28 @@ def cmd_add_edges(client, edges_json):
     created, skipped, errors = [], [], []
 
     # 边方向规则: edge_type -> (from_label_pattern, to_label_pattern)
+    # label 支持 "A|B" 表示多选一；None 表示任意（端点标签由 Cypher WHERE 兜底或不过滤）。
+    # part_of / anchored_at / realizes 为 scene 域边，本工具禁建（anchored_at 由 scene-designer 独占写入）。
     EDGE_RULES = {
         "relation":       ("Character", "Character"),
         "at":             ("Character", "Location"),
-        "link":           (None, "Info"),        # from 可以是任意类型
+        "link":           ("Character|Event|Location", "Info"),
         "involved":       ("Character", "Event"),
-        "occurs_at":      ("Event", "Spot"),
-        "part_of":        ("Spot", "Location"),
+        "occurs_at":      ("Event", "Location"),
+        "leads_to":       ("Event|Info", "Event|Info"),
         "evt_relation":   ("Event", "Event"),
         "BELONGS_TO":     ("Character", "Faction"),
         "CATEGORIZED_AS": ("Location", "LocationType"),
     }
+
+    def _label_match(alias, label, node_id):
+        """按标签规则拼 MATCH 子句；'A|B' 用 WHERE 逐个 OR 匹配。"""
+        if label is None:
+            return f"MATCH ({alias} {{id: '{node_id}'}})"
+        if "|" in label:
+            alts = " OR ".join(f"{alias}:{l}" for l in label.split("|"))
+            return f"MATCH ({alias} {{id: '{node_id}'}}) WHERE {alts}"
+        return f"MATCH ({alias}:{label} {{id: '{node_id}'}})"
 
     for edge in edges:
         etype = edge["type"]
@@ -145,8 +156,8 @@ def cmd_add_edges(client, edges_json):
         from_label, to_label = rule
 
         # 验证端点（使用 id 属性）
-        from_match = f"MATCH (a {{id: '{from_id}'}})" if from_label is None else f"MATCH (a:{from_label} {{id: '{from_id}'}})"
-        to_match = f"MATCH (b {{id: '{to_id}'}})" if to_label is None else f"MATCH (b:{to_label} {{id: '{to_id}'}})"
+        from_match = _label_match("a", from_label, from_id)
+        to_match = _label_match("b", to_label, to_id)
 
         # 构建属性
         prop_parts = []
@@ -192,17 +203,14 @@ def _node_name(record):
     return record.get("name", record.get("title", record.get("id", "?")))
 
 
-def _parse_day(time_str):
-    """将事件时间解析为可排序的数值。'开场' → -1, 'Day N ...' → N, 否则返回 None"""
+def _parse_time(time_str):
+    """将事件时间解析为可排序的 datetime。'yyyy-MM-dd HH:mm:ss' → datetime，否则返回 None（格式异常本身即缺口信号）"""
     if not time_str:
         return None
-    time_str = str(time_str).strip()
-    if time_str == "开场":
-        return -1
-    m = re.match(r"Day\s*(\d+)", time_str)
-    if m:
-        return int(m.group(1))
-    return None
+    try:
+        return datetime.strptime(str(time_str).strip(), "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
 
 
 def discover_orphans(client):
@@ -251,11 +259,11 @@ def discover_missing_relations(client):
     return {"findings": rows, "suggestions": suggestions}
 
 
-def discover_events_no_spot(client):
-    """检查3: 无空间关联的事件（occurs_at → Spot；禁止 Event 直挂 Location）"""
+def discover_events_no_location(client):
+    """检查3: 无空间关联的事件（occurs_at → Location 一跳直挂）"""
     rows = client.run("""
         MATCH (e:Event)
-        WHERE NOT (e)-[:occurs_at]->(:Spot)
+        WHERE NOT (e)-[:occurs_at]->(:Location)
         RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
         ORDER BY e.time
     """)
@@ -263,47 +271,59 @@ def discover_events_no_spot(client):
     for r in rows:
         suggestions.append({
             "priority": "medium",
-            "type": "event_no_spot",
-            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 缺少空间关联（Spot）",
-            "action": f"ADD_EDGE occurs_at({r['id']}, <spot_id>) {{anchor: '?'}}",
+            "type": "event_no_location",
+            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 缺少空间关联（Location）",
+            "action": f"ADD_EDGE occurs_at({r['id']}, <loc_id>) {{detail: '?'}}",
             "event_id": r["id"],
         })
     return {"findings": rows, "suggestions": suggestions}
 
 
 def discover_temporal_gaps(client, threshold=3):
-    """检查4: 时间线缺口（超过 threshold 天无事件）"""
+    """检查4: 时间线缺口（超过 threshold 天无事件）。时间格式统一 yyyy-MM-dd HH:mm:ss，字符串序即时间序"""
     rows = client.run("MATCH (e:Event) RETURN e.id AS id, e.title AS title, e.time AS time")
-    # 在 Python 中处理时间排序（因为时间格式混合）
-    events = []
+    # 在 Python 中解析时间排序（格式异常的事件被跳过——本身即缺口信号，进 findings 的 unparsed 计数）
+    events, unparsed = [], []
     for r in rows:
-        day_num = _parse_day(r["time"])
-        if day_num is not None:
-            events.append({**r, "day_num": day_num})
+        ts = _parse_time(r["time"])
+        if ts is not None:
+            events.append({**r, "ts": ts})
+        else:
+            unparsed.append(r)
 
-    events.sort(key=lambda x: x["day_num"])
+    events.sort(key=lambda x: x["ts"])
     suggestions = []
+    for r in unparsed:
+        suggestions.append({
+            "priority": "medium",
+            "type": "event_time_unparsed",
+            "description": f"事件「{r['title']}」({r['id']}) 的时间 '{r['time']}' 不符合 'yyyy-MM-dd HH:mm:ss' 格式",
+            "action": f"SET 时间为从时间锚点推算的 'yyyy-MM-dd HH:mm:ss' 字符串",
+            "event_id": r["id"],
+        })
     for i in range(len(events) - 1):
-        gap = events[i + 1]["day_num"] - events[i]["day_num"]
+        gap = (events[i + 1]["ts"] - events[i]["ts"]).days
         if gap > threshold:
             suggestions.append({
                 "priority": "high",
                 "type": "temporal_gap",
                 "description": f"{events[i]['time']} 到 {events[i+1]['time']} 之间有 {gap} 天空缺"
                                f"（{events[i]['title']} → {events[i+1]['title']}）",
-                "action": f"建议在 Day {events[i]['day_num']+1} ~ Day {events[i+1]['day_num']-1} 之间补充事件",
-                "from_day": events[i]["day_num"],
-                "to_day": events[i + 1]["day_num"],
+                "action": f"建议在 {events[i]['time'][:10]} ~ {events[i+1]['time'][:10]} 之间补充事件",
+                "from_time": events[i]["time"],
+                "to_time": events[i + 1]["time"],
                 "gap": gap,
             })
     return {"findings": events, "suggestions": suggestions}
 
 
 def discover_info_no_links(client):
-    """检查5: 未关联任何实体的 Info 节点"""
+    """检查5: 未关联任何实体的 Info 节点（link 入向 + leads_to 出入向均无）"""
     rows = client.run("""
         MATCH (i:Info)
         WHERE NOT ()-[:link]->(i)
+          AND NOT (i)-[:leads_to]->()
+          AND NOT ()-[:leads_to]->(i)
         RETURN i.id AS id, i.title AS title, i.knowledge_level AS level
         ORDER BY i.knowledge_level
     """)
@@ -341,12 +361,13 @@ def discover_chars_no_faction(client):
     return {"findings": rows, "suggestions": suggestions}
 
 
-# ─── 额外检查: 事件无 evt_relation 链 ──────────────────────────
+# ─── 额外检查: 事件无 evt_relation / leads_to 链 ────────────────
 def discover_unlinked_events(client):
-    """检查7: 未接入事件链的事件（无 evt_relation 出入边）"""
+    """检查7: 未接入事件链的事件（无 evt_relation / leads_to 出入边）"""
     rows = client.run("""
         MATCH (e:Event)
         WHERE NOT (e)-[:evt_relation]-()
+          AND NOT (e)-[:leads_to]-()
         RETURN e.id AS id, e.title AS title, e.time AS time
         ORDER BY e.time
     """)
@@ -356,7 +377,7 @@ def discover_unlinked_events(client):
             "priority": "low",
             "type": "event_unlinked",
             "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 未接入事件链（无因果/先后/包含关系）",
-            "action": f"ADD_EDGE evt_relation(<event_id>, {r['id']}) {{type: '因果|先后|包含', detail: '?'}}",
+            "action": f"ADD_EDGE leads_to(<event_or_info_id>, {r['id']}) {{detail: '?'}}（因果）或 evt_relation(<event_id>, {r['id']}) {{type: '先后|包含', detail: '?'}}",
             "event_id": r["id"],
         })
     return {"findings": rows, "suggestions": suggestions}
@@ -367,7 +388,7 @@ def cmd_discover(client, check_types=None):
     ALL_CHECKS = {
         "orphans":           ("孤立节点",       discover_orphans),
         "missing-relations": ("缺失人物关系",    discover_missing_relations),
-        "events-no-spot":   ("事件无空间",      discover_events_no_spot),
+        "events-no-location": ("事件无空间",     discover_events_no_location),
         "temporal-gaps":     ("时间线缺口",      discover_temporal_gaps),
         "info-no-links":     ("信息未关联",      discover_info_no_links),
         "chars-no-faction":  ("角色无阵营",      discover_chars_no_faction),

@@ -170,7 +170,7 @@ sequenceDiagram
 
 | 图节点 | Skill | Status 流程 | 审批 |
 |--------|-------|------------|------|
-| Scene | scene-designer `<spot_id 或 spot 名>`（spot 粒度） | -1/0 → 1 | 无 |
+| Scene | scene-designer `<location_id 或 Location 名>`（Location 粒度入口，兼容 spot 直推） | -1/0 → 1 | 无 |
 | SceneLayer | scene-layer-designer `<scene_id>` | -1/0→1→2→10→11 | ✅ |
 | BgmTrack | bgm-designer（缺口兜底自建） | -1/0→1（描述产出）→2（用户放 wav 后检测） | 无 |
 
@@ -188,17 +188,17 @@ sequenceDiagram
     U->>A: spot 名/ID（如「卧室」）<br/>或地点名/ID（枚举其待办 spot）或无参（全图扫描）
 
     rect rgb(235, 245, 255)
-    Note over A,DB: ① 解析入参（spot 三态）+ 只读查待办 spot
-    A->>DB: Spot.id → Spot.name 全名 → 短名 ENDS WITH<br/>→ Location.id/name（枚举模式）→ 无参全图扫描
-    A->>DB: spot 待办判定查（事件量 + Scene/SceneLayer/BgmTrack status）<br/>含 -1/0，禁止过滤 + has_bgm 缺口排查（只读）
-    DB-->>A: 待办 spot 清单（need_scene / 待重做 Scene / 缺层 / BGM 缺口）
+    Note over A,DB: ① 解析入参（Location 三态）+ 只读查待办 Location
+    A->>DB: Location.id → Location.name<br/>→ spot 入参经 part_of 解析（兼容）→ 无参全图扫描
+    A->>DB: Location 待办判定查（occurs_at 事件量 + 未归组事件 + Scene/SceneLayer/BgmTrack status）<br/>含 -1/0，禁止过滤 + has_bgm 缺口排查（只读）
+    DB-->>A: 待办 Location 清单（need_scene / ungrouped / 待重做 Scene / 缺层 / BGM 缺口）
     end
 
     rect rgb(240, 255, 240)
-    Note over A,BGM: ② 逐 spot 按依赖顺序委派 Skill
-    loop 每个待办 spot
-        A->>Scene: Skill scene-designer spot_id
-        Note right of Scene: 定位 spot → Location 关联（或新建）<br/>→ 按事件复用/新建 Scene（新建立机位）<br/>→ 维护 room.yml（--check 校验，不重切）<br/>→ MERGE 写 status + Spot 登记 dsl_path
+    Note over A,BGM: ② 逐 Location 按依赖顺序委派 Skill
+    loop 每个待办 Location
+        A->>Scene: Skill scene-designer location_id
+        Note right of Scene: 定位 Location → 聚合 occurs_at 事件<br/>→ Spot 够用性推理 + anchored_at 归组<br/>（新增 zone / 兜底 default）<br/>→ 按事件复用/新建 Scene（新建立机位）<br/>→ 维护 room.yml（--check 校验，不重切）<br/>→ MERGE 写 status + Spot 登记 dsl_path
         Scene-->>A: Scene → 1
 
         A->>Layer: Skill scene-layer-designer scene_id
@@ -366,7 +366,7 @@ sequenceDiagram
 
 | Skill | 阶段 | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|------|---------|-------------------|
-| scene-designer | ① 场景（spot 粒度） | 定位 spot → Location 关联（或新建）→ 按事件复用/新建 Scene（新建立机位）→ 维护 room.yml（--check 校验，不重切派生） | Scene 字段 + room.yml | ✅ |
+| scene-designer | ① 场景（Location 粒度入口） | 定位 Location → 聚合 occurs_at 事件 → Spot 够用性推理 + anchored_at 归组（新增 zone / 兜底 default）→ 按事件复用/新建 Scene（新建立机位）→ 维护 room.yml（--check 校验，不重切派生） | Scene 字段 + room.yml + anchored_at 归组 | ✅ |
 | scene-layer-designer | ② 图层 | 场景图层（文生图/图生图） | SceneLayer prompt + 图 | ✅ |
 | scene-prompt-assembler | 纯产出 | 组装场景提示词（模式 A 自由文本——服务 dsl_path 为空的存量；DSL 链已代码化为 slice_scenes.py --emit-prompt 现场投影直写） | prompt 文件 | ❌ |
 
