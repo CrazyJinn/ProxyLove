@@ -130,5 +130,6 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
 - 要从创作文本提取叙事实体/关系 → `nrt-narrative-extractor`（离线产 CSV + import.cypher）。
+- 只要三类核心关系的审阅产物、不入图（char-event-location / char-info-location / event-info 因果）→ `nrt-narrative-extractor2`（连图只读对照已有实体，单文件 md 到 `02_剧情数据/`，不产 CSV/cypher、不写图）。
 - 要手动加节点/边或发现图缺口 → `nrt-graph-builder`。
 - 要给叙事图做体检/补全缺口、按角色聚焦多轮增长 → `nrt-narrative-grower`（可选聚焦入参 + 多轮迭代，产 `02_剧情数据/<日期>_round<N>_建议.json`，人工经 dashboard Cypher 控制台逐条写回；范围限定基础节点 Character/Event/Location/Info/Choice）。

@@ -1,3 +1,0 @@
-MATCH (n:Info) DETACH DELETE n;
-MATCH (n:Event) DETACH DELETE n;
-MATCH (n:Choice) DETACH DELETE n;

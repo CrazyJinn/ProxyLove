@@ -6,7 +6,7 @@ description: |
   触发条件：(1) 用户要求从叙事内容提取图数据
   (2) 用户提到"提取实体"、"提取事件"、"导出CSV"、"生成表格"、"实体提取"
   (3) 用户提供了叙事内容和 Schema 路径，要求结构化输出
-allowed-tools: Read, Bash
+allowed-tools: Read, Bash, Edit
 ---
 
 # 叙事提取器
