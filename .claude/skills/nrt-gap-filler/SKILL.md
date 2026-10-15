@@ -1,14 +1,17 @@
 ---
 name: nrt-gap-filler
 description: |
-  叙事关系缺口的交互式补全：用图算法发现 Character/Event/Location/Info/Choice 五实体的关系断点
-  （缺定位/缺参与人/因果断链/分支断头/孤立 Info），逐个向用户提问确认修法（每题附推荐答案），
-  全部敲定后组装修改建议 JSON 落盘 → dashboard 待审。
+  叙事关系缺口的交互式补全 + 渐进丰满：用图算法发现 Character/Event/Location/Info/Choice 五实体的关系断点
+  （缺定位/缺参与人/因果断链/分支断头/孤立 Info），并支持两种启发式填充入参——
+  ① 自由探索人物：查该角色时间线/关系/内心戏哪里薄，提案日常事件与 Info；
+  ② 时间段：显式时间窗或两个事件定界，为窗口内空白日/叙事跳变启发式补桥接或点缀内容。
+  逐个向用户提问确认修法（每题附推荐答案），全部敲定后组装修改建议 JSON 落盘 → dashboard 待审。
+  稀疏纪律：创作类新增单次至多 3 Event + 2 Info——本 skill 靠多次运行逐步丰满，留白即叙事。
   范畴 = 叙事基础层五实体及其边；Spot/Scene 属场景域（scene-designer 独占），本 skill 不检查不创建。
   与 nrt-narrative-grower 的分工：grower 是无人值守体检+LLM 创意推断（不交互、建议直接落盘，已废弃合并入本 skill）；
   本 skill 是有人值守的逐缺口修复对话——每条修法经用户确认才进建议，且推荐答案可解释（带理由标签与数据依据）。
-  在用户说「补缺口」「补链路」「修断点」「gap-filler」或要求交互式治理叙事图时使用。
-argument-hint: [focus]
+  在用户说「补缺口」「补链路」「修断点」「填充时间段」「两事件之间补」「探索/丰满人物」「gap-filler」或要求交互式治理叙事图时使用。
+argument-hint: [角色名 | 事件A → 事件B | 起始~结束时间]
 arguments:
   - focus
 allowed-tools: Read, Bash, Write
@@ -16,7 +19,7 @@ allowed-tools: Read, Bash, Write
 
 # 叙事关系缺口交互补全（nrt-gap-filler）
 
-目标：让叙事基础层五个实体——**Character / Event / Location / Info / Choice**——的关系闭环走通：每个 Event 有时间 + 地点 + 参与人，因果链（leads_to）与分支（Choice+option）不断头，Info 不孤立。**图算法发现缺口 → 逐个问用户 → 明确后提交 dashboard 待审**。
+目标：让叙事基础层五个实体——**Character / Event / Location / Info / Choice**——的关系闭环走通：每个 Event 有时间 + 地点 + 参与人，因果链（leads_to）与分支（Choice+option）不断头，Info 不孤立；显式聚焦（人物/时间窗）时另做**启发式提案**让图渐进丰满。**图算法发现缺口 → 逐个问用户 → 明确后提交 dashboard 待审**。
 
 > **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/evt_relation/presents/option 九边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建。
 >
@@ -39,6 +42,7 @@ OUTPUT_DIR="02_剧情数据"
 ## 流程总览
 
 ```
+0. resolve  解析入参 → 模式：人物聚焦 / 时间窗 / 全图（决定 scan 跑哪些组）
 1. scan     跑缺口检查（图算法）→ 缺口清单
 2. tree     每个缺口 → 一个待决问题；缺口间的依赖 → 问题树
 3. rounds   一题一答逐个问（每题带推荐答案）→ 答复更新工作表
@@ -49,7 +53,13 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 1. scan — 图算法发现缺口
 
-用 `$CYPHER_EXEC -c "<cypher>" --json` 依次跑 [gap-queries.md](references/gap-queries.md) 的四组检查（E 事件链 / C 角色链 / X 断链 / **V 内容缺口**）。`focus` 传入时先查锚点，全部查询收窄到锚点 1-2 跳子图（模板见 gap-queries.md 的 focus 变体）。
+先 resolve 入参定模式（判定规则与定界查询见 [gap-queries.md](references/gap-queries.md) H 组「入参定界」）：
+
+- **人物聚焦**（参数命中 Character name/id）：E/C/X/V 收窄到锚点 1-2 跳子图（focus 变体），**加跑 H2**（人物丰满启发）。
+- **时间窗**（参数为 `起始~结束` 时间串，或两个事件 title/id 定界）：**只跑 H1**（窗口启发填充）——窗口界定本身就是一次显式密度治理，V1 大间隔不再单独跑；侦察查询带 occurs_at/involved，窗口内暴露的 E1/E3 缺口按原修法走（挂边，非创作）。
+- **全图**（无参数）：E/C/X/V 全量；**不跑 H**——启发创作提案只在显式聚焦时做，避免全图轰炸。
+
+模式定了以后，用 `$CYPHER_EXEC -c "<cypher>" --json` 依次跑 [gap-queries.md](references/gap-queries.md) 的五组检查（E 事件链 / C 角色链 / X 断链 / V 内容缺口 / **H 启发填充**）。
 
 产出**缺口清单**（内存中的工作表，不落盘）：
 
@@ -64,10 +74,14 @@ OUTPUT_DIR="02_剧情数据"
 | V2 | 角色弧薄弱 | P0/P1 involved<5 或活动地点<2 | 补事件（创作）/ 确认背景 |
 | V3 | 隐含关系 | 共同参与 ≥2 事件但无 relation | 补 relation 边（type/detail 建议值可调） |
 | V4 | 孤立 Info | 无任何边的 Info | 补 link / leads_to 边 / 确认孤立 |
+| H1 | 时间窗空白/叙事跳变 | 窗口逐日侦察 + LLM 启发选点（时间窗模式专属） | 补桥接/点缀事件、跟进 Info（创作）/ 接受留白 |
+| H2 | 人物薄期/内心戏缺失 | 人物全景 + 时间线启发（人物模式专属） | 补日常事件/内心 Info（创作）/ 确认现状 |
 
 > **V 组与 E/C/X 的性质差异**：E/C/X 查的是「已有实体的链路断点」（缺口修法是确定性的：挂边/建骨架）；V 查的是「该有而没有的」（修法含**创作**：新事件 title/description 是 LLM 编的）。V 组建议项的 content 必须显式标「创意推断，可调整」。
 >
 > **V 组级联纪律（防越补越缺）**：V 组确认「补一个新事件」后，该事件天然缺 occurs_at/involved——**同题追问挂哪/谁参与**（复用 E 组的推荐信号），不留新的 E1/E3 缺口下库；V 组与 grower 职责边界见「与 grower 的分工」。
+>
+> **H 组 = 显式聚焦时的创作提案，严守稀疏纪律**：单次运行至多提案 **3 Event + 2 Info**，候选超限只取优先级最高者，其余汇报为「下次可补」；「接受留白」永远在选项里，低信号时是推荐项。**多次运行逐步丰满是设计意图——每次少补一点，不是一次填满**。提案前扫最近一轮 `*_建议.json` 的 H 组条目：已提案未审批的插入点标「上轮已提案待审」，不重复草案只提醒审批状态。H 组级联纪律同 V 组（新事件同题追问 occurs_at/involved）。
 
 检查跑完先报**总览**（每组几条、涉及哪些实体），不展开细节——展开与否由 round 提问自然带出。
 
@@ -110,6 +124,7 @@ c) 新建 Location
 - **Location 推荐**（按置信度）：① 文本地名匹配（title/description 含 Location 名，命中即排首）→ ② involved 角色历史足迹（occurs_at→Location 次数排序 top-5）→ ③ 角色 at 边（居住/工作地）→ ④ 同日已出现 Location（datetime 取 date 部分组，仅作并列加分，不单独成题）。每条推荐附理由标签（「文案提及」「陆择常来×7」「陆择居住地」）。
 - **Char 推荐**（已定 Location 后联动）：① 该 Location 历史参与者（次数降序 top-3）→ ② at 边挂此 Location 的居民 → ③ 同日参与者。
 - **Info/Choice 联动推荐**（X2/V4 用）：X2 补落点事件时，参与人与地点承 presents 上游事件（分支与主干同场同人，facts 现查上游 involved/occurs_at）；V4 补边时，候选 = 时间邻近 ±1 事件的 link/leads_to 惯例 + title 文本相关节点。
+- **H 组创作推荐**（H1/H2 用）：推荐答案 = 创作草案本身——拟插入时间点 + title + 一句话 description，依据列启发维度与触发信号（「因果跳变：质问→庆祝 无过渡」「空白 3 日」「三个未接来电无跟进」）。content 必标「创意推断，可调整」；用户可现场改 title/description/时间，改后版本入建议。
 - **冷启动兜底**：四路信号全空（一次性/首访地点）时，推荐「新建 Location」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
 - **evt_relation / leads_to 邻居信号禁用**（事件链跨空间推进，无效）。
 
@@ -119,10 +134,10 @@ c) 新建 Location
 
 全部问题问完（每个缺口都有处置：修复/跳过）后：
 
-1. **推导轮次 N**：扫描 `${OUTPUT_DIR}/*round*_建议.json`（与 grower 共用轮次计数器）取 max+1；主题 = focus 名或「全图」。
+1. **推导轮次 N**：扫描 `${OUTPUT_DIR}/*round*_建议.json`（与 grower 共用轮次计数器）取 max+1；主题 = focus 名 / 时间窗起止（如 `03-01~03-10`）或「全图」。
 2. **组装数组**：每个「修复」决定一项，`{check, priority, reason, content, cypher, source}`：
-   - `check` = 缺口类型标识（`E1_missing_occurs_at` / `E3_no_involved` / `C1_zero_event_char` / `X1_isolated_event` / `X2_choice_no_target` / `V1_thin_timeline` / `V2_weak_arc` / `V3_implicit_relation` / `V4_orphan_info`）
-   - `priority` = E1/X2 high（直接断叙事流）、E3/X1/V1/V2 medium、C1/V3/V4 low、按影响可调
+   - `check` = 缺口类型标识（`E1_missing_occurs_at` / `E3_no_involved` / `C1_zero_event_char` / `X1_isolated_event` / `X2_choice_no_target` / `V1_thin_timeline` / `V2_weak_arc` / `V3_implicit_relation` / `V4_orphan_info` / `H1_window_fill` / `H2_char_richness`）
+   - `priority` = E1/X2 high（直接断叙事流）、E3/X1/V1/V2/H1 medium（H1 桥接因果跳变 medium、纯点缀降 low）、C1/V3/V4/H2 low、按影响可调
    - `reason` = 缺口事实（图算法查出什么）+ 用户在对话中敲定的依据
    - `content` = 人读修法描述（含理由标签）
    - `cypher` = 开箱可执行（MERGE 幂等、内联值、节点语句在前边语句在后；新建节点用 `$SF_GEN` 生成 id）
@@ -145,6 +160,7 @@ c) 新建 Location
 5. **跳过要留痕**：结束判据是「每个缺口都有处置」，跳过项进汇报清单。
 6. **范畴与 cypher 契约**：范畴 = 叙事基础层五实体（Character/Event/Location/Info/Choice）及其九边（occurs_at/involved/relation/at/link/leads_to/evt_relation/presents/option）；**Spot/Scene 属场景域，本 skill 不检查不创建**（场景化归 scene-designer）。cypher 一律 MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Location（一跳直挂）；叙事因果一律 leads_to（evt_relation 仅 先后/包含）。
 7. **一题一答**：一次只问一个，答完再问下一个；依赖前一题答复的问题排在其后。
+8. **稀疏填充**：创作类新增（H 组）单次至多提案 3 Event + 2 Info，宁少勿多——多次运行逐步丰满是设计意图，不是一次填满；「接受留白」永远在选项里，低信号时是推荐项；上轮已提案待审的插入点不重复提案。
 
 ## 与 grower 的分工（grower 已废弃，2026-10-12 合并）
 
@@ -154,6 +170,6 @@ c) 新建 Location
 
 ## 参考文档
 
-- [缺口检查查询库 + 推荐规则（含回测命中率）](references/gap-queries.md)
+- [缺口检查查询库 + 入参定界 + 推荐规则（含回测命中率）](references/gap-queries.md)
 - [叙事基础.md Schema](../../../00_init/Schema/叙事基础.md)
 - 手动建节点补边：[nrt-graph-builder](../nrt-graph-builder/SKILL.md)（本 skill 落建议 JSON 之外的零星手工通道）

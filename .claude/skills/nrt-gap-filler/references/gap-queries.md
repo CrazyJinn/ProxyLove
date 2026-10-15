@@ -1,6 +1,6 @@
 # 缺口检查查询库 + 推荐规则
 
-> nrt-gap-filler 的执行参考。四组检查（E/C/X/V）的 cypher 模板 + focus 变体 + 推荐信号规则。
+> nrt-gap-filler 的执行参考。五组检查（E/C/X/V/H）的 cypher 模板 + focus 变体 + 入参定界 + 推荐信号规则。
 > **范畴 = 叙事基础层五实体**（Character/Event/Location/Info/Choice）及其九边；Spot/Scene/anchored_at/realizes 属场景域（scene-designer 独占），不在本查询库。
 > 推荐规则曾带 2026-10-12 存量图回测（n=47）命中率背书——**2026-10-13 叙事基础重构（occurs_at 直挂 Location / Spot 移出叙事基础层 / leads_to 统一因果）为结构性变更，旧命中率全部作废**；迁移完成后须用新图重跑 leave-one-out 重建基线。
 
@@ -103,6 +103,82 @@ MATCH (i:Info) WHERE NOT (i)--() RETURN i.id AS id, i.title AS title, i.content 
 ```
 
 > `NOT (i)--()` 全向无差别，天然覆盖 link 入向与 leads_to 出入向。Info 可挂的两类边：`link`（任意关联，Character↔Info / Location→Info / Info→Info）与 `leads_to`（因果，Info↔Event 双向 + Info→Info）——修法在两者间选，因果语义一律 leads_to。
+
+---
+
+## 一c、H 组 · 启发式填充（2026-10-15 新增；显式聚焦时跑，查「值得填充的时刻」）
+
+> 与 V 组的差异：V 查指标缺口（密度/计数阈值判定）；H 在**给定范围**（时间窗/人物）内侦察叙事上下文后由 LLM 启发选点，产出全是创作类草案。**稀疏纪律：单次 ≤3 Event + ≤2 Info**，候选超限只取优先级最高者，其余汇报为「下次可补」——多次运行逐步丰满，不是一次填满。
+
+### 入参定界（resolve 用）
+
+| 入参形态 | 判定 | 结果 |
+|---|---|---|
+| 单参数命中 Character | `MATCH (c:Character) WHERE c.name='<p>' OR c.id='<p>'` | 人物聚焦模式（E/C/X/V 收窄 + H2） |
+| `起始~结束` 时间串 | 两段均可 `datetime.strptime` 解析（`%Y-%m-%d %H:%M:%S` 或 `%Y-%m-%d`，日期补 `00:00:00` / `23:59:59`） | 显式时间窗 → H1 |
+| 两个事件（`A → B` / `A B` / `A 到 B` / `A 至 B`） | 按 title/id 各查一个 Event | 事件定界窗 → H1（并取两事件 involved/occurs_at/description 作叙事上下文） |
+
+```cypher
+// 事件定界 + 叙事上下文（两事件各命中恰一个才有效）
+MATCH (e:Event) WHERE e.title IN ['<A>','<B>'] OR e.id IN ['<idA>','<idB>']
+OPTIONAL MATCH (c:Character)-[:involved]->(e)
+OPTIONAL MATCH (e)-[:occurs_at]->(l:Location)
+RETURN e.id AS id, e.title AS title, e.time AS time, e.description AS description,
+       collect(DISTINCT c.name) AS chars, l.name AS loc ORDER BY e.time
+```
+
+定界失败（查无事件/时间不可解析/命中多于一个）→ 澄清，勿猜。t_start ≥ t_end → 交换或澄清。
+
+### H1 · 时间窗启发填充（时间窗模式专属，medium）
+
+```cypher
+// 窗口侦察：一次查全（事件+参与人+地点+因果邻接）
+// time 为 yyyy-MM-dd HH:mm:ss 字符串序即时间序（Schema 约定），直接字符串比较；格式异常事件不落窗（V1 另行报）
+MATCH (e:Event) WHERE e.time >= '<t_start>' AND e.time <= '<t_end>'
+OPTIONAL MATCH (c:Character)-[:involved]->(e)
+OPTIONAL MATCH (e)-[:occurs_at]->(l:Location)
+OPTIONAL MATCH (e)-[:leads_to]->(nxt:Event)
+RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type, e.description AS description,
+       collect(DISTINCT c.name) AS chars, l.name AS loc, collect(DISTINCT nxt.title) AS leads
+ORDER BY e.time LIMIT 100
+```
+
+Python 后处理：窗口逐日标记有无事件 → 空白日/多日间隔清单。侦察暴露的窗口内 E1/E3（缺 occurs_at/involved 的既有事件）按原修法走（挂边，非创作）。
+
+**插入点启发（优先级序，候选超限时只取前几个）**：
+1. **因果跳变桥接**：A 与 B 时序紧邻或有 leads_to，但 description 内容跳脱（质问→庆祝、冲突→和解）→ 中点时刻提议过渡事件。
+2. **钩子收尾**：边界/窗口事件的 description 留了未接细节（未接来电/未回消息/发现线索）→ 紧邻其后提议跟进事件或 Info。
+3. **长空白点缀**：连续 ≥2 日无事件 → 空白日中段提议 1 个日常事件（维持时间感，不推进主线）。
+
+草案 time 必须在窗口内、避开与既有事件同一时刻（同日不同时分）。
+
+### H2 · 人物自由探索丰满（人物模式专属，low）
+
+```cypher
+// 人物全景（计数）
+MATCH (c:Character) WHERE c.name = '<focus>' OR c.id = '<focus>'
+OPTIONAL MATCH (c)-[:involved]->(e:Event)
+OPTIONAL MATCH (c)-[:relation]->(o:Character)
+OPTIONAL MATCH (c)-[:link]-(i:Info)
+RETURN c.id AS id, c.name AS name, c.priority AS p, c.description AS d,
+       count(DISTINCT e) AS events, count(DISTINCT o) AS rels, count(DISTINCT i) AS infos;
+// 时间线明细
+MATCH (c:Character)-[:involved]->(e:Event) WHERE c.name = '<focus>'
+RETURN e.time AS time, e.title AS title, e.description AS description ORDER BY time LIMIT 100
+```
+
+**启发维度（优先级序）**：
+1. **事件薄期**：时间线上该人物连续 ≥3 日无事件 → 日常事件提案（做什么/遇谁，与既有 Location/角色勾连优先）。
+2. **内心戏缺失**：人物只「行动」没「想法」（events 多而 infos 少）→ Info 提案（秘密/动机/情绪）。
+3. **关系空白**：复用 V3 结果（共同出场无 relation）作人物模式的一个子题，不另跑。
+4. **日常切片**（最低优先，前三类无可提案时才启用，单次至多 1 个）：非主线生活切片（爱好/习惯/小波折）。
+
+### 稀疏纪律（H 组通用）
+
+- 单次提案上限 **3 Event + 2 Info**；超限只取优先级最高者，其余在汇报中列为「下次可补」。
+- 留白即叙事：「接受留白/下次再说」永远在选项里，且低信号时是推荐项。
+- **去重**：提案前扫最近一轮 `${OUTPUT_DIR}/*_建议.json` 的 H 组条目——已提案未审批的插入点标「上轮已提案待审」，不再重复草案，只提醒审批状态。
+- 新事件/新 Info 的 occurs_at / involved / link 边按联动推荐**同题追问**（级联纪律同 V 组，不留新缺口下库）。
 
 ---
 
@@ -211,6 +287,27 @@ MERGE (i)-[r:leads_to]->(n) ON CREATE SET r.detail = '<因果语境>', r.sync = 
 // 泛关联 → link（type 必填）
 MATCH (i:Info {id:'<iid>'}), (c:Character {id:'<cid>'})
 MERGE (i)-[r:link]->(c) SET r.type = '<如：涉及>', r.sync = false;
+```
+
+### H 组创作类新事件（X2 亦通用；先节点后边）
+
+```cypher
+// <new_eid> 由 $SF_GEN 生成；time 在窗口内、避开与既有事件同一时刻（同日不同时分）
+// type 用合法枚举：行动/交流/转折/状态变化（日常事件多为 行动 或 交流，勿发明新值）
+CREATE (e:Event {id:'<new_eid>'}) SET e.title='<草案标题>', e.time='<yyyy-MM-dd HH:mm:ss>',
+       e.type='<行动|交流|转折|状态变化>', e.description='<一句话草案>';
+// 桥接类（因果跳变补过渡）另出 leads_to：
+MATCH (a:Event {id:'<aid>'}), (e:Event {id:'<new_eid>'})
+MERGE (a)-[r:leads_to]->(e) ON CREATE SET r.detail='<因果语境>', r.sync = false;
+// occurs_at / involved 按联动推荐另出语句（级联纪律，不留新缺口）
+```
+
+### H 组创作类新 Info
+
+```cypher
+// <new_iid> 由 $SF_GEN 生成；knowledge_level 必填：1 表层/2 参与层/3 深层（秘密/动机/内心推断类默认 3）
+CREATE (i:Info {id:'<new_iid>'}) SET i.title='<草案标题>', i.content='<草案内容>', i.knowledge_level='<1|2|3>';
+// link/leads_to 按 V4 联动推荐另出语句
 ```
 
 ---
