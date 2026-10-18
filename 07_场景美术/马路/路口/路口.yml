@@ -1,0 +1,232 @@
+# Room DSL v3 —— 马路·路口
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: NvCkQmFPGP
+  name: 马路
+  description: 陆择遭遇车祸的路口
+room:
+  shell: open
+  floor:
+  - 20
+  - 20
+  height: 6.0
+  floor_color: '#3f4246'
+  ground:
+    y: -3.0
+    color: '#2a2c30'
+    desc: 路口下方城市地面
+  sky:
+    color: '#8a9099'
+    desc: 阴雨天幕,雨丝斜织
+  deco: 雨幕笼罩的喧嚣城市路口,湿滑路面反射霓虹与车灯冷光,积水洼倒映破碎街景
+  floor_material: 沥青
+objects:
+- id: sidewalk_near
+  spot: 路口
+  name: 人行道近段
+  type: box
+  pos:
+  - 0
+  - 0.12
+  - 7.6
+  size:
+  - 20
+  - 0.24
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a5c5e'
+  desc: 南侧路缘人行道,打伞等红灯的行人
+  material: 混凝土
+- id: sidewalk_far
+  spot: 路口
+  name: 人行道远段
+  type: box
+  pos:
+  - 0
+  - 0.12
+  - -7.6
+  size:
+  - 20
+  - 0.24
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a5c5e'
+  desc: 北侧路缘人行道
+  material: 混凝土
+- id: sidewalk_left
+  spot: 路口
+  name: 人行道西段
+  type: box
+  pos:
+  - -8.6
+  - 0.12
+  - 0
+  size:
+  - 2.4
+  - 0.24
+  - 12.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a5c5e'
+  desc: 西侧路缘人行道
+  material: 混凝土
+- id: sidewalk_right
+  spot: 路口
+  name: 人行道东段
+  type: box
+  pos:
+  - 8.6
+  - 0.12
+  - 0
+  size:
+  - 2.4
+  - 0.24
+  - 12.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a5c5e'
+  desc: 东侧路缘人行道
+  material: 混凝土
+- id: crosswalk
+  spot: 路口
+  name: 斑马线
+  type: box
+  pos:
+  - 0
+  - 0.13
+  - 4.6
+  size:
+  - 6.0
+  - 0.05
+  - 2.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b8babd'
+  desc: 南侧过街斑马线,漆面被雨水浸深
+  material: 油漆标线
+- id: traffic_pole
+  spot: 路口
+  name: 红绿灯杆
+  type: cylinder
+  pos:
+  - 5.4
+  - 2.0
+  - 5.4
+  size:
+  - 0.3
+  - 4.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3a3d40'
+  desc: 路口红绿灯杆
+  material: 金属
+- id: traffic_head
+  spot: 路口
+  name: 红绿灯头
+  type: sphere
+  pos:
+  - 5.4
+  - 4.3
+  - 5.4
+  size:
+  - 0.6
+  - 0.6
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#d8544a'
+  desc: 红灯,冷光映在雨幕上
+  cname: 红灯冷光
+  material: 金属
+- id: lamp_post
+  spot: 路口
+  name: 路灯杆
+  type: cylinder
+  pos:
+  - -5.6
+  - 2.25
+  - 5.6
+  size:
+  - 0.25
+  - 4.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#43464a'
+  desc: 路口路灯杆
+  material: 金属
+- id: lamp_head
+  spot: 路口
+  name: 路灯头
+  type: sphere
+  pos:
+  - -5.6
+  - 4.6
+  - 5.6
+  size:
+  - 0.5
+  - 0.4
+  - 0.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#cfe0ee'
+  desc: 冷白路灯光,雨雾中晕开
+  cname: 冷白路灯光
+  material: 金属
+scenes:
+- id: cross_rain
+  scene_id: Oib4U5kSnI
+  scene_name: 马路-路口
+  spot: 路口
+  camera:
+    pos:
+    - 4.2
+    - 1.6
+    - 4.2
+    look_at:
+    - -2.5
+    - 0.9
+    - -2.0
+    fov: 60
+  lights:
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#6b7078'
+    intensity: 0.8
+  - type: point
+    pos:
+    - -5.6
+    - 4.5
+    - 5.6
+    color: '#cfe0ee'
+    intensity: 1.2
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

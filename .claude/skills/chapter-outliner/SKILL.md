@@ -87,9 +87,9 @@ MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot
 MATCH (e:Event)-[:anchored_at]->(sp)
 RETURN count(DISTINCT e) AS event_count, collect(DISTINCT e.title) AS events;
 
-// (2) Event 之间的 evt_relation / leads_to 链（事件是否连贯，非孤岛）
+// (2) Event 之间的 leads_to 链（事件是否连贯，非孤岛）
 MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)<-[:anchored_at]-(e1:Event)
-MATCH (e1)-[:evt_relation|leads_to]->(e2)
+MATCH (e1)-[:leads_to]->(e2)
 RETURN count(*) AS relation_count;
 
 // (3) Choice option 指向的 target Event 是否存在（分支是否有落点）
@@ -104,7 +104,7 @@ RETURN char.name AS char, count(DISTINCT e) AS event_count;
 
 **判断（定性，不硬编码阈值）**：综合体检结果判定 event 是否够支撑本节剧情密度。命中任一即判「素材不足」：
 - **event_count 明显过少**（本节每个 Scene 平均不足 ~1 个 Event，撑不起段落）
-- **事件链断裂**（Event 间几乎无 evt_relation，关键转折无承接）
+- **事件链断裂**（Event 间几乎无 leads_to，关键转折无承接）
 - **Choice 分支无落点**（option 指向的 target Event 缺失）
 - **出场角色无着落**（主要角色在本节 involved 的 Event = 0，角色弧空转）
 

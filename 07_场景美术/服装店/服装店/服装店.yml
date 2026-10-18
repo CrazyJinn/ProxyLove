@@ -1,0 +1,190 @@
+# Room DSL v3 —— 服装店·服装店
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QmJFWWyN16
+  name: 服装店
+  description: 理发店隔壁的小型平价服装店
+room:
+  floor:
+  - 5.0
+  - 4.0
+  height: 2.9
+  wall_color: '#ded8ce'
+  floor_color: '#8f8578'
+  door:
+    side: z+
+    pos:
+    - 0.9
+    - 0
+    - 1.99
+    size:
+    - 0.9
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - -0.6
+    - 1.6
+    - -1.99
+    size:
+    - 1.6
+    - 1.8
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 临街橱窗,玻璃模特披着围巾
+  deco: 白炽顶灯亮堂,挂杆上的衣服按颜色码得整整齐齐,试衣间帘子一拉一开
+  floor_material: 浅灰瓷砖
+objects:
+- id: rack_mid_1
+  spot: 服装店
+  name: 中岛挂杆一
+  type: box
+  pos:
+  - -1.7
+  - 0.9
+  - 0.1
+  size:
+  - 0.6
+  - 1.8
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7d7468'
+  desc: 西墙货架前纵深挂衣杆,按色排开的成衣(正中走道留空)
+  material: 金属镀铬
+- id: shelf_wall_1
+  spot: 服装店
+  name: 靠墙货架一
+  type: box
+  pos:
+  - -2.3
+  - 1.0
+  - 0
+  size:
+  - 0.4
+  - 2.0
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b6156'
+  desc: 贴西墙多层货架
+  material: 金属镀铬
+- id: shelf_wall_2
+  spot: 服装店
+  name: 靠墙货架二
+  type: box
+  pos:
+  - 2.3
+  - 1.0
+  - 0
+  size:
+  - 0.4
+  - 2.0
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b6156'
+  desc: 贴东墙多层货架
+  material: 金属镀铬
+- id: fitting
+  spot: 服装店
+  name: 试衣间隔间
+  type: box
+  pos:
+  - 1.6
+  - 1.1
+  - -1.65
+  size:
+  - 1.6
+  - 2.2
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9a9288'
+  desc: 东北角试衣间,布帘半拉
+  material: 布帘隔间
+- id: cashier
+  spot: 服装店
+  name: 收银台
+  type: box
+  pos:
+  - -1.9
+  - 0.5
+  - 1.65
+  size:
+  - 1.0
+  - 1.0
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5e5346'
+  desc: 西南角收银台,POS 机与小票
+  material: 木饰面
+- id: mirror
+  spot: 服装店
+  name: 全身镜
+  type: plane
+  pos:
+  - 2.2
+  - 1.0
+  - 0.8
+  size:
+  - 0.6
+  - 2.0
+  rot:
+  - 0
+  - 90
+  - 0
+  color: '#c9d2d8'
+  desc: 贴东墙全身试衣镜
+  material: 镜面玻璃
+scenes:
+- id: shop_day
+  scene_id: QmJFWWyN17
+  scene_name: 服装店
+  spot: 服装店
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 1.6
+    look_at:
+    - 0
+    - 1.25
+    - -1.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.6
+    - 0
+    color: '#ffffff'
+    intensity: 2.3
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

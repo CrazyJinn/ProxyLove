@@ -1,0 +1,180 @@
+# Room DSL v3 —— 林梦家·林梦家
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqk
+  name: 林梦家
+  description: 超级大平层,空荡无人像酒店
+room:
+  floor:
+  - 9.0
+  - 7.0
+  height: 3.2
+  wall_color: '#d5d2cc'
+  floor_color: '#84807a'
+  door:
+    side: z+
+    pos:
+    - 3.4
+    - 0
+    - 3.49
+    size:
+    - 0.95
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - -4.48
+    - 1.7
+    - 0
+    size:
+    - 5.0
+    - 2.6
+    rot:
+    - 0
+    - 90
+    - 0
+    desc: 整面落地窗,夜景城市光
+  deco: 空旷大平层像样板间,浅色大板砖,极少杂物
+  floor_material: 浅色大板砖
+  wall_material: 乳胶漆
+objects:
+- id: sofa
+  spot: 林梦家
+  name: 客厅组合沙发
+  type: box
+  pos:
+  - -1.5
+  - 0.4
+  - 0.8
+  size:
+  - 3.0
+  - 0.8
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9a938a'
+  desc: 客厅浅灰组合沙发主段
+  material: 布艺
+- id: coffee_table
+  spot: 林梦家
+  name: 长茶几
+  type: box
+  pos:
+  - -1.5
+  - 0.2
+  - 0.25
+  size:
+  - 1.8
+  - 0.4
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5e564c'
+  desc: 沙发前长茶几,外卖盒与奶茶杯
+  material: 木饰面
+- id: work_desk
+  spot: 林梦家
+  name: 剪辑工作站长桌
+  type: box
+  pos:
+  - -3.9
+  - 0.375
+  - -1.5
+  size:
+  - 1.2
+  - 0.75
+  - 2.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d463f'
+  desc: 贴西窗墙的剪辑长桌,双显示器亮着
+  material: 木饰面
+- id: low_board
+  spot: 林梦家
+  name: 电视矮柜
+  type: box
+  pos:
+  - 0.5
+  - 0.25
+  - -3.2
+  size:
+  - 2.4
+  - 0.5
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#57504a'
+  desc: 贴北墙电视矮柜,大屏电视静着
+  material: 木饰面
+- id: dining_table
+  spot: 林梦家
+  name: 餐桌
+  type: box
+  pos:
+  - 2.8
+  - 0.375
+  - 1.0
+  size:
+  - 1.6
+  - 0.75
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b635b'
+  desc: 东南区孤件餐桌,空荡感
+  material: 岩板
+scenes:
+- id: flat_night
+  scene_id: RLFwn8iZlJ
+  scene_name: 林梦家
+  spot: 林梦家
+  camera:
+    pos:
+    - 2.6
+    - 1.6
+    - 3.1
+    look_at:
+    - -2.8
+    - 1.4
+    - -1.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -3.5
+    - 2.2
+    - 0
+    color: '#9fb8d8'
+    intensity: 1.8
+  - type: point
+    pos:
+    - 1.5
+    - 2.6
+    - 1.0
+    color: '#ffd9a8'
+    intensity: 0.9
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#33383f'
+    intensity: 0.25
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

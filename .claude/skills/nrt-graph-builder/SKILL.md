@@ -129,7 +129,7 @@ python $SCRIPT discover --type missing-relations --password 12345678
 | `temporal-gaps` | 时间线上超过3天的空缺区间 | 🔴 high |
 | `info-no-links` | 未被 link / leads_to 边关联的 Info 节点 | 🟡 medium |
 | `chars-no-faction` | 有活动但无 BELONGS_TO 边的角色 | 🟢 low |
-| `events-unlinked` | 无 evt_relation / leads_to 边的事件 | 🟢 low |
+| `events-unlinked` | 无 leads_to 出入边的事件 | 🟢 low |
 
 ### Step 2: 呈现建议
 
@@ -171,7 +171,6 @@ python $SCRIPT discover --type missing-relations --password 12345678
 | involved | Character → Event | role, detail |
 | occurs_at | Event → Location | detail |
 | leads_to | (Event\|Info) → (Event\|Info) | detail |
-| evt_relation | Event → Event | type（先后/包含）, detail |
 | BELONGS_TO | Character → Faction | role |
 | CATEGORIZED_AS | Location → LocationType | 无 |
 

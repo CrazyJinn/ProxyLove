@@ -1,0 +1,209 @@
+# Room DSL v3 —— 星耀电竞基地·门口
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqd
+  name: 星耀电竞基地
+  description: 星耀电竞战队训练基地,含训练馆与空场馆
+room:
+  shell: open
+  floor:
+  - 16
+  - 6
+  height: 5.0
+  floor_color: '#9aa0a8'
+  ground:
+    y: -0.2
+    color: '#565b63'
+    desc: 街道沥青路面与行道树延伸
+  sky:
+    color: '#cfe0ee'
+    desc: 午后晴空,薄云高挂
+  deco: 玻璃幕墙立面与金属结构柱,楼顶架着发光队名大字
+  floor_material: 花岗岩
+objects:
+- id: facade_wall
+  spot: 门口
+  name: 玻璃幕墙立面
+  type: plane
+  pos:
+  - 0
+  - 4.0
+  - -4.2
+  size:
+  - 20
+  - 8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b7c6d2'
+  desc: 整幅玻璃幕墙立面,太阳底下反着光
+  material: 玻璃
+- id: entrance_door
+  spot: 门口
+  name: 入口玻璃门组
+  type: plane
+  pos:
+  - 0
+  - 1.3
+  - -4.1
+  size:
+  - 3.6
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9fb2c4'
+  desc: 双开玻璃门与门框灯带
+  material: 玻璃
+- id: canopy
+  spot: 门口
+  name: 门头悬挑雨棚
+  type: box
+  pos:
+  - 0
+  - 2.9
+  - -3.5
+  size:
+  - 4.4
+  - 0.3
+  - 1.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#37404c'
+  desc: 门头金属雨棚,边缘嵌队标蓝灯带
+  material: 金属
+- id: entry_plat
+  spot: 门口
+  name: 门前抬升平台
+  type: box
+  pos:
+  - 0
+  - 0.11
+  - -3.0
+  size:
+  - 5.2
+  - 0.22
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7d838c'
+  desc: 门前两级浅色石材平台
+  material: 花岗岩
+- id: pillar_l
+  spot: 门口
+  name: 幕墙结构柱(左)
+  type: cylinder
+  pos:
+  - -2.7
+  - 4.0
+  - -4.0
+  size:
+  - 0.38
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a525c'
+  desc: 幕墙竖向结构柱
+  material: 金属
+- id: pillar_r
+  spot: 门口
+  name: 幕墙结构柱(右)
+  type: cylinder
+  pos:
+  - 2.7
+  - 4.0
+  - -4.0
+  size:
+  - 0.38
+  - 8.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a525c'
+  desc: 幕墙竖向结构柱
+  material: 金属
+- id: planter_l
+  spot: 门口
+  name: 门前花坛(左)
+  type: box
+  pos:
+  - -4.2
+  - 0.3
+  - -1.9
+  size:
+  - 2.2
+  - 0.6
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a6455'
+  desc: 石材花坛池,绿篱修剪齐整
+  material: 石材
+- id: planter_r
+  spot: 门口
+  name: 门前花坛(右)
+  type: box
+  pos:
+  - 4.2
+  - 0.3
+  - -1.9
+  size:
+  - 2.2
+  - 0.6
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a6455'
+  desc: 石材花坛池,绿篱修剪齐整
+  material: 石材
+scenes:
+- id: gate_day
+  scene_id: RLaHS521Kb
+  scene_name: 星耀电竞基地-门口
+  spot: 门口
+  camera:
+    pos:
+    - 0.6
+    - 1.6
+    - 4.6
+    look_at:
+    - -0.4
+    - 2.1
+    - -3.6
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 7
+    - 6
+    - 3
+    color: '#fff1d6'
+    intensity: 2.8
+  - type: ambient
+    pos:
+    - 0
+    - 4
+    - 0
+    color: '#6b7884'
+    intensity: 0.35
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

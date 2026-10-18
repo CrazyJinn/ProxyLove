@@ -21,7 +21,7 @@ allowed-tools: Read, Bash, Write
 
 目标：让叙事基础层五个实体——**Character / Event / Location / Info / Choice**——的关系闭环走通：每个 Event 有时间 + 地点 + 参与人，因果链（leads_to）与分支（Choice+option）不断头，Info 不孤立；显式聚焦（人物/时间窗）时另做**启发式提案**让图渐进丰满。**图算法发现缺口 → 逐个问用户 → 明确后提交 dashboard 待审**。
 
-> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/evt_relation/presents/option 九边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建。
+> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/presents/option 八边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建。
 >
 > **只读不写（交互期间）**：发现与确认阶段仅查询图。用户敲定全部修法后，一次性组装建议 JSON 落盘；写库永远由人工在 dashboard Cypher 控制台执行（两段确认 + 级联预览），本 skill 不执行任何写语句。
 >
@@ -68,7 +68,7 @@ OUTPUT_DIR="02_剧情数据"
 | E1 | Event 缺 occurs_at | `NOT (e)-[:occurs_at]->(:Location)` | 挂既有 Location / 新建 Location |
 | E3 | Event 缺 involved（非结局事件） | 无 involved 且 ending_kind 空 | 挂既有角色 / 新建角色 |
 | C1 | 角色零事件 | Character 无 involved 出边 | 补事件（创作）/ 确认为背景角色 |
-| X1 | 因果/时序断链 | 孤立事件（无 evt_relation / leads_to 出入边） | 补 leads_to / evt_relation 链 / 确认独立 |
+| X1 | 因果断链 | 孤立事件（无 leads_to 出入边） | 补 leads_to 链 / 确认独立 |
 | X2 | Choice 选项无落点 | option 指向的 Event 缺失 | 补目标事件（创作） |
 | V1 | 时间线密度不足 | 日差 ≥3 大间隔 / 单日仅 1 事件 | 补桥接事件（创作）/ 接受留白 |
 | V2 | 角色弧薄弱 | P0/P1 involved<5 或活动地点<2 | 补事件（创作）/ 确认背景 |
@@ -126,7 +126,7 @@ c) 新建 Location
 - **Info/Choice 联动推荐**（X2/V4 用）：X2 补落点事件时，参与人与地点承 presents 上游事件（分支与主干同场同人，facts 现查上游 involved/occurs_at）；V4 补边时，候选 = 时间邻近 ±1 事件的 link/leads_to 惯例 + title 文本相关节点。
 - **H 组创作推荐**（H1/H2 用）：推荐答案 = 创作草案本身——拟插入时间点 + title + 一句话 description，依据列启发维度与触发信号（「因果跳变：质问→庆祝 无过渡」「空白 3 日」「三个未接来电无跟进」）。content 必标「创意推断，可调整」；用户可现场改 title/description/时间，改后版本入建议。
 - **冷启动兜底**：四路信号全空（一次性/首访地点）时，推荐「新建 Location」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
-- **evt_relation / leads_to 邻居信号禁用**（事件链跨空间推进，无效）。
+- **leads_to 邻居信号禁用**（因果链跨空间推进，无效——原 evt_relation 邻接回测同地点比例仅 16%）。
 
 **收尾复述**：每敲定 5 个决定左右复述一次已定清单（一句话一条），防长对话漂移；全部问完后 commit 前做最终复述。
 
@@ -158,7 +158,7 @@ c) 新建 Location
 3. **facts 不问用户**：候选、历史、同日活动全部现查；只有修法取舍问用户。
 4. **聚合提问**：同类型+同动作+同理由模式的缺口合并成一题；单题列全实体。
 5. **跳过要留痕**：结束判据是「每个缺口都有处置」，跳过项进汇报清单。
-6. **范畴与 cypher 契约**：范畴 = 叙事基础层五实体（Character/Event/Location/Info/Choice）及其九边（occurs_at/involved/relation/at/link/leads_to/evt_relation/presents/option）；**Spot/Scene 属场景域，本 skill 不检查不创建**（场景化归 scene-designer）。cypher 一律 MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Location（一跳直挂）；叙事因果一律 leads_to（evt_relation 仅 先后/包含）。
+6. **范畴与 cypher 契约**：范畴 = 叙事基础层五实体（Character/Event/Location/Info/Choice）及其八边（occurs_at/involved/relation/at/link/leads_to/presents/option）；**Spot/Scene 属场景域，本 skill 不检查不创建**（场景化归 scene-designer）。cypher 一律 MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Location（一跳直挂）；叙事因果一律 leads_to，**Event 间禁建 evt_relation（已废止，先后时序由 Event.time 承载）**。
 7. **一题一答**：一次只问一个，答完再问下一个；依赖前一题答复的问题排在其后。
 8. **稀疏填充**：创作类新增（H 组）单次至多提案 3 Event + 2 Info，宁少勿多——多次运行逐步丰满是设计意图，不是一次填满；「接受留白」永远在选项里，低信号时是推荐项；上轮已提案待审的插入点不重复提案。
 

@@ -1,0 +1,136 @@
+# Room DSL v3 —— 灵魂夹缝·灵魂夹缝
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: OwNAPmzh1U
+  name: 灵魂夹缝
+  description: 灵魂在两段存在之间滞留的过渡空间,以一片静谧湖畔的形态呈现
+room:
+  shell: open
+  floor:
+  - 24
+  - 14
+  height: 3.0
+  floor_color: '#6e6a5c'
+  ground:
+    y: -0.4
+    color: '#6f7d86'
+    desc: 静水湖面,铺展至天际,如镜映暮色
+  sky:
+    color: '#b98a5e'
+    desc: 黄昏薄暮,对岸山林轮廓在薄雾中若隐若现
+  deco: 开阔湖畔静水无声,岸边芦苇摇曳,浅滩卵石错落,万物凝滞的死后过渡感
+objects:
+- id: cottage
+  spot: 灵魂夹缝
+  name: 原木茅草屋
+  type: box
+  pos:
+  - 6.2
+  - 1.5
+  - 2.8
+  size:
+  - 4.0
+  - 3.0
+  - 3.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7350'
+  desc: 岸边立着的茅草屋,原木框架厚茅草披顶,屋前踩实空地通向水边
+  material: 原木茅草
+- id: reeds_near
+  spot: 灵魂夹缝
+  name: 芦苇丛近
+  type: box
+  pos:
+  - -2.0
+  - 0.6
+  - -3.5
+  size:
+  - 2.8
+  - 1.2
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7d7a54'
+  desc: 近岸摇曳的芦苇丛
+  material: 芦苇
+- id: reeds_mid
+  spot: 灵魂夹缝
+  name: 芦苇丛中
+  type: box
+  pos:
+  - -7.0
+  - 0.55
+  - -5.5
+  size:
+  - 3.5
+  - 1.1
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#74714e'
+  desc: 湖湾中段芦苇带
+  material: 芦苇
+- id: stones
+  spot: 灵魂夹缝
+  name: 浅滩卵石带
+  type: box
+  pos:
+  - -1.5
+  - 0.15
+  - -5.8
+  size:
+  - 6.0
+  - 0.3
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7c786e'
+  desc: 浅滩卵石错落的石滩台
+  material: 卵石
+scenes:
+- id: lake_dusk
+  scene_id: OwNTDArnfs
+  scene_name: 灵魂夹缝
+  spot: 灵魂夹缝
+  camera:
+    pos:
+    - 4.2
+    - 1.6
+    - 6.8
+    look_at:
+    - -4.5
+    - 1.1
+    - -3.0
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -8.0
+    - 3.0
+    - -6.0
+    color: '#f0a860'
+    intensity: 2.2
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#3d4453'
+    intensity: 0.25
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

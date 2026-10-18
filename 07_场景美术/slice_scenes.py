@@ -184,6 +184,7 @@ def room_shell_regions(room, cam):
         g = room.get("ground") or {}
         gy = g.get("y", -20.0)
         for name, pts in {
+            "floor": [[-fx, 0, -fz], [fx, 0, -fz], [fx, 0, fz], [-fx, 0, fz]],
             "ground": [[-fx, gy, -fz], [fx, gy, -fz], [fx, gy, fz], [-fx, gy, fz]],
             "sky": [[-fx, 200, -fz], [fx, 200, -fz], [fx, 200, fz], [-fx, 200, fz]],
         }.items():
@@ -194,8 +195,12 @@ def room_shell_regions(room, cam):
                 out[name] = rect
         if g.get("desc"):
             out["ground_desc"] = g["desc"]
+        if g.get("material"):
+            out["ground_material"] = g["material"]
         if room.get("sky", {}).get("desc"):
             out["sky_desc"] = room["sky"]["desc"]
+        if room.get("floor_material"):
+            out["floor_material"] = room["floor_material"]
         return out
     quads = {
         "floor": [[-fx, 0, -fz], [fx, 0, -fz], [fx, 0, fz], [-fx, 0, fz]],
@@ -212,6 +217,10 @@ def room_shell_regions(room, cam):
         rect, _ = bbox_pct(pp)
         if rect and rect[2] >= 3 and rect[3] >= 3:  # 过小的投影省略
             out[name] = rect
+    if room.get("floor_material"):
+        out["floor_material"] = room["floor_material"]
+    if room.get("wall_material"):
+        out["wall_material"] = room["wall_material"]
     return out
 
 
@@ -267,7 +276,7 @@ def validate_room(data: dict) -> list[str]:
     fx, fz = fl[0], (fl[1] if len(fl) > 1 else 0)
     h = room.get("height", 0)
     open_shell = room.get("shell") == "open"
-    ALLOWED_OBJ = {"id", "spot", "name", "type", "pos", "size", "rot", "color", "cname", "desc"}
+    ALLOWED_OBJ = {"id", "spot", "name", "type", "pos", "size", "rot", "color", "cname", "desc", "material"}
     ids = set()
     for o in data["objects"]:
         if o.get("id") in ids:
@@ -365,7 +374,8 @@ MODE_E_LEAD = (
     "以下 YAML 描述一张游戏场景背景图的画幅布局：坐标百分比，原点=画幅左上角，x 向右、y 向下"
     "（图像像素坐标系）；objects 的 bbox [x,y,w,h] 为物件包围盒左上角位置与宽高，列表由远及近（遮挡序）；"
     "room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色"
-    "（out_of_frame 表示光源在画外但光照有效）；time_of_day 为时段；deco 与 atmosphere 为氛围与细节描述。"
+    "（out_of_frame 表示光源在画外但光照有效）；time_of_day 为时段；deco 与 atmosphere 为氛围与细节描述；"
+    "物件与地面/墙面可含 material 材质词，材质质感以该词为准。"
     "请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。"
 )
 
@@ -425,6 +435,8 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
         item = {"id": o["id"], "name": o["name"]}
         if o.get("spot"):
             item["spot"] = o["spot"]
+        if o.get("material"):
+            item["material"] = o["material"]
         item["bbox"] = rect                    # [x,y,w,h] 画幅百分比，y 向下
         item["depth"] = round(d_mid, 2)        # 相机距离（m），小=近=后画
         if o.get("_opening"):

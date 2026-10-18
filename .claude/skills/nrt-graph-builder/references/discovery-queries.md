@@ -150,20 +150,19 @@ ORDER BY event_count DESC
 
 ## 7. events-unlinked — 事件未入链
 
-**目的**：没有 `evt_relation` / `leads_to` 出入边的事件（孤立于事件链之外）。
+**目的**：没有 `leads_to` 出入边的事件（孤立于因果链之外；先后时序由 Event.time 承载，不建边——`evt_relation` 已废止）。
 
 ```cypher
 MATCH (e:Event)
-WHERE NOT (e)-[:evt_relation]-()
-  AND NOT (e)-[:leads_to]-()
+WHERE NOT (e)-[:leads_to]-()
 RETURN e.id AS id, e.title AS title, e.time AS time
 ORDER BY e.time
 ```
 
 **建议模板**：
 - priority: `low`（事件可以独立存在）
-- "事件「title」(id, time) 未接入事件链（无因果/先后/包含关系）"
-- action: `ADD_EDGE leads_to(<event_or_info_id>, id) {detail: '?'}（因果）或 evt_relation(<evt_id>, id) {type: '先后|包含', detail: '?'}`
+- "事件「title」(id, time) 未接入因果链（无 leads_to 出入边）"
+- action: `ADD_EDGE leads_to(<event_or_info_id>, id) {detail: '?'}（因果）`
 
 ---
 

@@ -70,16 +70,7 @@ WHERE (a:Event OR a:Info) AND (b:Event OR b:Info)
 MERGE (a)-[:leads_to {detail: $detail, sync: false}]->(b)
 ```
 
-### 7. evt_relation — 事件—事件
-
-- **方向**：`Event → Event`
-- **属性**：`type`（`先后`/`包含`；因果已归 leads_to）、`detail`
-- **方向语义**：`先后` = 时间顺序；`包含` = 大事件→子事件
-
-```cypher
-MATCH (a:Event {id: $from}), (b:Event {id: $to})
-MERGE (a)-[:evt_relation {type: $type, detail: $detail}]->(b)
-```
+> `evt_relation`（Event→Event，先后/包含）已废止（2026-10-16）：先后时序由 Event.time 承载，禁建。
 
 ---
 
@@ -115,7 +106,7 @@ MERGE (a)-[:CATEGORIZED_AS]->(b)
 | from 标签 | 允许的边类型 | to 标签 |
 |-----------|------------|---------|
 | Character | relation, at, link, involved, BELONGS_TO | → Character / Location / Info / Event / Faction |
-| Event | occurs_at, evt_relation, leads_to, link | → Location / Event / Info |
+| Event | occurs_at, leads_to, link | → Location / Event / Info |
 | Location | CATEGORIZED_AS, link | → LocationType / Info |
 | Info | leads_to | → Event / Info |
 | Faction | — | — |

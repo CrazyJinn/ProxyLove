@@ -1,0 +1,171 @@
+# Room DSL v3 —— 连锁咖啡店·座位区
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqe
+  name: 连锁咖啡店
+  description: 沈暮雪约见陆择、邀请加入二队的另一家连锁咖啡店(区别于序章街角咖啡店)
+room:
+  floor:
+  - 5.0
+  - 4.0
+  height: 2.9
+  wall_color: '#e8e2d8'
+  floor_color: '#9c8e7e'
+  door:
+    side: z+
+    pos:
+    - 1.8
+    - 0
+    - 1.99
+    size:
+    - 0.95
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - 0
+    - 1.7
+    - -1.99
+    size:
+    - 3.2
+    - 2.2
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 北面大窗,白天柔光
+  deco: 标准化连锁店装潢,浅木色桌椅,绿植点缀,咖啡机嘶嘶声作背景音
+  floor_material: 浅木复合地板
+objects:
+- id: table_pair
+  spot: 座位区
+  name: 双人对桌
+  type: box
+  pos:
+  - -2.15
+  - 0.375
+  - 0.1
+  size:
+  - 0.8
+  - 0.75
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7154'
+  desc: 靠西墙双人对桌,桌面两杯美式与一台笔记本电脑
+  material: 原木
+- id: table4_b
+  spot: 座位区
+  name: 四人方桌二
+  type: box
+  pos:
+  - 1.2
+  - 0.375
+  - -1.55
+  size:
+  - 0.9
+  - 0.75
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7154'
+  desc: 靠北窗四人方桌
+  material: 原木
+- id: booth
+  spot: 座位区
+  name: 长条卡座
+  type: box
+  pos:
+  - -1.0
+  - 0.45
+  - -1.7
+  size:
+  - 2.6
+  - 0.9
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6f5a44'
+  desc: 贴北墙长条软座卡座
+  material: 布艺卡座
+- id: menu_stand
+  spot: 座位区
+  name: 立式菜单牌
+  type: box
+  pos:
+  - 2.25
+  - 0.9
+  - 1.3
+  size:
+  - 0.5
+  - 1.8
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d443c'
+  desc: 贴东墙立式菜单灯牌
+  material: 亚克力灯箱
+- id: plant
+  spot: 座位区
+  name: 大绿植
+  type: cylinder
+  pos:
+  - 2.0
+  - 0.75
+  - -1.4
+  size:
+  - 0.9
+  - 1.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4f6b4a'
+  desc: 东北角盆栽绿植
+  material: 陶盆绿植
+scenes:
+- id: seat_day
+  scene_id: QW7MyzUtiS
+  scene_name: 连锁咖啡店-座位区
+  spot: 座位区
+  camera:
+    pos:
+    - 1.8
+    - 1.6
+    - 1.8
+    look_at:
+    - -2.0
+    - 1.35
+    - -0.8
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.5
+    - 0
+    color: '#f5f2ea'
+    intensity: 2.0
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#4d4a44'
+    intensity: 0.35
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

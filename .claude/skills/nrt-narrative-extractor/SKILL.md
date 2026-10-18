@@ -1,103 +1,93 @@
 ---
-name: nrt-narrative-extractor
+name: nrt-narrative-extractor2
 description: |
-  叙事提取器。从创作输入（角色设定/事件/场景/信息 + 叙事基础 Schema）中提取实体、事件、关系、信息节点，
-  输出实体 .md 文件 + CSV 文件 + import.cypher 导入脚本。
-  触发条件：(1) 用户要求从叙事内容提取图数据
-  (2) 用户提到"提取实体"、"提取事件"、"导出CSV"、"生成表格"、"实体提取"
-  (3) 用户提供了叙事内容和 Schema 路径，要求结构化输出
-allowed-tools: Read, Bash, Edit
+  叙事关系提取器（审阅版）。从创作输入（角色设定/事件/场景/信息文本）中提取三类核心叙事关系：
+  ①谁在哪里干了什么、哪里发生了什么（char-event-location）②谁/哪里有什么信息（char-info-location）
+  ③Event/Info 之间的因果链（leads_to）。
+  连 Neo4j 只读对照已有实体（标「已有 id」/「新发现」），输出单个 md 文件（实体清单 + 三类关系表 + 疑点交互记录）
+  到 02_剧情数据/，供人工审阅。不产 CSV、不产 import.cypher、不写图、不为新实体生成 id。
+  Info 双层提取：事实层照提 + 推断层（隐含背景/性格/动机等，宁多勿漏，推断错了由人工审阅拒绝）。
+  触发条件：(1) 用户要求提取/梳理叙事关系、人物-事件-地点关系、信息归属、event/info 因果
+  (2) 用户提到"关系提取"、"叙事关系表"、"谁在哪干了什么"、"因果链梳理"、"提取到02"
+  (3) 用户提供叙事内容，要求 md 表格形式的审阅产物（而非直接入图）
+allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 
-# 叙事提取器
+# 叙事关系提取器（审阅版）
 
-从创作输入中提取实体、事件、关系、信息，输出实体 .md 文件和 CSV 文件。
+从创作输入中提取三类核心叙事关系，输出 md 表格到 `02_剧情数据/` 供人工审阅。
 
-## 输入类型识别
+**边界：只读图、只产 md。** 不产 CSV/cypher、不写图、不为新实体生成 id。要全量提取入图（CSV + import.cypher）用 `nrt-narrative-extractor`（v1）；本 skill 是它的轻量审阅前站。
 
-| 输入类型 | 可能包含的节点 | 示例 |
-|----------|---------------|------|
-| 完整章节 | 全部类型（角色、事件、地点、信息） | "第一章-7号农场.md" |
-| 角色背景 | 角色、信息 | "角色名：幼时失去双亲被教会收养" |
-| 世界观设定 | 地点、信息 | "骑士团信奉人类至上" |
-| 对话提纲 | 信息、角色、场景 | 场景级对话笔记 |
-| 只言片语 | 信息、角色 | "老莫说南方营地被扫荡了" |
+## 三类核心关系
 
-**原则：有什么就提取什么，不强求凑齐所有节点类型。**
+| # | 关系 | 覆盖的边（Schema 见 `00_init/Schema/叙事基础.md`） |
+|---|------|------|
+| A | 谁在哪里干了什么 / 哪里发生了什么 | involved（Character→Event）+ occurs_at（Event→Location） |
+| B | 谁、哪里有什么信息 | link（Character/Location→Info；Event→Info 顺带一并列出） |
+| C | Event/Info 因果链 | leads_to（(Event\|Info)→(Event\|Info) 四向全通） |
 
 ## Workflow
 
 ### 1. 读取
 
-读取叙事基础文档（默认 `00_init/Schema/叙事基础.md`）和叙事内容。如无法解析，要求用户提供正确路径。
+- Schema：`00_init/Schema/叙事基础.md`（节点/边定义、方向、枚举）
+- 时间锚点：`00_init/游戏概览.md`。Event.time 推算：Day N = 锚点 + N×24h；开场 = 锚点 −1 天；时段词 清晨06 / 上午09 / 下午15 / 傍晚18 / 晚上20 / 深夜23，无时段词默认 12:00:00
+- 叙事内容：用户给的文本或文件路径。无法解析时要求用户提供正确路径
 
-### 2. 实体提取
+### 2. 连图对照（只读）
 
-按叙事基础中的节点类型逐类扫描内容，提取匹配的实例。已有编号的直接复用，不新建重复节点。
+用 `cypher_exec.py` 批量按名/标题查已有实体（`IN` + `LIMIT`）：
 
-节点类型（4 种）：
-- **角色（Character）** — 每个有名字的真实人物
-- **事件（Event）** — 某时某刻发生的某件事
-- **地点（Location）** — 具体地点/游戏场景
-- **信息（Info）** — 每条对读者有意义的新认知
+```bash
+python .claude/scripts/cypher_exec.py -c "MATCH (c:Character) WHERE c.name IN ['陆择','陈默'] RETURN c.name AS name, c.id AS id" --json
+```
 
-### 3. 信息提取（核心步骤）
+四类同理：`Character.name` / `Location.name` / `Event.title` / `Info.title`。
 
-对内容中的每段有意义的描述，逐一回答：
+- 连不上（Neo4j 未启动）→ 降级为纯文本提取，产物头部标注「未连图：实体未对照」并提醒用户
+- **严禁任何写操作**——MERGE/SET/CREATE/DELETE 一律禁止，本 skill 全程只读
 
-> **这段内容让读者/玩家知道了什么之前不知道的事？**
+### 3. 实体提取 + 清单表
 
-每个新认知 = 一条信息。区分两层：
+按输入有什么提取什么，不强求凑齐节点类型；已有编号的标图 id，新发现的标「新」（不生成 id）。产出 5 张实体清单表（角色/地点/事件/信息-事实/信息-推断，列定义见 [references/output-format.md](references/output-format.md)）。
 
-- **事件层**：发生了什么（过程）
-- **结论层**：因此知道了什么（结论）
+- Event 含 time（按时间锚点推算）、type（行动/交流/转折/状态变化）
+- Info 含 knowledge_level：默认 `1`，无法判断时降级而非升级
+- **Info 双层提取（事实层 + 推断层）**：
+  - 事实层：文本直接陈述的事实，按上述粒度照提
+  - 推断层：从事实与行为细节推断的隐含信息——人物背景（如「林梦出资8600投资」→【林梦家庭条件优渥】）、性格、动机、关系、处境。每条须有一条清晰推理链（证据→结论，写进依据列），不做二跳推断（证据→A→B 时只提 A 不提 B）
+  - 推断层 knowledge_level 默认 `3`；事实层与推断层**分表列出**（1.4 事实 / 1.5 推断），编号统一 I 系列接续，避免两层混排难辨
+  - 推断层宁多勿漏：推断可能错也没关系，人工审阅时会拒绝——「拿不准」不是省略理由，也不必问用户（疑点交互只处理影响事实层的问题）
+- **Location 粒度**：子空间线索（「护栏外侧」「点餐台」）并入地点行内备注，不单列
 
-**知识层判定**：
+### 4. 三类关系表
 
-| 层级 | 受众 | 典型内容 |
-|------|------|----------|
-| `1` 表层 | 所有玩家 | 主线过场、关键 NPC 对话、视觉地标 |
-| `2` 参与层 | 探索者 | 支线对话、可收集笔记、可选 NPC |
-| `3` 深层 | 世界观猎人 | 隐藏文档、需推理的细节、跨线索关联 |
+产出表 A/B/C（列定义见 [references/output-format.md](references/output-format.md)），行内引用实体清单编号（C1/L2/E3/I4…）：
 
-**判定原则**：默认 `1`。无法判断时降级而非升级。
+- **表 A** 每行一个 Event：时间、地点、人物（含 role）。无人物参与的事件照列（「哪里发生了什么」）
+- **表 B** 每行一条 Info：角色/地点/事件三类关联端点分列
+- **表 C** 只收**真因果**（上游是下游的直接原因）；纯时间先后/包含不进本表，写进表 A 备注即可。因果语境写清「为什么导致」
 
-**因果链**：如果 A 事件直接导致 B 事件/状态，记录因果关系。
+### 5. 疑点交互（边提取边记）
 
-### 4. 关系提取
+不清晰处累计成问题清单，分批向用户提问，**每题附推荐答案 + 理由**；确认结论记入产物「已确认决策」。典型疑点：
 
-按叙事基础的边类型连边（7 种）：
+- 同名/别名是否同一实体（「小雪」=「沈暮雪」？）
+- Location 归属粒度（「桥上」挂已有 长江大桥 还是新地点？）
+- 因果 vs 先后拿不准
+- knowledge_level 犹豫（2 还是 3）
+- 时间推算歧义（缺 Day 定位/时段词）
 
-| 边类型 | 方向 | 说明 |
-|--------|------|------|
-| relation | Character → Character | 人物关系，可随时间变化 |
-| involved | Character → Event | 人物参与事件 |
-| occurs_at | Event → Location | 事件发生地点（一跳直挂） |
-| at | Character → Location | 人物—场景关联 |
-| link | Character/Event/Location → Info | 信息关联（type=涉及等；因果不在 link 上） |
-| leads_to | (Event\|Info) → (Event\|Info) | 导致——叙事层唯一因果边，四向全通（事件→事件、事件→信息、信息→信息、信息→事件） |
-| evt_relation | Event → Event | 事件关联（先后/包含；因果已归 leads_to） |
+不影响表格内容的细节不问，避免刷屏。推断层 Info 的取舍不在此列——拿不准照提，交人工审阅裁决。
 
-**不建 Spot**：叙事提取只建 Character/Event/Location/Info/Choice 节点，Event 定位一律 `occurs_at → Location`。子空间细分（Spot）与事件归组（anchored_at）是 scene-designer 场景化推进时的职责（见 `00_init/Schema/场景美术.md`），文本里的子空间线索（「电脑桌前」「点餐台」）写进 Event.description 供下游参考，不建图。
+### 6. 产出单文件
 
-**时间推算**：Event.time 等 `yyyy-MM-dd HH:mm:ss`，从 `00_init/游戏概览.md`「时间锚点」推算（Day N = 锚点 + N×24h；开场 = 锚点 −1 天；后日谈 = 锚点 +31 天；时段词：清晨 06 / 上午 09 / 下午 15 / 傍晚 18 / 晚上 20 / 深夜 23 点，无时段词默认 12:00:00）。
+`02_剧情数据/<YYYY-MM-DD>_<主题>_关系提取.md`，骨架：头部说明（事实源/时间锚点/连图状态/已确认决策）→ 实体清单 5 表 → 表 A/B/C → 待确认问题（未决的）→ 统计摘要。
 
-- 完整内容：构建完整故事主线链
-- 碎片输入：信息直接用适当的边关联角色/场景
-
-### 5. CSV 生成
-
-参照 [references/csv-patterns.md](references/csv-patterns.md) 生成 CSV 文件。
-
-输出到 `01_叙事数据/` 目录：
-- `01_叙事数据/csv/nodes_{type}.csv` — 每种节点类型一个文件
-- `01_叙事数据/csv/edges_{edgeType}.csv` — 每种边类型一个文件
-- `01_叙事数据/csv/import.cypher` — 一键导入脚本（LOAD CSV + MERGE）
-- `01_叙事数据/_summary.md` — 提取摘要
-
-只生成有数据的文件，空类型不生成。
+模板与列定义见 [references/output-format.md](references/output-format.md)，完整输入→输出示例见 [references/extraction-example.md](references/extraction-example.md)。产出后把文件路径和统计摘要回报给用户。
 
 ## Resources
 
-- [references/csv-patterns.md](references/csv-patterns.md) — CSV 格式规范、列定义、LOAD CSV 导入模板
-- [references/extraction-examples.md](references/extraction-examples.md) — 提取示例（输入→输出对）
+- [references/output-format.md](references/output-format.md) — 产物骨架 + 各表列定义与填写规则
+- [references/extraction-example.md](references/extraction-example.md) — 提取示例（输入→输出对）

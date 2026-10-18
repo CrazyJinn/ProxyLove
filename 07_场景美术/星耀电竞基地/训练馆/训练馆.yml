@@ -1,0 +1,158 @@
+# Room DSL v3 —— 星耀电竞基地·训练馆
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqd
+  name: 星耀电竞基地
+  description: 星耀电竞战队训练基地,含训练馆与空场馆
+room:
+  floor:
+  - 6.5
+  - 5.0
+  height: 3.2
+  wall_color: '#2e3238'
+  floor_color: '#3c4046'
+  door:
+    side: z+
+    pos:
+    - 2.4
+    - 0
+    - 2.49
+    size:
+    - 0.95
+    - 2.0
+  windows: []
+  deco: 深色调训练舱氛围,顶棚白色长条灯,队标蓝点缀
+  floor_material: 深色橡胶地垫
+  wall_material: 吸音板
+objects:
+- id: tactic_screen
+  spot: 训练馆
+  name: 战术大屏
+  type: plane
+  pos:
+  - 0
+  - 1.9
+  - -2.48
+  size:
+  - 4.4
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#223044'
+  desc: 贴北墙战术大屏,定格复盘画面
+  material: 玻璃屏
+- id: review_bench
+  spot: 训练馆
+  name: 复盘长凳
+  type: box
+  pos:
+  - 0
+  - 0.25
+  - -2.2
+  size:
+  - 3.6
+  - 0.5
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a4440'
+  desc: 大屏下复盘长凳
+  material: 皮革
+- id: desk_row
+  spot: 训练馆
+  name: 五连训练桌
+  type: box
+  pos:
+  - -0.5
+  - 0.375
+  - -0.55
+  size:
+  - 3.0
+  - 0.75
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#33383e'
+  desc: 五连工位训练桌,屏幕亮着队标蓝
+  material: 金属工位
+- id: logo_wall
+  spot: 训练馆
+  name: 队标墙板
+  type: plane
+  pos:
+  - 1.75
+  - 1.6
+  - 0
+  size:
+  - 3.0
+  - 2.6
+  rot:
+  - 0
+  - 90
+  - 0
+  color: '#1d2b45'
+  desc: 贴东墙队标灯板
+  material: 亚克力灯板
+- id: lockers
+  spot: 训练馆
+  name: 储物柜
+  type: box
+  pos:
+  - -3.0
+  - 1.0
+  - 0.5
+  size:
+  - 0.5
+  - 2.0
+  - 3.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#454a50'
+  desc: 贴西墙队员储物柜
+  material: 金属
+scenes:
+- id: training_day
+  scene_id: QW7J1XaAFc
+  scene_name: 星耀电竞基地-训练馆
+  spot: 训练馆
+  camera:
+    pos:
+    - 0
+    - 1.65
+    - 2.3
+    look_at:
+    - -0.55
+    - 1.5
+    - -1.6
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.9
+    - 0
+    color: '#eaf2ff'
+    intensity: 2.6
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#3a4150'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

@@ -120,13 +120,13 @@ MERGE (l:Location {name: '<Location名>'})
 
 > **room.yml 是空间事实的唯一真源，图是投影**。
 
-- **读/产路径**：`07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.room.yml`。**Spot 目录名**：zone Spot 取 name 去 `<Location名>-` 前缀的短名；default Spot（`<Location名>-未细分`）取 Location 名；zone 短名恰等于 Location 名时复用 default 的目录与 yaml，不另建文件。**挂靠单元 = Spot（建模单元，通常即物理房间）**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间）时才产新文件。
+- **读/产路径**：`07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.yml`。**Spot 目录名**：zone Spot 取 name 去 `<Location名>-` 前缀的短名；default Spot（`<Location名>-未细分`）取 Location 名；zone 短名恰等于 Location 名时复用 default 的目录与 yaml，不另建文件。**挂靠单元 = Spot（建模单元，通常即物理房间）**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间）时才产新文件。
 - **复用（文件已存在）**：只追加 scenes[] 条目（新 Scene=新机位），objects 除非有新事件证据不动。
 - **产（不存在时）三分支**：
   - ① 同 Location 其他 Spot 已有 yaml → 拷贝其房间壳与共享物件起步（显式复制，禁止跨文件引用），删与本 spot 无关物件、聚焦子空间；
   - ② 全 Location 无 yaml → 按 v3 结构新建（location/room/objects/scenes 四块），objects 建模依据 = 本 spot 归组事件的 description（陈设证据）+ Spot.description + Location.description，**证据不足的物件不建几何、写进图 Scene.deco（禁止硬猜）**；
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线）。
-- 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
+- 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**大件贴墙布置,房间正中不放挡视线大件**（中岛/中央桌类至多一件且须偏侧贴边——立绘安全区与构图质量门见 `07_场景美术/check_framing.py`,写后必跑）。**材质**：物件可选键 `material`（中文短词:原木/金属/皮革/布艺/玻璃/瓷砖/塑胶/混凝土/沥青…）；房间壳可选键 `room.floor_material`/`room.wall_material`（外景 `room.ground.material`）——投影时自动进 prompt,图节点不存材质。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
 - **文字归图**：deco/atmosphere/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
 

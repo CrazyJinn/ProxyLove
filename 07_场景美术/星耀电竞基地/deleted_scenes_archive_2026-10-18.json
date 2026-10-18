@@ -1,0 +1,34 @@
+[
+  {
+    "id": "QW7J1XaAFd",
+    "name": "星耀电竞基地-空场馆",
+    "scene_type": "dialogue",
+    "time_of_day": "夜晚",
+    "atmosphere": "赛后人去场空，半场灯光熄灭，偌大场馆只剩脚步回声——卸下身份说真心话的地方",
+    "description": "赛后空无一人的比赛场馆。Day 20 沈暮雪与陆择「因为我赌你」的真心话之夜。"
+  },
+  {
+    "id": "QW7J1XaAFe",
+    "name": "星耀电竞基地-比赛场馆",
+    "scene_type": "dialogue",
+    "time_of_day": "夜晚",
+    "atmosphere": "首秀日满场，大屏滚动队标，应援灯牌晃眼——落后局翻盘的舞台",
+    "description": "首秀日的比赛场馆。Day 28 二队首秀落后翻盘，「是我们一起赌赢的」。"
+  },
+  {
+    "id": "QW7J1XaAFf",
+    "name": "星耀电竞基地-经理办公区",
+    "scene_type": "dialogue",
+    "time_of_day": "夜晚",
+    "atmosphere": "训练馆一侧的经理工作位，文档摞成小山、两块显示器还亮着——白天经理晚上恋人两头烧的证据散落桌面",
+    "description": "星耀基地经理办公区。Day 26 双面切换心疼——夜宵默默放上桌的地方。"
+  },
+  {
+    "id": "QW9dFblgXY",
+    "name": "星耀电竞基地-走廊",
+    "scene_type": "dialogue",
+    "time_of_day": "白天",
+    "atmosphere": "训练馆外走廊的冷静克制，玻璃墙内键盘声与屏幕光隐约渗出，收场对峙的谈判感",
+    "description": "训练馆外的基地走廊，玻璃墙内是训练位。Day 7 试训后沈暮雪在走廊收场给「观察期」结论。"
+  }
+]

@@ -128,7 +128,6 @@ def cmd_add_edges(client, edges_json):
         "involved":       ("Character", "Event"),
         "occurs_at":      ("Event", "Location"),
         "leads_to":       ("Event|Info", "Event|Info"),
-        "evt_relation":   ("Event", "Event"),
         "BELONGS_TO":     ("Character", "Faction"),
         "CATEGORIZED_AS": ("Location", "LocationType"),
     }
@@ -361,13 +360,12 @@ def discover_chars_no_faction(client):
     return {"findings": rows, "suggestions": suggestions}
 
 
-# ─── 额外检查: 事件无 evt_relation / leads_to 链 ────────────────
+# ─── 额外检查: 事件无 leads_to 链 ────────────────
 def discover_unlinked_events(client):
-    """检查7: 未接入事件链的事件（无 evt_relation / leads_to 出入边）"""
+    """检查7: 未接入因果链的事件（无 leads_to 出入边；evt_relation 已废止，时序由 Event.time 承载）"""
     rows = client.run("""
         MATCH (e:Event)
-        WHERE NOT (e)-[:evt_relation]-()
-          AND NOT (e)-[:leads_to]-()
+        WHERE NOT (e)-[:leads_to]-()
         RETURN e.id AS id, e.title AS title, e.time AS time
         ORDER BY e.time
     """)
@@ -376,8 +374,8 @@ def discover_unlinked_events(client):
         suggestions.append({
             "priority": "low",
             "type": "event_unlinked",
-            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 未接入事件链（无因果/先后/包含关系）",
-            "action": f"ADD_EDGE leads_to(<event_or_info_id>, {r['id']}) {{detail: '?'}}（因果）或 evt_relation(<event_id>, {r['id']}) {{type: '先后|包含', detail: '?'}}",
+            "description": f"事件「{r['title']}」({r['id']}, {r['time']}) 未接入因果链（无 leads_to 出入边）",
+            "action": f"ADD_EDGE leads_to(<event_or_info_id>, {r['id']}) {{detail: '?'}}（因果）",
             "event_id": r["id"],
         })
     return {"findings": rows, "suggestions": suggestions}

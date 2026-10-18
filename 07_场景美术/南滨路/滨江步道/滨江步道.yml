@@ -1,0 +1,156 @@
+# Room DSL v3 —— 南滨路·滨江步道
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqc
+  name: 南滨路
+  description: 晨跑偶遇苏晓禾的路线
+room:
+  shell: open
+  floor:
+  - 44
+  - 6
+  height: 5.0
+  floor_color: '#8a4a42'
+  ground:
+    y: -6.0
+    color: '#7a8a94'
+    desc: 江面,浮着薄雾般的晨光
+  sky:
+    color: '#d8c9a8'
+    desc: 清晨薄雾天光,低角度暖阳
+  deco: 沿江跑步道,跑者稀疏,栏杆上凝着露水,江风微凉
+  floor_material: 塑胶跑道
+objects:
+- id: railing_near
+  spot: 滨江步道
+  name: 江侧护栏近段
+  type: box
+  pos:
+  - -7.0
+  - 0.55
+  - -2.9
+  size:
+  - 10
+  - 1.1
+  - 0.18
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d5154'
+  desc: 临江金属护栏近段
+  material: 金属
+- id: railing_mid
+  spot: 滨江步道
+  name: 江侧护栏中段
+  type: box
+  pos:
+  - 3.0
+  - 0.55
+  - -2.9
+  size:
+  - 10
+  - 1.1
+  - 0.18
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d5154'
+  desc: 临江金属护栏中段
+  material: 金属
+- id: railing_far
+  spot: 滨江步道
+  name: 江侧护栏远段
+  type: box
+  pos:
+  - 13.0
+  - 0.55
+  - -2.9
+  size:
+  - 10
+  - 1.1
+  - 0.18
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4d5154'
+  desc: 临江金属护栏远段,延伸向薄雾
+  material: 金属
+- id: lamp_post
+  spot: 滨江步道
+  name: 路灯杆
+  type: cylinder
+  pos:
+  - -2.0
+  - 2.1
+  - 1.6
+  size:
+  - 0.22
+  - 4.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a4d50'
+  desc: 步道路灯杆
+  material: 金属
+- id: lamp_head
+  spot: 滨江步道
+  name: 路灯头
+  type: sphere
+  pos:
+  - -2.0
+  - 4.35
+  - 1.6
+  size:
+  - 0.45
+  - 0.35
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#ffe9c4'
+  desc: 晨光里未熄的路灯
+  cname: 暖白路灯光
+  material: 金属
+scenes:
+- id: track_dawn
+  scene_id: QW7CSvlX5k
+  scene_name: 南滨路-滨江步道
+  spot: 滨江步道
+  camera:
+    pos:
+    - 3.5
+    - 1.55
+    - 0.2
+    look_at:
+    - -10.0
+    - 1.1
+    - -1.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - -14
+    - 3.5
+    - -4
+    color: '#ffd9a8'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 3.0
+    - 0
+    color: '#5d6a72'
+    intensity: 0.35
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

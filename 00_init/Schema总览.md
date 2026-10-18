@@ -67,8 +67,7 @@
 | occurs_at | Event → Location | N:1 | ❌ | 事件发生地点（一跳；子空间归组见 anchored_at） |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
 | link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体；因果归 leads_to） |
-| leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通 |
-| evt_relation | Event → Event | N:N | ❌ | 事件先后/包含（因果已归 leads_to） |
+| leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通（先后时序由 Event.time 承载，evt_relation 已废止） |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
 | **角色美术** | | | | |

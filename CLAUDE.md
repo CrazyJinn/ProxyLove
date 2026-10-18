@@ -80,7 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳）**；事件到子空间的归组 `anchored_at → Spot` 由 scene-designer 场景化时建，叙事层 skill（extractor/graph-builder/gap-filler）禁建；realizes 方向是 `Spot → Scene`；叙事因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向），`evt_relation` 只管先后/包含（见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+9. **Event 定位一律 `occurs_at → Location`（一跳）**；事件到子空间的归组 `anchored_at → Spot` 由 scene-designer 场景化时建，叙事层 skill（extractor/graph-builder/gap-filler）禁建；realizes 方向是 `Spot → Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 

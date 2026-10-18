@@ -1,7 +1,7 @@
 # 缺口检查查询库 + 推荐规则
 
 > nrt-gap-filler 的执行参考。五组检查（E/C/X/V/H）的 cypher 模板 + focus 变体 + 入参定界 + 推荐信号规则。
-> **范畴 = 叙事基础层五实体**（Character/Event/Location/Info/Choice）及其九边；Spot/Scene/anchored_at/realizes 属场景域（scene-designer 独占），不在本查询库。
+> **范畴 = 叙事基础层五实体**（Character/Event/Location/Info/Choice）及其八边；Spot/Scene/anchored_at/realizes 属场景域（scene-designer 独占），不在本查询库。
 > 推荐规则曾带 2026-10-12 存量图回测（n=47）命中率背书——**2026-10-13 叙事基础重构（occurs_at 直挂 Location / Spot 移出叙事基础层 / leads_to 统一因果）为结构性变更，旧命中率全部作废**；迁移完成后须用新图重跑 leave-one-out 重建基线。
 
 ## 一、缺口检查（scan 用）
@@ -37,12 +37,11 @@ MATCH (c:Character) WHERE NOT (c)-[:involved]->()
 RETURN c.id AS id, c.name AS name, c.priority AS priority LIMIT 50
 ```
 
-### X1 · 孤立事件（无 evt_relation / leads_to，medium）
+### X1 · 孤立事件（无 leads_to，medium）
 
 ```cypher
 MATCH (e:Event)
-WHERE NOT (e)-[:evt_relation]->() AND NOT (e)<-[:evt_relation]-()
-  AND NOT (e)-[:leads_to]->() AND NOT (e)<-[:leads_to]-()
+WHERE NOT (e)-[:leads_to]-()
 RETURN e.id AS id, e.title AS title, e.time AS time LIMIT 100
 ```
 
@@ -225,7 +224,7 @@ RETURN c.name AS name, count(*) AS freq ORDER BY freq DESC LIMIT 3;
 
 ### 禁用与兜底
 
-- **evt_relation / leads_to 邻居信号禁用**：邻接事件同地点比例回测仅 16%（事件链跨空间推进），不得用于 Location/Char 推荐。
+- **leads_to 邻居信号禁用**：邻接事件同地点比例回测仅 16%（事件链跨空间推进；回测基于旧 evt_relation 邻接，因果链语义同），不得用于 Location/Char 推荐。
 - **冷启动盲区**：一次性/首访地点（理发店、漫展会场、登山步道…）无任何历史信号。推荐「新建 Location」并明示无历史依据；完整 Location 候选列表永远在选项里兜底。
 - 理由标签格式：「文案提及」/「<角色>常来×N」/「<角色>居住地」/「当日出现」/「此处常客×N」/「此处居民」/「承上游事件（分支惯例）」。
 
@@ -257,10 +256,10 @@ MATCH (c:Character {id:'<cid>'}), (e:Event {id:'<eid>'})
 MERGE (c)-[r:involved]->(e) SET r.role = '<建议值：当事人/目击者/参与者>', r.sync = false;
 ```
 
-### X1 补 leads_to / evt_relation
+### X1 补 leads_to
 
 因果链：`MATCH (a {id:'<from>'}), (b {id:'<to>'}) WHERE (a:Event OR a:Info) AND (b:Event OR b:Info) MERGE (a)-[r:leads_to]->(b) ON CREATE SET r.detail = '<因果语境>', r.sync = false;`
-时序/包含沿用 evt_relation（type 仅 先后/包含，因果不在此边）。
+时序不建边，由 Event.time 承载（evt_relation 已废止）。
 
 ### X2 补落点事件（创作类，先节点后边）
 
