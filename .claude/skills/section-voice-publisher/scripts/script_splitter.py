@@ -75,6 +75,57 @@ def _block_pos_map(script_rows_in_block: list) -> dict:
         seats = ["left", "right", "center"]
     return {w: (seats[i] if i < len(seats) else "center") for i, w in enumerate(whos)}
 
+
+def _stage_lint(rows: list, pos_overrides: dict) -> list:
+    """舞台时序回放校验（纯 ink 层，不连图；dry-run/真拆均先跑）。
+    逐块重演 say 写槽 / hide 清槽 / 换块清场，与 build_actions 同一套座位算法
+    （_block_pos_map + overrides），命中分级返回 issues：
+    ERROR（raise 由调用方汇总）：撞槽覆盖换绘 / 双轨同框（DUAL_TRACK_PAIRS）；
+    WARNING（进 report 提示，可能是刻意演出）：双人偏构图 / 三人满场 / 无效 hide。
+    """
+    issues = []
+    rows_by_block = {}
+    for r in rows:
+        rows_by_block.setdefault(r.get("scene_block_id"), []).append(r)
+    for bid, blk_rows in rows_by_block.items():
+        pos_map = _block_pos_map(blk_rows)
+        pos_map.update(pos_overrides.get(bid) or {})
+        # choice 分支不可线性回放（jump/wait_call 各自 hide 同一角色，串行演必有一个"无效"）——
+        # 有选择的块跳过「无效 hide」检查，其余规则照报
+        has_choice = any(r.get("op") == "choice" for r in blk_rows)
+        slots = {}  # {left|center|right: who}——块首空舞台
+        for r in blk_rows:
+            op = r.get("op")
+            if op == "say":
+                who = r.get("who") or ""
+                pos = pos_map.get(who) or SAY_DEFAULT_POS
+                if pos == "center":
+                    issues.append({"block": bid, "who": who, "level": "WARNING", "rule": "center 停用",
+                                   "detail": "双槽模型（2026-10-19 起）——stage 声明 left/right 轮替/对峙；"
+                                             "确需三人同框时人工豁免本条"})
+                prev = slots.get(pos)
+                if prev and prev != who:
+                    issues.append({"block": bid, "who": who, "level": "ERROR", "rule": "覆盖换绘",
+                                   "detail": f"{pos} 槽仍挂着 {prev}（缺 hide 或座位声明冲突）"})
+                slots[pos] = who
+                for a, b in DUAL_TRACK_PAIRS:
+                    if a in slots.values() and b in slots.values():
+                        issues.append({"block": bid, "who": f"{a}/{b}", "level": "ERROR",
+                                       "rule": "双轨同框", "detail": "同身体两张立绘同场——切换前补 hide"})
+                if len(slots) == 2 and "center" in slots and not ({"left", "right"} <= set(slots)):
+                    issues.append({"block": bid, "who": who, "level": "WARNING", "rule": "偏构图",
+                                   "detail": f"双人场 {sorted(slots)}（缺 left/right 一侧）——检查座位声明"})
+                if len(slots) >= 3:
+                    issues.append({"block": bid, "who": who, "level": "WARNING", "rule": "三人满场",
+                                   "detail": f"{sorted(slots.items())}——确认为刻意演出"})
+            elif op == "hide":
+                w = r.get("who") or ""
+                if w not in slots.values() and not has_choice:
+                    issues.append({"block": bid, "who": w, "level": "WARNING", "rule": "无效 hide",
+                                   "detail": "该角色当前不在场（顺序错或重复 hide）"})
+                slots = {k: v for k, v in slots.items() if v != w}
+    return issues
+
 _GEN = SnowflakeGenerator()
 
 
@@ -150,6 +201,14 @@ _SFX_RE = re.compile(r"^sfx\s*[:：]\s*(.+)$")
 _HIDE_RE = re.compile(r"^hide\s*[:：]\s*(.+)$")
 # 立绘位覆盖指令：pos: <角色名>=<left|center|right>——拆分期消费（覆盖块规则值），不产行不进图
 _POS_RE = re.compile(r"^pos\s*[:：]\s*(.+?)\s*=\s*(left|center|right)\s*$")
+# 舞台声明指令：stage: <角色名>=<位> (,<角色名>=<位>)*——pos: 的批量语法糖（块级，一处声明
+# 全块座位表；展开进 pos_overrides 同容器，同角色后出现者胜）。推荐 left/right 双槽对峙，
+# center 留给三人同框等特殊演出
+_STAGE_RE = re.compile(r"^stage\s*[:：]\s*(.+)$")
+_STAGE_ITEM_RE = re.compile(r"^(.+?)\s*=\s*(left|center|right)$")
+# 同身体双轨角色对（两张立绘不得同框、互为顶替者）——lint ERROR 判定用。
+# 章宿主变更时更新此处（chapter01 宿主=陈默，内心轨=陆择）
+DUAL_TRACK_PAIRS = [("陈默", "陆择")]
 # 音床起止对：id 限 [A-Za-z0-9_]+（配对/多床并行/嵌套）；起始行语义必填（AudioFly 生成提示语）
 _BED_START_RE = re.compile(r"^bed\+\s+([A-Za-z0-9_]+)(?:\s*//\s*(.+))?$")
 _BED_END_RE = re.compile(r"^bed-\s+([A-Za-z0-9_]+)$")
@@ -302,6 +361,19 @@ def parse_ink_text(text: str) -> dict:
                 raise ValueError(f"台词.ink 第 {n} 行 pos 指令出现在首个场景块标记之前：{raw!r}")
             pos_overrides.setdefault(cur_block, {})[m.group(1).strip()] = m.group(2)
             continue  # 拆分期消费（覆盖块规则 pos），不产行不进图
+        m = _STAGE_RE.match(line)
+        if m:
+            if cur_block is None:
+                raise ValueError(f"台词.ink 第 {n} 行 stage 声明出现在首个场景块标记之前：{raw!r}")
+            for item in re.split(r"[，,\s]+", m.group(1).strip()):
+                if not item:
+                    continue
+                mi = _STAGE_ITEM_RE.match(item)
+                if not mi:
+                    raise ValueError(f"台词.ink 第 {n} 行 stage 声明项格式错误：{item!r}"
+                                     "（应为 stage: <角色名>=<left|center|right>（多项以空格/逗号分隔））")
+                pos_overrides.setdefault(cur_block, {})[mi.group(1).strip()] = mi.group(2)
+            continue  # 拆分期展开为块级 pos 覆盖，不产行不进图
         m = _BED_START_RE.match(line)
         if m:
             if not m.group(2):
@@ -684,6 +756,12 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     parsed = parse_ink(script_path)
     ensure_no_placeholders(parsed)  # llm: 占位定稿拒绝拆分（防占位内容静默丢失）
     script_rows, blocks = parsed["rows"], parsed["blocks"]
+    # 舞台 lint（纯 ink 层，先于图操作）：ERROR（覆盖换绘/双轨同框）拒绝拆分，WARNING 进报告
+    stage_issues = _stage_lint(script_rows, parsed.get("pos_overrides") or {})
+    stage_errors = [i for i in stage_issues if i["level"] == "ERROR"]
+    if stage_errors:
+        raise ValueError("舞台校验失败（改 台词.ink 座位声明/hide 后重试）:\n" + "\n".join(
+            f"  [{i['rule']}] 块 {i['block']} {i['who']}: {i['detail']}" for i in stage_errors))
 
     graph_rows = _run_cypher(
         "MATCH (sc:SecScript {id:'" + sc_id + "'})-[p:produces]->(l:LineAudio) "
@@ -726,7 +804,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     stmts = _order_statements(seq, sc_id, reordered) + stmts
     report.update({"section_id": section_id, "sc_id": sc_id, "script_path": script_path,
                    "reordered": reordered, "statements": len(stmts), "dry_run": dry_run,
-                   "blocks": merged_blocks})
+                   "blocks": merged_blocks, "stage_issues": stage_issues})
     if stmts and not dry_run:
         _run_cypher_multi(stmts)
     return report

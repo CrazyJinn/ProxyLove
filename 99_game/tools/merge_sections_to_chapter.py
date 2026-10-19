@@ -303,6 +303,39 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
     return {"chapter_no": chapter_no, "title": chapter_title, "sections": sections}
 
 
+def _stage_lint_doc(doc: dict) -> list:
+    """章级舞台兜底校验（轻量副本，权威实现在 section-voice-publisher 的
+    script_splitter._stage_lint——拆分期是唯一闸门，此处只打警告防手工改图绕过拆分器）。
+    回放 say 写槽 / hide 清槽 / 换块清场，返回 issues（不阻断发布）。
+    """
+    issues = []
+    for s in doc.get("scenes", []):
+        # choice 分支不可线性回放（双分支各自 hide 同一角色会串行误报）——有 choice 的块
+        # 跳过「无效 hide」，其余规则照报（与 splitter._stage_lint 同口径）
+        has_choice = any(l.get("op") == "choice" for l in s.get("lines", []))
+        slots = {}
+        for i, l in enumerate(s.get("lines", [])):
+            if l.get("op") == "say":
+                pos, who = l.get("pos") or "left", l.get("who") or ""
+                if pos == "center":
+                    issues.append((s.get("id", "?"), i, "stage-warn", f"{who}@center（center 已停用，双槽模型）"))
+                prev = slots.get(pos)
+                if prev and prev != who:
+                    issues.append((s.get("id", "?"), i, "stage-error",
+                                   f"{who}@{pos} 覆盖 {prev}（撞槽换绘）"))
+                slots[pos] = who
+                if len(slots) == 2 and "center" in slots and not ({"left", "right"} <= set(slots)):
+                    issues.append((s.get("id", "?"), i, "stage-warn", f"{who} 双人偏构图 {sorted(slots)}"))
+                if len(slots) >= 3:
+                    issues.append((s.get("id", "?"), i, "stage-warn", f"{who} 三人满场"))
+            elif l.get("op") == "hide":
+                w = l.get("who") or ""
+                if w not in slots.values() and not has_choice:
+                    issues.append((s.get("id", "?"), i, "stage-warn", f"无效 hide {w}"))
+                slots = {k: v for k, v in slots.items() if v != w}
+    return issues
+
+
 def _union(*lists):
     """保序去重并集（None 安全：缺省子字段视作空）。"""
     out = []
@@ -397,6 +430,8 @@ def main(argv=None) -> int:
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=2)
         f.write("\n")
+    for bid, i, tag, detail in _stage_lint_doc(doc):
+        print(f"[{tag}] scene={bid} line#{i}: {detail}")
     print(f"OK: {len(info['sections'])} 节合并 -> {args.out}（{len(doc['scenes'])} 场景段）")
     return 0
 

@@ -292,6 +292,10 @@
           "text": "他「嗯」了一声。那头也没再说什么，沉默了两秒，挂断了电话。"
         },
         {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
           "op": "say",
           "who": "陆择",
           "portrait": "陆择-商务休闲着装-慵懒-PJajqyM6s4",
@@ -1605,10 +1609,18 @@
           "text": "语音挂断，出租屋里安静下来。陆择靠在椅背上，看着黑掉的语音窗口，愣了一会儿。"
         },
         {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
+          "op": "hide",
+          "who": "林梦"
+        },
+        {
           "op": "say",
           "who": "陆择",
           "portrait": "陆择-商务休闲着装-怔然-R0IrWLyolc",
-          "pos": "center",
+          "pos": "right",
           "text": "连面都没见过……听声音，就知道精神多了。",
           "voice": "陆择-chapter01_新皮肤-s03_carry-R1RWOui922"
         },
@@ -1681,7 +1693,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-晨跑运动装-发懵-R1sx03ktRQ",
-          "pos": "center",
+          "pos": "left",
           "text": "……啊？",
           "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUQ"
         },
@@ -1701,7 +1713,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-晨跑运动装-微笑-R1sxBzBxHU",
-          "pos": "center",
+          "pos": "left",
           "text": "巧了嘛这不是，我刚开始晨跑，还没掌握要领，你教教我呗？",
           "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUT"
         },
@@ -1741,7 +1753,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-晨跑运动装-雀跃-R1sxNzjnSi",
-          "pos": "center",
+          "pos": "left",
           "text": "是呀，感觉身体都变轻了。谢谢啊，加个微信呗，回头我请你吃饭。",
           "voice": "陈默-chapter01_新皮肤-s04_riverside-R1shywLTUZ"
         },
@@ -1930,10 +1942,14 @@
           "who": "陈默"
         },
         {
+          "op": "hide",
+          "who": "林梦"
+        },
+        {
           "op": "say",
           "who": "陆择",
           "portrait": "陆择-商务休闲着装-玩味-PJajqyM6s5",
-          "pos": "center",
+          "pos": "right",
           "text": "这小妮子，这么强势。",
           "voice": "陆择-chapter01_新皮肤-s05_fridge-R1usgtKN2h"
         }
@@ -2117,7 +2133,7 @@
           "op": "say",
           "who": "陆择",
           "portrait": "陆择-商务休闲着装-怔然-R0IrWLyolc",
-          "pos": "right",
+          "pos": "left",
           "text": "一万二，比预想的人气高很多嘛。",
           "voice": "陆择-chapter01_新皮肤-s06_desk-R20n2hy1Hb"
         },
@@ -2133,7 +2149,7 @@
           "op": "say",
           "who": "林梦",
           "portrait": "林梦-居家慵懒着装-得意-RJd1L1MgK0",
-          "pos": "center",
+          "pos": "right",
           "text": "看见没有！这热度，本小姐说什么来着！",
           "voice": "林梦-chapter01_新皮肤-s06_desk-RJcQ2UlyMK"
         },
@@ -2141,7 +2157,7 @@
           "op": "say",
           "who": "林梦",
           "portrait": "林梦-居家慵懒着装-得意-RJd1L1MgK0",
-          "pos": "center",
+          "pos": "right",
           "text": "我第一眼就看出来你是支潜力股。八千六，投资出一个网红大主播，我这眼光绝了。",
           "voice": "林梦-chapter01_新皮肤-s06_desk-RJcQ2UlyML"
         },
@@ -2149,7 +2165,7 @@
           "op": "say",
           "who": "林梦",
           "portrait": "林梦-居家慵懒着装-娇蛮-RJd1WpzN2W",
-          "pos": "center",
+          "pos": "right",
           "text": "现在，马上，给我加个房管！",
           "voice": "林梦-chapter01_新皮肤-s06_desk-RJcQ2UlyMM"
         },
@@ -2169,7 +2185,7 @@
           "op": "say",
           "who": "林梦",
           "portrait": "林梦-居家慵懒着装-嫌弃-RJd1iavH4C",
-          "pos": "center",
+          "pos": "right",
           "text": "直播间管理员啊，管禁言管踢人的。你连这个都不知道？笨死了。",
           "voice": "林梦-chapter01_新皮肤-s06_desk-RJcQ2UlyMP"
         },
@@ -2185,9 +2201,13 @@
           "op": "say",
           "who": "林梦",
           "portrait": "林梦-居家慵懒着装-嫌弃-RJd1iavH4C",
-          "pos": "center",
+          "pos": "right",
           "text": "这也要问我？自己上网查！加好了跟我说一声。",
           "voice": "林梦-chapter01_新皮肤-s06_desk-RJcQ2UlyMR"
+        },
+        {
+          "op": "hide",
+          "who": "林梦"
         },
         {
           "op": "narrate",
@@ -2197,7 +2217,7 @@
           "op": "say",
           "who": "沈暮雪",
           "portrait": "沈暮雪-电竞经理职业装-干练-R20y5j9fIO",
-          "pos": "center",
+          "pos": "right",
           "text": "你好，我是星耀电竞战队经理沈暮雪。看了你的视频和直播，觉得你挺有想法，有兴趣来我们战队试试吗？",
           "voice": "沈暮雪-chapter01_新皮肤-s06_desk-R20n2hy1Hf"
         },
@@ -2221,7 +2241,7 @@
           "op": "say",
           "who": "沈暮雪",
           "portrait": "沈暮雪-电竞经理职业装-干练-R20y5j9fIO",
-          "pos": "center",
+          "pos": "right",
           "text": "明天下午三点，打这个号码联系。",
           "voice": "沈暮雪-chapter01_新皮肤-s06_desk-R20n2hy1Hj"
         },
@@ -2281,7 +2301,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-日常户外休闲装-微笑-RLa5MOzVIG",
-          "pos": "center",
+          "pos": "left",
           "text": "提前报到。",
           "voice": "陈默-chapter01_新皮肤-s07_gate-R6h3fuD9JG"
         },
@@ -2301,7 +2321,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-日常户外休闲装-疑惑-RLa5MOzVIH",
-          "pos": "center",
+          "pos": "left",
           "text": "江烈？",
           "voice": "陈默-chapter01_新皮肤-s07_gate-R6h3fuD9JJ"
         },
@@ -2317,7 +2337,7 @@
           "op": "say",
           "who": "陈默",
           "portrait": "陈默-日常户外休闲装-疑惑-RLa5MOzVIH",
-          "pos": "center",
+          "pos": "left",
           "text": "他严不严？",
           "voice": "陈默-chapter01_新皮肤-s07_gate-R6h3fuD9JL"
         },
@@ -2510,12 +2530,20 @@
           "voice": "江烈-chapter01_新皮肤-s07_arena-R6h3fuD9KD"
         },
         {
+          "op": "hide",
+          "who": "江烈"
+        },
+        {
           "op": "say",
           "who": "沈暮雪",
           "portrait": "沈暮雪-电竞经理职业装-沉静-R6hOj8Mo2C",
-          "pos": "center",
+          "pos": "left",
           "text": "听见了。",
           "voice": "沈暮雪-chapter01_新皮肤-s07_arena-R6h3fuD9KE"
+        },
+        {
+          "op": "hide",
+          "who": "沈暮雪"
         },
         {
           "op": "narrate",
@@ -2907,10 +2935,18 @@
           "text": "陆择看着她蹦蹦跳跳跑远的背影，突然想起忘记加她微信了。"
         },
         {
+          "op": "hide",
+          "who": "苏晓禾"
+        },
+        {
+          "op": "hide",
+          "who": "陈默"
+        },
+        {
           "op": "say",
           "who": "陆择",
           "portrait": "陆择-商务休闲着装-懊恼-Q0oTbcNH1s",
-          "pos": "center",
+          "pos": "left",
           "text": "妈的。",
           "voice": "陆择-chapter01_新皮肤-s08_riverside-RK6oHlOwuK"
         }
