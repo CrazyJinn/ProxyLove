@@ -1,8 +1,10 @@
-"""merge_sections_to_chapter 单测：图行投影 → N 节合并 → 章级 JSON（演出由图注入）。
+"""merge_sections_to_chapter 单测：ink 行序投影 → N 节合并 → 章级 JSON（舞台调度自 ink 注入）。
 
 覆盖：
-- graph_lines_to_doc：图行（LineAudio 形状）→ 投影 doc（label→name、
-  ending→kind+title、voice_key→voice、say.portrait = uses 边解析的整键、requires 从行推导）
+- graph_lines_to_doc：ink 内容行与图行对齐投影（label→name、ending→kind+title、
+  voice_key→voice、say.portrait = uses 边解析的整键、requires 从行推导）；
+  舞台调度自 ink 现算（say.pos = 块规则座位 + stage/pos 声明；hide 行 ink 直出）
+- 同构校验：ink 内容行 vs 图行逐行 _sig，漂移 raise 引导重拆
 - 2 节合并：scenes[] 顺序 = 节序、requires 并集、id 保持唯一
 - 合并产物通过 schema 校验
 - scene-block id 重复时报错（防御 structurer 预分配失败）
@@ -30,16 +32,28 @@ SCHEMA = str(ROOT / "data" / "剧本.schema.json")
 
 def _line(op, text=None, *, who=None, pos=None, kind=None, bed=None,
           scene_block_id=None, voice_key=None, lid="N1", ambient_track=None, options=None):
-    """图行 dict（fetch_chapter 查询返回形状——portrait 已不在 RETURN 列）。"""
+    """图行 dict（fetch_chapter 查询返回形状——portrait 已不在 RETURN 列；
+    pos 已不落图、投影不读，仅保留形状兼容）。"""
     return {"lid": lid, "op": op, "who": who, "pos": pos,
             "text": text, "kind": kind, "bed": bed, "scene_block_id": scene_block_id,
             "voice_key": voice_key, "ambient_track": ambient_track, "options": options,
             "line_status": 11}
 
 
+def _ink_row(op, text=None, *, who=None, kind=None, bed=None, scene_block_id=None, options=None):
+    """ink 行 dict（parse_ink_text 的 rows 形状；choice.options 为 list）。"""
+    return {"op": op, "who": who, "text": text, "kind": kind, "bed": bed,
+            "scene_block_id": scene_block_id, "options": options}
+
+
 def _blocks(*pairs):
     """scene_blocks（[{block, scene_name}]）。"""
     return [{"block": b, "scene_name": s} for b, s in pairs]
+
+
+def _ink(rows, pos_overrides=None):
+    """graph_lines_to_doc 的 ink 参数形状。"""
+    return {"rows": rows, "blocks": [], "llm_hints": [], "pos_overrides": pos_overrides or {}}
 
 
 def _dump_validate(doc, tmp_path):
@@ -53,16 +67,23 @@ def _dump_validate(doc, tmp_path):
 
 def test_graph_lines_to_doc_projects_uses_portrait_key():
     """portrait_keys（uses 边解析）→ say.portrait 整键 + requires 收集。"""
+    ink = _ink([
+        _ink_row("narrate", "清晨。", scene_block_id="s00_酒店"),
+        _ink_row("say", "醒这么早？", who="顾盈", scene_block_id="s00_酒店"),
+        _ink_row("label", "留下", scene_block_id="s00_酒店"),
+        _ink_row("ending", "没赶上飞机", kind="BE", scene_block_id="s00_酒店"),
+    ])
     lines = [
         _line("narrate", "清晨。", scene_block_id="s00_酒店", lid="N1"),
-        _line("say", "醒这么早？", who="顾盈", pos="left", scene_block_id="s00_酒店",
+        _line("say", "醒这么早？", who="顾盈", scene_block_id="s00_酒店",
               voice_key="顾盈-chapter00_序章-s00_酒店-N2", lid="N2"),
         _line("label", "留下", scene_block_id="s00_酒店", lid="N3"),
         _line("ending", "没赶上飞机", kind="BE", scene_block_id="s00_酒店", lid="N4"),
     ]
     keys = {"N2": "顾盈-酒店晨离-挑眉-P2vQL2d9db"}
     doc = graph_lines_to_doc(lines, _blocks(("s00_酒店", "酒店-客房")),
-                             {"酒店-客房": "清晨"}, 0, "酒店醒来", portrait_keys=keys)
+                             {"酒店-客房": "清晨"}, 0, "酒店醒来",
+                             portrait_keys=keys, ink=ink)
     assert doc["meta"]["chapter"] == 0 and doc["meta"]["title"] == "酒店醒来"
     assert doc["meta"]["requires"] == {"characters": ["顾盈"], "scenes": ["酒店-客房"],
                                        "portraits": ["顾盈-酒店晨离-挑眉-P2vQL2d9db"]}
@@ -71,15 +92,17 @@ def test_graph_lines_to_doc_projects_uses_portrait_key():
     assert blk["lines"][0] == {"op": "narrate", "text": "清晨。"}
     say = blk["lines"][1]
     assert say["voice"] == "顾盈-chapter00_序章-s00_酒店-N2"   # voice_key → voice
-    assert say["portrait"] == "顾盈-酒店晨离-挑眉-P2vQL2d9db" and say["pos"] == "left"
+    assert say["portrait"] == "顾盈-酒店晨离-挑眉-P2vQL2d9db"
+    assert say["pos"] == "left"   # 单人块规则座位（首话序 1 人 → left），ink 现算
     assert blk["lines"][2] == {"op": "label", "name": "留下"}   # label text → name
     assert blk["lines"][3] == {"op": "ending", "kind": "BE", "title": "没赶上飞机"}
 
 
 def test_graph_lines_to_doc_missing_key_empty_and_excluded_from_requires():
     """无 uses 边的 say 行：portrait 空串（运行时占位图兜底）且不进 requires。"""
+    ink = _ink([_ink_row("say", "x", who="陆择", scene_block_id="s1")])
     lines = [_line("say", "x", who="陆择", scene_block_id="s1", lid="N1")]
-    doc = graph_lines_to_doc(lines, _blocks(("s1", "室内")), {}, 1, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s1", "室内")), {}, 1, "节", ink=ink)
     say = doc["scenes"][0]["lines"][0]
     assert say["portrait"] == "" and say["pos"] == "left" and "voice" not in say
     assert doc["meta"]["requires"]["portraits"] == []
@@ -87,29 +110,99 @@ def test_graph_lines_to_doc_missing_key_empty_and_excluded_from_requires():
 
 
 def test_graph_lines_to_doc_blocks_drive_scene_structure():
-    """scene-block 结构来自 scene_blocks（scene 行已去图化），行按块归属归块。"""
+    """scene-block 结构来自 scene_blocks（scene 行已去图化），ink 行按块归属归块。"""
+    ink = _ink([
+        _ink_row("say", "屋里。", who="陆择", scene_block_id="s0"),
+        _ink_row("say", "外面。", who="陆择", scene_block_id="s1"),
+    ])
     lines = [
         _line("say", "屋里。", who="陆择", scene_block_id="s0", lid="N1"),
         _line("say", "外面。", who="陆择", scene_block_id="s1", lid="N2"),
     ]
     doc = graph_lines_to_doc(lines, _blocks(("s0", "室内"), ("s1", "马路-路口")),
-                             {}, 0, "节")
+                             {}, 0, "节", ink=ink)
     assert [b["id"] for b in doc["scenes"]] == ["s0", "s1"]
     assert doc["scenes"][0]["lines"][0]["text"] == "屋里。"
     assert doc["scenes"][1]["lines"][0]["text"] == "外面。"
     assert doc["meta"]["requires"]["scenes"] == ["室内", "马路-路口"]
 
 
+# ── 舞台调度自 ink（say.pos 现算 / hide 直出 / 声明覆盖）──
+
+def test_pos_from_block_rule_two_speakers_split_sides():
+    """双人块：首话序分侧（先说者 left、后说者 right）——图行 pos 已不读。"""
+    ink = _ink([
+        _ink_row("say", "先说的。", who="陈默", scene_block_id="s0"),
+        _ink_row("say", "后说的。", who="陆择", scene_block_id="s0"),
+    ])
+    lines = [
+        _line("say", "先说的。", who="陈默", scene_block_id="s0", lid="N1"),
+        _line("say", "后说的。", who="陆择", scene_block_id="s0", lid="N2"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s0", "室内")), {}, 0, "节", ink=ink)
+    ls = doc["scenes"][0]["lines"]
+    assert ls[0]["pos"] == "left" and ls[1]["pos"] == "right"
+
+
+def test_pos_override_from_stage_declaration():
+    """pos_overrides（stage:/pos: 声明展开容器）优先于块规则座位。"""
+    ink = _ink([
+        _ink_row("say", "先说的。", who="陈默", scene_block_id="s0"),
+        _ink_row("say", "后说的。", who="陆择", scene_block_id="s0"),
+    ], pos_overrides={"s0": {"陆择": "left"}})
+    lines = [
+        _line("say", "先说的。", who="陈默", scene_block_id="s0", lid="N1"),
+        _line("say", "后说的。", who="陆择", scene_block_id="s0", lid="N2"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s0", "室内")), {}, 0, "节", ink=ink)
+    ls = doc["scenes"][0]["lines"]
+    assert ls[0]["pos"] == "left" and ls[1]["pos"] == "left"   # 声明覆盖分侧规则
+
+
+def test_hide_line_projects_clear_slot(tmp_path):
+    """hide 行（立绘下台，仅存在于 ink）→ {"op":"hide","who"}（运行时清槽）；
+    缺 who 跳过；产物过 schema。"""
+    ink = _ink([
+        _ink_row("say", "桥上独白。", who="陆择", scene_block_id="s00"),
+        {"op": "hide", "who": "陆择", "scene_block_id": "s00"},
+        _ink_row("say", "嗯……", who="陈默", scene_block_id="s00"),
+        {"op": "hide", "who": None, "scene_block_id": "s00"},  # 缺 who：静默跳过
+    ])
+    lines = [  # 图行无 hide（舞台调度不落图）
+        _line("say", "桥上独白。", who="陆择", scene_block_id="s00", lid="N1"),
+        _line("say", "嗯……", who="陈默", scene_block_id="s00", lid="N3"),
+    ]
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节", ink=ink)
+    assert doc["scenes"][0]["lines"][1] == {"op": "hide", "who": "陆择"}
+    assert len(doc["scenes"][0]["lines"]) == 3  # 缺 who 的 hide 未投影
+    _dump_validate(doc, tmp_path)
+
+
+def test_ink_graph_drift_raises():
+    """ink 内容行与图行不同构（行数/签名漂移）→ raise 引导重拆。"""
+    ink = _ink([
+        _ink_row("narrate", "a", scene_block_id="s0"),
+        _ink_row("narrate", "b", scene_block_id="s0"),   # 图行只有一行 → 漂移
+    ])
+    lines = [_line("narrate", "a", scene_block_id="s0", lid="N1")]
+    with pytest.raises(ValueError, match="不同构"):
+        graph_lines_to_doc(lines, _blocks(("s0", "室内")), {}, 0, "节", ink=ink)
+
+
 # ── 环境音两型投影（transition 独立行 / ambience 挂 narrate）──
 
 def test_transition_line_projects_transition_op():
     """点状音效独立行（op=transition，方言 v3 的 sfx:）→ {"op":"transition","track"}。"""
+    ink = _ink([
+        _ink_row("narrate", "街角的咖啡店。", scene_block_id="s01"),
+        _ink_row("transition", "推门时门口的风铃清脆作响", scene_block_id="s01"),
+    ])
     lines = [
         _line("narrate", "街角的咖啡店。", scene_block_id="s01", lid="N1"),
         _line("transition", "推门时门口的风铃清脆作响",
               ambient_track="amb-ch0-s01-P1", scene_block_id="s01", lid="N2"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s01", "咖啡店")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "咖啡店")), {}, 0, "节", ink=ink)
     ls = doc["scenes"][0]["lines"]
     assert ls[0] == {"op": "narrate", "text": "街角的咖啡店。"}
     assert ls[1] == {"op": "transition", "track": "amb-ch0-s01-P1"}
@@ -117,23 +210,29 @@ def test_transition_line_projects_transition_op():
 
 def test_narrate_with_stray_ambient_track_projects_plain():
     """落网 narrate 带残留 ambient_track（v3 废止后不应存在）→ 投影纯文本，忽略该字段。"""
+    ink = _ink([_ink_row("narrate", "雨点骤然砸落", scene_block_id="s01")])
     lines = [
         _line("narrate", "雨点骤然砸落", ambient_track="amb-ch0-s01-P2",
               scene_block_id="s01", lid="N1"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节", ink=ink)
     assert doc["scenes"][0]["lines"] == [{"op": "narrate", "text": "雨点骤然砸落"}]
 
 
 def test_bed_lines_project(tmp_path):
     """音床起止（op=bed_start/bed_end）→ {"op","bed","track"} / {"op","bed"}，产物过 schema。"""
+    ink = _ink([
+        _ink_row("bed_start", "雨点骤然砸落，越来越密", bed="rain", scene_block_id="s01"),
+        _ink_row("narrate", "雨下起来。", scene_block_id="s01"),
+        _ink_row("bed_end", bed="rain", scene_block_id="s01"),
+    ])
     lines = [
         _line("bed_start", "雨点骤然砸落，越来越密", bed="rain",
               ambient_track="bed-ch0-s01-B1", scene_block_id="s01", lid="N1"),
         _line("narrate", "雨下起来。", scene_block_id="s01", lid="N2"),
         _line("bed_end", "", bed="rain", scene_block_id="s01", lid="N3"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节", ink=ink)
     ls = doc["scenes"][0]["lines"]
     assert ls[0] == {"op": "bed_start", "bed": "rain", "track": "bed-ch0-s01-B1"}
     assert ls[1] == {"op": "narrate", "text": "雨下起来。"}
@@ -143,11 +242,15 @@ def test_bed_lines_project(tmp_path):
 
 def test_bed_line_missing_track_skipped():
     """bed_start 缺 track（未产音）静默跳过——发布 gate 全行 11 保证产音后 track 必在。"""
+    ink = _ink([
+        _ink_row("bed_start", "雨声", bed="rain", scene_block_id="s01"),
+        _ink_row("bed_end", bed="rain", scene_block_id="s01"),
+    ])
     lines = [
         _line("bed_start", "雨声", bed="rain", scene_block_id="s01", lid="N1"),
         _line("bed_end", "", bed="rain", scene_block_id="s01", lid="N2"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s01", "马路-路口")), {}, 0, "节", ink=ink)
     assert doc["scenes"][0]["lines"] == [{"op": "bed_end", "bed": "rain"}]
 
 
@@ -157,15 +260,20 @@ def test_merge_two_sections_concat_scenes_and_union_requires():
     key1 = "陈默-日常-沉重-Ab00000001"
     key2 = "陈默-日常-疲惫-Ab00000002"
     key3 = "陆择-日常-平静-Ab00000003"
+    ink1 = _ink([_ink_row("say", "夜风。", who="陈默", scene_block_id="s01_桥上")])
+    ink2 = _ink([
+        _ink_row("say", "回来了。", who="陈默", scene_block_id="s02_出租屋"),
+        _ink_row("say", "嗯。", who="陆择", scene_block_id="s02_出租屋"),
+    ])
     sec1 = graph_lines_to_doc(
-        [_line("say", "夜风。", who="陈默", pos="center", scene_block_id="s01_桥上", lid="N1")],
+        [_line("say", "夜风。", who="陈默", scene_block_id="s01_桥上", lid="N1")],
         _blocks(("s01_桥上", "长江大桥-栏杆")), {}, 1, "节1",
-        portrait_keys={"N1": key1})
+        portrait_keys={"N1": key1}, ink=ink1)
     sec2 = graph_lines_to_doc(
-        [_line("say", "回来了。", who="陈默", pos="center", scene_block_id="s02_出租屋", lid="N2"),
-         _line("say", "嗯。", who="陆择", pos="left", scene_block_id="s02_出租屋", lid="N3")],
+        [_line("say", "回来了。", who="陈默", scene_block_id="s02_出租屋", lid="N2"),
+         _line("say", "嗯。", who="陆择", scene_block_id="s02_出租屋", lid="N3")],
         _blocks(("s02_出租屋", "出租屋")), {}, 1, "节2",
-        portrait_keys={"N2": key2, "N3": key3})
+        portrait_keys={"N2": key2, "N3": key3}, ink=ink2)
 
     doc = merge([sec1, sec2], chapter=1, title="新皮肤·Day0")
     assert [s["id"] for s in doc["scenes"]] == ["s01_桥上", "s02_出租屋"]
@@ -176,24 +284,31 @@ def test_merge_two_sections_concat_scenes_and_union_requires():
 
 
 def test_merge_validates_against_schema(tmp_path):
-    """图行投影合并产物通过运行时章 JSON schema（ending/label/narrate/say 全行型）。"""
+    """投影合并产物通过运行时章 JSON schema（ending/label/narrate/say 全行型）。"""
+    ink1 = _ink([
+        _ink_row("narrate", "风停了。", scene_block_id="s01_桥上"),
+        _ink_row("label", "keep", scene_block_id="s01_桥上"),
+        _ink_row("ending", "一切照旧", kind="TE", scene_block_id="s01_桥上"),
+    ])
     sec1 = graph_lines_to_doc(
         [_line("narrate", "风停了。", scene_block_id="s01_桥上", lid="N1"),
          _line("label", "keep", scene_block_id="s01_桥上", lid="N2"),
          _line("ending", "一切照旧", kind="TE", scene_block_id="s01_桥上", lid="N3")],
-        _blocks(("s01_桥上", "长江大桥-栏杆")), {}, 1, "节1")
+        _blocks(("s01_桥上", "长江大桥-栏杆")), {}, 1, "节1", ink=ink1)
     doc = merge([sec1], chapter=1, title="新皮肤")
     ok, errors = _dump_validate(doc, tmp_path)
     assert ok, errors
 
 
 def test_merge_rejects_duplicate_scene_id():
+    ink1 = _ink([_ink_row("narrate", "a", scene_block_id="路口")])
+    ink2 = _ink([_ink_row("narrate", "b", scene_block_id="路口")])
     sec1 = graph_lines_to_doc(
         [_line("narrate", "a", scene_block_id="路口", lid="N1")],
-        _blocks(("路口", "马路-路口")), {}, 1, "节1")
+        _blocks(("路口", "马路-路口")), {}, 1, "节1", ink=ink1)
     sec2 = graph_lines_to_doc(
         [_line("narrate", "b", scene_block_id="路口", lid="N2")],
-        _blocks(("路口", "出租屋")), {}, 1, "节2")   # 与节1 id 重复
+        _blocks(("路口", "出租屋")), {}, 1, "节2", ink=ink2)   # 与节1 id 重复
     with pytest.raises(ValueError, match="重复"):
         merge([sec1, sec2], chapter=1, title="x")
 
@@ -201,15 +316,20 @@ def test_merge_rejects_duplicate_scene_id():
 def test_merge_with_chapter_map_injects_bgm_only(tmp_path):
     """带 chapter_map（现仅 bgm 段）：portrait 已是投影期整键，map 只注入 BGM。"""
     key = "陆择-赤裸上身-慵懒-PHSE4iftNQ"
+    ink1 = _ink([
+        _ink_row("say", "呵。", who="陆择", scene_block_id="酒店"),
+        _ink_row("say", "醒了？", who="陆择", scene_block_id="酒店"),
+    ])
+    ink2 = _ink([_ink_row("say", "美式。", who="陆择", scene_block_id="咖啡店")])
     sec1 = graph_lines_to_doc(
-        [_line("say", "呵。", who="陆择", pos="left", scene_block_id="酒店", lid="N1"),
-         _line("say", "醒了？", who="陆择", pos="left", scene_block_id="酒店", lid="N2")],
+        [_line("say", "呵。", who="陆择", scene_block_id="酒店", lid="N1"),
+         _line("say", "醒了？", who="陆择", scene_block_id="酒店", lid="N2")],
         _blocks(("酒店", "酒店-客房")), {}, 0, "sec00",
-        portrait_keys={"N1": key, "N2": key})
+        portrait_keys={"N1": key, "N2": key}, ink=ink1)
     sec2 = graph_lines_to_doc(
-        [_line("say", "美式。", who="陆择", pos="left", scene_block_id="咖啡店", lid="N3")],
+        [_line("say", "美式。", who="陆择", scene_block_id="咖啡店", lid="N3")],
         _blocks(("咖啡店", "街角咖啡店-点餐台")), {}, 0, "sec01",
-        portrait_keys={"N3": "陆择-商务休闲-慵懒-PJajqyM6s4"})
+        portrait_keys={"N3": "陆择-商务休闲-慵懒-PJajqyM6s4"}, ink=ink2)
 
     chapter_map = {"bgm": {"酒店-客房": {"track": "晨离", "mode": "play", "loop": True}}}
     doc = merge([sec1, sec2], chapter=0, title="序章", chapter_map=chapter_map)
@@ -227,29 +347,35 @@ def test_merge_with_chapter_map_injects_bgm_only(tmp_path):
 def test_merge_without_chapter_map_keeps_pure_concat():
     """无 chapter_map：纯拼接（requires 取各节并集，无 bgm 注入）。"""
     key = "陆择-赤裸上身-慵懒-PHSE4iftNQ"
+    ink = _ink([_ink_row("say", "x", who="陆择", scene_block_id="s1")])
     sec = graph_lines_to_doc(
-        [_line("say", "x", who="陆择", pos="center", scene_block_id="s1", lid="N1")],
-        _blocks(("s1", "室内")), {}, 0, "s", portrait_keys={"N1": key})
+        [_line("say", "x", who="陆择", scene_block_id="s1", lid="N1")],
+        _blocks(("s1", "室内")), {}, 0, "s", portrait_keys={"N1": key}, ink=ink)
     doc = merge([sec], chapter=0, title="x")  # 不传 chapter_map
     assert doc["scenes"][0]["lines"][0]["portrait"] == key
     assert doc["meta"]["requires"]["portraits"] == [key]
     assert "bgm" not in doc["scenes"][0]
 
 
-# ── choice 选择行投影（图 options JSON 字符串 → 章 JSON options 数组） ──
+# ── choice 选择行投影（ink options list → 章 JSON options 数组） ──
 
 def test_choice_line_projects_options_list(tmp_path):
-    """choice 行：options JSON 串解析投影为数组，三种去向原样透传，产物过 schema。"""
+    """choice 行：options 投影为数组，三种去向原样透传，产物过 schema。"""
     opts = [{"label": "跳下去", "to": "jump"},
             {"label": "换个地方", "scene": "s01_arrive"},
             {"label": "不看了", "leads_to_ending": True, "kind": "BE"}]
+    ink = _ink([
+        _ink_row("narrate", "桥上。", scene_block_id="s00"),
+        _ink_row("choice", options=opts, scene_block_id="s00"),
+        _ink_row("label", "jump", scene_block_id="s00"),
+    ])
     lines = [
         _line("narrate", "桥上。", scene_block_id="s00", lid="N1"),
         _line("choice", options=json.dumps(opts, ensure_ascii=False),
               scene_block_id="s00", lid="N2"),
         _line("label", "jump", scene_block_id="s00", lid="N3"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节", ink=ink)
     ls = doc["scenes"][0]["lines"]
     assert ls[1] == {"op": "choice", "options": opts}
     assert ls[2] == {"op": "label", "name": "jump"}
@@ -257,28 +383,19 @@ def test_choice_line_projects_options_list(tmp_path):
 
 
 def test_choice_line_bad_options_skipped():
-    """options 缺失/坏 JSON → 行跳过不崩（拆分器保证必有，防御仅兜异常数据）。"""
+    """options 缺失/非 list（拆分器保证必有，防御仅兜异常数据）→ 行跳过不崩。"""
+    ink = _ink([
+        _ink_row("choice", options=None, scene_block_id="s00"),   # 缺 options
+        _ink_row("choice", options="{broken", scene_block_id="s00"),  # 非法形状（非 list）
+        _ink_row("narrate", "旁白仍投影。", scene_block_id="s00"),
+    ])
     lines = [
-        _line("choice", scene_block_id="s00", lid="N1"),                       # 缺 options
-        _line("choice", options="{broken", scene_block_id="s00", lid="N2"),    # 坏 JSON
+        _line("choice", scene_block_id="s00", lid="N1"),
+        _line("choice", scene_block_id="s00", lid="N2"),
         _line("narrate", "旁白仍投影。", scene_block_id="s00", lid="N3"),
     ]
-    doc = graph_lines_to_doc(lines, _blocks(("s00", "室内")), {}, 0, "节")
+    doc = graph_lines_to_doc(lines, _blocks(("s00", "室内")), {}, 0, "节", ink=ink)
     assert doc["scenes"][0]["lines"] == [{"op": "narrate", "text": "旁白仍投影。"}]
-
-
-def test_hide_line_projects_clear_slot(tmp_path):
-    """hide 行（立绘下台）→ {"op":"hide","who"}（运行时清槽）；缺 who 跳过；产物过 schema。"""
-    lines = [
-        _line("say", "桥上独白。", who="陆择", scene_block_id="s00", lid="N1"),
-        _line("hide", who="陆择", scene_block_id="s00", lid="N2"),
-        _line("say", "嗯……", who="陈默", scene_block_id="s00", lid="N3"),
-        _line("hide", scene_block_id="s00", lid="N4"),  # 缺 who：静默跳过
-    ]
-    doc = graph_lines_to_doc(lines, _blocks(("s00", "长江大桥-护栏段")), {}, 0, "节")
-    assert doc["scenes"][0]["lines"][1] == {"op": "hide", "who": "陆择"}
-    assert len(doc["scenes"][0]["lines"]) == 3  # 缺 who 的 hide 未投影
-    _dump_validate(doc, tmp_path)
 
 
 # ── --sections 部分发布（纯函数段；图查询过滤不连库，端到端验证） ──

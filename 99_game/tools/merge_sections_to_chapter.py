@@ -1,13 +1,17 @@
 """从图投影全章各节台词行（LineAudio），合并拍平为单一章运行时 JSON。
 
 chapter-publisher 在全章各节产物就绪时调用：图（SecScript-produces{order}->LineAudio 逐句行）
-→ 1 个章级 JSON。台词.jsonl 已停产，图是唯一结构化真相。
++ 台词.ink（舞台调度）→ 1 个章级 JSON。台词.jsonl 已停产，图是内容行的结构化真相。
 
 - 图查询：Chapter→has_section→Section(按 section_no)→has_outline→SecOutline→produces→SecScript
   -[p:produces]->LineAudio（ORDER BY p.order）；块时段另查 Scene.time_of_day；立绘整键另查
   uses 边（fetch_uses_portrait_keys，与 scene_times 同款二次查询——防主查询行乘积）。
-- 投影：graph_lines_to_doc 图行 → {meta, scenes}（requires 从行推导；voice_key→voice；
-  say.portrait = uses 边解析的 guid 整键，无边的 say 行空串并计缺口）。
+- 舞台调度（say.pos / hide 下台行）自 ink 注入（2026-10-20 起不落图）：复用
+  script_splitter 的 parse_ink/座位算法/对齐签名（单一实现防两份解析器漂移）；ink
+  内容行与图行逐行 _sig 校验，漂移即报错引导重拆（发布 gate 保证拆分后两边同构）。
+- 投影：graph_lines_to_doc（ink 行序驱动）→ {meta, scenes}（requires 从行推导；
+  voice_key→voice；say.portrait = uses 边解析的 guid 整键，无边的 say 行空串并计缺口；
+  say.pos = 块规则座位 + stage/pos 声明现算；hide 行由 ink 直出）。
 - meta：chapter/title 取 Chapter 节点；requires = 各节并集（保序去重）。
 - scenes：按节序拼接各 scene-block（scene_block_id 由 structurer 预分配、章内唯一，纯 concat）。
 - BGM 注入：--chapter-map 的 bgm 段（Scene-has_bgm->BgmTrack，status=2 才进 map）写入 scene-block.bgm。
@@ -28,8 +32,14 @@ from pathlib import Path
 
 from portrait_key import make_key
 
-_SCRIPTS_DIR = Path(__file__).resolve().parents[2] / ".claude" / "scripts"  # 项目根/.claude/scripts
+_REPO_ROOT = Path(__file__).resolve().parents[2]  # Asset 项目根（图上 rel_path 的锚）
+_SCRIPTS_DIR = _REPO_ROOT / ".claude" / "scripts"
 CYPHER_EXEC = _SCRIPTS_DIR / "cypher_exec.py"
+
+# 复用主线拆分器的 ink 解析/座位算法/对齐签名（单一实现，防两份解析器漂移）
+_SPLITTER_DIR = _REPO_ROOT / ".claude" / "skills" / "section-voice-publisher" / "scripts"
+sys.path.insert(0, str(_SPLITTER_DIR))
+from script_splitter import parse_ink_text, _block_pos_map, _sig, SAY_DEFAULT_POS  # noqa: E402
 
 
 def _run_cypher(cypher: str) -> list:
@@ -48,20 +58,34 @@ def _run_cypher(cypher: str) -> list:
 
 
 def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_title: str,
-                       portrait_keys: dict = None) -> dict:
-    """一节的图行（按 ord 升序）→ 投影 doc {meta, scenes}（与运行时章 JSON 同构）。
+                       portrait_keys: dict = None, ink: dict = None) -> dict:
+    """一节投影：ink 行序驱动（舞台调度）+ 图行内容对齐（音频/选绘）→ doc {meta, scenes}。
+
+    ink = parse_ink_text(台词.ink) 结果 {rows(含 hide), pos_overrides}——舞台调度
+    （say.pos / hide 行）的唯一事实源（2026-10-20 起不落图）。开投影前先校验 ink
+    内容行（除 hide）与图行逐行 _sig 同构——漂移即 raise 引导重拆（发布 gate 保证
+    拆分后两边一致）。
 
     blocks = SecScript.scene_blocks 解析结果 [{block, scene_name}]（scene 行已去图化，
     scene-block 结构从这里生成）；scene_times = {scene_name: time_of_day}（块时段）；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
-    行 dict 形状：op/who/pos/text/kind/bed/scene_block_id/voice_key/ambient_track/line_status
-    ——行按 scene_block_id 变化归块（行上存块归属）。
-    label 行 text → name；ending 行 text → title；say 行 voice_key → voice；
+    内容文本取 ink 行（内容权威）；音频/选绘事实取图行（voice_key/ambient_track/lid）。
+    say.pos = 块规则座位（_block_pos_map 块内首话序）+ stage/pos 声明覆盖，现算；
+    hide 行由 ink 直出。label 行 text → name；ending 行 text → title；say 行 voice_key → voice；
     transition 行（方言 v3 的 sfx: 点状音效）→ {"op":"transition","track"}（运行时等播完再推进）；
     bed_start/bed_end 行（音床起止）→ {"op","bed","track"} / {"op","bed"}（运行时区间循环/停止）。
     """
     portrait_keys = portrait_keys or {}
+    ink_rows = (ink or {}).get("rows") or []
+    pos_overrides = (ink or {}).get("pos_overrides") or {}
+    content = [r for r in ink_rows if r.get("op") != "hide"]
+    if len(content) != len(lines) or any(_sig(a) != _sig(b) for a, b in zip(content, lines)):
+        raise ValueError(
+            f"sec「{sec_title}」图行与 台词.ink 内容行不同构"
+            f"（图 {len(lines)} 行 vs ink {len(content)} 内容行）——重跑 section-voice-publisher"
+            " 拆分进图（幂等对齐）后再发布")
+
     chars, scenes_seq, portraits = [], [], []
     def _keep(seq, v):
         if v and v not in seq:
@@ -74,29 +98,42 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
             s["time"] = t
         _keep(scenes_seq, s["scene"])
 
+    rows_by_block = {}
+    for r in ink_rows:
+        rows_by_block.setdefault(r.get("scene_block_id"), []).append(r)
     block2scene = {b["block"]: s for b, s in zip(blocks, scenes)}
     cur = None
     prev_block = None
-    for l in lines:
-        if l.get("scene_block_id") != prev_block:  # 行上块归属变化 → 切块
-            prev_block = l.get("scene_block_id")
+    pos_map = {}
+    gi = 0  # 图行指针（content 与 lines 同序同构，已校验）
+    for m in ink_rows:
+        if m.get("scene_block_id") != prev_block:  # 换块：切块 + 重算座位表（块规则 + 声明覆盖）
+            prev_block = m.get("scene_block_id")
             cur = block2scene.get(prev_block)
+            pos_map = _block_pos_map(rows_by_block.get(prev_block) or [])
+            pos_map.update(pos_overrides.get(prev_block) or {})
         if cur is None:
             continue  # 行的块归属不在 blocks 定义里（数据异常），防御跳过
-        op = l.get("op")
+        op = m.get("op")
+        if op == "hide":  # 舞台调度：ink 直出（不落图）。清 slots 中该角色槽。
+            if m.get("who"):
+                cur.setdefault("lines", []).append({"op": "hide", "who": m["who"]})
+            continue
+        l = lines[gi]
+        gi += 1
         if op == "say":
-            say = {"op": "say", "who": l.get("who") or "",
+            say = {"op": "say", "who": m.get("who") or "",
                    "portrait": portrait_keys.get(l.get("lid")) or "",
-                   "pos": l.get("pos") or "left", "text": l.get("text") or ""}
+                   "pos": pos_map.get(m.get("who") or "") or SAY_DEFAULT_POS,
+                   "text": m.get("text") or ""}
             if l.get("voice_key"):
                 say["voice"] = l["voice_key"]
             cur.setdefault("lines", []).append(say)
-            _keep(chars, l.get("who"))
+            _keep(chars, m.get("who"))
             _keep(portraits, say["portrait"])
         elif op == "narrate":
-            # narrate 纯文本行（方言 v3 起内嵌氛围已废止迁移为 bed±；行上残留 ambient_track
-            # 为落网旧值，忽略不再投影 ambience 键）
-            cur.setdefault("lines", []).append({"op": "narrate", "text": l.get("text") or ""})
+            # narrate 纯文本行（方言 v3 起内嵌氛围已废止迁移为 bed±）
+            cur.setdefault("lines", []).append({"op": "narrate", "text": m.get("text") or ""})
         elif op == "transition":
             # 点状音效独立行（方言 v3 的 sfx: 语法）→ {"op":"transition"}（运行时等播完再推进）。
             # track 缺失静默跳过——发布 gate 全行 11 保证产音后 track 必在。
@@ -106,33 +143,22 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
             # 音床起：{"op":"bed_start"}（运行时循环播放直到 bed_end/换段）；track 缺失静默跳过同上
             if l.get("ambient_track"):
                 cur.setdefault("lines", []).append(
-                    {"op": "bed_start", "bed": l.get("bed") or "", "track": l["ambient_track"]})
+                    {"op": "bed_start", "bed": m.get("bed") or "", "track": l["ambient_track"]})
         elif op == "bed_end":
             # 音床止：{"op":"bed_end"}（运行时停对应床；幂等）
-            cur.setdefault("lines", []).append({"op": "bed_end", "bed": l.get("bed") or ""})
+            cur.setdefault("lines", []).append({"op": "bed_end", "bed": m.get("bed") or ""})
         elif op == "label":
-            cur.setdefault("lines", []).append({"op": "label", "name": l.get("text") or ""})
-        elif op == "hide":
-            # 立绘下台（演出层）：清 slots 中该角色槽——双轨同身体切换/电话场景等。
-            # who 缺失静默跳过（拆分器保证 hide 行必有 who）。
-            if l.get("who"):
-                cur.setdefault("lines", []).append({"op": "hide", "who": l["who"]})
+            cur.setdefault("lines", []).append({"op": "label", "name": m.get("text") or ""})
         elif op == "choice":
-            # 选择行（图 options 是 JSON 字符串）→ {"op":"choice","options":[...]}（运行时阻塞
-            # 弹选项，choose 沿 to/scene/leads_to_ending 跳转）。坏 JSON/缺失静默跳过——
-            # 拆分器保证 choice 行必有合法 options，防御仅兜异常数据。
-            opts = l.get("options")
-            if isinstance(opts, str):
-                try:
-                    opts = json.loads(opts)
-                except json.JSONDecodeError:
-                    opts = None
+            # 选择行（ink 侧 options 本就是 list）→ {"op":"choice","options":[...]}（运行时
+            # 阻塞弹选项，choose 沿 to/scene/leads_to_ending 跳转）。
+            opts = m.get("options")
             if isinstance(opts, list) and opts:
                 cur.setdefault("lines", []).append({"op": "choice", "options": opts})
         elif op == "ending":
-            end = {"op": "ending", "kind": l.get("kind") or "NE"}
-            if l.get("text"):
-                end["title"] = l["text"]
+            end = {"op": "ending", "kind": m.get("kind") or "NE"}
+            if m.get("text"):
+                end["title"] = m["text"]
             cur.setdefault("lines", []).append(end)
 
     meta = {"chapter": chapter_no, "title": sec_title,
@@ -216,7 +242,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         "OPTIONAL MATCH (sc)-[p:produces]->(l:LineAudio) "
         "RETURN ch.chapter_no AS no, ch.title AS title, sec.section_no AS section_no, "
         "sec.title AS sec_title, ol.status AS ol_status, sc.status AS sc_status, "
-        "sc.scene_blocks AS scene_blocks, "
+        "sc.scene_blocks AS scene_blocks, sc.script_path AS script_path, "
         "l.id AS lid, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.options AS options, "
@@ -295,8 +321,21 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
             problems.append(f"{sec_tag}：{len(not_done)} 行 LineAudio.status≠11"
                             f"（逐句音频审未完成，如 {(not_done[0].get('text') or '')[:20]!r}）")
             continue
-        sections.append(graph_lines_to_doc(line_rows, blocks, scene_times, chapter_no, sec_title,
-                                           portrait_keys=portrait_keys))
+        # 舞台调度自 ink 注入：读该节定稿 → 解析（复用拆分器，同构由投影前校验保证）
+        sp_rel = sec_rows[0].get("script_path")
+        if not sp_rel:
+            problems.append(f"{sec_tag}：SecScript.script_path 缺失（舞台调度自 ink 注入，无法投影）")
+            continue
+        try:
+            ink = parse_ink_text((_REPO_ROOT / sp_rel).read_text(encoding="utf-8"))
+        except OSError as e:
+            problems.append(f"{sec_tag}：台词.ink 读取失败（{sp_rel}）：{e}")
+            continue
+        try:
+            sections.append(graph_lines_to_doc(line_rows, blocks, scene_times, chapter_no, sec_title,
+                                               portrait_keys=portrait_keys, ink=ink))
+        except ValueError as e:
+            problems.append(str(e))
     if problems:
         scope = "所选节" if section_nos is not None else "全章"
         raise ValueError(f"{scope}产物未就绪：\n  " + "\n  ".join(problems))
@@ -399,7 +438,7 @@ def merge(sections, chapter, title, chapter_map=None):
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="从图投影全章台词行合并为章运行时 JSON（图→1 拍平，演出由图注入）")
+    p = argparse.ArgumentParser(description="从图投影全章台词行合并为章运行时 JSON（图内容行 + ink 舞台调度 → 1 拍平）")
     p.add_argument("--chapter", required=True, help="Chapter 节点 ID（snowflake）")
     p.add_argument("-o", "--out", required=True, help="输出章 JSON 路径")
     p.add_argument("--chapter-map", default=None,

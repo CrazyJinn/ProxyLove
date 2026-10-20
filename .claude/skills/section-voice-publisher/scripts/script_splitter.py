@@ -24,6 +24,9 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已批�
            非 say 行 → 11（无音频语义，拆分即完成）；否则 0
   微调   = 人工改 ink 重批后重拆：未变行原样保留（含已批 11），只有改动句置 0
            ——单句修改不丢
+  舞台   = 舞台调度（say 立绘位 pos / hide 下台行）**不落图**（2026-10-20 起）：hide
+           不产行（存量 hide 图行随重拆自动删除、say 行存量 pos 清 null）；投影期由
+           merge_sections_to_chapter 从 ink 座位算法（块规则 + stage/pos 声明）现算注入
 
 CLI:
   python script_splitter.py split --section <sec_id> [--report out.json] [--dry-run]
@@ -465,11 +468,9 @@ def _sig(r: dict) -> tuple:
 
 
 def _row_name(m: dict) -> str:
-    """行正文即 name（choice 行给选项摘要，dashboard 显示友好）。"""
+    """行正文即 name（choice 行给选项摘要，dashboard 显示友好）。hide 不入图无 name。"""
     if m.get("op") == "choice":
         return "选择：" + "/".join(o.get("label", "") for o in m.get("options") or [])
-    if m.get("op") == "hide":
-        return "隐·" + (m.get("who") or "")
     return m.get("text") or ""
 
 
@@ -524,11 +525,15 @@ def _safe_id(seq: list) -> str:
 def align(script_rows: list, graph_rows: list) -> dict:
     """定稿行 vs 图行（须按 order 升序）→ {keep, update, create, delete} 计划。
 
+    hide 是舞台调度指令，**不产行入图**（合成期由 merge_sections_to_chapter 从 ink
+    注入）：脚本侧滤除；图侧存量 hide 行签名必不匹配 → 落 delete 自动清场。
+
     keep   equal：签名全同（text 必相同）。-1 恢复 / 演出字段 diff 在 build_actions 处理
     update replace 块按位置配对：沿用图行 id/order，字段全量更新，status=0（stale 重配）
     create md 独有：新节点（雪花 id）+ order 中点
     delete 图独有：DETACH DELETE（wav 留盘）
     """
+    script_rows = [r for r in script_rows if r.get("op") != "hide"]
     sm = difflib.SequenceMatcher(None, [_sig(r) for r in graph_rows], [_sig(r) for r in script_rows])
     plan = {"keep": [], "update": [], "create": [], "delete": []}
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
@@ -555,6 +560,7 @@ def assign_orders(script_rows: list, plan: dict) -> tuple:
     gap/(n+1)）；头/尾插入外推 ±1000；分配后非严格递增（或旧行缺 order）→ 全节重排
     (i+1)*1000（reordered=True，order 不进 voice key，重排安全）。
     """
+    script_rows = [r for r in script_rows if r.get("op") != "hide"]  # 与 align 同口径：hide 不入 seq（plan 外会误走 create）
     by_md = {}
     for action in ("keep", "update"):
         for it in plan[action]:
@@ -618,16 +624,18 @@ def _strictly_increasing(seq: list) -> bool:
 
 # ── 动作生成（恢复 / 演出 diff / 字段更新 / 建删） ──────────────
 
-def _set_props(m: dict, pos) -> str:
+def _set_props(m: dict) -> str:
     """行字段全量 SET 子句（update/create 用）。status：音频行（say 配音 / transition
     点状音效 / bed_start 音床起）=0 待产；其余非音频行（纯 narrate/label/ending/
-    bed_end/choice）=11。ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；
+    bed_end/choice）=11。pos 恒 null——舞台调度（say 立绘位）不落图，合成期由
+    merge_sections_to_chapter 从 ink 座位算法现算（null 顺带自愈存量脏值）；
+    ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；
     options 仅 choice 行有值，其余恒 null（全量 SET 自愈脏值）。"""
     return ", ".join([
         f"l.name={_q(_row_name(m))}",
         f"l.op={_q(m['op'])}",
         f"l.who={_q(m.get('who'))}",
-        f"l.pos={_q(pos)}",
+        "l.pos=null",
         f"l.text={_q(m.get('text'))}",
         f"l.kind={_q(m.get('kind'))}",
         f"l.bed={_q(m.get('bed'))}",
@@ -639,8 +647,9 @@ def _set_props(m: dict, pos) -> str:
     ])
 
 
-def build_actions(seq: list, plan: dict, sc_id: str, pos_overrides: dict = None) -> tuple:
-    """最终序列 → (cypher 语句列表, 报告 dict)。含 keep 的 -1 恢复、块归属补写与演出字段 diff。"""
+def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
+    """最终序列 → (cypher 语句列表, 报告 dict)。含 keep 的 -1 恢复与块归属补写。
+    舞台调度（say.pos / hide 行）不落图——投影期由 merge_sections_to_chapter 从 ink 现算。"""
     stmts = []
     report = {"counts": {"kept": 0, "created": 0, "updated": 0, "deleted": 0, "restored": 0},
               "created": [], "updated": [], "deleted": [], "restored": [], "warnings": []}
@@ -652,42 +661,22 @@ def build_actions(seq: list, plan: dict, sc_id: str, pos_overrides: dict = None)
         report["deleted"].append({"id": g["id"], "op": g.get("op"),
                                   "text": (g.get("text") or "")[:30]})
 
-    pos_map = {}  # 块内 who → 规则立绘位（块级分配：对话分侧/单人靠左，块切换重算）
-    prev_block = None
-    for idx, item in enumerate(seq):
+    for item in seq:
         m, action, oid, order = item["md"], item["action"], item["id"], item["order"]
-        if m.get("scene_block_id") != prev_block:
-            prev_block = m.get("scene_block_id")
-            blk_rows = []
-            for it2 in seq[idx:]:
-                if it2["md"].get("scene_block_id") != prev_block:
-                    break
-                blk_rows.append(it2["md"])
-            pos_map = _block_pos_map(blk_rows)
-            # pos: 指令覆盖（块级）：显式值优先于首话序规则值（同身体顶位等演出意图）
-            for who, p in (pos_overrides or {}).get(prev_block, {}).items():
-                pos_map[who] = p
         if action == "create":
-            pos = pos_map.get(m.get("who") or "") if m["op"] == "say" else None
             stmts.append(
                 f"MERGE (l:LineAudio {{id:{_q(oid)}}}) "
-                f"ON CREATE SET {_set_props(m, pos)} "
+                f"ON CREATE SET {_set_props(m)} "
                 f"WITH l MATCH (sc:SecScript {{id:{_q(sc_id)}}}) "
                 f"MERGE (sc)-[r:produces]->(l) SET r.order={order}, r.sync=true;"
             )
             report["created"].append({"id": oid, "op": m["op"], "order": order,
                                       "text": (m.get("text") or m.get("scene_block_id") or "")[:30]})
         elif action == "update":  # 台词变了（stale）：沿用 id/order，全量更新，置 0 重配
-            g = item["graph"]
-            pos = g.get("pos")
-            if m["op"] == "say":
-                pos = pos_map.get(m.get("who") or "") or pos
-            stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET {_set_props(m, pos)};")
-            if m["op"] == "say":
-                pos_map[m.get("who") or ""] = pos or SAY_DEFAULT_POS
+            stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET {_set_props(m)};")
             report["updated"].append({"id": oid, "op": m["op"],
                                       "text": (m.get("text") or "")[:30]})
-        else:  # keep：未变行。仅 -1 恢复、演出字段 diff（op 归一/pos）与块归属补写，status 0/10/11 原样保留
+        else:  # keep：未变行。仅 -1 恢复与块归属补写，status 0/10/11 原样保留
             g = item["graph"]
             if g.get("op") == "ambient" and m["op"] == "transition":
                 # 存量 op=ambient 改名归一（幂等自愈；_sig 已归一防对齐断裂，此处落图）
@@ -713,11 +702,9 @@ def build_actions(seq: list, plan: dict, sc_id: str, pos_overrides: dict = None)
                     new_status = 11
                 stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.status={new_status};")
                 report["restored"].append({"id": oid, "to": new_status})
-            if m["op"] == "say":
-                want = pos_map.get(m.get("who") or "")
-                if want and g.get("pos") != want:  # 演出 diff：存量 pos 与块规则不一致 → 自愈补写
-                    stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.pos={_q(want)};")
-                    report.setdefault("pos_fixed", []).append({"id": oid, "to": want})
+            if g.get("pos") is not None:  # 舞台调度出图：存量 pos 一次性清 null（自愈，幂等）
+                stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.pos=null;")
+                report.setdefault("pos_cleared", []).append({"id": oid, "from": g.get("pos")})
             report["counts"]["kept"] += 1
 
     report["counts"].update(created=len(report["created"]), updated=len(report["updated"]),
@@ -775,7 +762,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
 
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
-    stmts, report = build_actions(seq, plan, sc_id, pos_overrides=parsed.get("pos_overrides"))
+    stmts, report = build_actions(seq, plan, sc_id)
     # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）。
     # 图上已有同 block 映射为权威（人工/上游落的图 Scene 名），ink 块头注记仅作新块初值——
     # 剧作化注记（如「床前」）≠图名（「床铺区」）时若盲写会让下游 depicts 选绘静默降级。

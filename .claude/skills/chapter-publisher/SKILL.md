@@ -2,7 +2,7 @@
 name: chapter-publisher
 description: |
   把全章各节产物就绪（各节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部台词行 LineAudio=11，且所属 Chapter.status=11）的章节从图发布到运行时 `99_game/`：
-  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（SecScript-produces{order}->LineAudio 逐句行，按节序/order 投影）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
+  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（SecScript-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，2026-10-20 起不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
   在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 推进到全章就绪即止）。
 argument-hint: <chapter_id>
 arguments:
