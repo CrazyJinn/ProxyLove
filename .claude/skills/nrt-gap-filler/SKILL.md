@@ -125,6 +125,7 @@ c) 新建 Location
 - **Char 推荐**（已定 Location 后联动）：① 该 Location 历史参与者（次数降序 top-3）→ ② at 边挂此 Location 的居民 → ③ 同日参与者。
 - **Info/Choice 联动推荐**（X2/V4 用）：X2 补落点事件时，参与人与地点承 presents 上游事件（分支与主干同场同人，facts 现查上游 involved/occurs_at）；V4 补边时，候选 = 时间邻近 ±1 事件的 link/leads_to 惯例 + title 文本相关节点。
 - **H 组创作推荐**（H1/H2 用）：推荐答案 = 创作草案本身——拟插入时间点 + title + 一句话 description，依据列启发维度与触发信号（「因果跳变：质问→庆祝 无过渡」「空白 3 日」「三个未接来电无跟进」）。content 必标「创意推断，可调整」；用户可现场改 title/description/时间，改后版本入建议。
+- **title/description 无时间纪律**：新事件的 title 与 description **不携带时间信息**（绝对日期、「第 N 天」、周次、时段词如「次日/当晚/周末/两周后」一律不进这两个字段）——时间真相只有一处 = `Event.time` 字段，文本里重复时间会在重排时失真（2026-10-20 实例：「周末复播」提前到周二后 title 与 time 矛盾被迫返工）。因果与节奏语义交给 `leads_to` 边的 `detail` 与事件先后顺序承载；草案阶段用户口头带时间的（如「次日赔罪」），落 JSON 时转写为无时间表述，时间点只写进 `time` 字段。
 - **冷启动兜底**：四路信号全空（一次性/首访地点）时，推荐「新建 Location」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
 - **leads_to 邻居信号禁用**（因果链跨空间推进，无效——原 evt_relation 邻接回测同地点比例仅 16%）。
 
@@ -145,6 +146,8 @@ c) 新建 Location
    - 聚合决定拆成逐条 cypher（每实体一条建议项），但 content 注明「同组批量：<组名>」——dashboard 逐条审时能看出组内关联。
    - **跳过的缺口不产生建议项**，但在对话汇报中列出（缺口 + 跳过理由），保证没有默默消失的缺口。
 3. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_补全_建议.json`（顶层数组）。**落盘即提交**——dashboard 不接收推送，`GET /events/suggestions` 每次按 glob 拾取最新 3 个文件；落盘后可用该接口回查验证拾取成功。
+   - 一条建议的 `cypher` 可以是**多语句**（`;`+换行分隔，先节点后边）：dashboard 建议弹窗「采纳」自 2026-10-19 起支持多语句（`cascade.split_statements` 拆分后单事务 `run_write_many` 顺序执行 + 级联合并）；此前单语句限制会报 Memgraph `expecting <EOF>`。
+   - **cypher 只含交付目标本身，禁止夹带自造的「校验/checksum 节点」**（2026-10-20 踩过：往建议里塞 `MERGE (chk:…) ON CREATE SET chk.title='__checksum__'` 想做执行标记，结果是必然产生的孤儿节点，用户在图上看到还要手工清）。执行校验一律由 agent 在用户回报执行后用只读查询回查目标节点完成。
 4. **汇报收尾**：文件路径 + 建议条数与 priority 分布 + 跳过清单 + 审批入口提示：
    - dashboard `/events` 页「📥 grower 建议」弹窗查看（本文件与 grower 建议同通道）；
    - 逐条审过后经 `/data` Cypher 控制台执行写库（两段确认 + 级联预览）；MERGE 幂等，执行前自查该条是否已写回。
@@ -161,6 +164,7 @@ c) 新建 Location
 6. **范畴与 cypher 契约**：范畴 = 叙事基础层五实体（Character/Event/Location/Info/Choice）及其八边（occurs_at/involved/relation/at/link/leads_to/presents/option）；**Spot/Scene 属场景域，本 skill 不检查不创建**（场景化归 scene-designer）。cypher 一律 MERGE 幂等、内联值单引号转义、必须指定标签、先节点后边、查询加 LIMIT；Event 定位一律 occurs_at→Location（一跳直挂）；叙事因果一律 leads_to，**Event 间禁建 evt_relation（已废止，先后时序由 Event.time 承载）**。
 7. **一题一答**：一次只问一个，答完再问下一个；依赖前一题答复的问题排在其后。
 8. **稀疏填充**：创作类新增（H 组）单次至多提案 3 Event + 2 Info，宁少勿多——多次运行逐步丰满是设计意图，不是一次填满；「接受留白」永远在选项里，低信号时是推荐项；上轮已提案待审的插入点不重复提案。
+9. **title/description 不带时间**：新事件的 title 与 description 禁止携带任何时间信息（绝对日期、「第 N 天」、周次、时段词「次日/当晚/周末/两周后」等）——时间真相唯一承载是 `Event.time`；文本重复时间在后续重排时必然失真（「周末复播」被迫改 title 的实例）。节奏/因果语义放 `leads_to` 的 `detail`，用户口头带时间的草案落 JSON 前转写为无时间表述。存量节点不追溯清洗，仅约束本 skill 的新增提案。
 
 ## 与 grower 的分工（grower 已废弃，2026-10-12 合并）
 

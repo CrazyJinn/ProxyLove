@@ -1,0 +1,18 @@
+[
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "第三轮时间窗 2024-06-01~06-20 扫描：06-14 单日空白 + 训练弧低谷（06-13 迟到）后无节拍。用户敲定补「首训迟到次日请烧烤赔罪」拍。Location 复用路边摊 QP23NrFZql（用户 Q3-c 指定；Location 描述明示与沈暮雪烧烤场景强关联，图上零事件挂边、冷启动但依据充分）。",
+    "content": "创意推断，可调整（用户 Q3 敲定复用路边摊）：新建 Event「陈默请沈暮雪吃烧烤赔罪」2024-06-14 19:00，交流；occurs_at 路边摊 QP23NrFZql；involved 陈默/沈暮雪；RMxYXuS6ID（06-13 首训迟到）-leads_to→ 本事件（迟到→次日赔罪）。",
+    "cypher": "CREATE (e:Event {id:'RO5gftNez2'}) SET e.title='陈默请沈暮雪吃烧烤赔罪', e.time='2024-06-14 19:00:00', e.type='交流', e.description='首训迟到次日，陈默在基地附近烧烤摊请沈暮雪吃烧烤赔罪；她说「我赔的不是烧烤，是训练表第一条」；两串腰子下肚，话题从训练表聊到二队这半年的艰难招人史';\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RO5gftNez2'}) MERGE (c)-[:involved {role:'当事人'}]->(e);\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RO5gftNez2'}) MERGE (c)-[:involved {role:'当事人'}]->(e);\nMATCH (e:Event {id:'RO5gftNez2'}), (l:Location {id:'QP23NrFZql'}) MERGE (e)-[:occurs_at]->(l);\nMATCH (a:Event {id:'RMxYXuS6ID'}), (b:Event {id:'RO5gftNez2'}) MERGE (a)-[r:leads_to]->(b) ON CREATE SET r.detail='首训迟到→次日请烧烤赔罪', r.sync=false;",
+    "source": "nrt-gap-filler"
+  },
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "训练弧回升拍：06-13 迟到（低谷）→06-19 首胜（收束），三选一（06-22）前唯一训练节拍。因果入边按用户 Q4-c 敲定不挂——等 06-22 三选一落定后由后续章节事件回挂，本条刻意保持无 leads_to 入边（首训→烧烤→首胜中「烧烤→首胜」不构成因果，用户裁断）。",
+    "content": "创意推断，可调整（用户 Q2-a 线上模式、Q4-c 无因果入边）：新建 Event「队内循环赛首胜沈暮雪复盘点名认可」2024-06-19 19:30，转折；occurs_at 八楼出租屋（线上赛训）；involved 陈默/沈暮雪；无因果边。",
+    "cypher": "CREATE (e:Event {id:'RO5gftNez3'}) SET e.title='队内循环赛首胜沈暮雪复盘点名认可', e.time='2024-06-19 19:30:00', e.type='转折', e.description='队内循环赛首胜；复盘语音里沈暮雪第一次点名表扬——「这两周谁进步最大，心里都有数」；陈默看了眼训练表，第一阶段的「基础恢复」栏被他划掉了';\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RO5gftNez3'}) MERGE (c)-[:involved {role:'当事人'}]->(e);\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RO5gftNez3'}) MERGE (c)-[:involved {role:'当事人'}]->(e);\nMATCH (e:Event {id:'RO5gftNez3'}), (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[:occurs_at]->(l);",
+    "source": "nrt-gap-filler"
+  }
+]

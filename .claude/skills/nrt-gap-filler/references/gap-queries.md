@@ -144,6 +144,8 @@ ORDER BY e.time LIMIT 100
 
 Python 后处理：窗口逐日标记有无事件 → 空白日/多日间隔清单。侦察暴露的窗口内 E1/E3（缺 occurs_at/involved 的既有事件）按原修法走（挂边，非创作）。
 
+> **⚠ Memgraph 兼容（2026-10-19 实测）**：上面这条侦察查询在 Memgraph 报 `Unbound variable: e`——MATCH+WHERE 后连挂多个 OPTIONAL MATCH 再聚合时，后续 OPTIONAL MATCH 引用 `e` 会失绑。**不要原样跑**：最稳是拆成每关系一条简单查询（时间窗本体 / `involved` / `occurs_at` / `leads_to` 各一条，后者用 `WHERE e.id IN[…]`），Python 侧按 id 组装；WITH 物化中转也可能触发同错。
+
 **插入点启发（优先级序，候选超限时只取前几个）**：
 1. **因果跳变桥接**：A 与 B 时序紧邻或有 leads_to，但 description 内容跳脱（质问→庆祝、冲突→和解）→ 中点时刻提议过渡事件。
 2. **钩子收尾**：边界/窗口事件的 description 留了未接细节（未接来电/未回消息/发现线索）→ 紧邻其后提议跟进事件或 Info。

@@ -1,0 +1,10 @@
+[
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "用户敲定三处时间重排：①复播提前 06-15→06-11 20:00（title 去失效的「周末」，2024-06-11 为周二；description 的「约周末去漫展」指 06-16 周日保留）；②探班提前 06-18→06-12 10:00（入边「06-09 得知老人离世→探望」时效 9 天缩至 3 天）；③训练表交付挪至探班之后同日下午 06-12 16:00（入边「06-11 面谈→次日交付」不变）。重排后 06-14/06-15/06-16/06-18 四天释放为空白，19:30 首胜前空窗拉长，后续轮次再治理。",
+    "content": "确定性修法，非创作（用户逐项敲定时间与 title）：SET 三个既有事件的时间/标题。涉及 RMoHgKlbdp（复播，title 去「周末」+time 06-11 20:00）、RMoHgKlbdq（探班，time 06-12 10:00）、RMxYXuS6IC（训练表，time 06-12 16:00）。边全部不动（入出边语义经核对全部仍成立：面谈→次日交付表、交付表→次日首训、得知离世→3 天后探望、复播→周末兑现漫展）。",
+    "cypher": "MERGE (e1:Event {id:'RMoHgKlbdp'}) SET e1.title='陈默复播林梦空降双排弹幕起哄', e1.time='2024-06-11 20:00:00';\nMERGE (e2:Event {id:'RMoHgKlbdq'}) SET e2.time='2024-06-12 10:00:00';\nMERGE (e3:Event {id:'RMxYXuS6IC'}) SET e3.time='2024-06-12 16:00:00';\nMERGE (chk:Event {id:'RO78xJUKoq'}) ON CREATE SET chk.title='__gapfiller_checksum__', chk.time='2024-06-11 20:00:00'",
+    "source": "nrt-gap-filler"
+  }
+]
