@@ -1,0 +1,18 @@
+[
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "用户口述追加（2026-10-21）：陈默把加入二队的事告诉林梦；时间用户敲定 06-12 晚双排时段",
+    "content": "创意推断，可调整（用户口述+Q6-① 敲定）：新建 Event「陈默连麦时告诉林梦自己加入星耀二队」2024-06-12 21:00，交流；occurs_at 八楼出租屋 QP23NrFZqb，involved 陈默 NvCkQmFPFq/林梦 NvCkQmFPFt；不建 leads_to",
+    "cypher": "CREATE (e:Event {id:'RQBqw5y3oe'}) SET e.title='陈默连麦时告诉林梦自己加入星耀二队', e.time='2024-06-12 21:00:00', e.type='交流', e.description='下播后连麦闲聊，陈默把加入星耀二队的事说了；林梦先炸「本小姐投资的潜力股升职了」，随即反应过来经理是「雪姐」，八卦之魂当场燃烧，逼问了十分钟';\nMATCH (e:Event {id:'RQBqw5y3oe'}), (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RQBqw5y3oe'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFt'}), (e:Event {id:'RQBqw5y3oe'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;",
+    "source": "nrt-gap-filler"
+  },
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "用户口述追加（2026-10-21）：漫展那天有训练，陈默请假，沈暮雪打趣「是不是和直播间经常互动的林梦去约会」；时间地点用户敲定 06-14 周五路边摊——与同日同地点既有事件「陈默请沈暮雪吃烧烤赔罪」(19:00) 织成一场戏两半",
+    "content": "创意推断，可调整（用户口述+Q6-② 敲定，同组衔接：烧烤赔罪 19:00 → 席间请假 19:40）：新建 Event「陈默为漫展向沈暮雪请假被打趣约会」2024-06-14 19:40，交流；occurs_at 路边摊 QP23NrFZql，involved 陈默 NvCkQmFPFq/沈暮雪 NvCkQmFPFu；不建 leads_to",
+    "cypher": "CREATE (e:Event {id:'RQBqw5y3of'}) SET e.title='陈默为漫展向沈暮雪请假被打趣约会', e.time='2024-06-14 19:40:00', e.type='交流', e.description='烧烤吃到后半场，陈默硬着头皮提了漫展那天的合练想请假；她批得很干脆，末了补一句「是不是和直播间里经常互动的那位去约会」——他握着签子半天没敢回';\nMATCH (e:Event {id:'RQBqw5y3of'}), (l:Location {id:'QP23NrFZql'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RQBqw5y3of'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RQBqw5y3of'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;",
+    "source": "nrt-gap-filler"
+  }
+]
