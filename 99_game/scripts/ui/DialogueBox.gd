@@ -10,8 +10,7 @@ signal button_menu()
 const BOX_H := 240
 const BASE_CHAR_DELAY := 0.03  # 秒/字（正常）
 const FAST_CHAR_DELAY := 0.015  # 秒/字（Ctrl 快进 2× 速）
-const COLOR_SAY := Color(1.0, 1.0, 1.0)  # 人物对白正文色（亮白）
-const COLOR_NARRATE := Color(0.66, 0.71, 0.80)  # 旁白正文色（冷银灰，与对白区分）
+const _sc := preload("res://scripts/ui/SpeakerColors.gd")  # 说话人配色表（名牌+正文同色，旁白灰）
 var _name_lbl := Label.new()
 var _body := RichTextLabel.new()
 var _continue_lbl := Label.new()
@@ -75,8 +74,11 @@ func _make_buttons(box: Panel) -> void:
 		box.add_child(b)
 
 func show_line(who: String, text: String, is_narrate: bool) -> void:
+	# 旁白灰；对白按说话人配色（theme override 而非 bbcode——打字机 substr 截断会截坏标签）
+	var c := _sc.NARRATE if is_narrate else _sc.color_for(who)
 	_name_lbl.text = "" if is_narrate else who
-	_body.add_theme_color_override("default_color", COLOR_NARRATE if is_narrate else COLOR_SAY)
+	_name_lbl.add_theme_color_override("font_color", c)  # 名牌与正文同色
+	_body.add_theme_color_override("default_color", c)
 	_full_text = text
 	_shown = 0
 	_body.text = ""

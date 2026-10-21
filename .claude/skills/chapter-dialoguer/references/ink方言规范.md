@@ -35,7 +35,7 @@
 ## 文件骨架（全行型）
 
 ```ink
-// <节标题>（人读，不进图）
+// 第N章 Day X[-Y] <节标题>（备注）—— 无日节（如序章）可仅写 <节标题>
 
 === s00_hotel // 酒店-客房（清晨）
 
@@ -60,6 +60,11 @@ bed- rain
 <落点一句话> # ending: <BE|TE|HE|NE>
 -> END
 ```
+
+> **Day 过场数据源**：节头注释的 `第N章 Day X[-Y] <节标题>` 与 knot 头括号 `（Day Y · …）`
+> （块级覆盖，段内跨日用，如 sec09 的 s09_pm=Day 9 / s09_cafe=Day 10）由发布链
+> （merge_sections_to_chapter.py）解析注入章 JSON 的 scene-block.day / section_title，
+> 运行时播节间 Day 过场。头注释虽是人读定位行，此格式勿删改。
 
 ## 行型表（parse_ink 输出 row dict：op/who/text/kind/bed/scene_block_id）
 

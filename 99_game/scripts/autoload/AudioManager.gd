@@ -10,8 +10,11 @@ var _voice_player: AudioStreamPlayer = null
 var _beds: Dictionary = {}  # bed id -> {"player": AudioStreamPlayer, "track": String}
 var _beds_dismissed: Dictionary = {}  # bed id -> true：用户推进收掉的床（本区间不再自动起播——
 #   防 reconcile 按剧本区间复活；区间结束/换段/读档时清除，同 id 未来区间可再起）
+var _beds_done: Dictionary = {}  # bed id -> track：自然播完的一次性床曲目（reconcile 不重播——
+#   阅读节奏慢于床长时推进下一句不从头复读；区间结束/换曲/换段/读档/skip 重置时清除）
 var _bgm_loop: bool = true
 var _bgm_user_db: float = 0.0  # 用户设置的 BGM 音量（SettingsPanel 加载时写入）
+var _bgm_fade_tw: Tween = null  # 进行中的 BGM 淡化（play/stop 须先杀，防旧 tween 覆盖新播放）
 
 # BGM 通道基础衰减（默认混音：BGM 相对听感减半，语音/音效优先）。用户音量设置叠加其上。
 const BGM_BASE_GAIN_DB := -10.0
@@ -29,20 +32,52 @@ func _ready() -> void:
 	add_child(_voice_player)
 
 func play_bgm(track: String, loop: bool = true) -> void:
+	_kill_bgm_fade()
 	var path: String = _manifest().get_bgm(track) if _manifest() else ""
 	if path == "" or not ResourceLoader.exists(path):
 		push_warning("AudioManager: BGM 资源缺失 %s" % track)
 		return
 	_bgm.stream = load(path)
 	_bgm_loop = loop
+	_bgm.volume_db = _bgm_target_db()  # 杀淡出 tween 后复位（可能停在 -60dB 中间值）
 	_bgm.play()
 
 func stop_bgm() -> void:
+	_kill_bgm_fade()
 	_bgm.stop()
 
 func fade_bgm(track: String, loop: bool = true) -> void:
-	# V1：简化为切换播放目标轨道（无真实淡入淡出）
-	play_bgm(track, loop)
+	# 柔和切轨：旧曲淡出 → 换流从头 → 淡入（单播放器顺序淡化；skip 停点/场景切换用）
+	_kill_bgm_fade()
+	var path: String = _manifest().get_bgm(track) if _manifest() else ""
+	if path == "" or not ResourceLoader.exists(path):
+		push_warning("AudioManager: BGM 资源缺失 %s" % track)
+		return
+	var target := _bgm_target_db()
+	if _bgm.playing:
+		_bgm_fade_tw = create_tween()
+		_bgm_fade_tw.tween_property(_bgm, "volume_db", -60.0, 0.7)
+		_bgm_fade_tw.tween_callback(func():
+			_bgm.stream = load(path)
+			_bgm_loop = loop
+			_bgm.play())
+		_bgm_fade_tw.tween_property(_bgm, "volume_db", target, 0.7)
+	else:
+		_bgm.stream = load(path)
+		_bgm_loop = loop
+		_bgm.volume_db = -60.0
+		_bgm.play()
+		_bgm_fade_tw = create_tween()
+		_bgm_fade_tw.tween_property(_bgm, "volume_db", target, 0.7)
+
+func _kill_bgm_fade() -> void:
+	if _bgm_fade_tw:
+		_bgm_fade_tw.kill()
+		_bgm_fade_tw = null
+		_bgm.volume_db = _bgm_target_db()  # 中断恢复全音量（调用方随后的 play/stop 自行覆盖）
+
+func _bgm_target_db() -> float:
+	return BGM_BASE_GAIN_DB + _bgm_user_db
 
 ## 转场音效（一次性短事件，1~2s 实录）。返回流时长（秒）；0 = 资源缺失/失败。
 ## 调用方（ScriptInterpreter）据此 await 播完再推进下一行——音效与台词不叠播。
@@ -107,7 +142,11 @@ func play_bed(bed: String, track: String) -> void:
 		get_tree().create_timer(tail_at).timeout.connect(func():
 			var info: Dictionary = _beds.get(bed, {})
 			if not info.is_empty() and info.get("track", "") == track:
+				_beds_done[bed] = track  # 尾部淡出＝自然播完语义（正常路径 player 被 stop，
+				#   _bed_finished 不触发，done 须在此记）：出册后 reconcile 不再重播
 				stop_bed(bed, BED_TAIL_FADE))
+	else:
+		_beds_done[bed] = track  # ≤尾长的短床：无 timer，起播即标（finished 信号兜底前防推进重入）
 
 func _bed_finished(bed: String) -> void:
 	# 一次性播放：自然播完即出册自毁（has_active_beds 转 false → 推进时无需淡出等待）。
@@ -116,6 +155,7 @@ func _bed_finished(bed: String) -> void:
 	if info.is_empty():
 		return
 	_beds.erase(bed)
+	_beds_done[bed] = info.get("track", "")  # 播完不重播：后续推进的 reconcile 跳过（一次性声景语义）
 	if is_instance_valid(info["player"]):
 		info["player"].queue_free()
 
@@ -129,10 +169,15 @@ func reconcile_beds(want: Dictionary) -> void:
 			stop_bed(bed)
 	for bed in _beds_dismissed.keys().duplicate():
 		if not want.has(bed):
-			_beds_dismissed.erase(bed)  # 区间结束：解除，未来同 id 区间可自动起播
+			_beds_dismissed.erase(bed)  # 区间结束：解除，未来同 id 区间可再起播
+	for bed in _beds_done.keys().duplicate():
+		if not want.has(bed) or want[bed] != _beds_done[bed]:
+			_beds_done.erase(bed)  # 区间结束/换曲：解除，未来同 id 区间可再起播
 	for bed in want:
 		if _beds_dismissed.has(bed):
-			continue
+			continue  # 用户收掉的：不复活
+		if _beds_done.has(bed) and _beds_done[bed] == want[bed]:
+			continue  # 该曲已自然播完：不重播
 		play_bed(bed, want[bed])  # 同床同曲在播 → 内部防重忽略；换曲/缺失 → 起播
 
 func has_active_beds() -> bool:
@@ -170,6 +215,7 @@ func stop_all_beds(fade_s: float = 0.0, dismiss: bool = false) -> void:
 		stop_bed(bed, fade_s)
 	if not dismiss:
 		_beds_dismissed.clear()
+		_beds_done.clear()
 
 func play_voice(key: String) -> void:
 	# 首行无条件 stop：任一新 say 都自动停上一句，覆盖点击/Auto/Skip/Ctrl 所有推进路径

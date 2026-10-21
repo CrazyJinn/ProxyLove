@@ -183,18 +183,18 @@
       "沈暮雪-咖啡店小资休闲装-叮嘱-R2r3UMSOq8"
     ],
     "scenes": [
-      "八楼出租屋-厨房餐区",
+      "长江大桥-护栏段",
       "八楼出租屋-床铺区",
-      "八楼出租屋-电脑桌直播位-更新设备前",
-      "八楼出租屋-电脑桌直播位-更新设备后",
       "八楼出租屋-进门处",
-      "南滨路-滨江步道",
-      "星耀电竞基地-训练馆",
-      "星耀电竞基地-门口",
-      "服装店",
+      "八楼出租屋-厨房餐区",
       "理发店-剪发区",
-      "连锁咖啡店-座位区",
-      "长江大桥-护栏段"
+      "服装店",
+      "八楼出租屋-电脑桌直播位-更新设备前",
+      "南滨路-滨江步道",
+      "八楼出租屋-电脑桌直播位-更新设备后",
+      "星耀电竞基地-门口",
+      "星耀电竞基地-训练馆",
+      "连锁咖啡店-座位区"
     ],
     "sfx": [
       "bed-chapter01_新皮肤-s00_bridge-QZXoBBWJMG",
@@ -207,7 +207,9 @@
       "bed-chapter01_新皮肤-s03_carry-R1RWOui91I",
       "amb-chapter01_新皮肤-s03_carry-R1RWOui91e",
       "bed-chapter01_新皮肤-s04_riverside-R1shywLTUG",
-      "amb-chapter01_新皮肤-s05_fridge-R1usgtKN2O"
+      "amb-chapter01_新皮肤-s05_fridge-R1usgtKN2O",
+      "bed-chapter01_新皮肤-s08_riverside-RK6oHl7Llo",
+      "amb-chapter01_新皮肤-s08_riverside-RK6oHlOwu4"
     ],
     "voices": [
       "陆择-chapter01_新皮肤-s00_bridge-QZXoBBWJMM",

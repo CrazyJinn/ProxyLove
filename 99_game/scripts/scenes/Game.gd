@@ -9,7 +9,11 @@ var _choice = preload("res://scripts/ui/ChoiceMenu.gd").new()
 var _backlog = preload("res://scripts/ui/Backlog.gd").new()
 var _menu = preload("res://scripts/ui/SystemMenu.gd").new()
 var _settings = preload("res://scripts/ui/SettingsPanel.gd").new()
+var _splash = preload("res://scripts/ui/SectionSplash.gd").new()
 var _auto: bool = false
+var _pending_scene := ""  # Day 过场遮盖期间延迟换的背景（covered/结束点应用）
+var _pending_bgm: Dictionary = {}  # skip 快进期间暂存的段 BGM，停点柔和（fade）应用
+var _pending_splash: Dictionary = {}  # skip 快进途中跨日的过场，停点（新段首句）再播
 var _auto_gap: float = AUTO_LINE_GAP  # 当前行 Auto 停留时长（line_ready 时按行类型更新）
 var _ended: bool = false  # 本轮已进结局/章节结束（防 skip 越界）
 var _auto_timer := Timer.new()
@@ -36,6 +40,7 @@ func _ready() -> void:
 	add_child(_backlog)
 	add_child(_menu)
 	add_child(_settings)
+	add_child(_splash)  # 最顶层：节间 Day 过场盖住对话框
 	add_child(_auto_timer)
 	_auto_timer.one_shot = true
 	_auto_timer.timeout.connect(_auto_advance)
@@ -73,10 +78,13 @@ func _wire_interpreter() -> void:
 	ScriptInterpreter.bgm_changed.connect(_on_bgm_changed)
 	ScriptInterpreter.choice_presented.connect(_on_choice)
 	ScriptInterpreter.scene_entered.connect(_on_scene_entered)
+	ScriptInterpreter.splash_requested.connect(_on_splash)
 	ScriptInterpreter.ended.connect(_on_ended)
 	ScriptInterpreter.chapter_finished.connect(_on_chapter_finished)
 
 func _wire_ui() -> void:
+	_splash.covered.connect(_flush_pending_scene)  # 全遮点换图（不可见）
+	_splash.finished.connect(_on_splash_finished)  # 兜底 flush 积压背景 + 放行解释器
 	_choice.option_chosen.connect(ScriptInterpreter.choose)
 	_dialogue.button_log.connect(_backlog.toggle)
 	_dialogue.button_auto.connect(_toggle_auto)
@@ -106,6 +114,13 @@ func _on_line_ready(kind: String, payload: Dictionary) -> void:
 		AudioManager.play_voice("")  # 旁白不配音：仅停上一句对白尾音
 
 func _on_bg_changed(scene_name: String, _time: String) -> void:
+	# Day 过场遮盖期间延迟换图：黑幕全遮（covered）时换不可见，随后淡出 = 新背景从黑中渐显
+	if _splash.is_active():
+		_pending_scene = scene_name
+		return
+	_apply_bg(scene_name)
+
+func _apply_bg(scene_name: String) -> void:
 	var man = Engine.get_singleton("Manifest") if Engine.has_singleton("Manifest") else null
 	var path: String = man.get_scene(scene_name) if man else ""
 	if path != "" and ResourceLoader.exists(path):
@@ -114,11 +129,30 @@ func _on_bg_changed(scene_name: String, _time: String) -> void:
 		var pg = preload("res://scripts/util/PlaceholderGen.gd").new()
 		_bg.texture = pg.get_scene_image(scene_name)
 
+func _flush_pending_scene() -> void:
+	if _pending_scene != "":
+		_apply_bg(_pending_scene)
+		_pending_scene = ""
+
 func _on_bgm_changed(track: String, mode: String, loop: bool) -> void:
+	# skip 快进途中不逐段硬切歌（短时间反复切很刺耳），停点统一切最终段 BGM
+	if _skip_active:
+		_pending_bgm = {"track": track, "mode": mode, "loop": loop}
+		return
 	match mode:
 		"play": AudioManager.play_bgm(track, loop)
 		"stop": AudioManager.stop_bgm()
 		"fade": AudioManager.fade_bgm(track, loop)
+
+func _flush_pending_bgm() -> void:
+	if _pending_bgm.is_empty() or _ended:
+		_pending_bgm = {}
+		return
+	var b: Dictionary = _pending_bgm
+	_pending_bgm = {}
+	match b.get("mode", "play"):
+		"stop": AudioManager.stop_bgm()
+		_: AudioManager.fade_bgm(b.get("track", ""), b.get("loop", true))  # 停点柔和切
 
 # 选择点前自动写 quick 槽（spec 5.3）
 func _on_choice(options: Array) -> void:
@@ -129,6 +163,26 @@ func _on_choice(options: Array) -> void:
 func _on_scene_entered() -> void:
 	SaveManager.save_slot(SaveManager.QUICK, ScriptInterpreter.snapshot())
 	AudioManager.stop_voice()  # 段切换清场，避免上段尾音漏进新段
+
+# 节间 Day 过场：day=-1（无日章，如序章）显示章标题大字、不显节标题。
+# skip 只跳文本阅读：跨日过场暂存到停点（新段首句）再播；Ctrl 按住快进则不播（逐句直通语义）。
+func _on_splash(day: int, sec_title: String) -> void:
+	if _skip_active:
+		_pending_splash = {"day": day, "title": sec_title}
+		return
+	if _ctrl_held:
+		return
+	_show_splash(day, sec_title)
+
+func _show_splash(day: int, sec_title: String) -> void:
+	ScriptInterpreter.ui_holding = true  # 挂起解释器：台词/音床等过场结束再开始（黑幕下不偷跑）
+	var big := ("Day %d" % day) if day >= 0 else ScriptInterpreter.chapter_title()
+	var small := sec_title if day >= 0 else ""
+	_splash.show_splash(big, small)
+
+func _on_splash_finished() -> void:
+	_flush_pending_scene()
+	ScriptInterpreter.ui_holding = false  # 放行解释器（自然播完/被跳过两路径都经 _done）
 
 func _on_ended(kind: String, title: String, _cg: String) -> void:
 	_ended = true
@@ -141,6 +195,12 @@ func _on_chapter_finished() -> void:
 	GameManager.to_title()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _splash.is_active():
+		# 过场期间响应推进/S（=跳过过场）与菜单，其余（log/快进/自动）压后
+		if event.is_action_pressed("advance") or event.is_action_pressed("skip"):
+			_splash.skip()
+		if not event.is_action_pressed("menu"):
+			return
 	if event.is_action_pressed("menu"):
 		_toggle_menu()
 		return
@@ -165,6 +225,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_advance()
 
 func _advance() -> void:
+	if _splash.is_active():
+		_splash.skip()
+		return
 	if _dialogue.is_typing():
 		_dialogue.finish_typing()
 		return
@@ -187,7 +250,7 @@ func _auto_advance() -> void:
 	# 等语音播完才切句（narrate/资源缺失时 playing=false，纯按停留时长推进）；
 	# 打字中/菜单开着同样只轮询不推进。advance 同步发 line_ready，_auto_gap 已是新行值
 	if not _dialogue.is_typing() and not AudioManager.is_voice_playing() \
-			and not _choice.visible and not _menu.visible:
+			and not _choice.visible and not _menu.visible and not _splash.is_active():
 		ScriptInterpreter.advance()
 		_auto_timer.start(_auto_gap)
 	else:
@@ -201,6 +264,8 @@ func _skip() -> void:
 	if _skip_active:
 		return  # 防重入：S 键 / 对话框 skip 按钮并发会叠协程
 	AudioManager.stop_voice()  # skip 立即静音，不等下一句自覆盖
+	if _splash.is_active():
+		_splash.skip()  # 过场播放中开 skip：先收掉过场（快进语义）
 	_skip_active = true
 	var start := ScriptInterpreter.current_scene_idx()
 	# is_inside_tree()：协程 await 恢复时本节点可能已被摘树（菜单回标题等不设 _ended 的
@@ -218,6 +283,12 @@ func _skip() -> void:
 			# get_tree() 报 "data.tree is null"（Game.gd 老 211 行报错的根因）。
 		await get_tree().process_frame
 	_skip_active = false
+	_flush_pending_bgm()  # 停点统一切最终段 BGM（fade 柔和），途中不逐段硬切
+	# 停点跨了日：Day 过场照常播（skip 只跳文本，时间定位信息保留）
+	if not _pending_splash.is_empty() and not _ended and is_inside_tree():
+		var s: Dictionary = _pending_splash
+		_pending_splash = {}
+		_show_splash(s["day"], s["title"])
 
 func _process(delta: float) -> void:
 	# Ctrl 按住 = 打字机 2× 速 + 句末自动翻页（松开恢复手动）
@@ -229,6 +300,9 @@ func _process(delta: float) -> void:
 		_dialogue.set_fast(ctrl)
 		_ctrl_acc = 0.0
 	if not ctrl or _ended or _choice.visible or _menu.visible:
+		return
+	if _splash.is_active():
+		_splash.skip()  # Ctrl 快进遇上过场：跳过（快进语义），本帧不推句
 		return
 	if _dialogue.is_typing():
 		return  # 等 2× 速打字机自己打完

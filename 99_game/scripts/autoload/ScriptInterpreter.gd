@@ -9,6 +9,7 @@ signal choice_presented(options: Array)
 signal ended(kind: String, title: String, cg: String)
 signal chapter_finished()
 signal scene_entered()
+signal splash_requested(day: int, section_title: String)  # 节间 Day 过场（day=-1=无日，显示章标题）
 
 var _file: String = ""
 var _chapter: Dictionary = {}
@@ -19,8 +20,14 @@ var _line_idx: int = 0
 var _advancing: bool = false
 # 快进直通（由 Game 每帧同步：skip 激活或 Ctrl 按住）：transition 行不播不等直通
 var skipping: bool = false
+# UI 遮盖挂起（Game 在 Day 过场起/止同步）：true 时挂起行执行——过场黑幕下不偷跑
+# 台词/音床/BGM 指令，过场结束（淡出完成）才继续，保证演出时序对齐。
+var ui_holding: bool = false
 # 立绘槽状态：值为 {who, portrait} 或 null。say/show 写入，hide 清除。
 var slots: Dictionary = {"left": null, "center": null, "right": null}
+# Day 过场：显式入口（start/跳段）必播；顺序推进仅跨日播。_prev_day=-2=无前块基准。
+var _entry_splash := false
+var _prev_day := -2
 
 var _ChapterLoader = preload("res://scripts/data/ChapterLoader.gd")
 var _loader
@@ -45,6 +52,8 @@ func start(file: String, scene_id: String = "", label: String = "") -> void:
 		return
 	_scenes = _chapter["scenes"]
 	_scene_idx = 0
+	_entry_splash = true  # 章首/选段开局：入口过场必播（无日章显示章标题，如「序章」）
+	_prev_day = -2
 	if scene_id != "":
 		_scene_idx = _find_scene_index(scene_id)
 	_enter_scene_block()
@@ -78,6 +87,14 @@ func advance() -> void:
 func current_scene_idx() -> int:
 	return _scene_idx
 
+# 块 day：无键（如序章）= -1（运行时显示章标题）；JSON 数字解析为 float，须显式 int
+func _block_day(blk: Dictionary) -> int:
+	var d = blk.get("day", null)
+	return -1 if d == null else int(d)
+
+func chapter_title() -> String:
+	return _chapter.get("meta", {}).get("title", "")
+
 # 停点床状态对齐：扫描当前块 行首→当前行 推导「此刻应在播的床」（bed+ 起 / bed- 止），
 # 交 AudioManager.reconcile_beds 对齐（缺的起播、多的停）。skip 途中 bed 指令被忽略，
 # skip/读档停在阻塞行时靠本函数恢复正确床状态（幂等——正常推进时床已对，调用无副作用）。
@@ -97,10 +114,17 @@ func _reconcile_beds() -> void:
 # 内部：进入场景段时套用 scene + bgm，从 line 0 起
 func _enter_scene_block() -> void:
 	_line_idx = 0
+	# Day 过场：显式入口（start/跳段/选段）必播；顺序推进仅跨日播——day 对比比节号更准，
+	# 段内跨日（如 s09_pm Day 9 → s09_cafe Day 10）也覆盖；读档 restore 不经此不播
+	var blk: Dictionary = _scenes[_scene_idx]
+	var day := _block_day(blk)
+	if _entry_splash or (day >= 0 and day != _prev_day):
+		splash_requested.emit(day, blk.get("section_title", ""))
+	_entry_splash = false
+	_prev_day = day
 	# 换段清场：新 scene-block = 空舞台，避免上一段立绘残留（各段起手会重建在场角色）
 	slots = {"left": null, "center": null, "right": null}
 	portrait_changed.emit(_snapshot())
-	var blk: Dictionary = _scenes[_scene_idx]
 	bg_changed.emit(blk.get("scene", ""), blk.get("time", ""))
 	if blk.has("bgm"):
 		var b: Dictionary = blk["bgm"]
@@ -112,6 +136,9 @@ func _enter_scene_block() -> void:
 # 从当前 line 起推进：即时指令自动递进，阻塞/终止停下
 func _run_from_current() -> void:
 	while true:
+		# Day 过场遮盖期挂起（段首 bed+/台词在过场结束后才开始，防黑幕下偷跑偷播）
+		while ui_holding and not skipping:
+			await get_tree().process_frame
 		if _scene_idx >= len(_scenes):
 			AudioManager.stop_ambience()
 			AudioManager.stop_all_beds()
@@ -259,8 +286,11 @@ func resolve_target(to: String, scene: String, file: String) -> bool:
 		_scenes = new_chapter["scenes"]
 		_scene_idx = 0
 		_line_idx = 0  # 跨章节从头（spec：file=跨章节文件从头）；若后续有 scene/to 会覆盖
+		_entry_splash = true  # 跨章入口：新章过场必播
+		_prev_day = -2
 	# scene：本/新章节内定位段（_enter_scene_block 重置 _line_idx=0 并发 bg/bgm）
 	if scene != "":
+		_entry_splash = true  # 跳段入口：目标段过场必播
 		_scene_idx = _find_scene_index(scene)
 		_enter_scene_block()
 	# to：段内 label 定位
@@ -315,6 +345,8 @@ func restore(snapshot_data: Dictionary) -> void:
 	_scenes = _chapter["scenes"]
 	_scene_idx = _find_scene_index(scene_id) if scene_id != "" else 0
 	_line_idx = line_idx
+	_entry_splash = false  # 读档恢复不播过场（玩家知道自己在哪），仅恢复基准日供后续跨日对比
+	_prev_day = _block_day(_scenes[_scene_idx])
 	AudioManager.stop_ambience()  # 清旧档残留声景（恢复点之后的 narrate.ambience 会重新起）
 	AudioManager.stop_all_beds()  # 清旧档残床（恢复点之后的 bed_start 会重新起；之前的床不恢复）
 	# 套用当前段的视觉（scene+bgm+立绘），但不重置 line_idx

@@ -66,6 +66,8 @@
         "id": { "type": "string" },
         "scene": { "type": "string" },
         "time": { "type": "string" },
+        "day": { "type": "integer", "description": "块所属剧情日（发布链自 ink 头注释/块头 Day 解析注入）；缺省=无日（如序章），运行时节间不播 Day 过场" },
+        "section_title": { "type": "string", "description": "所属节标题（自 ink 头注释解析注入），Day 过场小字用" },
         "bgm": { "$ref": "#/$defs/bgmBody" },
         "lines": {
           "type": "array",

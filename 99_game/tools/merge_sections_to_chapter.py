@@ -26,6 +26,7 @@ choice/jump 行暂不进图（建模后续设计），投影自然不含分支�
 """
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -57,8 +58,32 @@ def _run_cypher(cypher: str) -> list:
     return json.loads(out[start:end + 1])
 
 
+# Day/节标题解析：ink 是唯一来源（人读人改的唯一定稿格式），发布搬运时投影进章 JSON。
+# 节级 = 首行头注释「// 第N章 Day X[-Y] 节标题（备注…）」；块级 = knot 头括号「（Day Y · …）」覆盖。
+_DAY_SEC_RE = re.compile(r"^//\s*第.+?章\s+Day\s*(\d+)(?:-(\d+))?\s*(.+?)\s*(?:[（(].*)?$", re.M)
+_DAY_BLK_RE = re.compile(r"^===\s+(\S+)\s*(.*)$", re.M)
+
+
+def _parse_ink_days(raw_ink: str):
+    """→ (sec_day|None, sec_title|None, {block_id: day})。头注释无 Day（如序章）→ 全 None/空。
+
+    实测形态：「// 第一章 Day 9-10 咖啡店邀约（入场券 · 小说版 2026-10-06）」→ (9, 咖啡店邀约,
+    {s09_pm: 9, s09_cafe: 10})——块级 Day 9/10 覆盖节级区间起值，段内跨日天然正确。
+    """
+    m = _DAY_SEC_RE.search(raw_ink)
+    sec_day = int(m.group(1)) if m else None
+    sec_title = m.group(3).strip() if m else None
+    blk_days = {}
+    for bid, rest in _DAY_BLK_RE.findall(raw_ink):
+        dm = re.search(r"Day\s*(\d+)", rest)
+        if dm:
+            blk_days[bid] = int(dm.group(1))
+    return sec_day, sec_title, blk_days
+
+
 def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_title: str,
-                       portrait_keys: dict = None, ink: dict = None) -> dict:
+                       portrait_keys: dict = None, ink: dict = None,
+                       sec_day: int = None, ink_title: str = None, block_days: dict = None) -> dict:
     """一节投影：ink 行序驱动（舞台调度）+ 图行内容对齐（音频/选绘）→ doc {meta, scenes}。
 
     ink = parse_ink_text(台词.ink) 结果 {rows(含 hide), pos_overrides}——舞台调度
@@ -97,6 +122,14 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
         if t:
             s["time"] = t
         _keep(scenes_seq, s["scene"])
+    # Day 过场数据（ink 是唯一来源，此处只搬运）：节标题 + 块 day（块级覆盖，缺省节级；
+    # 无日（如序章）两键都不写，运行时节间不播 Day 过场）
+    if ink_title:
+        for s in scenes:
+            s["section_title"] = ink_title
+            d = (block_days or {}).get(s["id"], sec_day)
+            if d is not None:
+                s["day"] = d
 
     rows_by_block = {}
     for r in ink_rows:
@@ -327,13 +360,19 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
             problems.append(f"{sec_tag}：SecScript.script_path 缺失（舞台调度自 ink 注入，无法投影）")
             continue
         try:
-            ink = parse_ink_text((_REPO_ROOT / sp_rel).read_text(encoding="utf-8"))
+            raw_ink = (_REPO_ROOT / sp_rel).read_text(encoding="utf-8")
+            ink = parse_ink_text(raw_ink)
         except OSError as e:
             problems.append(f"{sec_tag}：台词.ink 读取失败（{sp_rel}）：{e}")
             continue
+        # Day/节标题自 ink 解析（同一份原文双用）；非序章却解析不到 Day → 头注释可能被改坏
+        sec_day, ink_title, blk_days = _parse_ink_days(raw_ink)
+        if sec_day is None and int(chapter_no) > 0:
+            sys.stderr.write(f"[warn] {sec_tag}：ink 头注释未解析到 Day，本节 day/节标题不注入\n")
         try:
             sections.append(graph_lines_to_doc(line_rows, blocks, scene_times, chapter_no, sec_title,
-                                               portrait_keys=portrait_keys, ink=ink))
+                                               portrait_keys=portrait_keys, ink=ink,
+                                               sec_day=sec_day, ink_title=ink_title, block_days=blk_days))
         except ValueError as e:
             problems.append(str(e))
     if problems:

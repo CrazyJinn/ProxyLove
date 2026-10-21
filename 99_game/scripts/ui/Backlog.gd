@@ -1,6 +1,8 @@
 extends Control
 ## 对话历史 Log。
 
+const _sc := preload("res://scripts/ui/SpeakerColors.gd")  # 说话人配色（与对话框同口径）
+
 var _panel := Panel.new()
 var _label := RichTextLabel.new()
 var _entries: Array = []
@@ -24,7 +26,9 @@ func _ready() -> void:
 	hide()
 
 func append(who: String, text: String) -> void:
-	var line := ("[b]%s[/b]：%s" % [who, text]) if who != "" else text
+	# 整段一次性赋值（无打字机），bbcode 包裹安全：名牌角色色 / 旁白灰
+	var line := ("[color=%s][b]%s[/b][/color]：%s" % [_sc.hex_for(who), who, text]) if who != "" \
+		else "[color=#%s]%s[/color]" % [_sc.NARRATE.to_html(false), text]
 	_entries.append(line)
 	_label.text = "\n".join(_entries)
 

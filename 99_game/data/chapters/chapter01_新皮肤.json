@@ -119,6 +119,8 @@
       "id": "s00_bridge",
       "scene": "长江大桥-护栏段",
       "time": "夜晚",
+      "section_title": "跳江之夜",
+      "day": 0,
       "lines": [
         {
           "op": "bed_start",
@@ -322,6 +324,8 @@
       "id": "s00_apartment",
       "scene": "八楼出租屋-床铺区",
       "time": "夜晚",
+      "section_title": "跳江之夜",
+      "day": 0,
       "lines": [
         {
           "op": "narrate",
@@ -382,6 +386,8 @@
       "id": "s01_arrive",
       "scene": "八楼出租屋-进门处",
       "time": "白天",
+      "section_title": "陈念杀到",
+      "day": 1,
       "lines": [
         {
           "op": "transition",
@@ -430,6 +436,8 @@
       "id": "s01_fridge",
       "scene": "八楼出租屋-厨房餐区",
       "time": "白天",
+      "section_title": "陈念杀到",
+      "day": 1,
       "lines": [
         {
           "op": "narrate",
@@ -526,6 +534,8 @@
       "id": "s01_talk",
       "scene": "八楼出租屋-厨房餐区",
       "time": "白天",
+      "section_title": "陈念杀到",
+      "day": 1,
       "lines": [
         {
           "op": "narrate",
@@ -634,6 +644,8 @@
       "id": "s01_leave",
       "scene": "八楼出租屋-进门处",
       "time": "白天",
+      "section_title": "陈念杀到",
+      "day": 1,
       "lines": [
         {
           "op": "narrate",
@@ -714,6 +726,8 @@
       "id": "s02_barber",
       "scene": "理发店-剪发区",
       "time": "白天",
+      "section_title": "动机链",
+      "day": 2,
       "lines": [
         {
           "op": "say",
@@ -886,6 +900,8 @@
       "id": "s02_clothing",
       "scene": "服装店",
       "time": "白天",
+      "section_title": "动机链",
+      "day": 2,
       "lines": [
         {
           "op": "narrate",
@@ -1054,6 +1070,8 @@
       "id": "s02_wallet",
       "scene": "八楼出租屋-床铺区",
       "time": "夜晚",
+      "section_title": "动机链",
+      "day": 2,
       "lines": [
         {
           "op": "narrate",
@@ -1118,6 +1136,8 @@
       "id": "s02_online",
       "scene": "八楼出租屋-电脑桌直播位-更新设备前",
       "time": "夜晚",
+      "section_title": "动机链",
+      "day": 2,
       "lines": [
         {
           "op": "narrate",
@@ -1186,6 +1206,8 @@
       "id": "s03_order",
       "scene": "八楼出租屋-电脑桌直播位-更新设备前",
       "time": "夜晚",
+      "section_title": "林梦点单",
+      "day": 3,
       "lines": [
         {
           "op": "narrate",
@@ -1302,6 +1324,8 @@
       "id": "s03_carry",
       "scene": "八楼出租屋-电脑桌直播位-更新设备前",
       "time": "夜晚",
+      "section_title": "林梦点单",
+      "day": 3,
       "lines": [
         {
           "op": "narrate",
@@ -1639,6 +1663,8 @@
       "id": "s04_riverside",
       "scene": "南滨路-滨江步道",
       "time": "清晨",
+      "section_title": "碰壁与投资",
+      "day": 4,
       "lines": [
         {
           "op": "bed_start",
@@ -1808,6 +1834,8 @@
       "id": "s05_fridge",
       "scene": "八楼出租屋-厨房餐区",
       "time": "白天",
+      "section_title": "生存日",
+      "day": 5,
       "lines": [
         {
           "op": "transition",
@@ -1964,6 +1992,8 @@
       "id": "s05_desk",
       "scene": "八楼出租屋-电脑桌直播位-更新设备前",
       "time": "夜晚",
+      "section_title": "生存日",
+      "day": 5,
       "lines": [
         {
           "op": "narrate",
@@ -2036,6 +2066,8 @@
       "id": "s06_riverside",
       "scene": "南滨路-滨江步道",
       "time": "清晨",
+      "section_title": "首播之夜",
+      "day": 6,
       "lines": [
         {
           "op": "narrate",
@@ -2064,6 +2096,8 @@
       "id": "s06_desk",
       "scene": "八楼出租屋-电脑桌直播位-更新设备后",
       "time": "夜晚",
+      "section_title": "首播之夜",
+      "day": 6,
       "lines": [
         {
           "op": "narrate",
@@ -2264,6 +2298,8 @@
       "id": "s07_gate",
       "scene": "星耀电竞基地-门口",
       "time": "白天",
+      "section_title": "星耀试训",
+      "day": 7,
       "lines": [
         {
           "op": "narrate",
@@ -2360,6 +2396,8 @@
       "id": "s07_arena",
       "scene": "星耀电竞基地-训练馆",
       "time": "白天",
+      "section_title": "星耀试训",
+      "day": 7,
       "lines": [
         {
           "op": "narrate",
@@ -2568,6 +2606,8 @@
       "id": "s07_exit",
       "scene": "星耀电竞基地-门口",
       "time": "白天",
+      "section_title": "星耀试训",
+      "day": 7,
       "lines": [
         {
           "op": "narrate",
@@ -2640,6 +2680,8 @@
       "id": "s08_riverside",
       "scene": "南滨路-滨江步道",
       "time": "清晨",
+      "section_title": "不说破",
+      "day": 8,
       "lines": [
         {
           "op": "bed_start",
@@ -2961,6 +3003,8 @@
       "id": "s09_pm",
       "scene": "八楼出租屋-床铺区",
       "time": "夜晚",
+      "section_title": "咖啡店邀约",
+      "day": 9,
       "lines": [
         {
           "op": "narrate",
@@ -3005,6 +3049,8 @@
       "id": "s09_cafe",
       "scene": "连锁咖啡店-座位区",
       "time": "白天",
+      "section_title": "咖啡店邀约",
+      "day": 10,
       "lines": [
         {
           "op": "narrate",
