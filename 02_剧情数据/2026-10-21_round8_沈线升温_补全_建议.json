@@ -1,0 +1,10 @@
+[
+  {
+    "check": "H1_window_fill",
+    "priority": "medium",
+    "reason": "沈暮雪线升温事件（2026-10-21 用户多轮共创敲定）：混混醉酒闹事装置——陈默保护沈暮雪受伤（轻伤，用户裁定不重否则后续事件发展不下去）；继 06-14 赔罪(19:00)/请假打趣(19:40) 后同夜第三拍，21:00 不撞点；单事件无后续拍（用户裁定）",
+    "content": "创意推断，可调整（用户共创敲定，description 一句话留白细节待补）：新建 Event「混混闹事纠缠沈暮雪陈默保护受伤」2024-06-14 21:00，冲突；occurs_at 路边摊 QP23NrFZql（承同夜烧烤），involved 陈默 NvCkQmFPFq/沈暮雪 NvCkQmFPFu；不建 leads_to",
+    "cypher": "CREATE (e:Event {id:'RQHYRT0iK8'}) SET e.title='混混闹事纠缠沈暮雪陈默保护受伤', e.time='2024-06-14 21:00:00', e.type='冲突', e.description='烧烤摊混混醉酒闹事纠缠沈暮雪，陈默上前保护受了轻伤，沈暮雪送他去处理伤口（细节待补）';\nMATCH (e:Event {id:'RQHYRT0iK8'}), (l:Location {id:'QP23NrFZql'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RQHYRT0iK8'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RQHYRT0iK8'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;",
+    "source": "nrt-gap-filler"
+  }
+]
