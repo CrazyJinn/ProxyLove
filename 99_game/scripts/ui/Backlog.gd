@@ -23,11 +23,28 @@ func _ready() -> void:
 	_label.bbcode_enabled = true
 	_label.scroll_following = true
 	_panel.add_child(_label)
+	# 点击面板任意处（含正文区）关闭；滚轮留给 RichTextLabel 自身滚动（不 accept）
+	gui_input.connect(_on_click_close)
+	_panel.gui_input.connect(_on_click_close)
+	_label.gui_input.connect(_on_click_close)
 	hide()
 
+func _on_click_close(ev: InputEvent) -> void:
+	if ev is InputEventMouseButton and ev.pressed \
+			and ev.button_index != MOUSE_BUTTON_WHEEL_UP and ev.button_index != MOUSE_BUTTON_WHEEL_DOWN:
+		visible = false
+
+# 小节隔断行（居中 + 冷灰装饰线，前后留空行）：每进入新节由 Game 触发
+func append_section(title: String) -> void:
+	_entries.append("")
+	_entries.append("[center][color=#8A97A8]──  %s  ──[/color][/center]" % title)
+	_entries.append("")
+	_label.text = "\n".join(_entries)
+
 func append(who: String, text: String) -> void:
-	# 整段一次性赋值（无打字机），bbcode 包裹安全：名牌角色色 / 旁白灰
-	var line := ("[color=%s][b]%s[/b][/color]：%s" % [_sc.hex_for(who), who, text]) if who != "" \
+	# 整段一次性赋值（无打字机），bbcode 包裹安全；配色与对话框对齐：
+	# say = 名牌+正文同角色色（名牌加粗），旁白 = 灰
+	var line := ("[color=%s][b]%s[/b]：%s[/color]" % [_sc.hex_for(who), who, text]) if who != "" \
 		else "[color=#%s]%s[/color]" % [_sc.NARRATE.to_html(false), text]
 	_entries.append(line)
 	_label.text = "\n".join(_entries)

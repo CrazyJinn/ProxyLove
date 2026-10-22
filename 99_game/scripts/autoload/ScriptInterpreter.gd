@@ -95,6 +95,15 @@ func _block_day(blk: Dictionary) -> int:
 func chapter_title() -> String:
 	return _chapter.get("meta", {}).get("title", "")
 
+# 当前段的节标签「sNN 节标题」（block id 前缀 + section_title，与标题页下拉同口径），
+# 供 Backlog 隔断等 UI 使用；无 section_title 时仅返回节号前缀
+func current_section_label() -> String:
+	var blk: Dictionary = _scenes[_scene_idx] if _scene_idx < len(_scenes) else {}
+	var sid: String = blk.get("id", "")
+	var prefix: String = sid.substr(0, 3) if sid.length() >= 3 else sid
+	var st: String = blk.get("section_title", "")
+	return "%s %s" % [prefix, st] if st != "" else prefix
+
 # 停点床状态对齐：扫描当前块 行首→当前行 推导「此刻应在播的床」（bed+ 起 / bed- 止），
 # 交 AudioManager.reconcile_beds 对齐（缺的起播、多的停）。skip 途中 bed 指令被忽略，
 # skip/读档停在阻塞行时靠本函数恢复正确床状态（幂等——正常推进时床已对，调用无副作用）。

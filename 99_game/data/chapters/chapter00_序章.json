@@ -231,7 +231,8 @@
         "track": "晨离",
         "mode": "play",
         "loop": true
-      }
+      },
+      "section_title": "酒店醒来"
     },
     {
       "id": "s01_咖啡店",
@@ -315,7 +316,8 @@
         "track": "晨光小店",
         "mode": "play",
         "loop": true
-      }
+      },
+      "section_title": "骤雨车祸"
     },
     {
       "id": "s01_路口",
@@ -393,7 +395,8 @@
         "track": "骤雨路口",
         "mode": "play",
         "loop": true
-      }
+      },
+      "section_title": "骤雨车祸"
     },
     {
       "id": "s02_夹缝",
@@ -569,7 +572,8 @@
         "track": "夹缝暮光",
         "mode": "play",
         "loop": true
-      }
+      },
+      "section_title": "夹缝试炼"
     }
   ]
 }

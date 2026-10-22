@@ -14,6 +14,9 @@ var _auto: bool = false
 var _pending_scene := ""  # Day 过场遮盖期间延迟换的背景（covered/结束点应用）
 var _pending_bgm: Dictionary = {}  # skip 快进期间暂存的段 BGM，停点柔和（fade）应用
 var _pending_splash: Dictionary = {}  # skip 快进途中跨日的过场，停点（新段首句）再播
+var _history: Array = []  # 已显示台词/旁白 {who, text, narrate}——逐句回看数据源
+var _review_idx := -1  # 回看下标：-1=实时（最后一句），≥0=正显示 _history[_review_idx]
+var _last_section := ""  # 最近一次写入 Backlog 的节标签（同节多段切换不重复插隔断）
 var _auto_gap: float = AUTO_LINE_GAP  # 当前行 Auto 停留时长（line_ready 时按行类型更新）
 var _ended: bool = false  # 本轮已进结局/章节结束（防 skip 越界）
 var _auto_timer := Timer.new()
@@ -104,6 +107,9 @@ func _toggle_menu() -> void:
 
 func _on_line_ready(kind: String, payload: Dictionary) -> void:
 	_auto_gap = _auto_gap_for(kind, payload.get("text", ""))
+	_review_idx = -1  # 新句即回实时（回看中的推进已被挡，此处兜底）
+	_history.append({"who": payload.get("who", ""), "text": payload.get("text", ""),
+		"narrate": kind != "say"})
 	if kind == "say":
 		_dialogue.show_line(payload.get("who", ""), payload.get("text", ""), false)
 		_backlog.append(payload.get("who", ""), payload.get("text", ""))
@@ -163,6 +169,11 @@ func _on_choice(options: Array) -> void:
 func _on_scene_entered() -> void:
 	SaveManager.save_slot(SaveManager.QUICK, ScriptInterpreter.snapshot())
 	AudioManager.stop_voice()  # 段切换清场，避免上段尾音漏进新段
+	# Backlog 小节隔断：节（sNN）变化才插——同节内多段切换不重复
+	var st := ScriptInterpreter.current_section_label()
+	if st != "" and st != _last_section:
+		_backlog.append_section(st)
+		_last_section = st
 
 # 节间 Day 过场：day=-1（无日章，如序章）显示章标题大字、不显节标题。
 # skip 只跳文本阅读：跨日过场暂存到停点（新段首句）再播；Ctrl 按住快进则不播（逐句直通语义）。
@@ -205,6 +216,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_toggle_menu()
 		return
 	if event.is_action_pressed("log"):
+		_exit_review()  # 回看与历史面板互斥：开面板先回实时
 		_backlog.toggle()
 		return
 	if event.is_action_pressed("quick_save"):
@@ -219,7 +231,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("skip"):
 		_skip()
 		return
-	if _choice.visible or _menu.visible:
+	if _choice.visible or _menu.visible or _backlog.visible:
+		return
+	# 逐句回看：上/下（含滚轮）只在无弹层时可用
+	if event.is_action_pressed("review_prev"):
+		_review_step(-1)
+		return
+	if event.is_action_pressed("review_next"):
+		_review_step(1)
 		return
 	if event.is_action_pressed("advance"):
 		_advance()
@@ -228,10 +247,44 @@ func _advance() -> void:
 	if _splash.is_active():
 		_splash.skip()
 		return
+	if _review_idx >= 0:
+		_exit_review()  # 回看中推进 = 退出回看恢复当前句（不推剧情）
+		return
 	if _dialogue.is_typing():
 		_dialogue.finish_typing()
 		return
 	ScriptInterpreter.advance()
+
+# 逐句回看：dir=-1 上一条 / +1 下一条。实时态（-1）按上→倒数第二句；
+# 下一条滚到最新句再按 → 退出回看回实时。立绘/背景不回退（仅文本回看）。
+func _review_step(dir: int) -> void:
+	if _history.is_empty() or _splash.is_active():
+		return
+	if dir < 0:
+		_review_idx = (_history.size() - 2) if _review_idx < 0 else (_review_idx - 1)
+		_review_idx = maxi(_review_idx, 0)
+	else:
+		if _review_idx < 0:
+			return  # 已在实时
+		_review_idx += 1
+		if _review_idx >= _history.size() - 1:
+			_exit_review()
+			return
+	_show_review()
+
+func _show_review() -> void:
+	var h: Dictionary = _history[_review_idx]
+	_dialogue.show_line(h.get("who", ""), h.get("text", ""), h.get("narrate", true))
+	_dialogue.finish_typing()  # 历史句整句直显，不打字
+
+func _exit_review() -> void:
+	if _review_idx < 0:
+		return
+	_review_idx = -1
+	if not _history.is_empty():  # 恢复当前（最新）句，整句直显
+		var h: Dictionary = _history[_history.size() - 1]
+		_dialogue.show_line(h.get("who", ""), h.get("text", ""), h.get("narrate", true))
+		_dialogue.finish_typing()
 
 func _toggle_auto() -> void:
 	_auto = not _auto
@@ -250,7 +303,8 @@ func _auto_advance() -> void:
 	# 等语音播完才切句（narrate/资源缺失时 playing=false，纯按停留时长推进）；
 	# 打字中/菜单开着同样只轮询不推进。advance 同步发 line_ready，_auto_gap 已是新行值
 	if not _dialogue.is_typing() and not AudioManager.is_voice_playing() \
-			and not _choice.visible and not _menu.visible and not _splash.is_active():
+			and not _choice.visible and not _menu.visible and not _splash.is_active() \
+			and _review_idx < 0:
 		ScriptInterpreter.advance()
 		_auto_timer.start(_auto_gap)
 	else:
@@ -263,6 +317,7 @@ func _skip() -> void:
 	# 快进期间解释器 skipping=true（_process 每帧同步），transition 行不播不等直通。
 	if _skip_active:
 		return  # 防重入：S 键 / 对话框 skip 按钮并发会叠协程
+	_exit_review()  # 回看中开 skip：先回实时（skip 推进语义）
 	AudioManager.stop_voice()  # skip 立即静音，不等下一句自覆盖
 	if _splash.is_active():
 		_splash.skip()  # 过场播放中开 skip：先收掉过场（快进语义）
@@ -304,6 +359,8 @@ func _process(delta: float) -> void:
 	if _splash.is_active():
 		_splash.skip()  # Ctrl 快进遇上过场：跳过（快进语义），本帧不推句
 		return
+	if _review_idx >= 0:
+		return  # 回看中 Ctrl 不推剧情（导航优先）
 	if _dialogue.is_typing():
 		return  # 等 2× 速打字机自己打完
 	_ctrl_acc += delta
@@ -318,4 +375,6 @@ func _quick_load() -> void:
 	var snap = SaveManager.load_slot(SaveManager.QUICK)
 	if snap.is_empty():
 		return
+	_history.clear()  # 清史防「未来句」泄露（回看数据从恢复点当前句重建）
+	_review_idx = -1
 	ScriptInterpreter.restore(snap)

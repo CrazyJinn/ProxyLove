@@ -32,15 +32,18 @@ func _ready() -> void:
 		_chapter.add_item(stem)
 	if _chapter.item_count > 0:
 		_chapter.select(0)
-	_chapter.custom_minimum_size = Vector2(160, 40)
-	_chapter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_vbox.add_child(_chapter)
-	# 小节选择：随所选章列出该章场景段（scene-block id，即发布侧的分节），
-	# 首项「从头开始」= 章首段；换章时联动刷新
+	_chapter.custom_minimum_size = Vector2(220, 40)
+	# 章（左）/节（右）左右并排一行
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(_chapter)
+	_vbox.add_child(row)
+	# 小节选择：随所选章列出该章节（Section，block id 的 sNN 前缀归组），
+	# 选中进该节首段；首项「从头开始」= 章首段；换章时联动刷新
 	_scene = OptionButton.new()
-	_scene.custom_minimum_size = Vector2(160, 40)
-	_scene.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_vbox.add_child(_scene)
+	_scene.custom_minimum_size = Vector2(220, 40)
+	row.add_child(_scene)
 	_chapter.item_selected.connect(_on_chapter_selected)
 	_refresh_scene_options()
 	_start = Button.new()
@@ -89,8 +92,9 @@ func _on_chapter_selected(_index: int) -> void:
 	_refresh_scene_options()
 
 func _refresh_scene_options() -> void:
-	# 按所选章重填小节下拉：项文本 = scene-block id（章内唯一、自带序号，如 s01_咖啡店），
-	# metadata 存同名 id 供 start；首项「从头开始」metadata 空 = 章首段。
+	# 按所选章重填小节下拉：节 = Section 粒度（block id 的 sNN 前缀归组，项文本
+	# 「sNN 节标题」——section_title 由发布链注入章 JSON；id 不合 sNN 格式时该 block 单列兜底）。
+	# metadata 存该节首个 block id 供 start；首项「从头开始」metadata 空 = 章首段。
 	# 段清单经 ChapterLoader 读章 JSON（透明解密加密剧本、带结构校验）；
 	# 先 ensure_chapter（幂等；当前全量主包模式为 no-op）保证 Web 分包模式下章 JSON 可读。
 	# 读不到（未发布段/解析失败）降级为仅「从头开始」，不阻断开局。
@@ -110,12 +114,30 @@ func _refresh_scene_options() -> void:
 	var ch: Dictionary = _loader.load_chapter(stem)
 	if ch.is_empty():
 		return
+	var seen := {}  # sNN 前缀 -> 已列（节内多 block 只列首项）
 	for blk in ch["scenes"]:
 		var sid: String = blk.get("id", "")
 		if sid == "":
 			continue
-		_scene.add_item(sid)
+		var prefix := _section_prefix(sid)
+		if prefix != "" and seen.has(prefix):
+			continue  # 同节后续 block：从该节首段顺播，无需单列
+		var label: String = blk.get("section_title", "")
+		if label == "":
+			label = sid if prefix == "" else prefix  # 无节标题：回退 block id / 节号
+		else:
+			label = "%s %s" % [prefix, label]
+		_scene.add_item(label)
 		_scene.set_item_metadata(_scene.item_count - 1, sid)
+		if prefix != "":
+			seen[prefix] = true
+
+# block id 的节前缀（s00/s01…）：id 形如 sNN_xxx；不合形态返回 ""（该 block 单列兜底）
+func _section_prefix(sid: String) -> String:
+	if sid.length() < 4 or sid[0] != "s" or not sid[1].is_valid_int() or not sid[2].is_valid_int() \
+			or sid[3] != "_":
+		return ""
+	return sid.substr(0, 3)
 
 func _on_start_pressed() -> void:
 	if _chapter.item_count > 0:

@@ -31,7 +31,10 @@ func _register_inputs() -> void:
 	_add_action("menu", [KEY_ESCAPE], [MOUSE_BUTTON_RIGHT])
 	_add_action("quick_save", [KEY_F5], [])
 	_add_action("quick_load", [KEY_F9], [])
-	_add_action("log", [KEY_H], [MOUSE_BUTTON_WHEEL_UP])
+	_add_action("log", [KEY_H], [])
+	# 逐句回看：滚轮上/上键=上一条，滚轮下/下键=下一条（滚轮上不再开 Backlog，Backlog 由 H 开关）
+	_add_action("review_prev", [KEY_UP], [MOUSE_BUTTON_WHEEL_UP])
+	_add_action("review_next", [KEY_DOWN], [MOUSE_BUTTON_WHEEL_DOWN])
 	_add_action("auto_play", [KEY_A], [])
 	_add_action("skip", [KEY_S], [])
 
