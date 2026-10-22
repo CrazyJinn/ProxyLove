@@ -9,13 +9,15 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
+> ⚠️ **本 skill 已废弃（2026-10-22）**：**节的提纲即图数据本身**（Event/Info/Choice + 分支骨架 + 设计简报预分配 id）——结构推理（场景段切分/分支核验/节拍规划）已并入 `chapter-novelist` 的思维链步骤（不落提纲文件），丰满度自检与 SecOutline 兜底建同样由 novelist 承接。存量 outline.md / dayNN 蓝本文件仅兼容读取（dialoguer 存量直连模式）。目录保留停维护（同 nrt-narrative-grower 先例）；新创作一律走 `chapter-novelist <section_id>`。
+
 > **status=-1 = 作废重做**：当本节 SecOutline 节点被重置为 `status=-1` 时（如 Section/Chapter 属性变更沿 has_section/has_outline 级联），即使 outline.md 已落盘，也**必须重新产出并覆盖**。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧提纲内容**，直接以当前图节点数据 + 设计简报为唯一来源重新创作。
 
 # 节提纲（SecOutline 提纲段 · status {-1,0}→1）
 
 剧情创作流程的**第二段**（节级，在章级结构段之后、节级定稿段之前）。读 `chapter-structurer` 产出的**章级设计简报**（取分节规划里**本节**的定位）+ 本节 `Section` 经 `contains` 统合的 Scene + 分支骨架，**先自检本节 event 丰满度**；够丰满才按**分支节点图先行 / 本质差异 / 节奏**三门控产出**节级提纲（outline.md，纯 Markdown）**——确定「本节分几个 scene 段、每段场景/时间/bgm、choice 分叉与汇合、ending 位置」，`lines` 留空（细节对话由 `chapter-dialoguer` 填）。提纲无审批，产出即兜底建 `SecOutline` 产物节点（`Section-[:has_outline]->SecOutline`）并写 `SecOutline.status=1`（提纲就绪）。
 
-> **素材不足门控**：若本节 event 不够丰满（事件数过少 / 事件链断裂 / Choice 指向的事件缺失 / 出场角色在本节无 involved 事件），**拒绝产出提纲**——不写 status、不落盘，只产出「素材不足报告」（列缺口）返回。用户可手动跑 `nrt-narrative-grower` 补全叙事基础后，重调本 skill 复查。
+> **素材不足门控**：若本节 event 不够丰满（事件数过少 / 事件链断裂 / Choice 指向的事件缺失 / 出场角色在本节无 involved 事件），**拒绝产出提纲**——不写 status、不落盘，只产出「素材不足报告」（列缺口）返回。用户可手动跑 `nrt-gap-filler`（交互式补缺口）补全叙事基础后，重调本 skill 复查。
 
 ## 参数
 
@@ -108,7 +110,7 @@ RETURN char.name AS char, count(DISTINCT e) AS event_count;
 - **Choice 分支无落点**（option 指向的 target Event 缺失）
 - **出场角色无着落**（主要角色在本节 involved 的 Event = 0，角色弧空转）
 
-**素材不足时**：**停止——不进入段 2，不写 status、不落盘 outline.md**。产出「素材不足报告」返回，列出具体缺口（哪个维度不足 + 涉及的 Scene/角色/Choice），供用户参考补全（可手动跑 `nrt-narrative-grower`）。**禁止硬凑提纲**——空洞提纲会让后续 dialoguer 产出的对话无据可依。
+**素材不足时**：**停止——不进入段 2，不写 status、不落盘 outline.md**。产出「素材不足报告」返回，列出具体缺口（哪个维度不足 + 涉及的 Scene/角色/Choice），供用户参考补全（可手动跑 `nrt-gap-filler`）。**禁止硬凑提纲**——空洞提纲会让后续 dialoguer 产出的对话无据可依。
 
 **素材够时**：进入段 2 产出提纲。
 

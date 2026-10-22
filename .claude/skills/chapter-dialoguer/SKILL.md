@@ -1,20 +1,20 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读 structurer 的章级设计简报 + outliner 的本节提纲 outline.md → 创作逐句对话 → 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 兜底建 SecScript（SecOutline-[:produces]->SecScript）写 script_path + status=10（定稿待审，直写不经 submit）。
-  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（SecScript 存在且 ink 含 llm: 行且 sc∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sc→10）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿审渲染；审批通过（sc=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
-  前驱 SecOutline.status=1（提纲就绪）。创作中若发现 outline 戏剧性破碎（分支无本质差异/scene 无情绪推进），产出「结构性问题报告」回退 outliner，不写 status。
+  推进 Section 图节点的定稿段：读 structurer 的章级设计简报 + novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 兜底建 SecScript（SecOutline-[:produces]->SecScript）写 script_path + status=10（定稿待审，直写不经 submit）。
+  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（SecScript 存在且 ink 含 llm: 行且 sc∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sc→10；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿审渲染；审批通过（sc=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
+  前驱 SecOutline.status=1（节土壤就绪标记，由 chapter-novelist 兜底建——提纲已内化，原 chapter-outliner 已废弃）。**存量直连模式**：ol=1 且节目录无小说.md 的旧流程节（如 chapter00/01 现存节），读 ol.outline_path 历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 nrt-gap-filler，均不写 status。
 argument-hint: <section_id>
 arguments:
   - section_id
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当本节 SecScript 节点被重置为 `status=-1` 时（如 SecOutline/Section/Chapter 属性变更沿 produces/has_outline/has_section 级联），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（重走 0→10）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 本节 outline.md + 章级设计简报为唯一来源重新创作。
+> **status=-1 = 作废重做**：当本节 SecScript 节点被重置为 `status=-1` 时（如 SecOutline/Section/Chapter 属性变更沿 produces/has_outline/has_section 级联，或小说素材变动由 chapter-novelist 显式作废），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（重走 0→10）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 outline_path 历史文件）+ 章级设计简报为唯一来源重新创作。
 
 # 节细节对话（SecScript 定稿段 · status 0→10）
 
-剧情创作流程的**第三段**（节级）。读 `chapter-structurer` 的**章级设计简报**（情感弧/戏剧意图）+ `chapter-outliner` 的**本节提纲 outline.md**，创作逐句对话，产出节级 **`台词.ink`**——人读/人改的定稿 ink 方言（**机器可解析**：审批通过后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/`（**创作/审阅区，非运行时**）。
+剧情创作流程的**第三段**（节级）。读 `chapter-structurer` 的**章级设计简报**（情感弧/戏剧意图）+ 创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：ol.outline_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**——人读/人改的定稿 ink 方言（**机器可解析**：审批通过后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/`（**创作/审阅区，非运行时**）。
 
 ## 参数
 
@@ -43,7 +43,7 @@ RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title,
 LIMIT 1
 ```
 
-**前驱校验**：`ol_status = 1`（提纲就绪，`outline_path` 非空），否则停止并提示先完成本节提纲段（`chapter-outliner`）。
+**前驱校验**：`ol_status = 1`（节土壤就绪标记，由 chapter-novelist 兜底建），否则停止并提示先完成本节小说段（`chapter-novelist`）。
 
 #### 1a-2. 模式判定（常规创作 / 占位填充）
 
@@ -52,13 +52,15 @@ SecScript 已存在且有 `script_path` 时，Read 该 台词.ink 并检查是�
 - **含 `llm:` 占位 且 `sc_status ∈ {0,1}`** → 进入**填充模式**（跳过下文「sc=10/11 停止」拦截与常规创作流程，直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工审阅」，**禁止整篇重写覆盖手改**。
 - 无占位（或 SecScript 不存在）→ 常规创作流程。`sc_status` 为 `10/11` 且无占位 → 定稿已待审/已批，停止并提示。
 
-#### 1b. 读设计简报 + 本节提纲 + 查创作上下文
+#### 1b. 读设计简报 + 创作土壤（小说 / 存量提纲）+ 查创作上下文
 
 **先读两份创作依据**：
 - Read `25_剧本/chapter<NN>_<章概述>/设计简报.md`（NN = chapter_no 零填充，<章概述> 取章 title）——取出情感弧线 / 戏剧意图 / 设计支柱（本节在弧线中的位置靠分节规划定位），本节对话的情感基调全靠它。
-- Read **本节** `outline.md`（`SecOutline.outline_path`）——场景分段（Scene 名/时段/scene-block id 契约值）、分支拓扑（choice/label/ending）必须如实体现到台词.ink（见格式规范）；`authoring` 散文（方向/情感弧/约束/职责/节拍/母题锚点/衔接）是创作指引，不进台词；「BGM 倾向」是散文参考（BGM 由 scene-design 编排管理，与本 skill 无关）。
+- **创作土壤二选一（按 1b-2 判定）**：
+  - **小说模式**：Read 节目录 `小说.md`（chapter-novelist 产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
+  - **存量直连模式**：Read `SecOutline.outline_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
 
-任一缺失则停止并提示先跑上游（structurer / outliner）。
+简报缺失则停止并提示先跑 structurer。再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot) MATCH (e:Event)-[:anchored_at]->(sp) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
 
 再查图：
 
@@ -75,9 +77,36 @@ RETURN DISTINCT char.name AS name, char.description AS description, char.charact
 LIMIT 20
 ```
 
-### 2. 完成任务（创作细节对话）
+#### 1b-2. 创作土壤判定 + 取材指纹自检（填充模式跳过本节）
 
-读本节 outline.md 逐场景段，据章级设计简报（情感弧/戏剧意图）+ 角色 LanguageStyle，创作逐句对话写入 `台词.ink`。
+**按 SecOutline 判定**：
+- 无 ol ∨ `ol_status ∈ {-1,0}` → 停止并提示先跑 `chapter-novelist <sec_id>`（小说段未做 / 被作废打回，台词须从小说提炼）。
+- `ol_status = 1` 且节目录 `小说.md` 存在 → **小说模式**（下文必过指纹自检）。
+- `ol_status = 1` 且无 `小说.md` → **存量直连模式**（旧流程节，读 ol.outline_path 历史文件照旧创作，跳过指纹自检）。
+
+**小说模式必过指纹自检**（小说是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
+
+```bash
+# 1) 圈定素材（与 chapter-novelist 1b 同一条 UNION 查询,时间窗 = Section.time_day,见该 SKILL.md）
+python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<圈定 UNION 查询>" --json > .tmp/novelist/<sec_id>_materials.json
+# 2) 自检（同源脚本,归一化规则与生成侧一致）
+python "${CLAUDE_SKILL_DIR}/../chapter-novelist/scripts/fingerprint.py" check --novel "<小说.md>" --in .tmp/novelist/<sec_id>_materials.json
+```
+
+- **exit 0（新鲜）** → 小说可用，进入段 2 提炼。
+- **exit 1（stale：已记素材变动/被删）** → **停止**，产出报告（stale 明细 + 「需先重跑 chapter-novelist 重写小说并作废定稿」）退出——本 skill 不作废 sc（职责在 novelist），plot-design 接住后调 novelist，重写后本 skill 重新提炼。圈定内未标注（未使用）的素材不算 stale，属常态。
+
+### 2. 完成任务（从小说提炼细节对话）
+
+读本节 outline.md 逐场景段 + 本节小说.md（存在时），据章级设计简报（情感弧/戏剧意图）+ 角色 LanguageStyle，**从小说提炼**逐句对话写入 `台词.ink`。
+
+#### 从小说提炼台词的纪律（小说模式）
+
+- **拓扑契约权威 = 小说 `### <scene_block_id> <场景名> <时段>` 场景段标题**（场景块 id/顺序唯一来源，照搬为 ink `=== <id> // <名>（<时段>）`，不改写不自创）；**分支事实权威 = 图 Choice/option**——小说结构与图分支冲突时报 **FAIL**（回退 chapter-novelist），不静默对齐。
+- **钉子句沿用**：小说中的关键锚点句（人物速写/正文中的定调句）原样进台词，读者跨层要认得同一根钉子。
+- **立场守恒**：事实、事件顺序、情感极性、节拍位置零变化——只做**体裁转换**（散文 → say + 旁白），不改剧情、不加私货反转。
+- **对白重塑**：小说对白按角色 LanguageStyle 重塑后进 say 行（小说口语 ≠ 台词定稿）；叙述散文浓缩进旁白行（旁白克制，galgame 旁白行远少于散文段落）。
+- **去 AI 味重工序在本层做**（novelist 只做了惯性签名轻检）：台词层的库存句换角色性格推出的话、留白要有锚点——详见格式规范与方言规范。
 
 #### 台词.ink 格式规范（正式定稿格式，标准合法 ink 方言 v3，机器可解析）
 
@@ -127,12 +156,10 @@ bed- rain
 
 #### 创作质量自检（发现 outline 破碎 → FAIL 报告）
 
-创作完成后自检，若发现**根本问题在 outline 而非台词**——即 outline 戏剧性破碎，再怎么写也写不出合格对话：
-- 分支 options 无戏剧本质差异（outliner 的本质差异门控漏过的 flavor 级分支）
-- scene 间无情绪推进（提纲本身平铺，无 turning point/climax）
-- 拓扑死胡同或 ending 缺落点
+创作完成后自检，若发现**根本问题在创作土壤而非台词**——再怎么写也写不出合格对话，按根因分两路（都不落盘、不写 status，产出「结构性问题报告」）：
 
-→ **触发创作质量 FAIL**：**不落盘定稿、不写 SecScript status**，产出「结构性问题报告」返回，列出破碎点（哪个 choice/scene/拓扑 + 为什么写不出合格对话）。由 plot-design 接住后把 `SecOutline.status` 归 `0`（待提纲），重调 `chapter-outliner` 重做本节提纲。**与 outliner 素材不足报告对称**——不硬凑烂对话交付。
+- **根因在小说层**（小说模式）：人物速写自相矛盾 / 视角漂移 / scene 间无情绪推进（无 turning point/climax）/ 小说场景段结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 小说层」，由 plot-design 接住后把 `SecOutline.status` 归 `0`（待小说），重调 `chapter-novelist` 强制重写（重写会按其段 3 作废 sc）。**与 novelist 素材不足报告对称**——不硬凑烂对话交付。
+- **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `nrt-gap-filler` 补全 Choice 分化或落点事件后重调。
 
 > 通过自检才进段 3 写图。
 
@@ -177,5 +204,5 @@ MERGE (ol)-[r:produces]->(sc) SET r.sync = true;
 ## 参考文档
 
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section/产物链（SecOutline/SecScript/LineAudio 逐句行）/produces{order}/stages 边
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级设计简报）/ [chapter-outliner](../chapter-outliner/SKILL.md)（本节提纲 → SecOutline status=1）
+- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级设计简报）/ [chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
 - 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）
