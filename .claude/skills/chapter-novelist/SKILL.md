@@ -2,7 +2,7 @@
 name: chapter-novelist
 description: |
   推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架 + Section.scene_block_ids；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 Section.time_day 时间窗圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id 用 Section.scene_block_ids 预分配值；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
-  前驱所属 Chapter status=11（结构已批）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 Section.status∈{10,11} 的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
+  前驱：无（章无 status、节创建即 11——2026-10-25 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -32,7 +32,8 @@ allowed-tools: Read, Bash, Write, Edit
 #### 1a. 解析 Section + 前驱校验
 
 ```cypher
-MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<input>'})
+MATCH (sec:Section {id:'<input>'})
+OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
 RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
        sec.time_day AS time_day, sec.status AS sec_status, sec.script_path AS script_path,
        ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
@@ -40,11 +41,11 @@ RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summa
 LIMIT 1
 ```
 
-**前驱校验**：`ch.status = 11`（结构已批），否则停止并提示先完成章级结构段 + 结构审。
+**前驱校验**（2026-10-25 节先于章；章无 status）：自由节（无所属章，`ch IS NULL`）**放行**——节由 dashboard ＋新节直建，小说可先于组章创作；有章亦直接放行（结构产出即可用，无审批）。仅须节自身 `sec.status ≠ -1`（作废态表示等重做流程，由编排层处置）。
 **模式判定**：
-- 小说.md 不存在 → **首建模式**（进 1b）。`sec_status ∈ {10,11}` 时为存量直连节：plot-design 编排不会调到（判定在上游）；被用户直接触发 = 显式转新流程，报告「本节为旧流程直连形态，本次建小说层（stale 前不动定稿态）」后继续。
+- 小说.md 不存在 → **首建模式**（进 1b）。`script_path` 已有值时为存量直连节：plot-design 编排不会调到（判定在上游）；被用户直接触发 = 显式转新流程，报告「本节为旧流程直连形态，本次建小说层（stale 前不动定稿态）」后继续。
 - 小说.md 存在 → 进 1d 指纹自检（stale → 重写模式；新鲜且用户未明示重写 → 汇报退出）。
-- **小说路径推导**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/小说.md`（MM 零填充、概述取 title 清洗 Windows 非法字符）。
+- **小说路径推导**：有章 `25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/小说.md`；自由节 `25_剧本/自由节/sec<MM>_<节概述>/小说.md`（MM 零填充、概述取 title 清洗 Windows 非法字符——组章重排后重写时按新章路径落盘，旧自由节目录留存为历史）。
 
 #### 1b. 章级依据（图）+ 圈定取材素材
 

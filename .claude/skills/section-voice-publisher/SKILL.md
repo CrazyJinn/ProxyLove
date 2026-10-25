@@ -31,8 +31,8 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 前置条件
 
-- 本节 `Section.status=11`（定稿已确认）；否则停止，提示先走 chapter-dialoguer + 定稿确认。
-- 所属 `Chapter.status=11`（结构已批）。
+- 本节 `Section.status=11`（定稿在位；`-1` 作废态先重走 novelist→dialoguer）；否则停止，提示先走 chapter-dialoguer。
+- 须已组章（voice key 的 `chapter_stem` 段依赖章；章无 status——2026-10-25 起组章即结构就绪）。自由节（无所属章）不可拆分配音，先在 dashboard 组章。
 - 本节出场角色的 `VoiceDesign.status=11`（声音已批）。未就绪（无 VoiceDesign 或 status≠11）角色**警告跳过**（该角色 say 行保持 status=0 待配，运行时静默不播），提示先经 `char-design` 跑 `char-voice-design` 并审批，不阻断其他角色配音。
 
 ## 流程
