@@ -1,7 +1,7 @@
 ---
 name: bgm-designer
 description: |
-  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围与章节设计简报生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/description + status=1 并落盘同名文档 13_BGM/<name>.md（LLM 直产文本，随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<name>.wav。
+  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/description + status=1 并落盘同名文档 13_BGM/<name>.md（LLM 直产文本，随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<name>.wav。
   音频由用户手动生成并放入预制路径（手工放入文件夹即合格，无审批）；再次触发本 skill（或 dashboard 编辑器）检测文件存在置 status=2。由 scene-design agent 编排触发（Scene → SceneLayer → BgmTrack 链），也可由用户直接触发。
 argument-hint: <scene_name_or_bgm_id>
 arguments:
@@ -62,14 +62,13 @@ RETURN s.name AS scene_name, s.atmosphere AS atmosphere, s.time_of_day AS time_o
 
 ### 2. 完成任务（生成音乐描述文字）
 
-依据：Scene 的 atmosphere/time_of_day/description（**主依据**——BGM 是场景资产）+ 所属章节的设计简报情感弧（若可定位：`MATCH (ch:Chapter)-[:has_section]->(:Section)-[:contains]->(s:Scene)` 找章，Read `ch.brief_path`）。
+依据：Scene 的 atmosphere/time_of_day/description（BGM 是场景资产，需求源于 Scene 本身）。
 
 产出**一段给外部生成工具的音乐描述 prompt**（中文，80–150 字），覆盖：
 - **情绪基调**：该场景要传递的核心情绪（如「晨间慵懒、轻佻暧昧」）
 - **乐器与织体**：主奏/配器建议（如「电钢琴 + 轻刷镲 + 低音贝斯」）
 - **节奏与速度**：BPM 区间、律动感（如「中慢速 80-95、松散摇摆」）
-- **结构**：循环友好（开头即可进入主题、尾句可接回头）、时长建议（1–2 分钟循环）
-- **避免**：显著旋律人声、突兀高潮（背景音乐不抢台词）
+- **严禁**：人声——成品 prompt 固定以「严禁人声。」收尾；不加循环/时长/不抢戏等收尾赘述（循环友好等结构要求留在 description 一句话里即可，不进 prompt）
 
 ### 3. 保存结果
 

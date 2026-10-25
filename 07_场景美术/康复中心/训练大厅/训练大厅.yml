@@ -1,0 +1,187 @@
+# Room DSL v3 —— 康复中心·训练大厅(default 整点)
+location:
+  id: QP23NrFZqm
+  name: 康复中心
+  description: 苏晓禾工作的地方，运动康复
+room:
+  floor:
+  - 7.0
+  - 5.0
+  height: 3.0
+  wall_color: '#e8eae6'
+  floor_color: '#b4bcc0'
+  door:
+    side: z+
+    pos:
+    - 1.2
+    - 0
+    - 2.49
+    size:
+    - 1.0
+    - 2.1
+  windows:
+  - id: w1
+    pos:
+    - -0.8
+    - 1.6
+    - -2.49
+    size:
+    - 2.0
+    - 1.8
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 北墙大窗,上午阳光斜进训练大厅
+  deco: 上午白光通亮,地面铺浅灰防滑垫,墙面扶杆贯穿,空气里消毒水混着橡胶垫的气味
+  floor_material: 浅灰塑胶
+  wall_material: 乳胶漆
+objects:
+- id: mirror_wall
+  spot: 训练大厅
+  name: 训练区整面镜
+  type: plane
+  pos:
+  - 0.3
+  - 1.35
+  - -2.48
+  size:
+  - 4.2
+  - 1.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#cfd8dc'
+  desc: 北墙整面训练镜,扶姿与步态矫正对照用
+  material: 镜面玻璃
+- id: pt_bed
+  spot: 训练大厅
+  name: PT治疗床
+  type: box
+  pos:
+  - -3.05
+  - 0.45
+  - -0.9
+  size:
+  - 0.9
+  - 0.9
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8fa8b8'
+  desc: 西墙治疗床,黑革垫面
+  material: 皮革
+- id: equip_rack
+  spot: 训练大厅
+  name: 器械重墙架
+  type: box
+  pos:
+  - 3.1
+  - 1.05
+  - -0.9
+  size:
+  - 0.8
+  - 2.1
+  - 2.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6f7d8c'
+  desc: 东墙铃片架与悬挂弹力带,器械按序归位
+  material: 金属
+- id: cab
+  spot: 训练大厅
+  name: 治疗器械柜
+  type: box
+  pos:
+  - -3.15
+  - 0.95
+  - 1.5
+  size:
+  - 0.7
+  - 1.9
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a89a86'
+  desc: 西墙南段器械柜,收纳理疗耗材
+  material: 原木
+- id: desk
+  spot: 训练大厅
+  name: 前台接待台
+  type: box
+  pos:
+  - 2.6
+  - 0.5
+  - 2.05
+  size:
+  - 1.8
+  - 1.0
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b0a494'
+  desc: 门侧前台,预约登记本与会员卡架
+  material: 木饰面
+- id: bench
+  spot: 训练大厅
+  name: 候诊长凳
+  type: box
+  pos:
+  - -2.3
+  - 0.45
+  - 2.2
+  size:
+  - 1.6
+  - 0.9
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9c8f7f'
+  desc: 门侧候诊凳,靠背贴墙
+  material: 原木
+scenes:
+- id: rehab_day
+  scene_id: RVaUJp92GH
+  scene_name: 康复中心-训练大厅
+  spot: 训练大厅
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 1.9
+    look_at:
+    - 0
+    - 1.2
+    - -1.5
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.7
+    - 0
+    color: '#ffffff'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

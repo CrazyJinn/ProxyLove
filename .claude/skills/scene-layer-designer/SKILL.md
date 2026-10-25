@@ -58,7 +58,7 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
   python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n <缺几个> -q
   ```
   已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
-- 记录 `loc_name` 与 **spot 目录名**（产物路径用）：spot_name 去掉 `<loc_name>-` 前缀得短名；spot_name 为 `<loc_name>-未细分`（default Spot）时用 loc_name。
+- 记录 `loc_name` 与 **spot 目录名**（产物路径用）：spot_name 去掉 `<loc_name>-` 前缀得短名；短名=loc_name（整点 zone）或 `未细分`（存量 default Spot，兼容历史）时目录名用 loc_name。
 - **查询必含源 Spot 的 `dsl_path`**（模式 E 触发依据：非空 = 该 spot 已 3D 建模，走模式 E；为空 = 未建模，走模式 A 旧自由文本链。Scene 节点不持有 dsl_path）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。

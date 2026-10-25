@@ -46,17 +46,16 @@ _EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
 # ── 公共查询 ─────────────────────────────────────────────────
 
 def fetch_section_head(section_id: str) -> dict:
-    """Section → SecScript 头信息 + scene_blocks（sc≠11 raise）。"""
+    """Section 头信息 + scene_blocks（sec.status≠11 raise）。"""
     rows = _run_cypher(
-        "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
-        "-[:produces]->(sc:SecScript) "
-        "RETURN sc.id AS sc_id, sc.status AS st, sc.scene_blocks AS scene_blocks LIMIT 1"
+        "MATCH (sec:Section {id:'" + section_id + "'}) "
+        "RETURN sec.status AS st, sec.scene_blocks AS scene_blocks LIMIT 1"
     )
     if not rows:
-        raise ValueError(f"Section {section_id} 无 SecScript（先跑 chapter-dialoguer 产定稿）")
+        raise ValueError(f"Section {section_id} 不存在")
     st = rows[0]["st"]
     if st != 11:
-        raise ValueError(f"SecScript.status={st}（须 11 定稿已批才能选绘）")
+        raise ValueError(f"Section.status={st}（须 11 定稿已确认才能选绘）")
     blocks = []
     raw = rows[0].get("scene_blocks")
     if raw:
@@ -64,7 +63,7 @@ def fetch_section_head(section_id: str) -> dict:
             blocks = json.loads(raw) if isinstance(raw, str) else raw
         except (TypeError, json.JSONDecodeError):
             blocks = []
-    return {"sc_id": rows[0]["sc_id"], "scene_blocks": blocks or []}
+    return {"section_id": section_id, "scene_blocks": blocks or []}
 
 
 def judgeable_lines(section_id: str) -> list:
@@ -72,8 +71,7 @@ def judgeable_lines(section_id: str) -> list:
     ∨ (status=10 ∧ 无 uses 边))，按 produces.order。补选绘行 = 已配音待审但
     选绘期候选池空没建成 uses 边（先配音、着装链后建），链就绪后由此补。"""
     return _run_cypher(
-        "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
-        "-[:produces]->(sc:SecScript)-[p:produces]->(l:LineAudio) "
+        "MATCH (sec:Section {id:'" + section_id + "'})-[p:produces]->(l:LineAudio) "
         "WHERE l.op = 'say' AND (l.status IN [0, -1] "
         "OR (l.status = 10 AND NOT (l)-[:uses]->())) "
         "OPTIONAL MATCH (l)-[:uses]->(st:StandingIllustration) "
@@ -167,7 +165,7 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
     )
     if scene_name and rows and all(r.get("scene_hit") is None for r in rows):
         warnings.append(f"{scene_name}：未命中本节 contains 的任何 Scene（名字与图 Scene 名不符）——"
-                        f"depicts/wears 两路将降级，请核对 SecScript.scene_blocks 的 scene_name")
+                        f"depicts/wears 两路将降级，请核对 Section.scene_blocks 的 scene_name")
     eff = _effective_ds(section_id, who, warnings)
     for col, ds_col, source in _PRIORITY:
         kept, dropped = set(), set()
@@ -228,7 +226,7 @@ def build_candidates(section_id: str) -> dict:
             chars[who] = entry
         scenes[block] = {"scene_name": scene_name, "chars": chars}
 
-    return {"section_id": section_id, "sc_id": head["sc_id"],
+    return {"section_id": section_id, "scene_blocks": head["scene_blocks"],
             "scenes": scenes, "lines": lines, "warnings": warnings}
 
 

@@ -1,8 +1,8 @@
 ---
 name: chapter-publisher
 description: |
-  把全章各节产物就绪（各节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部台词行 LineAudio=11，且所属 Chapter.status=11）的章节从图发布到运行时 `99_game/`：
-  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（SecScript-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，2026-10-20 起不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
+  把全章各节产物就绪（各节 Section.status=11 ∧ 该节全部台词行 LineAudio=11，且所属 Chapter.status=11）的章节从图发布到运行时 `99_game/`：
+  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（Section-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，2026-10-20 起不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
   在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 推进到全章就绪即止）。
 argument-hint: <chapter_id>
 arguments:
@@ -32,14 +32,11 @@ allowed-tools: Read, Bash, Write, Edit
 // (1) Chapter 本体 + 前驱校验
 MATCH (ch:Chapter {id:'<chapter_id>'})
 RETURN ch.title AS title, ch.chapter_no AS no, ch.status AS status;
-// (2) 各 Section（按 section_no）+ 产物链（SecOutline/SecScript + 逐句行聚合）+ 前驱校验
+// (2) 各 Section（按 section_no）+ 定稿态 + 逐句行聚合 + 前驱校验
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(sec:Section)
-OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline)
-OPTIONAL MATCH (ol)-[:produces]->(sc:SecScript)
-OPTIONAL MATCH (sc)-[:produces]->(l:LineAudio)
+OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
 RETURN sec.section_no AS no, sec.title AS title,
-       ol.status AS ol_status, ol.outline_path AS outline_path,
-       sc.status AS sc_status, sc.script_path AS script_path,
+       sec.status AS sc_status, sec.script_path AS script_path,
        count(l) AS line_count,
        sum(CASE WHEN coalesce(l.status, 0) = 11 THEN 1 ELSE 0 END) AS line_done
 ORDER BY sec.section_no;
@@ -52,25 +49,25 @@ MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:contains]->(
 RETURN DISTINCT s.name AS scene_name, b.name AS track, b.status AS bgm_status, b.audio_path AS audio_path;
 // (4) 本章被引用立绘（LineAudio-uses->stand：选绘行级直连——拷贝清单=被引用清单，与 requires 同源；
 //     回溯角色/着装算 guid 整键 <char>-<costume>-<variant>-<stand_id>）
-MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:has_outline]->(:SecOutline)
-      -[:produces]->(:SecScript)-[:produces]->(l:LineAudio)-[:uses]->(stand:StandingIllustration)
+MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)
+      -[:produces]->(l:LineAudio)-[:uses]->(stand:StandingIllustration)
 MATCH (char:Character)-[:has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(stand)
 OPTIONAL MATCH (illus:IllusDesign)-[:expands_to]->(stand)
 OPTIONAL MATCH (costume:CostumeStyle)-[:outfit_for]->(illus)
 RETURN DISTINCT char.name AS char_name, stand.id AS stand_id, stand.variant_label AS variant, costume.name AS costume_name, stand.image_path AS image_path, stand.status AS status;
 // (4b) 选绘缺口计数（say 行无 uses 边——发布将打警告、portrait 空串、运行时占位图兜底）
-MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:has_outline]->(:SecOutline)
-      -[:produces]->(:SecScript)-[:produces]->(l:LineAudio)
+MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)
+      -[:produces]->(l:LineAudio)
 WHERE l.op = 'say' AND NOT (l)-[:uses]->(:StandingIllustration)
 RETURN count(l) AS say_no_stand;
 ```
 
 **前驱校验**：
-- `ch.status` 必须 = `11`（结构已批）；**每节产物链必须就绪：`ol_status=1` ∧ `sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（提纲完成 + 定稿已批 + 该节全部台词行声音已批）——章真正可发布 = `Chapter.status==11` AND 全部节产物就绪。任一不满足则停止并提示先在 dashboard 推进/审批对应节（含定稿审 10→11、拆分配音、逐句音频审）。
+- `ch.status` 必须 = `11`（结构已批）；**每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿已确认 + 该节全部台词行声音已批）——章真正可发布 = `Chapter.status==11` AND 全部节产物就绪。任一不满足则停止并提示先在 dashboard 推进/审批对应节（含定稿确认、拆分配音、逐句音频审）。
 - 被引用立绘（uses 边目标）：`status=11` 且 `image_path` 非空的才拷贝；`status≠11` 的逐个**警告**（运行时该变体走占位图），不阻断发布（让已就绪资源先上线）。`say_no_stand>0` 时**警告** N 句缺选绘（该批句运行时保持上一张/占位图）。
 - background SceneLayer：同理，`status=11` 且 `image_path` 非空才拷贝。
 - BgmTrack：`status=2` 且 `audio_path` 文件存在的才拷贝/注入；`<2` 或文件缺失逐个**警告**（该场景运行时无 BGM，静默），不阻断发布。
-- 环境音行（可选附加查询）：`MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:has_outline]->(:SecOutline)-[:produces]->(:SecScript)-[:produces]->(l:LineAudio) WHERE l.status=11 AND l.ambient_track IS NOT NULL RETURN DISTINCT l.ambient_track AS track`——本章已批环境音的 track 清单（chapter_packs 用；拷贝由下步 (e) publish 统一做）。以 ambient_track 字段存在为准、不看 op（转场音效 op=transition 与 narrate 内嵌声景 ambience 都算）。注意环境音行未全批会卡各节产物链就绪判定（行 gate），与 say 同规。
+- 环境音行（可选附加查询）：`MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:produces]->(l:LineAudio) WHERE l.status=11 AND l.ambient_track IS NOT NULL RETURN DISTINCT l.ambient_track AS track`——本章已批环境音的 track 清单（chapter_packs 用；拷贝由下步 (e) publish 统一做）。以 ambient_track 字段存在为准、不看 op（转场音效 op=transition 与 narrate 内嵌声景 ambience 都算）。注意环境音行未全批会卡各节产物链就绪判定（行 gate），与 say 同规。
 
 ### 2. 合并拍平 + 拷贝资源到 99_game/
 
@@ -85,7 +82,7 @@ mkdir -p 99_game/data/chapters 99_game/assets/portraits 99_game/assets/scenes 99
 python 99_game/tools/generate_portrait_map.py '<chapter_id>' -o '99_game/data/.cache/chapter-map-<stem>.json'
 
 # (a) 剧本：从图投影全章台词行 → 99_game/data/chapters/<stem>.json（Chapter→Section(section_no)→
-#     SecScript-produces{order}->LineAudio；前置校验各节产物就绪；
+#     Section-produces{order}->LineAudio；前置校验各节产物就绪；
 #     say.portrait 沿 uses 边投影为 guid 整键（缺边 say 行警告 + 空串）；--chapter-map 注入
 #     scene-block.bgm；requires.portraits = 投影整键并集；
 #     行节点 id 等图字段投影丢弃，say.voice = 行节点 voice_key）
@@ -194,7 +191,7 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
 
 `voice` 字段（`say.voice`）由 [section-voice-publisher](../section-voice-publisher/SKILL.md) 在**节级定稿后**经 `bind-graph` 写进行节点 `voice_key`，本 skill 图投影合并时自动带进章 JSON：
 
-- **生产时序**：chapter-dialoguer（台词.ink → SecScript=10→11）→ **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
+- **生产时序**：chapter-dialoguer（台词.ink → Section.status=10→11）→ **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
 - 本 skill 合并时 say 行节点已含 voice_key（投影把 `voice_key` 投为 `say.voice`）→ 合并后章 JSON 每 say 自带 voice，**无需再注入**。
 - **本 skill 末尾补 manifest.voices + chapter_packs.voices**（节级阶段章未合并，这两处无法写；合并后用 voice_bundler 读章 JSON 推导补齐，见第 3、4 步）。
 - **行身份稳定寻址**：voice key 末段是 LineAudio 行节点雪花 id——台词.ink 插入/删除/移动行不影响其他行 key；某句台词被改（stale 重配）后重跑该节 section-voice-publisher 覆盖对应 wav 即可，无全节重配。

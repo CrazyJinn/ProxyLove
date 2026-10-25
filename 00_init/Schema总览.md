@@ -19,7 +19,7 @@
 | [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Info, Choice |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Spot, Scene, SceneLayer |
-| [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/提纲/定稿/逐句台词行产物链） | Chapter, Section, SecOutline, SecScript, LineAudio |
+| [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/定稿态/逐句台词行——节级产物节点已删，小说.md/台词.ink 为纯文件产物） | Chapter, Section, LineAudio |
 | [声音.md](Schema/声音.md) | 角色如何从文字变成声音 + 场景 BGM | VoiceDesign, BgmTrack |
 
 ---
@@ -34,7 +34,7 @@
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
-| Spot | snowflake Base62 | 地点内子空间（default/zone）；场景化时由 scene-designer 建/归组（anchored_at），无 status |
+| Spot | snowflake Base62 | 地点内子空间（zone；default 已废止仅存量）；场景化时由 scene-designer 建/归组（anchored_at），无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
@@ -46,10 +46,8 @@
 | Scene | snowflake Base62 | 地点内的子场景视觉设定 |
 | SceneLayer | snowflake Base62 | 场景的单一图层（背景/地面/陈设/遮罩） |
 | Chapter | snowflake Base62 | 剧本章节编排单元（章级：结构 / 分节规划） |
-| Section | snowflake Base62 | 章节内的节编排容器（纯编排：节序/标题/概要，无 status 与产物路径） |
-| SecOutline | snowflake Base62 | 节级提纲产物（outline_path；0→1 无审批） |
-| SecScript | snowflake Base62 | 节级定稿产物（script_path 指 台词.ink；0→1→10→11 定稿审） |
-| LineAudio | snowflake Base62 | **逐句台词行**（SecScript-produces{order}-> 1:N；节点 id=行身份；行 status 只代表音频审批 0→10→11，非 say 行拆分即 11；wav 按 voice key 落盘） |
+| Section | snowflake Base62 | 章节内的节编排容器 + 定稿态载体（节序/标题/概要/time_day + scene_block_ids 预分配块 id + script_path 指 台词.ink + scene_blocks + status 定稿态 0→1→10→11，编辑保存即 11；小说.md 为纯文件产物不入图） |
+| LineAudio | snowflake Base62 | **逐句台词行**（Section-produces{order}-> 1:N；节点 id=行身份；行 status 只代表音频审批 0→10→11，非 say 行拆分即 11；wav 按 voice key 落盘） |
 | VoiceDesign | snowflake Base62 | 角色基线音色设计（instruct + 参考音频；多候选流程：3 候选 ref + 3×3 情绪试听 → dashboard 采用固化） |
 | BgmTrack | snowflake Base62 | 场景背景音乐（人工生成链；0→1 描述产出→2 用户手动放 wav 归档；无审批） |
 
@@ -64,7 +62,7 @@
 | **叙事基础** | | | | |
 | relation | Character → Character | N:N | ❌ | 人物关系 |
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
-| occurs_at | Event → Location | N:1 | ❌ | 事件发生地点（一跳；子空间归组见 anchored_at） |
+| occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
 | link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体；因果归 leads_to） |
 | leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通（先后时序由 Event.time 承载，evt_relation 已废止） |
@@ -82,15 +80,13 @@
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
 | **场景美术** | | | | |
-| anchored_at | Event → Spot | N:1 | ❌ | 事件子空间归组（scene-designer 细化时建，叙事层禁建） |
+| anchored_at | Event → Spot | N:N | ❌ | 事件子空间归组（与 occurs_at 配对：跨地点事件在每个地点各归组一个 Spot；scene-designer 细化时建，叙事层禁建） |
 | part_of | Spot → Location | N:1 | ❌ | 空间从属 |
 | realizes | Spot → Scene | 1:N | ❌ | Spot 实现场景（原 has_scene，sync 语义变更见场景美术.md） |
 | has_layer | Scene → SceneLayer | 1:N | ✅ | 场景→图层 |
 | **剧情** | | | | |
 | has_section | Chapter → Section | 1:N | ✅ | 章→节（组成关系，级联重做） |
-| has_outline | Section → SecOutline | 1:1 | ✅ | 节→提纲产物（编排变更级联作废产物链） |
-| produces | SecOutline → SecScript | 1:1 | ✅ | 提纲产出定稿（改提纲→定稿/全部行作废） |
-| produces | SecScript → LineAudio | 1:N | ✅ | 定稿产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；改定稿→全部行作废，重拆按 text_sha1 恢复未变句） |
+| produces | Section → LineAudio | 1:N | ✅ | 节产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；节属性变更→全部行作废，重拆按 text_sha1 恢复未变句；小说素材变动由 novelist 显式作废） |
 | contains | Section → Scene | N:M | ❌ | 节编排场景顺序 |
 | depicts | Scene → IllusDesign | N:N | ❌ | 场景需要的着装立绘（按需出图门控；变体经 expands_to 跟踪） |
 | **声音** | | | | |
@@ -136,9 +132,7 @@ flowchart LR
 
     subgraph 剧情["剧情"]
         Chapter["Chapter"]
-        Section["Section"]
-        SecOutline["SecOutline"]
-        SecScript["SecScript"]
+        Section["Section（编排+定稿态）"]
         LineAudio["LineAudio（逐句行）"]
     end
 
@@ -149,8 +143,8 @@ flowchart LR
     Appearance -->|"produces ✅ 1:N 版本链"| DesignSheet
     Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
-    Event -->|"occurs_at ❌ N:1"| Location
-    Event -.->|"anchored_at ❌ N:1（scene-designer）"| Spot
+    Event -->|"occurs_at ❌ N:N"| Location
+    Event -.->|"anchored_at ❌ N:N（scene-designer）"| Spot
     Event -->|"wears ❌ N:N"| Costume
     Event -->|"leads_to ❌ N:N"| Event
     Event -->|"leads_to ❌ N:N"| Info
@@ -163,9 +157,7 @@ flowchart LR
     Spot -->|"realizes ❌ 1:N"| Scene
     Scene -->|"has_layer ✅ 1:N"| SceneLayer
     Chapter -->|"has_section ✅ 1:N"| Section
-    Section -->|"has_outline ✅ 1:1"| SecOutline
-    SecOutline -->|"produces ✅ 1:1"| SecScript
-    SecScript -->|"produces ✅ 1:N order"| LineAudio
+    Section -->|"produces ✅ 1:N order"| LineAudio
     Section -->|"contains ❌ N:M"| Scene
     Scene -->|"depicts ❌ N:N"| IllusDesign
     Scene -->|"has_bgm ❌ 1:1"| BgmTrack

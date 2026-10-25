@@ -71,7 +71,7 @@ bed- rain
 | 行型 | 行式 | 解析产物 | 进图 |
 |---|---|---|---|
 | 注释行 | `// …` | 无（跳过） | 否 |
-| 场景块标记 | `=== <scene_block_id> // <Scene 名>（<时段>）`（v2；v1 空格式兼容） | blocks += {block, scene_name}；后续行携带 scene_block_id | 块元数据（SecScript.scene_blocks） |
+| 场景块标记 | `=== <scene_block_id> // <Scene 名>（<时段>）`（v2；v1 空格式兼容） | blocks += {block, scene_name}；后续行携带 scene_block_id | 块元数据（Section.scene_blocks） |
 | 说话行 | `角色名:台词`（半角冒号） | {op:"say", who, text} | 是（status=0 待配音） |
 | 旁白行 | `旁白:叙述` | {op:"narrate", text} | 是（11） |
 | 点状音效行 | `sfx:语义` | {op:"transition", text} | 是（status=0；Freesound 实录） |

@@ -5,6 +5,7 @@ extends Control
 
 const PORTRAIT_ASPECT := 800.0 / 1200.0  # 立绘素材宽/高（2:3）；无纹理时回退比例
 const PORTRAIT_SIDE_INSET := 0.10  # 左右槽距画布边的内缩比例（往中间靠；0=贴边）
+const PORTRAIT_DROP := 150  # 立绘整体下移（px，三槽统一）：底部沉出画面，构图下压
 var _nodes: Dictionary = {"left": null, "center": null, "right": null}
 var _scales: Dictionary = {"left": 1.0, "center": 1.0, "right": 1.0}
 
@@ -40,7 +41,7 @@ func _position(tr: TextureRect, key: String, scale: float) -> void:
 	var sw := sh * aspect
 	tr.size = Vector2(sw, sh)
 	var inset := w * PORTRAIT_SIDE_INSET  # 左右槽内缩（往中间靠）
-	var y := h - sh                    # 贴底：脚踩同一地面线，矮个不悬空
+	var y := h - sh + PORTRAIT_DROP    # 贴底：脚踩同一地面线，矮个不悬空；整体再下压 PORTRAIT_DROP
 	match key:
 		"left": tr.position = Vector2(inset, y)
 		"center": tr.position = Vector2((w - sw) / 2.0, y)

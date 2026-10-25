@@ -8,7 +8,6 @@ description: |
   逐个向用户提问确认修法（每题附推荐答案），全部敲定后组装修改建议 JSON 落盘 → dashboard 待审。
   稀疏纪律：创作类新增单次至多 3 Event + 2 Info——本 skill 靠多次运行逐步丰满，留白即叙事。
   范畴 = 叙事基础层五实体及其边；Spot/Scene 属场景域（scene-designer 独占），本 skill 不检查不创建。
-  与 nrt-narrative-grower 的分工：grower 是无人值守体检+LLM 创意推断（不交互、建议直接落盘，已废弃合并入本 skill）；
   本 skill 是有人值守的逐缺口修复对话——每条修法经用户确认才进建议，且推荐答案可解释（带理由标签与数据依据）。
   在用户说「补缺口」「补链路」「修断点」「填充时间段」「两事件之间补」「探索/丰满人物」「gap-filler」或要求交互式治理叙事图时使用。
 argument-hint: [角色名 | 事件A → 事件B | 起始~结束时间]
@@ -25,7 +24,7 @@ allowed-tools: Read, Bash, Write
 >
 > **只读不写（交互期间）**：发现与确认阶段仅查询图。用户敲定全部修法后，一次性组装建议 JSON 落盘；写库永远由人工在 dashboard Cypher 控制台执行（两段确认 + 级联预览），本 skill 不执行任何写语句。
 >
-> **产出兼容 grower 管道**：建议 JSON 逐项 `{check, priority, reason, content, cypher}` + `source:'nrt-gap-filler'`，落盘 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`——dashboard `/events` 页「📥 grower 建议」弹窗直接可读（该弹窗取最新 3 个 `*_建议.json`，文件必须以 `_建议.json` 结尾才会被拾取——曾用 `_补全建议.json` 因不匹配 glob 落空，勿回退；`source` 字段在弹窗内容里与 grower 产出区分）。
+> **建议 JSON 契约**：逐项 `{check, priority, reason, content, cypher}` + `source:'nrt-gap-filler'`，落盘 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`——dashboard `/events` 页「📥 补全建议」弹窗直接可读（该弹窗取最新 3 个 `*_建议.json`，文件必须以 `_建议.json` 结尾才会被拾取——曾用 `_补全建议.json` 因不匹配 glob 落空，勿回退）。
 
 ## 前置
 
@@ -79,7 +78,7 @@ OUTPUT_DIR="02_剧情数据"
 
 > **V 组与 E/C/X 的性质差异**：E/C/X 查的是「已有实体的链路断点」（缺口修法是确定性的：挂边/建骨架）；V 查的是「该有而没有的」（修法含**创作**：新事件 title/description 是 LLM 编的）。V 组建议项的 content 必须显式标「创意推断，可调整」。
 >
-> **V 组级联纪律（防越补越缺）**：V 组确认「补一个新事件」后，该事件天然缺 occurs_at/involved——**同题追问挂哪/谁参与**（复用 E 组的推荐信号），不留新的 E1/E3 缺口下库；V 组与 grower 职责边界见「与 grower 的分工」。
+> **V 组级联纪律（防越补越缺）**：V 组确认「补一个新事件」后，该事件天然缺 occurs_at/involved——**同题追问挂哪/谁参与**（复用 E 组的推荐信号），不留新的 E1/E3 缺口下库。
 >
 > **H 组 = 显式聚焦时的创作提案，严守稀疏纪律**：单次运行至多提案 **3 Event + 2 Info**，候选超限只取优先级最高者，其余汇报为「下次可补」；「接受留白」永远在选项里，低信号时是推荐项。**多次运行逐步丰满是设计意图——每次少补一点，不是一次填满**。提案前扫最近一轮 `*_建议.json` 的 H 组条目：已提案未审批的插入点标「上轮已提案待审」，不重复草案只提醒审批状态。H 组级联纪律同 V 组（新事件同题追问 occurs_at/involved）。
 
@@ -135,21 +134,21 @@ c) 新建 Location
 
 全部问题问完（每个缺口都有处置：修复/跳过）后：
 
-1. **推导轮次 N**：扫描 `${OUTPUT_DIR}/*round*_建议.json`（与 grower 共用轮次计数器）取 max+1；主题 = focus 名 / 时间窗起止（如 `03-01~03-10`）或「全图」。
+1. **推导轮次 N**：扫描 `${OUTPUT_DIR}/*round*_建议.json` 取 max+1；主题 = focus 名 / 时间窗起止（如 `03-01~03-10`）或「全图」。
 2. **组装数组**：每个「修复」决定一项，`{check, priority, reason, content, cypher, source}`：
    - `check` = 缺口类型标识（`E1_missing_occurs_at` / `E3_no_involved` / `C1_zero_event_char` / `X1_isolated_event` / `X2_choice_no_target` / `V1_thin_timeline` / `V2_weak_arc` / `V3_implicit_relation` / `V4_orphan_info` / `H1_window_fill` / `H2_char_richness`）
    - `priority` = E1/X2 high（直接断叙事流）、E3/X1/V1/V2/H1 medium（H1 桥接因果跳变 medium、纯点缀降 low）、C1/V3/V4/H2 low、按影响可调
    - `reason` = 缺口事实（图算法查出什么）+ 用户在对话中敲定的依据
    - `content` = 人读修法描述（含理由标签）
    - `cypher` = 开箱可执行（MERGE 幂等、内联值、节点语句在前边语句在后；新建节点用 `$SF_GEN` 生成 id）
-   - `source` = `'nrt-gap-filler'`（区分 grower 产出）
+   - `source` = `'nrt-gap-filler'`
    - 聚合决定拆成逐条 cypher（每实体一条建议项），但 content 注明「同组批量：<组名>」——dashboard 逐条审时能看出组内关联。
    - **跳过的缺口不产生建议项**，但在对话汇报中列出（缺口 + 跳过理由），保证没有默默消失的缺口。
 3. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_补全_建议.json`（顶层数组）。**落盘即提交**——dashboard 不接收推送，`GET /events/suggestions` 每次按 glob 拾取最新 3 个文件；落盘后可用该接口回查验证拾取成功。
    - 一条建议的 `cypher` 可以是**多语句**（`;`+换行分隔，先节点后边）：dashboard 建议弹窗「采纳」自 2026-10-19 起支持多语句（`cascade.split_statements` 拆分后单事务 `run_write_many` 顺序执行 + 级联合并）；此前单语句限制会报 Memgraph `expecting <EOF>`。
    - **cypher 只含交付目标本身，禁止夹带自造的「校验/checksum 节点」**（2026-10-20 踩过：往建议里塞 `MERGE (chk:…) ON CREATE SET chk.title='__checksum__'` 想做执行标记，结果是必然产生的孤儿节点，用户在图上看到还要手工清）。执行校验一律由 agent 在用户回报执行后用只读查询回查目标节点完成。
 4. **汇报收尾**：文件路径 + 建议条数与 priority 分布 + 跳过清单 + 审批入口提示：
-   - dashboard `/events` 页「📥 grower 建议」弹窗查看（本文件与 grower 建议同通道）；
+   - dashboard `/events` 页「📥 补全建议」弹窗查看；
    - 逐条审过后经 `/data` Cypher 控制台执行写库（两段确认 + 级联预览）；MERGE 幂等，执行前自查该条是否已写回。
 
 ---
@@ -166,14 +165,8 @@ c) 新建 Location
 8. **稀疏填充**：创作类新增（H 组）单次至多提案 3 Event + 2 Info，宁少勿多——多次运行逐步丰满是设计意图，不是一次填满；「接受留白」永远在选项里，低信号时是推荐项；上轮已提案待审的插入点不重复提案。
 9. **title/description 不带时间**：新事件的 title 与 description 禁止携带任何时间信息（绝对日期、「第 N 天」、周次、时段词「次日/当晚/周末/两周后」等）——时间真相唯一承载是 `Event.time`；文本重复时间在后续重排时必然失真（「周末复播」被迫改 title 的实例）。节奏/因果语义放 `leads_to` 的 `detail`，用户口头带时间的草案落 JSON 前转写为无时间表述。存量节点不追溯清洗，仅约束本 skill 的新增提案。
 
-## 与 grower 的分工（grower 已废弃，2026-10-12 合并）
-
-`nrt-narrative-grower` 的缺口发现能力已全量并入本 skill（V1←temporal_gaps+narrative_density、V2←character_arcs+subgraph_connectivity、V3←implicit_relations、V4←info_depth、X1←event_chains；scene_utilization / bridge_scenes / relationship_evolution 为场景域统计且纯统计无动作，弃——场景域体检随 Spot 出圈一并移出本 skill 范畴）。grower skill 目录保留但**已停止维护**，新缺口治理一律走本 skill（有人值守逐题确认）。存量 `02_剧情数据/*_建议.json` 不受影响，dashboard 建议弹窗同通道展示。
-
-> 历史：grower 是无人值守批量体检（LLM 直接产建议落盘不经确认），本 skill 是有人值守版（每条修法经用户确认）。合并后「发现缺口」的唯一入口是本 skill；`/events` 页的「深化(grower)」按钮投递的指令已无对应维护方，dashboard 侧待改为投递本 skill。
-
 ## 参考文档
 
 - [缺口检查查询库 + 入参定界 + 推荐规则（含回测命中率）](references/gap-queries.md)
 - [叙事基础.md Schema](../../../00_init/Schema/叙事基础.md)
-- 手动建节点补边：[nrt-graph-builder](../nrt-graph-builder/SKILL.md)（本 skill 落建议 JSON 之外的零星手工通道）
+- 零星手工增补：把内容作为本 skill 的修法输入走建议 JSON 通道

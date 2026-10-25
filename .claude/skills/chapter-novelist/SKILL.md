@@ -1,19 +1,19 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；原 chapter-outliner 已废弃并入本 skill）：读 structurer 章级设计简报（本节预分配 scene-block id + 情感弧位置）→ 按 Section.time_day 时间窗圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id 用 structurer 预分配值；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）→ 兜底建 SecOutline（Section-[:has_outline]->SecOutline，写 outline_path 指小说 + status=1 节土壤就绪，无审批）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式 SET sc.status=-1 作废定稿链。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
-  前驱所属 Chapter status=11（结构已批）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量豁免：无小说.md 且 sc∈{10,11} 的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架 + Section.scene_block_ids；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 Section.time_day 时间窗圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id 用 Section.scene_block_ids 预分配值；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
+  前驱所属 Chapter status=11（结构已批）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 Section.status∈{10,11} 的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
   - section_id
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **stale = 重写覆盖**：小说.md 头部取材指纹与当前图素材不一致（fingerprint.py check 退出码 1）时，**必须重写并覆盖旧文**——禁止因文件已存在而跳过，也**禁止读旧小说正文**（头部块只由脚本解析），直接以当前图素材 + 设计简报为唯一来源重新创作；并按段 3 作废定稿（sc≠-1 时 SET sc.status=-1）。
+> **stale = 重写覆盖**：小说.md 头部取材指纹与当前图素材不一致（fingerprint.py check 退出码 1）时，**必须重写并覆盖旧文**——禁止因文件已存在而跳过，也**禁止读旧小说正文**（头部块只由脚本解析），直接以当前图数据为唯一来源重新创作；并按段 3 作废定稿链。
 
-# 节小说（小说段 · 纯文件产物 + 节土壤就绪标记）
+# 节小说（小说段 · 纯文件产物，零图写入）
 
-剧情创作流程的**第二段**（节级，在章级结构段之后、定稿段之前）。**节的提纲即图数据本身**：Event（情节）、Info（信息）、Choice/option（分支）、设计简报（弧线与 scene-block id 预分配）——结构推理（场景段切分/分支核验/节拍规划）在本 skill 的思维链中完成，**不落任何中间提纲文件**。产出节级散文 **小说.md**（dialoguer 定稿段的创作土壤）+ 兜底建 SecOutline 就绪标记。正文 `### <scene_block_id> <场景名> <时段>` 场景段标题即拓扑契约（dialoguer 照搬为 ink 场景块）。
+剧情创作流程的**第二段**（节级，在章级结构段之后、定稿段之前）。**节的提纲即图数据本身**：Event（情节）、Info（信息）、Choice/option（分支）、Section.time_day + scene_block_ids（时间窗与块 id）——结构推理（场景段切分/分支核验/节拍规划）在本 skill 的思维链中完成，**不落任何中间提纲文件**。产出节级散文 **小说.md**（dialoguer 定稿段的创作土壤），**全程零图写入**（唯一例外：stale 重写时显式作废定稿链）。正文 `### <scene_block_id> <场景名> <时段>` 场景段标题即拓扑契约（dialoguer 照搬为 ink 场景块）。
 
 ## 参数
 
@@ -23,7 +23,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
-> 小说.md 的「状态」= 文件存在性 + 取材指纹新鲜度 + SecOutline.status（就绪标记）；新鲜度由下游 fingerprint check 兜底——「存在 ≠ 新鲜」，status 只标记「产出过」。
+> 小说.md 的「状态」= 文件存在性 + 取材指纹新鲜度（无图状态）；新鲜度由下游 fingerprint check 兜底——「存在 ≠ 新鲜」。
 
 ### 1. 查询目标节点状态 + 圈定素材 + 自检
 
@@ -33,26 +33,22 @@ allowed-tools: Read, Bash, Write, Edit
 
 ```cypher
 MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<input>'})
-OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline)
-OPTIONAL MATCH (ol)-[:produces]->(sc:SecScript)
 RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
-       sec.time_day AS time_day,
-       ol.id AS ol_id, ol.outline_path AS outline_path, ol.status AS ol_status,
-       sc.id AS sc_id, sc.status AS sc_status,
-       ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.brief_path AS brief_path, ch.status AS ch_status
+       sec.time_day AS time_day, sec.status AS sec_status, sec.script_path AS script_path,
+       ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
+       sec.scene_block_ids AS scene_block_ids
 LIMIT 1
 ```
 
 **前驱校验**：`ch.status = 11`（结构已批），否则停止并提示先完成章级结构段 + 结构审。
 **模式判定**：
-- 无 ol ∨ `ol_status ∈ {-1,0}` → **首建模式**（进 1b）。
-- `ol_status = 1` 且小说.md 存在 → 进 1d 指纹自检（stale → 重写模式；新鲜且用户未明示重写 → 汇报退出）。
-- `ol_status = 1` 且小说.md 不存在 → 存量旧流程节：plot-design 编排不会调到（豁免判定在上游）；被用户直接触发 = 显式转新流程，报告「本节为旧流程直连形态，本次建小说层（不动 sc 除非 stale）」后继续。
-- **小说路径推导**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/小说.md`（MM 零填充、概述取 title 清洗 Windows 非法字符；`outline_path` 兼容指向——本 skill 一律用该约定路径）。
+- 小说.md 不存在 → **首建模式**（进 1b）。`sec_status ∈ {10,11}` 时为存量直连节：plot-design 编排不会调到（判定在上游）；被用户直接触发 = 显式转新流程，报告「本节为旧流程直连形态，本次建小说层（stale 前不动定稿态）」后继续。
+- 小说.md 存在 → 进 1d 指纹自检（stale → 重写模式；新鲜且用户未明示重写 → 汇报退出）。
+- **小说路径推导**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/小说.md`（MM 零填充、概述取 title 清洗 Windows 非法字符）。
 
-#### 1b. 读设计简报 + 圈定取材素材
+#### 1b. 章级依据（图）+ 圈定取材素材
 
-- Read `brief_path` 指向的章级设计简报——取**分节规划里本节**（按 section_no 匹配）：预分配 scene-block id（**小说场景段标题的唯一合法 id 来源，不自创**）+ 所含 Scene + 情感弧位置 + 戏剧职责。简报缺失则停止并提示先跑 `chapter-structurer`。
+- 1a 查询已带回本节 `scene_block_ids`（**小说场景段标题的唯一合法 id 来源，不自创**；JSON 数组）。`scene_block_ids` 缺失（如存量节未回填）时从本节图行的 `scene_block_id` 聚合推导并汇报标注。
 
 圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→contains→Scene←realizes←Spot←anchored_at`，Info 限本节 involved 角色 / Event 一跳 link 防过宽）。**时间窗过滤（必做）**：窗 = `Section.time_day`（structurer 建节时写；Spot 全时间共享，不加窗会把该 Spot 历史全部 Event 记进指纹，任何一处变动都误 stale 本节）；`time_day` 缺失时退化为不过滤，并在汇报中标注「取材未限时间窗（指纹过宽）」：
 
@@ -97,13 +93,13 @@ python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" check --novel "<小说.md �
 
 #### 2a. 结构推理（**在思维链中完成，不落中间提纲文件**）
 
-1. **场景段切分**：按圈定 Event 的时空与情感弧位置切分本节为若干场景段（同场同时段的连续事件一段；干跑范式：上午康复中心 / 下午床铺 / 夜直播位 = 3 段），每段绑定设计简报预分配的 scene-block id（**不自创**）+ 所在 Scene 名 + 时段。
+1. **场景段切分**：按圈定 Event 的时空与叙事节奏切分本节为若干场景段（同场同时段的连续事件一段；干跑范式：上午康复中心 / 下午床铺 / 夜直播位 = 3 段），每段绑定 `Section.scene_block_ids` 预分配的块 id（**不自创**）+ 所在 Scene 名 + 时段。
 2. **分支节点图核验**（本节含 Choice 时）：在推理中画分支拓扑——每个 option 的落点 Event 必须存在（图上查）、无死胡同（每条分支汇合回主线或导向 ending）；分支本质差异存疑（flavor 级）时标注待补并在汇报中提示，不擅自替 Choice 加戏。
-3. **节拍规划**：每场景段 3~5 拍（自然语言，思维链内），确定本节 turning point / climax 位置（对齐简报情感弧）。
+3. **节拍规划**：每场景段 3~5 拍（自然语言，思维链内），确定本节 turning point / climax 位置（按事件时序推演）。
 
 #### 2b. 五步创作
 
-1. **进场三问**：粒度 = 节级散文，每场景段约 500~1500 字（指引非硬性）；落点 = galgame 定稿土壤**非连载**——不写章末钩子/上章回顾/平台向调味；**视角人物定死**（依简报与出场角色），写入小说 `## 视角`。
+1. **进场三问**：粒度 = 节级散文，每场景段约 500~1500 字（指引非硬性）；落点 = galgame 定稿土壤**非连载**——不写章末钩子/上章回顾/平台向调味；**视角人物定死**（依事件与出场角色），写入小说 `## 视角`。
 2. **三件事钉人物 + 强场景锚**：每个主要出场角色钉「想要什么 / 怕什么 / 有什么不肯告诉别人的伤」→ 写入 `## 人物速写`（dialoguer 提炼台词的依据）；场景段序 = 强场景锚，**不可动**。
 3. **节拍对齐**：按 2a 思维链节拍逐段展开——一场景段一节正文，覆盖全部节拍；**不增删场景、不改分支拓扑**（选择项归属图未定时按「纯角色内心」缺省并标注待定）。
 4. **落稿**：只写图素材与节拍已背书的区间；**称谓规则**（穿越/换宿主题材）：内心独白与叙述用本名，说出口的台词用宿主名，叙述句身体动作与心理活动拆开归属；**禁裸 Day 计数**（叙述层用场景指称，如「那天在桥上」）；对白按 LanguageStyle（词汇/节奏/口头禅/情绪模式）。
@@ -130,43 +126,30 @@ info  <id> <hash16> <title>
 <散文正文…>
 ```
 
-### 3. 保存结果（指纹头部 + 落盘 + 兜底建 SecOutline + 唯一作废写入 + 对账建议）
+### 3. 保存结果（指纹头部 + 落盘 + 唯一作废写入 + 对账建议）
 
 1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --ids <实际取用素材 id 逗号列表>` → 产出完整头部块（**只含取用子集**——省略 `--ids` 会记圈定全量，禁止）。
-2. **Write** 小说.md（头部块置文件首 + 全文）到约定路径。
-3. **兜底建 SecOutline（就绪标记）**——`--multi` 单事务，节点先于边；`ol_id` 用 `snowflake_base62.py` 新生成（已存在 SecOutline 时复用其 id）：
+2. **Write** 小说.md（头部块置文件首 + 全文）到约定路径。首建模式到此完成（零图写入）。
+3. **重写模式才作废定稿链**（首建模式跳过；`sec_status IS NULL` 跳过）——`--multi` 单事务：
 
 ```cypher
-// 1. MERGE 兜底建 SecOutline 就绪标记（重做时复用已有节点）
-MERGE (ol:SecOutline {id:'<ol_id>'})
-SET ol.name = '<节标题>小说',
-    ol.outline_path = '<小说.md 路径>',
-    ol.status = 1;      // 节土壤就绪，无审批，直接进入 chapter-dialoguer
-
-// 2. 兜底建 has_outline 边（Section→SecOutline，sync=true：节编排变更级联作废产物链）
-MATCH (sec:Section {id:'<sec_id>'}), (ol:SecOutline {id:'<ol_id>'})
-MERGE (sec)-[r:has_outline]->(ol) SET r.sync = true;
-```
-
-4. **重写模式才作废定稿**（首建模式跳过；`sc_id` 不存在跳过）：
-
-```cypher
-MATCH (sc:SecScript {id:'<sc_id>'}) WHERE sc.status <> -1 SET sc.status = -1;
+MATCH (sec:Section {id:'<sec_id>'}) WHERE sec.status <> -1 SET sec.status = -1;
+MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <> -1 SET l.status = -1;
 ```
 
 > 作废后行级恢复走重拆机制（text_sha1 匹配且 wav 在的行恢复 10），plot-design 按产物链现状续推 dialoguer 重新提炼。
 
-5. **对账建议（可选）**：段 2 中长出的新 Event/Info（图上查无、值得回写大纲的）→ 组装建议 JSON（契约与纪律见 [nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4，差异仅三处）：
+4. **对账建议（可选）**：段 2 中长出的新 Event/Info（图上查无、值得回写大纲的）→ 组装建议 JSON（契约与纪律见 [nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4，差异仅三处）：
    - `check = 'N1_novel_new_entity'`，`source = 'chapter-novelist'`
    - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_建议.json`（必须 `_建议.json` 结尾；轮次 N 扫描 `02_剧情数据/*round*_建议.json` 取 max+1，与 gap-filler 共用计数器）
    - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/link/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）。稀疏纪律：单次至多 3 Event + 2 Info，无新增不落盘只汇报。
-6. **汇总**：小说路径 + 取材条数（event/info 分计）+ 模式（首建/重写）+ SecOutline id 与 status + 是否作废 sc（sc_id 与前后 status）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
+5. **汇总**：小说路径 + 取材条数（event/info 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
 
 ## 参考文档
 
 - 方法论（节级裁剪）：[references/小说方法论精简版.md](references/小说方法论精简版.md)——五步展开、对账四分类、惯性签名轻检清单
 - 指纹契约：[scripts/fingerprint.py](scripts/fingerprint.py) 顶部 docstring（归一化规则 / gen --ids / check）
-- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section.time_day / SecOutline 就绪标记 / 创作流程注记「小说段」
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构 + 设计简报预分配 scene-block id + Section.time_day）
+- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section.time_day / Section 定稿态 / 创作流程注记「小说段」
+- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构 + Section.time_day + scene_block_ids 预分配）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
 - 建议通道：[nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4（建议 JSON 字段 / 多语句 / 控制台执行）

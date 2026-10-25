@@ -1,0 +1,193 @@
+location:
+  id: RVjGUcD54y
+  name: 火锅店
+  description: 陈念以「家庭聚餐」为名安排的相亲饭局地点
+room:
+  floor:
+  - 5.5
+  - 4.0
+  height: 2.9
+  wall_color: '#a89684'
+  floor_color: '#5c554c'
+  door:
+    side: z+
+    pos:
+    - 1.6
+    - 0
+    - 1.99
+    size:
+    - 1.0
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - 0.6
+    - 1.7
+    - -1.99
+    size:
+    - 2.4
+    - 1.6
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 临街大窗,午后日光斜照进来
+  deco: 酱色瓷砖墙面泛着油光,天花板老式吊扇慢转,红汤香气混着花椒麻味
+  floor_material: 瓷砖
+  wall_material: 瓷砖
+objects:
+- id: booth_table
+  spot: 火锅店
+  name: 火锅卡座桌
+  type: cylinder
+  pos:
+  - -1.5
+  - 0.375
+  - -1.0
+  size:
+  - 1.2
+  - 0.75
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a4a2b'
+  cname: 火锅卡座桌
+  desc: 实木圆桌嵌电磁炉,红汤锅翻滚白汽直冒
+  material: 原木
+- id: booth_sofa_n
+  spot: 火锅店
+  name: 卡座沙发北位
+  type: box
+  pos:
+  - -1.5
+  - 0.425
+  - -1.7
+  size:
+  - 2.2
+  - 0.85
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6e3020'
+  cname: 卡座沙发北位
+  desc: 高背实木卡座沙发,暗红座垫靠背
+  material: 原木
+- id: booth_sofa_e
+  spot: 火锅店
+  name: 卡座沙发南位
+  type: box
+  pos:
+  - -1.5
+  - 0.425
+  - -0.4
+  size:
+  - 2.2
+  - 0.85
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6e3020'
+  cname: 卡座沙发南位
+  desc: 高背实木卡座沙发,暗红座垫靠背
+  material: 原木
+- id: condiment_counter
+  spot: 火锅店
+  name: 自助调料台
+  type: box
+  pos:
+  - 2.4
+  - 0.45
+  - -1.2
+  size:
+  - 0.7
+  - 0.9
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a7a68'
+  cname: 自助调料台
+  desc: 不锈钢台面,排着麻酱蒜泥香油碗和一摞小料碟
+  material: 金属
+- id: drink_fridge
+  spot: 火锅店
+  name: 饮料展示柜
+  type: box
+  pos:
+  - 2.35
+  - 0.9
+  - 0.3
+  size:
+  - 0.8
+  - 1.8
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3d4a52'
+  cname: 饮料展示柜
+  desc: 玻璃门冷柜,酸梅汤凉茶可乐一排
+  material: 玻璃
+- id: side_table
+  spot: 火锅店
+  name: 临窗小方桌
+  type: box
+  pos:
+  - 0.4
+  - 0.375
+  - -1.7
+  size:
+  - 0.7
+  - 0.75
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a4a2b'
+  cname: 临窗小方桌
+  desc: 两人位小方桌,桌面塑封菜单与纸巾盒
+  material: 原木
+scenes:
+- id: booth_day
+  scene_id: RVkysIzpeD
+  scene_name: 火锅店
+  spot: 火锅店
+  camera:
+    pos:
+    - 1.7
+    - 1.55
+    - 1.85
+    look_at:
+    - -0.5
+    - 1.15
+    - -0.75
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.3
+    - 0
+    color: '#ffd9a0'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

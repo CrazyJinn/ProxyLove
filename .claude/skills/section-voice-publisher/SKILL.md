@@ -1,7 +1,7 @@
 ---
 name: section-voice-publisher
 description: |
-  把单节已批定稿（SecScript.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
+  把单节已确认定稿（Section.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
   ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
   ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 Scene-depicts→expands_to 列已有立绘；池空按场景事件 wears 优先、兜底 has_costume 选定 IllusDesign；**候选一律按 DesignSheet.active_from 形象版本时间线过滤**——多版本角色如剪发前后自动取生效形象）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
@@ -15,9 +15,9 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-# 节级拆分进图 + 配音发布（SecScript 定稿 → 逐句 LineAudio → 行级 TTS）
+# 节级拆分进图 + 配音发布（Section 定稿态 → 逐句 LineAudio → 行级 TTS）
 
-把**单节已批定稿**（`SecScript.status=11` 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `SecScript-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
+把**单节已确认定稿**（`Section.status=11` 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `Section-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
 按本节出场角色 `VoiceDesign`，用 [voice_clone_runner.py](scripts/voice_clone_runner.py) ensure-ref 出/复用 ref_audio → 同脚本 `publish` 逐句 clone（Qwen3 Base Voice Clone，输入 tts_text 变体承载情绪，均 env/.venv-qwen）→ 母带落 `15_声音/<chapter_stem>/<scene_block_id>/`（按章节归档），再用 [voice_bundler.py](scripts/voice_bundler.py) `bind-graph` 给每个（重）生成行写节点属性（`status=10` 待审）。**不拷运行时副本**：dashboard 逐句审批试听直接读母带 `15_声音/`；`99_game/assets/voices|sfx` 只由 chapter-publisher 发布时按 `status=11` 收录（`voice_bundler.py publish`），未批音频不进成品目录。
 
 > **拆分幂等**（script_splitter.py 对齐算法）：台词.ink 与图行按签名（op+who+text）difflib 对齐——未变行原样保留（级联 -1 的未变 say 行且 wav 在 → 恢复 10，**resubmit 微调回路下未变行连 status 都不动**，已批 11 保持）；text 变化行沿用节点置 0（voice key 不变覆盖 wav）；定稿新增行建新节点（order 取上下句中点，**单句插入不丢任何行**）；定稿删除行 DETACH DELETE。order 中点耗尽时全节重排（order 不进 voice key，安全）。
@@ -27,11 +27,11 @@ allowed-tools: Read, Bash, Write, Edit
 
 | 参数 | 说明 |
 |------|------|
-| section_id | Section 节点 ID（snowflake）。沿产物链查 SecScript + 所属 Chapter（算 stem）+ 逐句行 |
+| section_id | Section 节点 ID（snowflake）。查 Section 定稿态 + 所属 Chapter（算 stem）+ 逐句行 |
 
 ## 前置条件
 
-- 本节 `SecScript.status=11`（定稿已批）；否则停止，提示先走 chapter-dialoguer + 定稿审。
+- 本节 `Section.status=11`（定稿已确认）；否则停止，提示先走 chapter-dialoguer + 定稿确认。
 - 所属 `Chapter.status=11`（结构已批）。
 - 本节出场角色的 `VoiceDesign.status=11`（声音已批）。未就绪（无 VoiceDesign 或 status≠11）角色**警告跳过**（该角色 say 行保持 status=0 待配，运行时静默不播），提示先经 `char-design` 跑 `char-voice-design` 并审批，不阻断其他角色配音。
 
@@ -40,8 +40,8 @@ allowed-tools: Read, Bash, Write, Edit
 ### 1. 查 Section 产物链 + 所属 Chapter + 本节角色 VoiceDesign
 
 ```cypher
-// (1) Section → SecOutline → SecScript（沿产物链取定稿）+ 所属 Chapter（算 stem）
-MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<section_id>'})-[:has_outline]->(:SecOutline)-[:produces]->(sc:SecScript)
+// (1) Section 定稿态 + 所属 Chapter（算 stem）
+MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<section_id>'})
 RETURN sc.script_path AS script_path, sc.status AS sc_status, sc.id AS sc_id,
        ch.chapter_no AS no, ch.title AS title, ch.status AS ch_status;
 ```
@@ -69,7 +69,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/script_splitter.py" split \
   --report '.tmp/split-<stem>-sec<MM>.json'
 ```
 
-- 前置：SecScript=11（脚本自校验）。解析失败（md 格式违例）→ 脚本报**行号+原文**，就地修 md 后重跑（**不要**绕过拆分直接配音）。
+- 前置：Section.status=11（脚本自校验）。解析失败（md 格式违例）→ 脚本报**行号+原文**，就地修 md 后重跑（**不要**绕过拆分直接配音）。
 - 读报告：`created/updated/deleted/restored/reordered` 计数与 warnings（Scene 缺失等）。**首次拆分** = 全部 created；**微调重拆** = 仅 updated（被改句）；**级联重拆** = restored（恢复 10）+ 0（重配）。
 - 报告 warnings 里的 Scene 缺失 → 提示用户先跑 scene-designer 建场景（stages 边缺不阻塞配音）。
 
@@ -191,7 +191,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 ## 重做与对齐
 
 - **行身份不漂移**：voice key 末段是 LineAudio 节点雪花 id——台词.ink 插入/删除/移动行不会使其他行的 key 失效，旧 wav 不成孤儿。台词被改的行在重拆时判 stale 置 0 自动重配；人工微调走 dashboard「重新提交审批」（仅 sc→10，**不动行节点**），重批后重拆只重做被改句，未变句审批结果原样保留。
-- **status=-1 级联**：SecScript/上游被 sync 级联 → 该节全部行 -1。重跑本 skill：拆分对齐把「text_sha1 匹配且 wav 在」的行恢复 10（音频复用不重配），其余置 0 重配；若 SecScript 本身 -1，先经 dialoguer 重做定稿升 11，再重跑本 skill。
+- **status=-1 级联**：Section/上游被 sync 级联 → 该节全部行 -1。重跑本 skill：拆分对齐把「text_sha1 匹配且 wav 在」的行恢复 10（音频复用不重配），其余置 0 重配；若 Section.status 本身 -1，先经 dialoguer 重做定稿升 11，再重跑本 skill。
 - **批量强制重做（演绎质量迁移等）置 0 不置 -1**：-1 会被拆分对齐的恢复机制判定「wav 在即复用旧音频」恢复 10，重配不发生；置 0 才是「待配重做，覆盖母带」的归一入口（挑行 status∈{0,-1} 均可挑中，但 -1 行先经拆分恢复分诊）。
 
 ## 汇报

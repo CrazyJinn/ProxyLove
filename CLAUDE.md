@@ -44,7 +44,7 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 3. 生产链 = DAG + status + sync 级联
 
-每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级产物链：`Section →has_outline→ SecOutline →produces→ SecScript -[:produces {order}]-> LineAudio(×N 逐句台词行)`，Section 为纯编排容器**无 status**（含 time_day 叙事日期）；节级小说（**小说.md 纯文件产物，不入图**——`chapter-novelist` 产，**提纲已内化**（原 chapter-outliner 废弃）：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，兜底建 SecOutline 就绪标记（ol=1）；头部取材指纹（素材 id+内容指纹）；dialoguer 入场同源自检，素材变动时 novelist 重写并显式 `SET sc.status=-1`；对账新实体走 gap-filler 建议 JSON）。三产物各用通用 status（SecOutline 0→1 / SecScript 0→1→10→11 / LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），链式 sync 级联——改提纲自动作废定稿+全部行、改定稿自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice key 末段，插入/删除行不漂移）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。两个核心机制：
+每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级链（**2026-10-23 最薄图**）：`Section（编排+定稿态 status/script_path/scene_blocks） -[:produces {order}]-> LineAudio(×N 逐句台词行)`——**节级产物节点（SecOutline/SecScript）已删除**，文件是节级产物的唯一载体：小说.md（`chapter-novelist` 产，**提纲已内化**（原 chapter-outliner 废弃）：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，**零图写入**；头部取材指纹（素材 id+内容指纹），dialoguer 入场同源自检，素材变动时 novelist 重写并显式作废定稿链（sec.status=-1 + 行 -1）；对账新实体走 gap-filler 建议 JSON）与 台词.ink（`chapter-dialoguer` 从小说提炼，唯一图写入 `SET sec.script_path + sec.status=10`，dashboard **编辑保存即 11**）。status 各用通用值（Section 定稿态 0→1→10→11 / LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），sync 级联——节属性变更自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice key 末段，插入/删除行不漂移）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。两个核心机制：
 
 - **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准。规则在 dailian-dashboard（治理后台，独立项目）`app/services/status.py` 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
 - **`sync` 边属性**：上游节点属性变更后，沿 `sync=true` 出边 BFS，把可达下游 `status` 重置为 **`-1`**（作废重做）；`sync=false` 阻断（如叙事边 `wears`、`relation`）。级联实现在 dailian-dashboard 的 `app/services/cascade.py`（dashboard 审批动作不触发级联，级联只由 Cypher 控制台/节点编辑确认卡触发）。
@@ -80,7 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳）**；事件到子空间的归组 `anchored_at → Spot` 由 scene-designer 场景化时建，叙事层 skill（extractor/graph-builder/gap-filler）禁建；realizes 方向是 `Spot → Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂，每个涉及地点各配一条 anchored_at 归组）**；事件到子空间的归组 `anchored_at → Spot` 由 scene-designer 场景化时建，叙事层 skill（gap-filler）禁建；realizes 方向是 `Spot → Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -127,10 +127,8 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 
 ## 何时用 skill / agent
 
+- 要按事件范围预检叙事基础完整性并推进下游 → 调 `event-precheck` agent（传事件 id/title 列表或时间窗；发现 char/location 缺口时逐条建议、用户确认后直接建 Character/Location 节点与 involved/occurs_at 边——写入白名单仅此四类，创作类补全走 nrt-gap-filler；修复完复查为 0 缺口后 Task 并行唤起 char-design + scene-design 推进涉及角色与 Location）。
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
-- 要从创作文本提取叙事实体/关系 → `nrt-narrative-extractor`（离线产 CSV + import.cypher）。
-- 只要三类核心关系的审阅产物、不入图（char-event-location / char-info-location / event-info 因果）→ `nrt-narrative-extractor2`（连图只读对照已有实体，单文件 md 到 `02_剧情数据/`，不产 CSV/cypher、不写图）。
-- 要手动加节点/边或发现图缺口 → `nrt-graph-builder`。
-- 要给叙事图做体检/补全缺口 → `nrt-gap-filler`（有人值守逐题确认，产 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`，人工经 dashboard 建议弹窗审阅 + Cypher 控制台写回；原 `nrt-narrative-grower` 已废弃合并入它）。
+- 叙事基础层增补/缺口治理（新增实体、补关系、时间段补桥、人物丰满）一律 → `nrt-gap-filler`（有人值守逐题确认，产 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`，人工经 dashboard 建议弹窗审阅 + Cypher 控制台写回）。
 - 要为某节创作节级小说土壤（提纲已内化：节的提纲即图数据，结构推理在 novelist 思维链完成；纯文件产物 小说.md，通常由 plot-design 编排，直触亦可）→ `chapter-novelist`（传 section_id；头部取材指纹，素材变动重写并作废定稿；对账新实体走建议 JSON）。

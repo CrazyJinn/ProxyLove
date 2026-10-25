@@ -4,7 +4,7 @@ description: |
   场景美术 + BGM 生产链编排层——查询图状态、按依赖调度 skill 推进节点（Scene → SceneLayer / BgmTrack）。
   当用户需要设计场景美术、推进场景/BGM 流程、查看进度、或处理场景美术相关任务时使用。
 permissionMode: bypassPermissions
-tools: Read, Grep, Glob, Bash, Skill, Write
+tools: Read, Grep, Glob, Bash, Skill, Write, AskUserQuestion
 ---
 
 ## 概述
@@ -52,7 +52,7 @@ RETURN l.name AS loc, l.id AS loc_id, evt_cnt, size(spots) AS spot_cnt, size(sce
 ```cypher
 // 未归组事件补充查（Spot 归组缺口 = scene-designer 待推进信号）
 MATCH (e:Event)-[:occurs_at]->(l:Location)
-WHERE NOT (e)-[:anchored_at]->()
+WHERE NOT (e)-[:anchored_at]->(:Spot)-[:part_of]->(l)
 RETURN l.name AS loc, l.id AS loc_id, count(e) AS ungrouped ORDER BY ungrouped DESC
 ```
 
@@ -64,7 +64,7 @@ RETURN l.name AS loc, l.id AS loc_id, count(e) AS ungrouped ORDER BY ungrouped D
 
 ### 3. 决策与调度
 
-**通过 Skill 工具委派执行，scene-design 不亲自跑生成脚本**：决策后用 `Skill` 工具调用下表对应 skill。Scene 缺口/待重做/事件漏归组用 `scene-designer <loc_id>`（Location 粒度入口——skill 内部自行完成 Spot 够用性推理与 anchored_at 归组、按事件复用/新建 Scene、机位决策与 room.yml 维护）；SceneLayer 用 `scene-layer-designer <scene_id>`（单轮直推到最大门控，无推进目标参数）；BgmTrack 用 `bgm-designer <scene 名 或 bgm_id>`。被调 skill 在自己的上下文里完成三段式【查询目标节点 → 组装提示词/生成图片/产音乐描述 → MERGE 兜底建节点+边并写 status】，仅向 scene-design 返回产物路径与最终 status。**scene-design 自身禁止用 Bash 执行 cypher 写入、snowflake、图片生成、提示词组装、音乐描述写作**——这些是各 skill 的职责；scene-design 只用 Bash 执行第 2 步的只读状态查询。
+**通过 Skill 工具委派执行，scene-design 不亲自跑生成脚本**：决策后用 `Skill` 工具调用下表对应 skill。Scene 缺口/待重做/事件漏归组用 `scene-designer <loc_id>`（Location 粒度入口——skill 内部自行完成 Spot 够用性推理与 anchored_at 归组、按事件复用/新建 Scene、机位决策与 room.yml 维护；**归组歧义点——多 zone 命中/粒度歧义/证据不足——skill 会用 AskUserQuestion 多选停下问用户，选择后继续**：这属于 skill 内决策点，不算编排越界，与「撞上必须由用户决策的分歧点才返回」条款衔接）；SceneLayer 用 `scene-layer-designer <scene_id>`（单轮直推到最大门控，无推进目标参数）；BgmTrack 用 `bgm-designer <scene 名 或 bgm_id>`。被调 skill 在自己的上下文里完成三段式【查询目标节点 → 组装提示词/生成图片/产音乐描述 → MERGE 兜底建节点+边并写 status】，仅向 scene-design 返回产物路径与最终 status。**scene-design 自身禁止用 Bash 执行 cypher 写入、snowflake、图片生成、提示词组装、音乐描述写作**——这些是各 skill 的职责；scene-design 只用 Bash 执行第 2 步的只读状态查询。
 
 **逐 Location 推进**：对每个待办 Location 按依赖顺序处理：
 ① `need_scene` 或 `ungrouped > 0` 或存在 status∈{-1,0} 的 Scene → `scene-designer <loc_id>`；

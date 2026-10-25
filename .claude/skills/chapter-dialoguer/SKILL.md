@@ -1,20 +1,20 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读 structurer 的章级设计简报 + novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 兜底建 SecScript（SecOutline-[:produces]->SecScript）写 script_path + status=10（定稿待审，直写不经 submit）。
-  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（SecScript 存在且 ink 含 llm: 行且 sc∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sc→10；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿审渲染；审批通过（sc=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
-  前驱 SecOutline.status=1（节土壤就绪标记，由 chapter-novelist 兜底建——提纲已内化，原 chapter-outliner 已废弃）。**存量直连模式**：ol=1 且节目录无小说.md 的旧流程节（如 chapter00/01 现存节），读 ol.outline_path 历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 nrt-gap-filler，均不写 status。
+  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=10`（定稿待人过目，直写不经 submit；dashboard **编辑保存即 11** 或 approve）。
+  双模式：① 常规创作（本节无定稿或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行且 sec.status∈{0,1}）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回并送审（sec.status→10；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；dashboard 定稿编辑器/审批；确认（sec.status=11）后由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
+  **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 nrt-gap-filler，均不写 status。
 argument-hint: <section_id>
 arguments:
   - section_id
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当本节 SecScript 节点被重置为 `status=-1` 时（如 SecOutline/Section/Chapter 属性变更沿 produces/has_outline/has_section 级联，或小说素材变动由 chapter-novelist 显式作废），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（重走 0→10）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 outline_path 历史文件）+ 章级设计简报为唯一来源重新创作。
+> **status=-1 = 作废重做**：当本节 `Section.status` 被重置为 `-1` 时（如 Section/Chapter 属性变更沿 has_section/produces 级联，或小说素材变动由 chapter-novelist 显式作废），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（重走 0→10）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 script_path 历史文件）为唯一来源重新创作。
 
-# 节细节对话（SecScript 定稿段 · status 0→10）
+# 节细节对话（Section 定稿态 · status 0→10）
 
-剧情创作流程的**第三段**（节级）。读 `chapter-structurer` 的**章级设计简报**（情感弧/戏剧意图）+ 创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：ol.outline_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**——人读/人改的定稿 ink 方言（**机器可解析**：审批通过后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/`（**创作/审阅区，非运行时**）。
+剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**——人读/人改的定稿 ink 方言（**机器可解析**：确认后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/`（**创作/审阅区，非运行时**）。
 
 ## 参数
 
@@ -24,43 +24,37 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
-> 本 skill 是 SecScript 产物节点的创建点 + 定稿段 status 的唯一写入点；台词.ink 由本 skill 直接创作产出。编剧是高自由度创作任务，**无纯产出子 skill**——创作与写图都在本 skill 内完成。
+> 本 skill 是 `Section.status`（定稿态）+ `script_path` 的写入点（不建任何节点）；台词.ink 由本 skill 直接创作产出。编剧是高自由度创作任务，**无纯产出子 skill**——创作与写图都在本 skill 内完成。
 
 ### 1. 查询目标节点状态
 
 通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询。
 
-#### 1a. 解析 Section + SecOutline + SecScript + 前驱校验
+#### 1a. 解析 Section + 前驱校验
 
 ```cypher
 MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<input>'})
-OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline)
-OPTIONAL MATCH (ol)-[:produces]->(sc:SecScript)
 RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title,
-       ol.outline_path AS outline_path, ol.status AS ol_status,
-       sc.id AS sc_id, sc.script_path AS script_path, sc.status AS sc_status,
+       sec.script_path AS script_path, sec.status AS sc_status,
        ch.chapter_no AS chapter_no
 LIMIT 1
 ```
 
-**前驱校验**：`ol_status = 1`（节土壤就绪标记，由 chapter-novelist 兜底建），否则停止并提示先完成本节小说段（`chapter-novelist`）。
-
 #### 1a-2. 模式判定（常规创作 / 占位填充）
 
-SecScript 已存在且有 `script_path` 时，Read 该 台词.ink 并检查是否含 `llm:` 行：
+`script_path` 已有值时，Read 该 台词.ink 并检查是否含 `llm:` 行：
 
-- **含 `llm:` 占位 且 `sc_status ∈ {0,1}`** → 进入**填充模式**（跳过下文「sc=10/11 停止」拦截与常规创作流程，直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工审阅」，**禁止整篇重写覆盖手改**。
-- 无占位（或 SecScript 不存在）→ 常规创作流程。`sc_status` 为 `10/11` 且无占位 → 定稿已待审/已批，停止并提示。
+- **含 `llm:` 占位 且 `sc_status ∈ {0,1}`** → 进入**填充模式**（跳过下文「10/11 停止」拦截与常规创作流程，直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工审阅」，**禁止整篇重写覆盖手改**。
+- 无占位（或 script_path 为空）→ 常规创作流程。`sc_status` 为 `10/11` 且无占位 → 定稿已待人过目/已确认，停止并提示。
 
-#### 1b. 读设计简报 + 创作土壤（小说 / 存量提纲）+ 查创作上下文
+#### 1b. 章级依据（图）+ 创作土壤（小说 / 存量提纲）+ 查创作上下文
 
 **先读两份创作依据**：
-- Read `25_剧本/chapter<NN>_<章概述>/设计简报.md`（NN = chapter_no 零填充，<章概述> 取章 title）——取出情感弧线 / 戏剧意图 / 设计支柱（本节在弧线中的位置靠分节规划定位），本节对话的情感基调全靠它。
 - **创作土壤二选一（按 1b-2 判定）**：
   - **小说模式**：Read 节目录 `小说.md`（chapter-novelist 产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
-  - **存量直连模式**：Read `SecOutline.outline_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
+  - **存量直连模式**：Read `sec.script_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
 
-简报缺失则停止并提示先跑 structurer。再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot) MATCH (e:Event)-[:anchored_at]->(sp) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
+再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot) MATCH (e:Event)-[:anchored_at]->(sp) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
 
 再查图：
 
@@ -79,10 +73,10 @@ LIMIT 20
 
 #### 1b-2. 创作土壤判定 + 取材指纹自检（填充模式跳过本节）
 
-**按 SecOutline 判定**：
-- 无 ol ∨ `ol_status ∈ {-1,0}` → 停止并提示先跑 `chapter-novelist <sec_id>`（小说段未做 / 被作废打回，台词须从小说提炼）。
-- `ol_status = 1` 且节目录 `小说.md` 存在 → **小说模式**（下文必过指纹自检）。
-- `ol_status = 1` 且无 `小说.md` → **存量直连模式**（旧流程节，读 ol.outline_path 历史文件照旧创作，跳过指纹自检）。
+**按小说.md 存在性判定**：
+- 节目录 `小说.md` 存在 → **小说模式**（下文必过指纹自检）。
+- 无 `小说.md` 且 `script_path` 已有历史值 → **存量直连模式**（旧流程节，读该历史文件照旧创作，跳过指纹自检）。
+- 无 `小说.md` 且 `script_path` 为空 → 停止并提示先跑 `chapter-novelist <sec_id>`（小说段未做，台词须从小说提炼）。
 
 **小说模式必过指纹自检**（小说是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
 
@@ -98,7 +92,7 @@ python "${CLAUDE_SKILL_DIR}/../chapter-novelist/scripts/fingerprint.py" check --
 
 ### 2. 完成任务（从小说提炼细节对话）
 
-读本节 outline.md 逐场景段 + 本节小说.md（存在时），据章级设计简报（情感弧/戏剧意图）+ 角色 LanguageStyle，**从小说提炼**逐句对话写入 `台词.ink`。
+按 1b-2 判定的创作土壤逐场景段（小说模式的小说 `###` 结构 / 存量直连模式的历史文件），据角色 LanguageStyle 与事件脉络，**从小说提炼**逐句对话写入 `台词.ink`。
 
 #### 从小说提炼台词的纪律（小说模式）
 
@@ -145,64 +139,56 @@ bed- rain
    - **点状音效**（独立行）：`sfx:语义描述`——极短声音（1~2 秒）运行时**播完再接下一句**台词/旁白（如推门风铃/开门吱呀/远处闷雷）。进图 op=transition，下游 Freesound CC0 实录。
    - **音床起止对**：`bed+ <id> // 语义描述` … `bed- <id>`——区间持续声景**循环播放**（如雨声/街道底噪/电流嗡鸣）。id 限 ASCII 字母数字下划线，同场景块内配对，多床并行/嵌套合法；起止行之间的叙述即床的覆盖区间。进图 op=bed_start（语义=text，AudioFly 声景 ~10s 首尾淡入淡出）/ op=bed_end。
    **克制使用**——只标记叙事上有意义的声音（不是每段旁白都配床），与「短节克制手法」取向一致。
-5. **LLM 占位行**：`llm:提示语`——创作期拿不准的句子先占位（简短提示语说明意图/情绪/方向），**不进图、定稿含占位无法拆分**（split 门禁拒绝）；由本 skill 填充模式（见下）扩写为正式行。常规创作完成后**不应残留占位**——占位只用于「草稿暂存、下轮补写」场景（配 SecScript status=1 草稿态，不进审批）。
+5. **LLM 占位行**：`llm:提示语`——创作期拿不准的句子先占位（简短提示语说明意图/情绪/方向），**不进图、定稿含占位无法拆分**（split 门禁拒绝）；由本 skill 填充模式（见下）扩写为正式行。常规创作完成后**不应残留占位**——占位只用于「草稿暂存、下轮补写」场景（配 Section.status=1 草稿态，不进审批）。
 6. **选择行**（ink 原生 `*`/`+`）：`* 选项文本 -> 去向`——单行，**禁止缩进的选项正文块**（分支正文一律写在 `= <label>` 之后）。去向 = label 名 / scene_block_id（均 ASCII 契约值）/ `END`（直达结局的 kind 写行尾注释 `// ending: <kind>`）。**连续选择行聚合进图一条 op=choice**（options 含 label+去向，运行时弹选项跳转；选项文本改 → 行 update，无音频损失）。
 7. **分支行**（stitch）：`= <label 名>`（ASCII，照搬提纲契约值）标示分支正文起点（进图 op=label）。
 8. **结局两行式**：`<落点一句话> # ending: <kind>`（落点内容行 + 行尾 ending tag，标准 ink）+ 单独一行 `-> END`——解析为单条 op=ending（kind + 落点）。线性节末尾也可加裸 `-> END` 收束。注意 ink 中 `#` 是 tag 非注释，行首 `#` 非法。
 9. **覆盖完整**：提纲全部场景段、分支、结局都要写，不得增删场景/分支。
-10. **情感递进**：每个场景内部情绪有起伏（不是平铺），对齐设计简报情感弧线的该段位置。
+10. **情感递进**：每个场景内部情绪有起伏（不是平铺），对齐事件时序与章概要的节奏。
 11. **机器可解析（硬约束）**：台词.ink 是 section-voice-publisher 拆分进图（`script_splitter.py parse_ink`）的输入——行型严格依赖行首标记（`===`/`=`/`* `/`+ `/`-> `/`//`/`sfx:`/`llm:`/`bed+`/`bed-`/`旁白:`/`角色名:`），**台词正文中不得出现这些行首前缀**（换行重写）；无法解析的行会在拆分时报错（行号+原文），拆分前必须修 ink。行首 `->` 仅支持裸 `-> END`（其余 divert 报错——jump 暂无图行建模）。
-12. **Write 落盘**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/台词.ink`（与该节 outline.md 同目录）。`SecScript.script_path` 指向此 `.ink` 路径。Write 自动创建章/节目录。
+12. **Write 落盘**：`25_剧本/chapter<NN>_<章概述>/sec<MM>_<节概述>/台词.ink`（与该节小说.md 同目录）。`Section.script_path` 指向此 `.ink` 路径。Write 自动创建章/节目录。
 
 #### 创作质量自检（发现 outline 破碎 → FAIL 报告）
 
 创作完成后自检，若发现**根本问题在创作土壤而非台词**——再怎么写也写不出合格对话，按根因分两路（都不落盘、不写 status，产出「结构性问题报告」）：
 
-- **根因在小说层**（小说模式）：人物速写自相矛盾 / 视角漂移 / scene 间无情绪推进（无 turning point/climax）/ 小说场景段结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 小说层」，由 plot-design 接住后把 `SecOutline.status` 归 `0`（待小说），重调 `chapter-novelist` 强制重写（重写会按其段 3 作废 sc）。**与 novelist 素材不足报告对称**——不硬凑烂对话交付。
+- **根因在小说层**（小说模式）：人物速写自相矛盾 / 视角漂移 / scene 间无情绪推进（无 turning point/climax）/ 小说场景段结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 小说层」，由 plot-design 接住后调 `chapter-novelist` 强制重写（重写即按其段 3 作废定稿链）。**与 novelist 素材不足报告对称**——不硬凑烂对话交付。
 - **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `nrt-gap-filler` 补全 Choice 分化或落点事件后重调。
 
 > 通过自检才进段 3 写图。
 
 #### §2b 占位填充模式（1a-2 判定进入；只扩写占位，其余行一字不动）
 
-1. Read 台词.ink 全文 + 本节 outline.md + 章级设计简报 + 出场角色 LanguageStyle（同 1b 查询——扩写的语言风格依据）。
+1. Read 台词.ink 全文 + 出场角色 LanguageStyle（同 1b 查询——扩写的语言风格依据）。
 2. 逐个 `llm:` 占位：按**上下文**（前后文 + 占位提示语 + 提纲 authoring + 角色 LanguageStyle + 情感弧）扩写为正式 `旁白:` / `角色名:` 行——可一拆多行（如一句占位扩成旁白+对话），扩写内容须完全兑现提示语意图并丰满。
 3. **替换写回**：占位行删除、扩写行就位；**其余已有行（含场景块/bed±/sfx/选择/分支/结局）一字不动**——这是手改保护，违者破坏用户内容。
 4. 自检：对写回文件跑 `parse_ink`（0 报错、llm_hints 空、bed 配对闭合——Bash `python -c "import sys; sys.path.insert(0, '<skill>/../section-voice-publisher/scripts'); import script_splitter as sp; p=sp.parse_ink('<ink_path>'); assert not p['llm_hints']; print(p['rows'].__len__(), 'rows')" ` 或等价方式）。
-5. **送审**（sc→10，复用已有 sc_id；不写其他任何字段）：
+5. **送审**（sec.status→10，只写此字段）：
 
 ```cypher
-MATCH (sc:SecScript {id:'<sc_id>'}) SET sc.status = 10;
+MATCH (sec:Section {id:'<sec_id>'}) SET sec.status = 10;
 ```
 
 6. **汇报**：填充 N 处 + 每条「占位提示语 → 扩写成文」前后对照表，提示用户到 dashboard 审批中心审阅。**填充模式不走创作质量 FAIL**（定稿主体是用户的，不重评结构）。
 
-> 常规创作模式下若确有拿不准的句子：写 `llm:` 占位 + 把 SecScript 置 `status=1`（草稿态，不进审批——10/11 会被定稿审看到占位且 split 拒绝），下轮本 skill 自动进填充模式补齐。
+> 常规创作模式下若确有拿不准的句子：写 `llm:` 占位 + 把 `Section.status` 置 `1`（草稿态，不进审批——10/11 会被定稿审看到占位且 split 拒绝），下轮本 skill 自动进填充模式补齐。
 
-### 3. 保存结果（写图：MERGE 兜底建 SecScript + produces 边 + 写 script_path/status）
-
-`--multi` 单事务；`sc_id` 用 `snowflake_base62.py` 新生成（已存在 SecScript 时复用其 id）：
+### 3. 保存结果（写图：SET Section.script_path + status=10，不建节点）
 
 ```cypher
-// 1. MERGE 兜底建 SecScript 产物节点
-MERGE (sc:SecScript {id:'<sc_id>'})
-SET sc.name = '<节标题>定稿',
-    sc.script_path = '<script_path>',   // 25_剧本/.../台词.ink
-    sc.status = 10;            // 定稿待审（直写不经 submit）
-
-// 2. 兜底建 produces 边（SecOutline→SecScript，sync=true：改提纲级联作废定稿+全部台词行）
-MATCH (ol:SecOutline {id:'<ol_id>'}), (sc:SecScript {id:'<sc_id>'})
-MERGE (ol)-[r:produces]->(sc) SET r.sync = true;
+MATCH (sec:Section {id:'<sec_id>'})
+SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink
+    sec.status = 10;            // 定稿待人过目（直写不经 submit；dashboard 编辑保存即 11）
 ```
 
 > BGM 不在本 skill 职责内：BgmTrack（Scene-has_bgm->BgmTrack）由 **scene-design agent 编排 `bgm-designer`** 统一管理（缺口兜底、描述生成、wav 归档检测），plot-design 与本 skill 均不查不调。
 
-**status 写入**：固定 `SecScript.status=10`（定稿待审，等 dashboard `approve`→`11`）；创作质量 FAIL → 不写 status（见段 2 末尾）。
+**status 写入**：固定 `Section.status=10`（定稿待人过目，等 dashboard 编辑保存/approve→`11`）；创作质量 FAIL → 不写 status（见段 2 末尾）。
 
-最后汇总：定稿 `SecScript.script_path`（台词.ink）、`SecScript.status=10`、说话行/旁白行/场景段计数。若触发创作质量 FAIL，汇总「结构性问题报告」而非定稿路径。
+最后汇总：定稿 `Section.script_path`（台词.ink）、`Section.status=10`、说话行/旁白行/场景段计数。若触发创作质量 FAIL，汇总「结构性问题报告」而非定稿路径。
 
 ## 参考文档
 
-- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section/产物链（SecOutline/SecScript/LineAudio 逐句行）/produces{order}/stages 边
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级设计简报）/ [chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
+- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section（定稿态载体）/LineAudio 逐句行/produces{order}
+- 上游：[chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
 - 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）

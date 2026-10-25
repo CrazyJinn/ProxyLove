@@ -18,16 +18,15 @@ from voice_bundler import _run_cypher, chapter_stem_from_meta, make_ambient_trac
 def collect(section_id: str) -> list:
     rows = _run_cypher(
         "MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'" + section_id + "'}) "
-        "OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline)-[:produces]->(sc:SecScript) "
-        "OPTIONAL MATCH (sc)-[p:produces]->(l:LineAudio) "
-        "RETURN ch.chapter_no AS no, ch.title AS title, sc.id AS sc_id, "
+        "OPTIONAL MATCH (sec)-[p:produces]->(l:LineAudio) "
+        "RETURN ch.chapter_no AS no, ch.title AS title, sec.id AS sec_id, "
         "l.id AS lid, l.op AS op, l.text AS text, l.bed AS bed, l.prompt AS prompt, "
         "l.ambient_track AS ambient_track, "
         "l.status AS status, l.scene_block_id AS block, p.order AS ord "
         "ORDER BY p.order"
     )
-    if not rows or not rows[0].get("sc_id"):
-        raise SystemExit(f"Section {section_id} 无 SecScript（先定稿+拆分）")
+    if not rows:
+        raise SystemExit(f"Section {section_id} 不存在")
     stem = chapter_stem_from_meta(rows[0]["no"], rows[0]["title"])
 
     jobs, seen_any_line = [], False

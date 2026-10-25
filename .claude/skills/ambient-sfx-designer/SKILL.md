@@ -39,7 +39,7 @@ allowed-tools: Read, Bash, Write, Edit, Skill
 
 ### 1. 查状态 + 产 jobs
 
-前置：该节 SecScript=11 且已拆分（图有行）。跑：
+前置：该节 Section.status=11 且已拆分（图有行）。跑：
 
 ```bash
 python "${CLAUDE_SKILL_DIR}/scripts/ambient_tasks.py" --section '<section_id>' -o '.tmp/ambient-jobs-<stem>-sec<MM>.json'

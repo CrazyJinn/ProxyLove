@@ -1,9 +1,9 @@
 """从图投影全章各节台词行（LineAudio），合并拍平为单一章运行时 JSON。
 
-chapter-publisher 在全章各节产物就绪时调用：图（SecScript-produces{order}->LineAudio 逐句行）
+chapter-publisher 在全章各节产物就绪时调用：图（Section-produces{order}->LineAudio 逐句行）
 + 台词.ink（舞台调度）→ 1 个章级 JSON。台词.jsonl 已停产，图是内容行的结构化真相。
 
-- 图查询：Chapter→has_section→Section(按 section_no)→has_outline→SecOutline→produces→SecScript
+- 图查询：Chapter→has_section→Section(按 section_no)→produces→LineAudio
   -[p:produces]->LineAudio（ORDER BY p.order）；块时段另查 Scene.time_of_day；立绘整键另查
   uses 边（fetch_uses_portrait_keys，与 scene_times 同款二次查询——防主查询行乘积）。
 - 舞台调度（say.pos / hide 下台行）自 ink 注入（2026-10-20 起不落图）：复用
@@ -19,7 +19,7 @@ chapter-publisher 在全章各节产物就绪时调用：图（SecScript-produce
 - 部分发布：--sections 0,1 仅合并指定节（section_no 逗号分隔）——章内其余节未就绪时
   先发已就绪节；前置校验仅针对所选节。全量重发覆盖同 stem 文件（幂等）。
 
-前置校验：各节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11（不满足报缺口并退出）。
+前置校验：各节 Section.status=11 ∧ 该节全部行 LineAudio=11（不满足报缺口并退出）。
 choice/jump 行暂不进图（建模后续设计），投影自然不含分支跳转行。
 不做 schema 校验（校验由 validate_chapter.py 负责，保持工具正交）。
 退码：0 成功 / 1 查图/校验/IO 失败 / 2 参数错。
@@ -91,7 +91,7 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     内容行（除 hide）与图行逐行 _sig 同构——漂移即 raise 引导重拆（发布 gate 保证
     拆分后两边一致）。
 
-    blocks = SecScript.scene_blocks 解析结果 [{block, scene_name}]（scene 行已去图化，
+    blocks = Section.scene_blocks 解析结果 [{block, scene_name}]（scene 行已去图化，
     scene-block 结构从这里生成）；scene_times = {scene_name: time_of_day}（块时段）；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
@@ -237,7 +237,7 @@ def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
     """
     rows = _run_cypher(
         "MATCH (ch:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section)"
-        "-[:has_outline]->(:SecOutline)-[:produces]->(:SecScript)-[:produces]->(l:LineAudio) "
+        "-[:produces]->(l:LineAudio) "
         "WHERE l.op = 'say' "
         "OPTIONAL MATCH (l)-[:uses]->(st:StandingIllustration) "
         "OPTIONAL MATCH (illus:IllusDesign)-[:expands_to]->(st) "
@@ -264,18 +264,16 @@ def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
 def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
     """查全章图 → {chapter_no, title, sections: [投影doc 按节序]}；前置不满足 raise ValueError。
 
-    前置：每节 SecOutline=1 ∧ SecScript=11 ∧ 该节全部行 LineAudio=11。
+    前置：每节 Section.status=11 ∧ 该节全部行 LineAudio=11。
     section_nos={0,1} 时部分发布：仅投影所选节，前置校验也仅针对所选节（章内其余节
     可未就绪）——供先发已就绪节；全量重发覆盖同 stem 文件。
     """
     rows = _run_cypher(
         "MATCH (ch:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section) "
-        "OPTIONAL MATCH (sec)-[:has_outline]->(ol:SecOutline) "
-        "OPTIONAL MATCH (ol)-[:produces]->(sc:SecScript) "
-        "OPTIONAL MATCH (sc)-[p:produces]->(l:LineAudio) "
+        "OPTIONAL MATCH (sec)-[p:produces]->(l:LineAudio) "
         "RETURN ch.chapter_no AS no, ch.title AS title, sec.section_no AS section_no, "
-        "sec.title AS sec_title, ol.status AS ol_status, sc.status AS sc_status, "
-        "sc.scene_blocks AS scene_blocks, sc.script_path AS script_path, "
+        "sec.title AS sec_title, sec.status AS sc_status, "
+        "sec.scene_blocks AS scene_blocks, sec.script_path AS script_path, "
         "l.id AS lid, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.options AS options, "
@@ -324,16 +322,14 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
 
     by_sec = {}
     for r in rows:
-        key = (r["section_no"], r["sec_title"], r["ol_status"], r["sc_status"])
+        key = (r["section_no"], r["sec_title"], r["sc_status"])
         by_sec.setdefault(key, []).append(r)
 
     problems, sections = [], []
-    for (section_no, sec_title, ol_status, sc_status), sec_rows in sorted(by_sec.items()):
+    for (section_no, sec_title, sc_status), sec_rows in sorted(by_sec.items()):
         sec_tag = f"sec{int(section_no):02d}（{sec_title}）"
-        if ol_status != 1:
-            problems.append(f"{sec_tag}：SecOutline.status={ol_status}（须 1）")
         if sc_status != 11:
-            problems.append(f"{sec_tag}：SecScript.status={sc_status}（须 11）")
+            problems.append(f"{sec_tag}：Section.status={sc_status}（须 11 定稿已确认）")
             continue
         line_rows = [r for r in sec_rows if r.get("lid")]
         if not line_rows:
@@ -347,7 +343,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
             except (TypeError, json.JSONDecodeError):
                 blocks = []
         if not blocks:
-            problems.append(f"{sec_tag}：SecScript.scene_blocks 缺失（重跑拆分写入）")
+            problems.append(f"{sec_tag}：Section.scene_blocks 缺失（重跑拆分写入）")
             continue
         not_done = [r for r in line_rows if r.get("line_status") != 11]
         if not_done:
@@ -357,7 +353,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         # 舞台调度自 ink 注入：读该节定稿 → 解析（复用拆分器，同构由投影前校验保证）
         sp_rel = sec_rows[0].get("script_path")
         if not sp_rel:
-            problems.append(f"{sec_tag}：SecScript.script_path 缺失（舞台调度自 ink 注入，无法投影）")
+            problems.append(f"{sec_tag}：Section.script_path 缺失（舞台调度自 ink 注入，无法投影）")
             continue
         try:
             raw_ink = (_REPO_ROOT / sp_rel).read_text(encoding="utf-8")

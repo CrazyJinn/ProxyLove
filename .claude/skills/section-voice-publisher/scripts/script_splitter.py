@@ -1,6 +1,6 @@
-"""台词.ink 拆分对齐进图（SecScript → 逐句 LineAudio，produces{order} 大间距排序）。
+"""台词.ink 拆分对齐进图（Section → 逐句 LineAudio，produces{order} 大间距排序）。
 
-section-voice-publisher 第一步「拆分进图」的唯一实现。把已批定稿（SecScript=11 的
+section-voice-publisher 第一步「拆分进图」的唯一实现。把已确认定稿（Section.status=11 的
 台词.ink，人读 ink 方言——规范见 chapter-dialoguer references/ink方言规范.md）幂等
 拆分为图节点：
 
@@ -647,7 +647,7 @@ def _set_props(m: dict) -> str:
     ])
 
 
-def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
+def build_actions(seq: list, plan: dict, section_id: str) -> tuple:
     """最终序列 → (cypher 语句列表, 报告 dict)。含 keep 的 -1 恢复与块归属补写。
     舞台调度（say.pos / hide 行）不落图——投影期由 merge_sections_to_chapter 从 ink 现算。"""
     stmts = []
@@ -667,8 +667,8 @@ def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
             stmts.append(
                 f"MERGE (l:LineAudio {{id:{_q(oid)}}}) "
                 f"ON CREATE SET {_set_props(m)} "
-                f"WITH l MATCH (sc:SecScript {{id:{_q(sc_id)}}}) "
-                f"MERGE (sc)-[r:produces]->(l) SET r.order={order}, r.sync=true;"
+                f"WITH l MATCH (sec:Section {{id:{_q(section_id)}}}) "
+                f"MERGE (sec)-[r:produces]->(l) SET r.order={order}, r.sync=true;"
             )
             report["created"].append({"id": oid, "op": m["op"], "order": order,
                                       "text": (m.get("text") or m.get("scene_block_id") or "")[:30]})
@@ -712,12 +712,12 @@ def build_actions(seq: list, plan: dict, sc_id: str) -> tuple:
     return stmts, report
 
 
-def _order_statements(seq: list, sc_id: str, reordered: bool) -> list:
+def _order_statements(seq: list, section_id: str, reordered: bool) -> list:
     """order 写入：create 行已在建边语句带 order；重排时对已有行补 SET order。"""
     if not reordered:
         return []
     return [
-        f"MATCH (sc:SecScript {{id:{_q(sc_id)}}})-[r:produces]->(l:LineAudio {{id:{_q(item['id'])}}}) "
+        f"MATCH (sec:Section {{id:{_q(section_id)}}})-[r:produces]->(l:LineAudio {{id:{_q(item['id'])}}}) "
         f"SET r.order={item['order']};"
         for item in seq if item["action"] != "create"
     ]
@@ -726,20 +726,19 @@ def _order_statements(seq: list, sc_id: str, reordered: bool) -> list:
 # ── split 主流程 ─────────────────────────────────────────────
 
 def split(section_id: str, dry_run: bool = False) -> dict:
-    """拆分对齐进图。前置：SecScript=11。返回报告 dict（查询/解析/写图失败 raise）。"""
+    """拆分对齐进图。前置：Section.status=11。返回报告 dict（查询/解析/写图失败 raise）。"""
     rows = _run_cypher(
-        "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
-        "-[:produces]->(sc:SecScript) "
-        "RETURN sc.id AS sc_id, sc.script_path AS p, sc.status AS st, "
-        "sc.scene_blocks AS sb LIMIT 1"
+        "MATCH (sec:Section {id:'" + section_id + "'}) "
+        "RETURN sec.script_path AS p, sec.status AS st, "
+        "sec.scene_blocks AS sb LIMIT 1"
     )
     if not rows:
-        raise ValueError(f"Section {section_id} 无 SecScript（先跑 chapter-dialoguer 产定稿）")
-    sc_id, script_path, st = rows[0]["sc_id"], rows[0]["p"], rows[0]["st"]
+        raise ValueError(f"Section {section_id} 不存在")
+    script_path, st = rows[0]["p"], rows[0]["st"]
     if st != 11:
-        raise ValueError(f"SecScript.status={st}（须 11 定稿已批才能拆分进图）")
+        raise ValueError(f"Section.status={st}（须 11 定稿已确认才能拆分进图）")
     if not script_path:
-        raise ValueError("SecScript.script_path 为空")
+        raise ValueError("Section.script_path 为空")
     parsed = parse_ink(script_path)
     ensure_no_placeholders(parsed)  # llm: 占位定稿拒绝拆分（防占位内容静默丢失）
     script_rows, blocks = parsed["rows"], parsed["blocks"]
@@ -751,7 +750,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
             f"  [{i['rule']}] 块 {i['block']} {i['who']}: {i['detail']}" for i in stage_errors))
 
     graph_rows = _run_cypher(
-        "MATCH (sc:SecScript {id:'" + sc_id + "'})-[p:produces]->(l:LineAudio) "
+        "MATCH (sec:Section {id:'" + section_id + "'})-[p:produces]->(l:LineAudio) "
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.ambient_text AS ambient_text, l.options AS options, "
@@ -762,8 +761,8 @@ def split(section_id: str, dry_run: bool = False) -> dict:
 
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
-    stmts, report = build_actions(seq, plan, sc_id)
-    # 块定义写入 SecScript.scene_blocks（scene 行已去图化，块元数据的图上落点）。
+    stmts, report = build_actions(seq, plan, section_id)
+    # 块定义写入 Section.scene_blocks（scene 行已去图化，块元数据的图上落点）。
     # 图上已有同 block 映射为权威（人工/上游落的图 Scene 名），ink 块头注记仅作新块初值——
     # 剧作化注记（如「床前」）≠图名（「床铺区」）时若盲写会让下游 depicts 选绘静默降级。
     try:
@@ -786,10 +785,10 @@ def split(section_id: str, dry_run: bool = False) -> dict:
                 report.setdefault("scene_block_name_unmatched", []).append(
                     {"block": bid, "scene_name": name})
         merged_blocks.append({"block": bid, "scene_name": name})
-    stmts.append(f"MATCH (sc:SecScript {{id:{_q(sc_id)}}}) "
-                 f"SET sc.scene_blocks={_q(json.dumps(merged_blocks, ensure_ascii=False))};")
-    stmts = _order_statements(seq, sc_id, reordered) + stmts
-    report.update({"section_id": section_id, "sc_id": sc_id, "script_path": script_path,
+    stmts.append(f"MATCH (sec:Section {{id:{_q(section_id)}}}) "
+                 f"SET sec.scene_blocks={_q(json.dumps(merged_blocks, ensure_ascii=False))};")
+    stmts = _order_statements(seq, section_id, reordered) + stmts
+    report.update({"section_id": section_id, "script_path": script_path,
                    "reordered": reordered, "statements": len(stmts), "dry_run": dry_run,
                    "blocks": merged_blocks, "stage_issues": stage_issues})
     if stmts and not dry_run:
@@ -798,7 +797,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="台词.ink 拆分对齐进图（SecScript→逐句 LineAudio）")
+    ap = argparse.ArgumentParser(description="台词.ink 拆分对齐进图（Section→逐句 LineAudio）")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p_split = sub.add_parser("split", help="拆分进图")
     p_split.add_argument("--section", required=True, help="Section 节点 ID（snowflake）")

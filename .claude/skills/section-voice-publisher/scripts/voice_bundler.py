@@ -177,22 +177,20 @@ def build_manifest_voices(chapter: dict, ext: str = "wav") -> dict:
 # ── 节级（图行：LineAudio 按 produces.order；拆分对齐见 script_splitter.py）──
 
 def fetch_section(section_id: str) -> dict:
-    """查节产物链 + Chapter（stem）+ 全部行（ORDER BY order）。
+    """查节定稿态 + Chapter（stem）+ 全部行（ORDER BY order）。
 
-    返回 {sc_id, sc_status, script_path, chapter_no, chapter_title, lines:[...]}。
+    返回 {section_id, sc_status, script_path, chapter_no, chapter_title, lines:[...]}。
     行含 op/who/text/status 等节点属性 + ord + scene 行的 scene_block_id。
     """
     head = _run_cypher(
-        "MATCH (ch:Chapter)-[:has_section]->(:Section {id:'" + section_id + "'})"
-        "-[:has_outline]->(:SecOutline)-[:produces]->(sc:SecScript) "
-        "RETURN sc.id AS sc_id, sc.status AS sc_status, sc.script_path AS p, "
+        "MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'" + section_id + "'}) "
+        "RETURN sec.id AS section_id, sec.status AS sc_status, sec.script_path AS p, "
         "ch.chapter_no AS no, ch.title AS title LIMIT 1"
     )
     if not head:
-        raise ValueError(f"Section {section_id} 无产物链（先跑 chapter-dialoguer）")
+        raise ValueError(f"Section {section_id} 不存在")
     lines = _run_cypher(
-        "MATCH (:Section {id:'" + section_id + "'})-[:has_outline]->(:SecOutline)"
-        "-[:produces]->(sc:SecScript)-[p:produces]->(l:LineAudio) "
+        "MATCH (sec:Section {id:'" + section_id + "'})-[p:produces]->(l:LineAudio) "
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.text AS text, "
         "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
         "l.text_sha1 AS text_sha1, l.scene_block_id AS scene_block_id, "
@@ -371,7 +369,7 @@ def _cmd_tasks_from_graph(args):
     """图行（say 且 status∈{0,-1}）→ 按角色分组任务 JSON（节级配音；emotion/tts_text 留给 skill，clone_mode 透传现值）。"""
     info = fetch_section(args.section)
     if info["sc_status"] != 11:
-        raise ValueError(f"SecScript.status={info['sc_status']}（须 11 定稿已批；先拆分对齐见 script_splitter）")
+        raise ValueError(f"Section.status={info['sc_status']}（须 11 定稿已确认；先拆分对齐见 script_splitter）")
     stem = chapter_stem_from_meta(info["no"], info["title"])
     node_ids = tuple(s.strip() for s in args.nodes.split(",")) if args.nodes else ()
     tasks = collect_graph_tasks(info["lines"], stem, node_ids=node_ids)
@@ -392,7 +390,7 @@ def _cmd_publish(args):
     """按章查已批（status=11）音频行 → 母带拷运行时（发布期；dashboard 试听读母带不经此步）。"""
     rows = _run_cypher(
         "MATCH (ch:Chapter {id:" + _q(args.chapter) + "})-[:has_section]->(:Section)"
-        "-[:has_outline]->(:SecOutline)-[:produces]->(:SecScript)-[:produces]->(l:LineAudio) "
+        "-[:produces]->(l:LineAudio) "
         "WHERE l.status=11 AND (l.voice_key IS NOT NULL OR l.ambient_track IS NOT NULL) "
         "RETURN l.voice_key AS vk, l.ambient_track AS at"
     )
