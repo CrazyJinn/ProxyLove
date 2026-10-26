@@ -20,7 +20,7 @@ allowed-tools: Read, Bash, Write
 
 目标：让叙事基础层五个实体——**Character / Event / Location / Info / Choice**——的关系闭环走通：每个 Event 有时间 + 地点 + 参与人，因果链（leads_to）与分支（Choice+option）不断头，Info 不孤立；显式聚焦（人物/时间窗）时另做**启发式提案**让图渐进丰满。**图算法发现缺口 → 逐个问用户 → 明确后提交 dashboard 待审**。
 
-> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/presents/option 八边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建。
+> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/presents/option 八边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建；`appears_as`（事件出场形象）属着装拍板（char-costume-designer / 人工，2026-10-26 Event 驱动化），缺口由 dashboard 体检项 EA1 兜查，本 skill 不建。
 >
 > **只读不写（交互期间）**：发现与确认阶段仅查询图。用户敲定全部修法后，一次性组装建议 JSON 落盘；写库永远由人工在 dashboard Cypher 控制台执行（两段确认 + 级联预览），本 skill 不执行任何写语句。
 >

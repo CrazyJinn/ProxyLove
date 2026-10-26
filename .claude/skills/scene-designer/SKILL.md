@@ -1,7 +1,7 @@
 ---
 name: scene-designer
 description: |
-  推进 Scene 图节点（Location 粒度入口）：定位 Location → 聚合其 occurs_at 事件 → 推理既有 zone Spot 够用性（anchored_at 归组分布）→ 归组（证据明确命中唯一 zone 自动执行；歧义点——多 zone 命中/粒度歧义/证据不足——AskUserQuestion 多选由用户敲定后继续；Spot 只有 zone 一种 kind，default 已废止仅存量）→ 按 Spot 复用/新建 Scene（新建时显式决定机位）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（anchored_at 归组 + Scene MERGE + realizes 边 + Spot.dsl_path 登记，status=1 已完成）。
+  推进 Scene 图节点（Location 粒度入口）：定位 Location → 聚合其 occurs_at 事件 → 推理既有 zone Spot 够用性（各 Spot 机位的事件归组分布）→ 归组（证据明确命中唯一 zone 自动执行；歧义点——多 zone 命中/粒度歧义/证据不足——AskUserQuestion 多选由用户敲定后继续；Spot 只有 zone 一种 kind，default 已废止仅存量）→ 拍机位（归组即拍：优先复用该 zone 既有 Scene，时段/版本差异才新建）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（anchored_at 归组直挂 Scene + Scene MERGE + realizes 边 + Spot.dsl_path 登记，status=1 已完成）。
   在需要为某地点创建/追加场景视觉设定、推进已有 spot 流程、或为 Location 上未归组的事件做子空间细分时使用。spot 名/ID 直推兼容（经 part_of 定位所属 Location 后走全流程）。
 argument-hint: <location_id 或 Location 名（兼容 spot_id/spot 名）>
 arguments:
@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write, Edit, AskUserQuestion
 
 # 场景设计（Scene · Location 粒度入口）
 
-为单个 Location 决定空间细分与视觉实现：叙事推导期 Event 只 `occurs_at → Location`（一跳），本 skill 是 **Spot 归组（anchored_at）与 Scene 的唯一写入点**——按 Location 上挂载的事件推理既有 spot 是否够用、不够再新增，归组到 Spot 后仍按 Spot 粒度产 Scene（Spot 提供空间语义 name/kind/description，Scene 只补视觉维度 scene_type/time_of_day/机位）并绑定 `realizes` 边（**Spot → Scene**）。新建场景写入内容后即 `status=1`（已完成，无审批），直接参与下游 SceneLayer 生产。
+为单个 Location 决定空间细分与视觉实现：叙事推导期 Event 只 `occurs_at → Location`（一跳），本 skill 是 **事件归组（anchored_at→Scene）与 Scene 的唯一写入点**——按 Location 上挂载的事件推理既有 spot 是否够用、不够再新增，归组时把事件直挂到该 zone 的目标机位 Scene（**归组即拍机位**；Spot 提供空间语义 name/kind/description 与 3D 布局锚 dsl_path，Scene 补视觉维度 scene_type/time_of_day/机位）并绑定 `realizes` 边（**Spot → Scene**）。新建场景写入内容后即 `status=1`（已完成，无审批），直接参与下游 SceneLayer 生产。
 
 ## 参数
 
@@ -37,9 +37,9 @@ MATCH (l:Location {id: '<输入>'}) RETURN l.id AS loc_id, l.name AS loc_name, l
 // ② 按 Location 名
 MATCH (l:Location {name: '<输入>'}) RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
 // ③ spot 入参兜底：按 spot ID / 全名 / 短名后缀定位 spot，经 part_of 取所属 Location
-MATCH (sp:Spot {id: '<输入>'})-[:part_of]->(l:Location) RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
-MATCH (sp:Spot {name: '<输入>'})-[:part_of]->(l:Location) RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
-MATCH (sp:Spot)-[:part_of]->(l:Location) WHERE sp.name ENDS WITH '-<输入>' RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
+MATCH (l:Location)-[:part_of]->(sp:Spot {id: '<输入>'}) RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
+MATCH (l:Location)-[:part_of]->(sp:Spot {name: '<输入>'}) RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
+MATCH (l:Location)-[:part_of]->(sp:Spot) WHERE sp.name ENDS WITH '-<输入>' RETURN l.id AS loc_id, l.name AS loc_name, l.description AS loc_desc;
 ```
 
 **1b. Location + 事件 + 既有 Spot/Scene 覆盖**（三个决策查询）：
@@ -48,7 +48,7 @@ MATCH (sp:Spot)-[:part_of]->(l:Location) WHERE sp.name ENDS WITH '-<输入>' RET
 // ① Location 总览：事件量 + 既有 Spot 及 Scene 覆盖
 MATCH (l:Location {id: '<loc_id>'})
 OPTIONAL MATCH (e:Event)-[:occurs_at]->(l)
-OPTIONAL MATCH (l)<-[:part_of]-(sp:Spot)
+OPTIONAL MATCH (l)-[:part_of]->(sp:Spot)
 OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
 RETURN l.name AS loc_name, l.description AS loc_desc,
        count(DISTINCT e) AS evt_cnt,
@@ -57,13 +57,13 @@ RETURN l.name AS loc_name, l.description AS loc_desc,
 
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）
 MATCH (e:Event)-[:occurs_at]->(l:Location {id: '<loc_id>'})
-WHERE NOT (e)-[:anchored_at]->(:Spot)-[:part_of]->(l)
+WHERE NOT (e)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
 RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.time AS time
 ORDER BY e.time;
 
 // ③ 既有 zone Spot 归组分布（「既有 spot 够用性」的量化依据）
-MATCH (l:Location {id: '<loc_id>'})<-[:part_of]-(sp:Spot)
-OPTIONAL MATCH (e:Event)-[:anchored_at]->(sp)
+MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
+OPTIONAL MATCH (e:Event)-[:anchored_at]->(:Scene)<-[:realizes]-(sp)
 RETURN sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, sp.dsl_path AS dsl_path,
        count(e) AS grouped_cnt, collect(e.title)[..5] AS sample
 ORDER BY grouped_cnt DESC;
@@ -86,13 +86,13 @@ MERGE (l:Location {name: '<Location名>'})
 **2a. Spot 够用性推理与事件归组**（对 1b② 的每个未归组事件 u；U 为空则直接跳到 2b 的 Scene 决策）：
 
 1. **子空间证据抽取**：从 u 的 title/description 找空间线索词（「电脑桌前」「点餐台」「床铺」「厨房」）。
-2. **证据明确命中唯一既有 zone**（线索词与该 zone 短名/`description` 语义同空间）→ **自动归组不打扰**，建 `anchored_at(u → zone)`，detail 写证据词。判「命中」须引用三条旁证（汇报中列明）：① 语义重合；② 该 zone 已有 Scene（归组即达绿档，零出图成本）；③ 该 zone grouped_cnt 未过载（单 zone 事件叙事密度合理）。
+2. **证据明确命中唯一既有 zone**（线索词与该 zone 短名/`description` 语义同空间）→ **自动归组不打扰**，建 `anchored_at(u → 该 zone 拍定机位 Scene)`（归组即拍机位：优先复用既有 Scene，证据指向时段/版本差异才新建），detail 写证据词。判「命中」须引用三条旁证（汇报中列明）：① 语义重合；② 该 zone 已有 Scene（归组即达绿档，零出图成本）；③ 该 zone grouped_cnt 未过载（单 zone 事件叙事密度合理）。
 3. **歧义点 → 停下问（AskUserQuestion 多选，有歧义就问）**：
    - **触发面**：① 证据可命中**多个**既有 zone；② 粒度歧义——拆新 zone vs 同 Spot 多 Scene（机位/时间窗版本）均可行；③ 证据不足/笼统，需拆 zone。
    - **候选构成**：按事件语义拟 1-3 个 zone 方案（含短名=Location 名的**整点 zone** 候选——整点建模、目录名即 Location 名；Other 由工具自动提供）。
    - **多选语义**（multiSelect=true）：可同时勾选多个拆 zone 方案——事件归入最贴切的 zone，其余选中 zone 建为**预留**（无归组事件 → 2b 判「暂不出图」不建 Scene，零出图成本）。
    - **提问纪律**（承 nrt-gap-filler）：每题附推荐选项（首位 + Recommended）且**可归因**——理由标签 + 数据依据（如「零拆分成本」「为后续事件预留细分」），不许「我觉得」；facts 不问用户（候选 zone 方案、既有归组分布现查），只问取舍；同 Location 多事件同模式**聚合为一题**、单题列全实体；**一题一答**、依赖排序（用户选拆 zone → 追问 zone 名/短名合法性，短名不得含文件系统保留字符）。
-4. **按敲定结果执行**：新增 zone Spot（命名 `<Location名>-<区域>`，kind='zone'——**不再有 default kind**，整点即区域段=Location 名）建 part_of + anchored_at，或归入用户选定的既有 zone。「评估过但无子空间证据」的自动兜底已废止，一律经 3 敲定。
+4. **按敲定结果执行**：新增 zone Spot（命名 `<Location名>-<区域>`，kind='zone'——**不再有 default kind**，整点即区域段=Location 名）建 part_of + anchored_at（→拍定机位 Scene），或归入用户选定的既有 zone。「评估过但无子空间证据」的自动兜底已废止，一律经 3 敲定。
 5. **粒度铁律**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间、新 room.yml 文件）时才新建；「新建 zone 一张图起」vs「归组到既有 zone 零成本」作为取舍依据写进提问的推荐理由与汇报。
 
 **2b. Scene 复用 / 新建**（按归组后的每个 Spot 决定）：
@@ -145,11 +145,11 @@ MERGE (l:Location {name: '<Location名>'})
 MERGE (sp:Spot {name: '<Location名>-<区域>'})
   ON CREATE SET sp.id = '<snowflake_id>', sp.kind = 'zone', sp.description = '...';
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
-MERGE (sp)-[r:part_of]->(l) ON CREATE SET r.sync = false;
+MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot（2026-10-26 翻转）
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
-MATCH (e:Event {id: '<event_id>'})-[old:anchored_at]->(:Spot)-[:part_of]->(:Location {id: '<loc_id>'}) DELETE old;
-MATCH (e:Event {id: '<event_id>'}), (sp:Spot {id: '<spot_id>'})
-MERGE (e)-[r:anchored_at]->(sp) ON CREATE SET r.detail = '<证据词>', r.sync = false;
+MATCH (e:Event {id: '<event_id>'})-[old:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
+MATCH (e:Event {id: '<event_id>'}), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene
+MERGE (e)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.sync = false;
 ```
 
 #### Scene 写入（MERGE 节点 + realizes 边，status=1 已完成）

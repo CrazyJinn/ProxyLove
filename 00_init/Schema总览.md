@@ -2,6 +2,8 @@
 
 > Schema 按模块拆分，渐进式披露。每个文件自包含节点定义、边定义、ID 规则。
 
+> **⚠️ 2026-10-26 Event 驱动化定稿（本文件已按目标形态改写；图数据待原子迁移窗口）**：新增 `includes`（Section→Event）与 `appears_as`（Event→IllusDesign）；`anchored_at` 端点 Spot→Scene；`part_of` 翻转为 Location→Spot；删除 `contains`/`depicts`/`ref_style`/旧 `wears`。详见各模块文件与工作区《Event驱动化改造提案.md》。
+
 ---
 
 ## 全局规则
@@ -34,7 +36,7 @@
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
-| Spot | snowflake Base62 | 地点内子空间（zone；default 已废止仅存量）；场景化时由 scene-designer 建/归组（anchored_at），无 status |
+| Spot | snowflake Base62 | 地点内子空间（zone；default 已废止仅存量）；场景化时由 scene-designer 建，事件归组经 anchored_at 直挂 Scene；无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
@@ -46,7 +48,7 @@
 | Scene | snowflake Base62 | 地点内的子场景视觉设定 |
 | SceneLayer | snowflake Base62 | 场景的单一图层（背景/地面/陈设/遮罩） |
 | Chapter | snowflake Base62 | 剧本章节编排单元（章级：结构 / 分节规划） |
-| Section | snowflake Base62 | 章节内的节编排容器 + 定稿态载体（节序/标题/概要/time_day + scene_block_ids 预分配块 id + script_path 指 台词.ink + scene_blocks + status 定稿态 0→1→10→11，编辑保存即 11；小说.md 为纯文件产物不入图） |
+| Section | snowflake Base62 | 章节内的节编排容器 + 定稿态载体（节序/标题/概要 + scene_block_ids 预分配块 id + script_path 指 台词.ink + scene_blocks + status 定稿态；节成员=includes 物化、时间由成员推导（time_day 已废止 2026-10-27）；小说.md 为纯文件产物不入图） |
 | LineAudio | snowflake Base62 | **逐句台词行**（Section-produces{order}-> 1:N；节点 id=行身份；行 status 只代表音频审批 0→10→11，非 say 行拆分即 11；wav 按 voice key 落盘） |
 | VoiceDesign | snowflake Base62 | 角色基线音色设计（instruct + 参考音频；多候选流程：3 候选 ref + 3×3 情绪试听 → dashboard 采用固化） |
 | BgmTrack | snowflake Base62 | 场景背景音乐（人工生成链；0→1 描述产出→2 用户手动放 wav 归档；无审批） |
@@ -76,19 +78,17 @@
 | produces | AppearanceStyle → DesignSheet | 1:N | ✅ | 外貌产出设计图（版本链：永久变更图生图新增版本） |
 | produces | DesignSheet → IllusDesign | 1:N | ✅ | 设计图→立绘设计图 |
 | outfit_for | CostumeStyle → IllusDesign | 1:N | ✅ | 着装→立绘设计图（每 (DesignSheet, CostumeStyle) 组合一个） |
-| wears | Event → CostumeStyle | N:N | ❌ | 事件着装 |
+| appears_as | Event → IllusDesign | N:N | ❌ | 事件出场形象（直挂形象版本；写边时按 active_from 选版，读零推理；每事件每角色至多 1 条） |
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
-| ref_style | LanguageStyle → StandingIllustration | 1:N | ✅ | 语言风格→立绘参考 |
 | **场景美术** | | | | |
-| anchored_at | Event → Spot | N:N | ❌ | 事件子空间归组（与 occurs_at 配对：跨地点事件在每个地点各归组一个 Spot；scene-designer 细化时建，叙事层禁建） |
-| part_of | Spot → Location | N:1 | ❌ | 空间从属 |
+| anchored_at | Event → Scene | N:N | ❌ | 事件机位归组（默认每涉及地点各归组 1 个机位 Scene；scene-designer 归组时建并拍机位，叙事层禁建） |
+| part_of | Location → Spot | 1:N | ❌ | 空间从属（父→子；每 Spot 恰 1 入边） |
 | realizes | Spot → Scene | 1:N | ❌ | Spot 实现场景（原 has_scene，sync 语义变更见场景美术.md） |
 | has_layer | Scene → SceneLayer | 1:N | ✅ | 场景→图层 |
 | **剧情** | | | | |
 | has_section | Chapter → Section | 1:N | ✅ | 章→节（组成关系，级联重做） |
 | produces | Section → LineAudio | 1:N | ✅ | 节产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；节属性变更→全部行作废，重拆按 text_sha1 恢复未变句；小说素材变动由 novelist 显式作废） |
-| contains | Section → Scene | N:M | ❌ | 节编排场景顺序 |
-| depicts | Scene → IllusDesign | N:N | ❌ | 场景需要的着装立绘（按需出图门控；变体经 expands_to 跟踪） |
+| includes | Section → Event | N:M | ❌ | 节包含事件（order=事件 time 序；节成员物化，替代原 contains） |
 | **声音** | | | | |
 | has_voice_design | Character → VoiceDesign | 1:1 | ✅ | 角色基线音色设计 |
 | has_bgm | Scene → BgmTrack | 1:1 | ❌ | 场景→背景音乐（BGM 独立资产不级联；scene-design 编排推进） |
@@ -144,21 +144,19 @@ flowchart LR
     Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
     Event -->|"occurs_at ❌ N:N"| Location
-    Event -.->|"anchored_at ❌ N:N（scene-designer）"| Spot
-    Event -->|"wears ❌ N:N"| Costume
+    Event -.->|"anchored_at ❌ N:N（scene-designer）"| Scene
+    Event -->|"appears_as ❌ N:N"| IllusDesign
     Event -->|"leads_to ❌ N:N"| Event
     Event -->|"leads_to ❌ N:N"| Info
     Info -->|"leads_to ❌ N:N"| Event
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
     IllusDesign -->|"expands_to ✅ 1:N"| StandingIllus
-    Language -->|"ref_style ✅ 1:N"| StandingIllus
-    Spot -->|"part_of ❌ N:1"| Location
+    Location -->|"part_of ❌ 1:N"| Spot
     Spot -->|"realizes ❌ 1:N"| Scene
     Scene -->|"has_layer ✅ 1:N"| SceneLayer
     Chapter -->|"has_section ✅ 1:N"| Section
     Section -->|"produces ✅ 1:N order"| LineAudio
-    Section -->|"contains ❌ N:M"| Scene
-    Scene -->|"depicts ❌ N:N"| IllusDesign
+    Section -->|"includes ❌ N:M order"| Event
     Scene -->|"has_bgm ❌ 1:1"| BgmTrack
 ```

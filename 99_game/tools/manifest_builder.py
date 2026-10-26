@@ -36,7 +36,7 @@ PORTRAIT_PREFIX = "assets/portraits/"
 SCENE_PREFIX = "assets/scenes/"
 
 # Character → StandingIllustration 的限定美术边类型集（与 plot-design 一致，阻止越界到叙事 Event）
-CHAR_TO_STAND_EDGES = "has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to|ref_style"
+CHAR_TO_STAND_EDGES = "has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to"
 
 
 def _run_cypher(cypher: str) -> list:

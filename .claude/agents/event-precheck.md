@@ -2,7 +2,7 @@
 name: event-precheck
 description: |
   事件范围预检 + 缺口修复 + 下游派单编排层——输入一个/多个 Event（id 或 title）或时间窗，检查该范围的叙事基础完整性：
-  事件缺 involved 角色（char 缺口）、缺 occurs_at 定位（location 缺口）、title/description 提及的角色或地点在图上不存在（建档缺口，启发式）。
+  事件缺 involved 角色（char 缺口）、缺 occurs_at 定位（location 缺口）、title/description 提及的角色或地点在图上不存在（建档缺口，启发式）、缺出场形象 appears_as（着装缺口，2026-10-26 Event 驱动化提示项——只报不修，拍板归 char-costume-designer/人工）。
   有缺口 → 逐条给建议（AskUserQuestion 一题一答附推荐），用户确认后**直接创建 Character/Location 节点与 involved/occurs_at 边**
   （写入白名单仅此四类；创作类补全——新 Event/Info/因果桥——仍走 nrt-gap-filler）；
   修复完毕复查为 0 缺口 → Task 并行唤起 sub agent 推进生产（当前集合：char-design + scene-design），传入范围内全部 involved 角色与 Location 清单。

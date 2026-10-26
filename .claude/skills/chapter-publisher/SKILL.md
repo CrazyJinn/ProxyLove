@@ -40,18 +40,21 @@ RETURN sec.section_no AS no, sec.title AS title,
        count(l) AS line_count,
        sum(CASE WHEN coalesce(l.status, 0) = 11 THEN 1 ELSE 0 END) AS line_done
 ORDER BY sec.section_no;
-// (3) 全章 background 图层（Chapter→has_section→Section→contains→Scene→has_layer→SceneLayer）
-MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:contains]->(s:Scene)
+// (3) 全章 background 图层（场景集 = 各节 scene_blocks 的场景名——发布投影权威，2026-10-26 起替代 contains/includes 链；
+//     历史节（无 includes）与新节通吃；场景名集由 generate_portrait_map._scene_names_of_chapter 同源解析）
+MATCH (s:Scene)
+WHERE s.name IN ['<scene_blocks 解析出的全部场景名>']
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer {layer_type:'background'})
 RETURN DISTINCT s.name AS scene_name, sl.image_path AS bg_image, sl.status AS bg_status;
-// (3b) 全章 BGM（Scene-has_bgm->BgmTrack；status=2 才拷贝/注入，<2 警告跳过）
-MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:contains]->(s:Scene)-[:has_bgm]->(b:BgmTrack)
+// (3b) 全章 BGM（同上场景集 JOIN has_bgm；status=2 才拷贝/注入，<2 警告跳过；generate_bgm 已内置此逻辑）
+MATCH (s:Scene)-[:has_bgm]->(b:BgmTrack)
+WHERE s.name IN ['<同上场景名集>']
 RETURN DISTINCT s.name AS scene_name, b.name AS track, b.status AS bgm_status, b.audio_path AS audio_path;
 // (4) 本章被引用立绘（LineAudio-uses->stand：选绘行级直连——拷贝清单=被引用清单，与 requires 同源；
 //     回溯角色/着装算 guid 整键 <char>-<costume>-<variant>-<stand_id>）
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)
       -[:produces]->(l:LineAudio)-[:uses]->(stand:StandingIllustration)
-MATCH (char:Character)-[:has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(stand)
+MATCH (char:Character)-[:has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to*1..5]->(stand)
 OPTIONAL MATCH (illus:IllusDesign)-[:expands_to]->(stand)
 OPTIONAL MATCH (costume:CostumeStyle)-[:outfit_for]->(illus)
 RETURN DISTINCT char.name AS char_name, stand.id AS stand_id, stand.variant_label AS variant, costume.name AS costume_name, stand.image_path AS image_path, stand.status AS status;

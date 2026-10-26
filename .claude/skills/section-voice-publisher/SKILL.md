@@ -3,9 +3,9 @@ name: section-voice-publisher
 description: |
   把单节已确认定稿（Section.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
   ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
-  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 Scene-depicts→expands_to 列已有立绘；池空按场景事件 wears 优先、兜底 has_costume 选定 IllusDesign；**候选一律按 DesignSheet.active_from 形象版本时间线过滤**——多版本角色如剪发前后自动取生效形象）→
+  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 `Section→includes→Event→anchored_at→Scene` 的事件 `→appears_as→IllusDesign` 直读形象（版本已在写边时物化，零推理）再 `→expands_to` 列已有立绘）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
-  ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to/ref_style + Scene-depicts->IllusDesign）→
+  ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to；2026-10-26 起不再补建 depicts/ref_style——边已废止）→
   ⑤ Qwen3 单 venv（env/.venv-qwen，voice_clone_runner.py）：ensure-ref 出/复用 ref → publish 按 Qwen3 Base Voice Clone 逐句克隆（输入 tts_text 变体承载情绪，clone_mode 逐句选演绎通道：icl=ref 韵律迁移缺省 / xvec=仅说话人向量文本主导演绎；emotion 仅作图标注）→
   母带落 15_声音/<chapter_stem>/<scene_block_id>/<key>.wav（按章节/场景块归档，key 自身即含两段信息） → bind-graph 写回图行节点（voice_key/emotion/tts_text/clone_mode/attempts/text_sha1/status=10 待审）。不拷运行时副本——dashboard 逐句审批试听直接读母带，99_game/assets/ 只由 chapter-publisher 发布时按 status=11 收录（立绘整键由发布期沿 uses 边投影）。
   voice key = <char>-<chapter_stem>-<scene_block_id>-<行节点id>（节点 id 即行身份，插入/删除行不漂移）。在单节定稿已批、需要拆分/选绘/配音或重配被驳回/已改句时使用（由 plot-design 单节聚焦触发）。
@@ -51,8 +51,8 @@ RETURN sc.script_path AS script_path, sc.status AS sc_status, sc.id AS sc_id,
 
 ```cypher
 // (2) 本节出场角色 VoiceDesign——图关系遍历，不按名字列表猜
-MATCH (sec:Section {id:'<section_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
-MATCH (sp)<-[:anchored_at]-(e:Event)<-[:involved]-(c:Character)
+MATCH (sec:Section {id:'<section_id>'})-[:includes]->(e:Event)
+MATCH (e)<-[:involved]-(c:Character)
 OPTIONAL MATCH (c)-[:has_voice_design]->(v:VoiceDesign)
 RETURN DISTINCT c.name AS char, v.status AS vstatus, v.instruct AS instruct,
        v.ref_text AS ref_text, v.ref_audio_path AS ref_audio_path;
@@ -97,7 +97,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
   -o '.tmp/portrait-candidates-<stem>-sec<MM>.json'
 ```
 
-`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Scene-depicts->IllusDesign-expands_to->stand` 列**场景内已有变体**（含未出图 status<11 的，附 variant_label/status/description）；该 (scene, who) 无 depicts 时按「场景事件 wears 优先、兜底 has_costume」选定 IllusDesign 再列其变体。**形象版本时间线**：三路候选一律按所属 DesignSheet 的 `active_from` 过滤，取「≤本节叙事位置（chapter_no×1000+section_no）的最新版本」——多版本角色（如 sec02 剪发后）自动取新形象，共用场景 depicts 的旧版本被滤除并记 warning（「属未生效设计图版本」）；`chars[who].design_sheet` 带生效版本 `{id, slug, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
+`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（Event 驱动化 2026-10-26：版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）；`chars[who].design_sheet` 带生效版本 `{id, slug, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 
@@ -129,9 +129,9 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" apply \
   --tasks '.tmp/voice-tasks-<stem>-sec<MM>.json'
 ```
 
-`apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, description, status=0}` + `expands_to` + `ref_style`）②`Scene-[:depicts {sync:false}]->IllusDesign` 补建（每 (scene, illus) 一次）③该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
+`apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, description, status=0}` + `expands_to`）②该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
 
-- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿 depicts 推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
+- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿 appears_as 范围推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
 - **校验失败**（缺 stand / stand_id 不存在 / 行不属于本节）→ 报告逐条列出坏项且**未写图**，回 3b 补齐 tasks 后重跑 apply（无图副作用）。
 - 3a 报 `0 行待判` 时本步跳过（无新判断，已建边保持）。
 
@@ -196,7 +196,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 
 ## 汇报
 
-列出：节 script_path、stem、拆分对齐统计（created/updated/deleted/restored/reordered）、本轮挑行统计（待配 N 句，复用保持 M 句）、**选绘统计（建边 N 句 / 新变体 M 清单 / 复用 K——新变体为 status=0 缺口，由 plot-design 按 depicts 推进 char-stand-designer 出图）**、各角色产出 wav 数（`{char: N}`）与**通道分布（icl N / xvec M）**、跳过的角色（无 VoiceDesign 或未就绪）、**failed 清单（char/key/错误）**、bind 的行数、行级 status=10 计数。提示用户去 dashboard 审批中心做逐句音频审。
+列出：节 script_path、stem、拆分对齐统计（created/updated/deleted/restored/reordered）、本轮挑行统计（待配 N 句，复用保持 M 句）、**选绘统计（建边 N 句 / 新变体 M 清单 / 复用 K——新变体为 status=0 缺口，由 plot-design 按 appears_as 范围推进 char-stand-designer 出图）**、各角色产出 wav 数（`{char: N}`）与**通道分布（icl N / xvec M）**、跳过的角色（无 VoiceDesign 或未就绪）、**failed 清单（char/key/错误）**、bind 的行数、行级 status=10 计数。提示用户去 dashboard 审批中心做逐句音频审。
 
 ## 参考文档
 

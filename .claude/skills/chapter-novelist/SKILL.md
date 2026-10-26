@@ -1,7 +1,7 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架 + Section.scene_block_ids；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 Section.time_day 时间窗圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id 用 Section.scene_block_ids 预分配值；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架 + Section.scene_block_ids；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id 用 Section.scene_block_ids 预分配值；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
   前驱：无（章无 status、节创建即 11——2026-10-25 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 节小说（小说段 · 纯文件产物，零图写入）
 
-剧情创作流程的**第二段**（节级，在章级结构段之后、定稿段之前）。**节的提纲即图数据本身**：Event（情节）、Info（信息）、Choice/option（分支）、Section.time_day + scene_block_ids（时间窗与块 id）——结构推理（场景段切分/分支核验/节拍规划）在本 skill 的思维链中完成，**不落任何中间提纲文件**。产出节级散文 **小说.md**（dialoguer 定稿段的创作土壤），**全程零图写入**（唯一例外：stale 重写时显式作废定稿链）。正文 `### <scene_block_id> <场景名> <时段>` 场景段标题即拓扑契约（dialoguer 照搬为 ink 场景块）。
+剧情创作流程的**第二段**（节级，在章级结构段之后、定稿段之前）。**节的提纲即图数据本身**：Event（情节，经 includes 物化为节成员）、Info（信息）、Choice/option（分支）、scene_block_ids（块 id）——结构推理（场景段切分/分支核验/节拍规划）在本 skill 的思维链中完成，**不落任何中间提纲文件**。产出节级散文 **小说.md**（dialoguer 定稿段的创作土壤），**全程零图写入**（唯一例外：stale 重写时显式作废定稿链）。正文 `### <scene_block_id> <场景名> <时段>` 场景段标题即拓扑契约（dialoguer 照搬为 ink 场景块）。
 
 ## 参数
 
@@ -35,7 +35,7 @@ allowed-tools: Read, Bash, Write, Edit
 MATCH (sec:Section {id:'<input>'})
 OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
 RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
-       sec.time_day AS time_day, sec.status AS sec_status, sec.script_path AS script_path,
+       sec.status AS sec_status, sec.script_path AS script_path,
        ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
        sec.scene_block_ids AS scene_block_ids
 LIMIT 1
@@ -51,19 +51,15 @@ LIMIT 1
 
 - 1a 查询已带回本节 `scene_block_ids`（**小说场景段标题的唯一合法 id 来源，不自创**；JSON 数组）。`scene_block_ids` 缺失（如存量节未回填）时从本节图行的 `scene_block_id` 聚合推导并汇报标注。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→contains→Scene←realizes←Spot←anchored_at`，Info 限本节 involved 角色 / Event 一跳 link 防过宽）。**时间窗过滤（必做）**：窗 = `Section.time_day`（structurer 建节时写；Spot 全时间共享，不加窗会把该 Spot 历史全部 Event 记进指纹，任何一处变动都误 stale 本节）；`time_day` 缺失时退化为不过滤，并在汇报中标注「取材未限时间窗（指纹过宽）」：
+圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连——2026-10-26 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除（2026-10-27）），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
-MATCH (e:Event)-[:anchored_at]->(sp)
-WHERE e.time STARTS WITH '<time_day>'
+MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
 RETURN 'event' AS kind, e.id AS id, e.title AS title, e.time AS time, e.type AS type,
        e.description AS description, e.ending_kind AS ending_kind, e.condition AS condition,
        null AS content, null AS knowledge_level
 UNION
-MATCH (sec:Section {id:'<sec_id>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
-MATCH (e2:Event)-[:anchored_at]->(sp)
-WHERE e2.time STARTS WITH '<time_day>'
+MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)
 MATCH (src)-[:link]->(i:Info)
 WHERE (src:Character AND (src)-[:involved]->(e2)) OR src = e2
 RETURN 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
@@ -150,7 +146,7 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 
 - 方法论（节级裁剪）：[references/小说方法论精简版.md](references/小说方法论精简版.md)——五步展开、对账四分类、惯性签名轻检清单
 - 指纹契约：[scripts/fingerprint.py](scripts/fingerprint.py) 顶部 docstring（归一化规则 / gen --ids / check）
-- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section.time_day / Section 定稿态 / 创作流程注记「小说段」
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构 + Section.time_day + scene_block_ids 预分配）
+- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section 定稿态 / 创作流程注记「小说段」
+- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构 + scene_block_ids 预分配）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
 - 建议通道：[nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4（建议 JSON 字段 / 多语句 / 控制台执行）

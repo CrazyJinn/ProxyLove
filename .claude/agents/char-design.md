@@ -39,7 +39,7 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 - 用**限定边类型的变长路径**一次查完全部：把美术+声音链 8 种边类型显式列入 `[:...]`，既是"明确"的体现，又能阻止遍历越界到叙事 Event / 其他角色。Schema 中所有美术/声音边都是 Character 的下游方向，有向 `*1..5` 一路可达全部 6 类节点（含声音设计 VoiceDesign；`StandingIllustration` 已剥离至 plot-design，不在本链）；`IllusDesign` 有双上游（produces/outfit_for）会被重复命中，用 `DISTINCT` 去重：
 
 ```cypher
-MATCH (:Character {id:'<角色ID>'})-[:has_appearance|has_voice_style|has_voice_design|has_costume|produces|outfit_for|expands_to|ref_style*1..5]->(n)
+MATCH (:Character {id:'<角色ID>'})-[:has_appearance|has_voice_style|has_voice_design|has_costume|produces|outfit_for|expands_to*1..5]->(n)
 WHERE labels(n)[0] IN ['AppearanceStyle','LanguageStyle','VoiceDesign','CostumeStyle','DesignSheet','IllusDesign']
 RETURN DISTINCT labels(n)[0] AS type, n.id AS id, n.name AS name, n.status AS status,
        n.prompt_path AS prompt_path, n.image_path AS image_path

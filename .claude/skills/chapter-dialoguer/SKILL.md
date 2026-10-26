@@ -57,15 +57,15 @@ LIMIT 1
   - **小说模式**：Read 节目录 `小说.md`（chapter-novelist 产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
   - **存量直连模式**：Read `sec.script_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
 
-再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot) MATCH (e:Event)-[:anchored_at]->(sp) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
+再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:includes]->(e:Event) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
 
 再查图：
 
 ```cypher
 // 出场角色 + 语言习惯（创作对话的核心依据）——图关系遍历，不按名字列表猜：
-// 本节包含的场景 ← Spot（空间细分，经 part_of 属地点） ← 归组到此的事件（anchored_at） ← 参与的角色
-MATCH (sec:Section {id:'<input>'})-[:contains]->(s:Scene)<-[:realizes]-(sp:Spot)
-MATCH (sp)<-[:anchored_at]-(e:Event)<-[:involved]-(char:Character)
+// 本节 includes 的事件 ← 参与的角色（2026-10-26 Event 驱动化：includes 直连，无需经场景链）
+MATCH (sec:Section {id:'<input>'})-[:includes]->(e:Event)
+MATCH (e)<-[:involved]-(char:Character)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
 RETURN DISTINCT char.name AS name, char.description AS description, char.character_tags AS tags,
        voice.vocabulary AS vocabulary, voice.rhythm AS rhythm,
@@ -84,7 +84,7 @@ LIMIT 20
 **小说模式必过指纹自检**（小说是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
 
 ```bash
-# 1) 圈定素材（与 chapter-novelist 1b 同一条 UNION 查询,时间窗 = Section.time_day,见该 SKILL.md）
+# 1) 圈定素材（与 chapter-novelist 1b 同一条 UNION 查询,includes 物化成员直取,见该 SKILL.md）
 python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<圈定 UNION 查询>" --json > .tmp/novelist/<sec_id>_materials.json
 # 2) 自检（同源脚本,归一化规则与生成侧一致）
 python "${CLAUDE_SKILL_DIR}/../chapter-novelist/scripts/fingerprint.py" check --novel "<小说.md>" --in .tmp/novelist/<sec_id>_materials.json

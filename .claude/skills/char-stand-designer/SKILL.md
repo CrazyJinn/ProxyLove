@@ -37,8 +37,9 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (stand:StandingIllustration {id:'<stand_id>'})
 MATCH (illus:IllusDesign)-[:expands_to]->(stand)
-MATCH (voice:LanguageStyle)-[:ref_style]->(stand)
-MATCH (ch:Character)-[:has_voice_style]->(voice)
+MATCH (ds:DesignSheet)-[:produces]->(illus)
+MATCH (ch:Character)-[:has_appearance]->(:AppearanceStyle)-[:produces]->(ds)
+MATCH (ch)-[:has_voice_style]->(voice:LanguageStyle)
 OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
 OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
 RETURN ch.name AS char_name, ch.id AS char_id,
@@ -55,7 +56,8 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 - **节点已存在**（由 `section-voice-publisher` 的选绘 apply 兜底建为 `status=0`，`description` 已含变体氛围）：直接按 status 决定推进起点。`variant_label` 已在节点上；若 `eye`/`brow`/`mouth`/`head_angle`/`hand`/`foot` 标签缺失，按 `variant_label` 与 `description` 语义推导并在保存步补写。
 - 本 skill **只处理这一个 stand**，不枚举其他变体、不补全数量。
 
-> 查不到（stand_id 不存在 / 缺上游 `expands_to` 或 `ref_style`）→ 报告并停止。
+> 查不到（stand_id 不存在 / 缺上游 `expands_to` 或角色 `has_voice_style`）→ 报告并停止。
+> 立绘表情/动作取语言风格的路径（2026-10-26 起，ref_style 边已删）：stand←expands_to←IllusDesign←produces←DesignSheet←produces←AppearanceStyle←has_appearance←Character→has_voice_style→LanguageStyle。
 
 ### 2. 完成任务
 
@@ -113,8 +115,7 @@ MERGE (stand:StandingIllustration {id: '<stand_id>'})
                 stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
 MATCH (illus:IllusDesign {id: '<illus_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
 MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '<variant_label>';
-MATCH (voice:LanguageStyle {id: '<voice_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
-MERGE (voice)-[r:ref_style]->(stand) SET r.sync = true;
+// ref_style 建边已删（2026-10-26 边废止；语言风格取材改经 has_voice_style 反查）
 MATCH (stand:StandingIllustration {id: '<stand_id>'})
 SET stand.prompt_path = '<PROMPT_PATH>',
     stand.image_path  = '<IMAGE_PATH>',

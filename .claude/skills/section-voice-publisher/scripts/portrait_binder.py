@@ -2,7 +2,7 @@
 
 section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b 之后的应用）：
   candidates  查图产候选池 JSON（每 (scene_block, who) 的可选立绘 + 兜底 IllusDesign 决策）
-  apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + depicts 补建 + uses 边幂等替换
+  apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + uses 边幂等替换（2026-10-26 起不再补建 depicts/ref_style——边已废止）
 
 设计约束（00_init/Schema/剧情.md uses 边）：
   - 选绘范围 ⊇ 配音挑行：say 且 status∈{0,-1}，另含 status=10 且无 uses 边的
@@ -11,12 +11,12 @@ section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b
     status=11 已批行不自动纳入——重选须经显式驳回）
   - 每句 say 行都显式建 uses 边（sync=false）；apply 先全量校验后单事务写，任一项不合法即
     整体拒绝（不写图）——LLM 漏判可补 tasks 后重跑，无图副作用
-  - 候选池与 apply 共用同一 IllusDesign 解析（确定性：depicts 已有 > 场景事件 wears >
-    has_costume 兜底；同级歧义按 id 字典序取首并记 warning，重跑稳定）
-  - **形象版本时间线**（DesignSheet 版本链，如剪发前后）：三路候选 IllusDesign 一律回溯
-    `<-[:produces]-(ds:DesignSheet)` 按 ds.active_from 过滤，取「≤本节叙事位置
-    (chapter_no*1000+section_no) 的最新版本」——多版本角色（sec02 剪发后）自动取新形象，
-    场景已 depicts 的旧版本被滤除并记 warning；单版本角色恒等于唯一版（零行为变化）
+  - **Event 驱动化（2026-10-26）**：候选池与 apply 共用同一 IllusDesign 解析——
+    `Section→includes→Event→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign`
+    直读，零推理；多个终点按 id 字典序取首并记 warning，重跑稳定。原 depicts/wears/
+    has_costume 三路推演已随边删除废止
+  - **形象版本判定已物化到写边时**（appears_as 建边/回填时按事件时间 vs
+    DesignSheet.active_from 选版）——读路径零过滤，_effective_ds 仅作 LLM 对齐展示
 
 CLI:
   python portrait_binder.py candidates --section <sec_id> [-o out.json]
@@ -34,10 +34,8 @@ from snowflake_base62 import SnowflakeGenerator  # noqa: E402
 
 _GEN = SnowflakeGenerator()
 
-# IllusDesign 解析优先级（候选列 → 其所属 DesignSheet 列 → source 标签）
-_PRIORITY = (("depicts_id", "depicts_ds", "depicts"),
-             ("wears_id", "wears_ds", "event_wears"),
-             ("default_id", "default_ds", "default_costume"))
+# IllusDesign 解析来源标签（Event 驱动化后单路直读）
+_SOURCE = "appears_as"
 
 _POS_CACHE = {}   # section_id → 叙事位置 int 或 None
 _EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
@@ -137,55 +135,31 @@ def _effective_ds(section_id: str, who: str, warnings: list):
 def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) -> tuple:
     """该 (scene, who) 的着装 IllusDesign 决策 → (illus_id, source)。
 
-    三路候选一次查询带回，Python 按 depicts > 事件 wears > has_costume 优先级取一；
-    同级多个按 id 字典序取首（决定性），歧义记 warning。三路全空 → ("", "")。
-    depicts 路径须经 outfit_for←has_costume 连到该 Character——同 Scene 常 depicts 多个
-    角色的 IllusDesign，不过滤角色会把别人的着装池当候选。
-    **形象版本过滤**：三路候选一律回溯所属 DesignSheet（illus←produces←DS，1:1 无行
-    乘积），不属于生效版本（_effective_ds）的 IllusDesign 先滤除（记 warning）再取首——
-    多版本角色（sec02 剪发后）自动取新形象，共用场景 depicts 的旧版本被时间线拦下。
+    Event 驱动化（2026-10-26）：`Section→includes→Event→anchored_at→Scene(块名)` 的
+    事件 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
+    零推理——形象版本判定在写 appears_as 边时已物化，读路径不做 active_from 过滤。
+    多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
+    scene_name 为空（scene_blocks 缺块定义）时退化为「节内该角色全部事件的 appears_as」。
     """
+    where = ("WHERE scn.name = " + _q(scene_name) + " ") if scene_name else ""
     rows = _run_cypher(
-        "MATCH (sec:Section {id:" + _q(section_id) + "}) "
-        "OPTIONAL MATCH (c0:Character {name:" + _q(who) + "}) "
-        "OPTIONAL MATCH (sec)-[:contains]->(scn:Scene {name:" + _q(scene_name) + "}) "
-        "OPTIONAL MATCH (scn)-[:depicts]->(d:IllusDesign)<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
-        "OPTIONAL MATCH (d)<-[:produces]-(dsd:DesignSheet) "
-        "OPTIONAL MATCH (scn)<-[:realizes]-(sp:Spot) "
-        "OPTIONAL MATCH (c0)-[:involved]->(e:Event)-[:wears]->(wc:CostumeStyle), "
-        "(c0)-[:has_costume]->(wc), (wc)-[:outfit_for]->(wi:IllusDesign), "
-        "(e)-[:anchored_at]->(sp) "
-        "OPTIONAL MATCH (wi)<-[:produces]-(dsw:DesignSheet) "
-        "OPTIONAL MATCH (c0)-[:has_costume]->(:CostumeStyle)-[:outfit_for]->(di:IllusDesign) "
-        "OPTIONAL MATCH (di)<-[:produces]-(dsx:DesignSheet) "
-        "RETURN DISTINCT d.id AS depicts_id, dsd.id AS depicts_ds, "
-        "wi.id AS wears_id, dsw.id AS wears_ds, "
-        "di.id AS default_id, dsx.id AS default_ds, "
-        "scn.name AS scene_hit"
+        "MATCH (sec:Section {id:" + _q(section_id) + "})-[:includes]->(e:Event) "
+        "OPTIONAL MATCH (e)-[:anchored_at]->(scn:Scene) " + where +
+        "OPTIONAL MATCH (c0:Character {name:" + _q(who) + "})-[:involved]->(e) "
+        "OPTIONAL MATCH (e)-[:appears_as]->(il:IllusDesign)"
+        "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
+        "RETURN DISTINCT il.id AS illus_id"
     )
-    if scene_name and rows and all(r.get("scene_hit") is None for r in rows):
-        warnings.append(f"{scene_name}：未命中本节 contains 的任何 Scene（名字与图 Scene 名不符）——"
-                        f"depicts/wears 两路将降级，请核对 Section.scene_blocks 的 scene_name")
-    eff = _effective_ds(section_id, who, warnings)
-    for col, ds_col, source in _PRIORITY:
-        kept, dropped = set(), set()
-        for r in rows:
-            v = r.get(col)
-            if not v:
-                continue
-            if eff and r.get(ds_col) != eff["id"]:
-                dropped.add(v)
-            else:
-                kept.add(v)
-        if dropped:
-            warnings.append(f"{scene_name}/{who}：{source} 路径 {len(dropped)} 个 IllusDesign "
-                            f"属未生效设计图版本（{sorted(dropped)}），按 active_from 时间线过滤")
-        vals = sorted(kept)
-        if len(vals) > 1:
-            warnings.append(f"{scene_name}/{who}：{source} 路径命中多个 IllusDesign（{vals}），"
-                            f"按 id 字典序取首 {vals[0]}")
-        if vals:
-            return vals[0], source
+    if scene_name and not rows:
+        warnings.append(f"{scene_name}：本节 includes 事件无 anchored_at 命中此 Scene"
+                        f"（名字与图 Scene 名不符，或未归组）——请核对 Section.scene_blocks"
+                        f" 的 scene_name 与 scene-designer 归组")
+    vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
+    if len(vals) > 1:
+        warnings.append(f"{scene_name}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
+                        f"按 id 字典序取首 {vals[0]}")
+    if vals:
+        return vals[0], _SOURCE
     return "", ""
 
 
@@ -217,8 +191,8 @@ def build_candidates(section_id: str) -> dict:
             illus_id, source = resolve_illus(section_id, scene_name, who, warnings)
             stands = stands_of_illus(illus_id) if illus_id else []
             if not illus_id:
-                warnings.append(f"{block}/{who}：无着装 IllusDesign（depicts/事件 wears/has_costume "
-                                f"均空或全被形象版本过滤）——apply 无法建边，需先补角色着装链")
+                warnings.append(f"{block}/{who}：无着装 IllusDesign（该场景事件无 appears_as "
+                                f"或角色未 involved）——apply 无法建边，需补 appears_as（E1）或先补角色着装链")
             entry = {"illus_id": illus_id, "illus_source": source, "stands": stands}
             eff = _effective_ds(section_id, who, warnings)   # 已缓存，取生效形象供 LLM 对齐
             if eff:
@@ -329,9 +303,8 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
 
     stmts = []
     report = {"counts": {"lines_bound": 0, "new_variants": 0, "reused_variants": 0,
-                         "depicts_created": 0, "uses_replaced": 0},
+                         "uses_replaced": 0},
               "new_variants": [], "warnings": warnings}
-    depicts_seen = set()
     built_ids = set()   # 已产建节点语句的新变体 id（同 (illus,label) 多句只建一次）
     for p in planned:
         nv = p.get("new_variant")
@@ -352,25 +325,13 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                     f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
                     f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true, e.variant_label={_q(label)};"
                 )
-                stmts.append(
-                    f"MATCH (:Character {{" + f"name:{_q(p['who'])}" + "})-[:has_voice_style]->(ls:LanguageStyle), "
-                    f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
-                    f"MERGE (ls)-[r:ref_style]->(st) SET r.sync=true;"
-                )
+                # ref_style 兜底已删（2026-10-26 边废止）：立绘取语言风格改经
+                # Character→has_voice_style 反查（char-stand-designer 前驱）
                 report["counts"]["new_variants"] += 1
                 report["new_variants"].append({"id": sid, "variant_label": label,
                                                "illus_id": p["illus_id"], "char": p["who"],
                                                "scene_name": p["scene_name"]})
-        if p["scene_name"] and p["illus_id"]:
-            key = (p["scene_name"], p["illus_id"])
-            if key not in depicts_seen:
-                depicts_seen.add(key)
-                stmts.append(
-                    f"MATCH (s:Scene {{" + f"name:{_q(p['scene_name'])}" + "}), "
-                    f"(i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}) "
-                    f"MERGE (s)-[d:depicts]->(i) SET d.sync=false;"
-                )
-                report["counts"]["depicts_created"] += 1
+        # depicts 补建已删（2026-10-26 边废止）：着装可用性由 appears_as 承载
         stmts.append(
             f"MATCH (l:LineAudio {{" + f"id:{_q(p['node_id'])}" + "}) "
             f"OPTIONAL MATCH (l)-[o:uses]->() DELETE o "
@@ -430,7 +391,7 @@ def main(argv=None) -> int:
             print(json.dumps(report, ensure_ascii=False, indent=2))
             c = report["counts"]
             print(f"OK: lines_bound={c['lines_bound']} new_variants={c['new_variants']} "
-                  f"reused_variants={c['reused_variants']} depicts={c['depicts_created']}",
+                  f"reused_variants={c['reused_variants']}",
                   file=sys.stderr)
     except (ValueError, RuntimeError, OSError, json.JSONDecodeError) as e:
         sys.stderr.write(f"选绘失败: {e}\n")

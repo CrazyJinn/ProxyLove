@@ -22,7 +22,7 @@ tasks.json 格式（数组，每项一个变体）：
       "prompt_path": "06_角色美术/.../立绘/<variant>.md",   # 必须已存在（LLM 已组装）
       "output_path": "06_角色美术/.../立绘/<variant>.png",
       "ref_image":   "06_角色美术/.../立绘设计图.png",
-      "illus_id": "...", "voice_id": "...",                  # voice_id 可省（跳过 ref_style 边）
+      "illus_id": "...", "voice_id": "...",                  # voice_id 已无用（ref_style 边 2026-10-26 删除，字段保留兼容旧 tasks）
       "tags": {"eye": "...", "brow": "...", "mouth": "...",
                "head_angle": "...", "hand": "...", "foot": "..."}
     }]
@@ -55,7 +55,7 @@ def esc(s: str) -> str:
 
 
 def build_write_cypher(t: dict) -> str:
-    """按 SKILL「保存结果」段生成写图语句（六标签 + expands_to/ref_style 边 + 产物 + status=10）。"""
+    """按 SKILL「保存结果」段生成写图语句（六标签 + expands_to 边 + 产物 + status=10；ref_style 已删 2026-10-26）。"""
     sid, tags = t["stand_id"], t["tags"]
     stmts = [f"""MATCH (stand:StandingIllustration {{id: '{sid}'}})
 SET stand.eye = '{esc(tags["eye"])}', stand.brow = '{esc(tags["brow"])}',
@@ -63,9 +63,7 @@ SET stand.eye = '{esc(tags["eye"])}', stand.brow = '{esc(tags["brow"])}',
     stand.hand = '{esc(tags["hand"])}', stand.foot = '{esc(tags["foot"])}';""",
              f"""MATCH (illus:IllusDesign {{id: '{t["illus_id"]}'}}), (stand:StandingIllustration {{id: '{sid}'}})
 MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '{esc(t["variant_label"])}';"""]
-    if t.get("voice_id"):
-        stmts.append(f"""MATCH (voice:LanguageStyle {{id: '{t["voice_id"]}'}}), (stand:StandingIllustration {{id: '{sid}'}})
-MERGE (voice)-[r:ref_style]->(stand) SET r.sync = true;""")
+    # ref_style 建边已删（2026-10-26 边废止）；voice_id 字段保留兼容旧 tasks 但不再写边
     stmts.append(f"""MATCH (stand:StandingIllustration {{id: '{sid}'}})
 SET stand.prompt_path = '{esc(t["prompt_path"])}',
     stand.image_path  = '{esc(t["output_path"])}',

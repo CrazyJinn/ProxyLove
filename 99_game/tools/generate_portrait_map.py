@@ -41,16 +41,43 @@ def _run_cypher(cypher: str) -> list:
     return json.loads(out[start:end + 1])
 
 
+def _scene_names_of_chapter(chapter_id: str) -> list[str]:
+    """章内全部节的 scene_blocks（块→场景名，拆分时写的投影权威）解析去重。
+    历史节（2026-10-26 前旧流程，无 includes）与新节通吃——BGM/图层按场景名 JOIN。"""
+    rows = _run_cypher(
+        "MATCH (:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section) "
+        "RETURN sec.scene_blocks AS blocks"
+    )
+    names: list[str] = []
+    for r in rows:
+        raw = r.get("blocks")
+        if not raw:
+            continue
+        try:
+            blocks = json.loads(raw) if isinstance(raw, str) else raw
+        except (TypeError, json.JSONDecodeError):
+            continue
+        for b in blocks or []:
+            n = (b.get("scene_name") or "").strip()
+            if n and n not in names:
+                names.append(n)
+    return names
+
+
 def generate_bgm(chapter_id: str) -> tuple:
-    """查图生成 ({scene: {track, mode, loop}}, [未就绪警告])。仅 status=2 的 BgmTrack 进 map。"""
-    cypher = (
-        "MATCH (ch:Chapter {id:'" + chapter_id + "'})"
-        "-[:has_section]->(:Section)-[:contains]->(scene:Scene)"
-        "-[:has_bgm]->(b:BgmTrack) "
+    """查图生成 ({scene: {track, mode, loop}}, [未就绪警告])。仅 status=2 的 BgmTrack 进 map。
+    场景集取各节 scene_blocks 的场景名（Event 驱动化 2026-10-26：contains/旧链已废；
+    scene_blocks 为发布投影权威，无 includes 的历史节同样覆盖）。"""
+    names = _scene_names_of_chapter(chapter_id)
+    if not names:
+        return {}, []
+    in_list = ", ".join("'" + n.replace("'", "\\'") + "'" for n in names)
+    rows = _run_cypher(
+        "MATCH (scene:Scene)-[:has_bgm]->(b:BgmTrack) "
+        "WHERE scene.name IN [" + in_list + "] "
         "RETURN DISTINCT scene.name AS scene_name, b.name AS track, b.status AS status, "
         "b.mode AS mode, b.loop AS loop ORDER BY scene_name"
     )
-    rows = _run_cypher(cypher)
     m: dict = {}
     warnings = []
     for r in rows:
