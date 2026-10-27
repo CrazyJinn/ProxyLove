@@ -1,7 +1,7 @@
 ---
 name: char-costume-designer
 description: |
-  推进 CostumeStyle 图节点：查询状态 → 分析事件着装需求并生成内容 → 保存结果（绑事件出场形象 appears_as 边——Event 驱动化 2026-10-26 起 wears 已废；新建着装 MERGE 节点+边+内容，status=1 已完成）。
+  推进 CostumeStyle 图节点：查询状态 → 分析事件着装需求并生成内容 → 保存结果（绑事件出场形象 appears_as 边（wears 已废）；新建着装 MERGE 节点+边+内容，status=1 已完成）。
   在需要为角色创建/追加着装方案时使用。
 argument-hint: <char_id>
 arguments:
@@ -74,7 +74,7 @@ ORDER BY e.id;
 
 ### 3. 保存结果
 
-#### 复用已有 CostumeStyle 的事件组（绑 appears_as：Event 驱动化 2026-10-26，wears 已废）
+#### 复用已有 CostumeStyle 的事件组（绑 appears_as，wears 已废）
 
 ```cypher
 // 出场形象直挂 IllusDesign（写时选版：多版本角色按「事件时间 vs 版本边界（如理发时刻）」拍

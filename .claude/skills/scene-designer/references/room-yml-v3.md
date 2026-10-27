@@ -1,6 +1,6 @@
 # room.yml v3 速查（scene-designer 专用）
 
-> 出处标注：`ss:N` = [07_场景美术/slice_scenes.py](../../../../07_场景美术/slice_scenes.py) 行号，`cf:N` = [07_场景美术/check_framing.py](../../../../07_场景美术/check_framing.py) 行号（2026-10-24 版本）。**规则真源是脚本代码**，本文件是速查——脚本更新后须同步。
+> 出处标注：`ss:N` = [07_场景美术/slice_scenes.py](../../../../07_场景美术/slice_scenes.py) 行号，`cf:N` = [07_场景美术/check_framing.py](../../../../07_场景美术/check_framing.py) 行号。**规则真源是脚本代码**，本文件是速查——脚本更新后须同步。
 
 ## 目录
 

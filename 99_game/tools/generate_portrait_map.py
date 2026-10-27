@@ -43,7 +43,7 @@ def _run_cypher(cypher: str) -> list:
 
 def _scene_names_of_chapter(chapter_id: str) -> list[str]:
     """章内全部节的 scene_blocks（块→场景名，拆分时写的投影权威）解析去重。
-    历史节（2026-10-26 前旧流程，无 includes）与新节通吃——BGM/图层按场景名 JOIN。"""
+    历史节与新节通吃——BGM/图层按场景名 JOIN。"""
     rows = _run_cypher(
         "MATCH (:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section) "
         "RETURN sec.scene_blocks AS blocks"
@@ -66,7 +66,7 @@ def _scene_names_of_chapter(chapter_id: str) -> list[str]:
 
 def generate_bgm(chapter_id: str) -> tuple:
     """查图生成 ({scene: {track, mode, loop}}, [未就绪警告])。仅 status=2 的 BgmTrack 进 map。
-    场景集取各节 scene_blocks 的场景名（Event 驱动化 2026-10-26：contains/旧链已废；
+    场景集取各节行块 id 集合直查 Scene（scene_blocks/contains 已废；
     scene_blocks 为发布投影权威，无 includes 的历史节同样覆盖）。"""
     names = _scene_names_of_chapter(chapter_id)
     if not names:

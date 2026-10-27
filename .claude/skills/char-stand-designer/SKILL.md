@@ -57,7 +57,7 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 - 本 skill **只处理这一个 stand**，不枚举其他变体、不补全数量。
 
 > 查不到（stand_id 不存在 / 缺上游 `expands_to` 或角色 `has_voice_style`）→ 报告并停止。
-> 立绘表情/动作取语言风格的路径（2026-10-26 起，ref_style 边已删）：stand←expands_to←IllusDesign←produces←DesignSheet←produces←AppearanceStyle←has_appearance←Character→has_voice_style→LanguageStyle。
+> 立绘表情/动作取语言风格的路径：stand←expands_to←IllusDesign←produces←DesignSheet←produces←AppearanceStyle←has_appearance←Character→has_voice_style→LanguageStyle。
 
 ### 2. 完成任务
 
@@ -115,7 +115,7 @@ MERGE (stand:StandingIllustration {id: '<stand_id>'})
                 stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
 MATCH (illus:IllusDesign {id: '<illus_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
 MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '<variant_label>';
-// ref_style 建边已删（2026-10-26 边废止；语言风格取材改经 has_voice_style 反查）
+// ref_style 建边已删
 MATCH (stand:StandingIllustration {id: '<stand_id>'})
 SET stand.prompt_path = '<PROMPT_PATH>',
     stand.image_path  = '<IMAGE_PATH>',

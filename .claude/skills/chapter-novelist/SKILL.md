@@ -1,8 +1,8 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用（2026-10-27 块方案清理，scene_block_ids 预分配已废止）；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
-  前驱：无（章无 status、节创建即 11——2026-10-25 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
+  前驱：无（章无 status、节创建即 11 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -42,7 +42,7 @@ RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summa
 LIMIT 1
 ```
 
-**前驱校验**（2026-10-25 节先于章；章无 status）：自由节（无所属章，`ch IS NULL`）**放行**——节由 dashboard ＋新节直建，小说可先于组章创作；有章亦直接放行（结构产出即可用，无审批）。仅须节自身 `sec.status ≠ -1`（作废态表示等重做流程，由编排层处置）。
+**前驱校验**：自由节（无所属章，`ch IS NULL`）**放行**——节由 dashboard ＋新节直建，小说可先于组章创作；有章亦直接放行（结构产出即可用，无审批）。仅须节自身 `sec.status ≠ -1`（作废态表示等重做流程，由编排层处置）。
 **模式判定**：
 - 小说.md 不存在 → **首建模式**（进 1b）。`script_path` 已有值时为存量直连节：plot-design 编排不会调到（判定在上游）；被用户直接触发 = 显式转新流程，报告「本节为旧流程直连形态，本次建小说层（stale 前不动定稿态）」后继续。
 - 小说.md 存在 → 进 1d 指纹自检（stale → 重写模式；新鲜且用户未明示重写 → 汇报退出）。
@@ -50,9 +50,9 @@ LIMIT 1
 
 #### 1b. 章级依据（图）+ 圈定取材素材
 
-- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内；想写集合外机位（无事件锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含事件未建[走 gap-filler 补事件+anchored_at] / 越界脑补[重切] / 事件锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈（2026-10-27 用户裁定）。
+- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内；想写集合外机位（无事件锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含事件未建[走 gap-filler 补事件+anchored_at] / 越界脑补[重切] / 事件锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连——2026-10-26 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除（2026-10-27）），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)

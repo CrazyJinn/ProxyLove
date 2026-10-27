@@ -20,7 +20,7 @@ allowed-tools: Read, Bash, Write
 
 目标：让叙事基础层五个实体——**Character / Event / Location / Info / Choice**——的关系闭环走通：每个 Event 有时间 + 地点 + 参与人，因果链（leads_to）与分支（Choice+option）不断头，Info 不孤立；显式聚焦（人物/时间窗）时另做**启发式提案**让图渐进丰满。**图算法发现缺口 → 逐个问用户 → 明确后提交 dashboard 待审**。
 
-> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/presents/option 八边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建；`appears_as`（事件出场形象）属着装拍板（char-costume-designer / 人工，2026-10-26 Event 驱动化），缺口由 dashboard 体检项 EA1 兜查，本 skill 不建。
+> **范畴边界**：本 skill 只检查与修复**叙事基础层**（五实体 + occurs_at/involved/relation/at/link/leads_to/presents/option 八边）。Spot/Scene/anchored_at/realizes 属**场景域**（见 00_init/Schema/场景美术.md），由 scene-designer 独占——本 skill 不检查、不建议、不创建；`appears_as`（事件出场形象）属着装拍板（char-costume-designer / 人工），缺口由 dashboard 体检项 EA1 兜查，本 skill 不建。
 >
 > **只读不写（交互期间）**：发现与确认阶段仅查询图。用户敲定全部修法后，一次性组装建议 JSON 落盘；写库永远由人工在 dashboard Cypher 控制台执行（两段确认 + 级联预览），本 skill 不执行任何写语句。
 >
@@ -124,7 +124,7 @@ c) 新建 Location
 - **Char 推荐**（已定 Location 后联动）：① 该 Location 历史参与者（次数降序 top-3）→ ② at 边挂此 Location 的居民 → ③ 同日参与者。
 - **Info/Choice 联动推荐**（X2/V4 用）：X2 补落点事件时，参与人与地点承 presents 上游事件（分支与主干同场同人，facts 现查上游 involved/occurs_at）；V4 补边时，候选 = 时间邻近 ±1 事件的 link/leads_to 惯例 + title 文本相关节点。
 - **H 组创作推荐**（H1/H2 用）：推荐答案 = 创作草案本身——拟插入时间点 + title + 一句话 description，依据列启发维度与触发信号（「因果跳变：质问→庆祝 无过渡」「空白 3 日」「三个未接来电无跟进」）。content 必标「创意推断，可调整」；用户可现场改 title/description/时间，改后版本入建议。
-- **title/description 无时间纪律**：新事件的 title 与 description **不携带时间信息**（绝对日期、「第 N 天」、周次、时段词如「次日/当晚/周末/两周后」一律不进这两个字段）——时间真相只有一处 = `Event.time` 字段，文本里重复时间会在重排时失真（2026-10-20 实例：「周末复播」提前到周二后 title 与 time 矛盾被迫返工）。因果与节奏语义交给 `leads_to` 边的 `detail` 与事件先后顺序承载；草案阶段用户口头带时间的（如「次日赔罪」），落 JSON 时转写为无时间表述，时间点只写进 `time` 字段。
+- **title/description 无时间纪律**：新事件的 title 与 description **不携带时间信息**（绝对日期、「第 N 天」、周次、时段词如「次日/当晚/周末/两周后」一律不进这两个字段）——时间真相只有一处 = `Event.time` 字段，文本里重复时间会在重排时失真。因果与节奏语义交给 `leads_to` 边的 `detail` 与事件先后顺序承载；草案阶段用户口头带时间的（如「次日赔罪」），落 JSON 时转写为无时间表述，时间点只写进 `time` 字段。
 - **冷启动兜底**：四路信号全空（一次性/首访地点）时，推荐「新建 Location」并明确说这是 LLM 判断无历史依据，请用户裁定；完整下拉候选永远在选项里。
 - **leads_to 邻居信号禁用**（因果链跨空间推进，无效——原 evt_relation 邻接回测同地点比例仅 16%）。
 
@@ -146,7 +146,7 @@ c) 新建 Location
    - **跳过的缺口不产生建议项**，但在对话汇报中列出（缺口 + 跳过理由），保证没有默默消失的缺口。
 3. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_补全_建议.json`（顶层数组）。**落盘即提交**——dashboard 不接收推送，`GET /events/suggestions` 每次按 glob 拾取最新 3 个文件；落盘后可用该接口回查验证拾取成功。
    - 一条建议的 `cypher` 可以是**多语句**（`;`+换行分隔，先节点后边）：dashboard 建议弹窗「采纳」自 2026-10-19 起支持多语句（`cascade.split_statements` 拆分后单事务 `run_write_many` 顺序执行 + 级联合并）；此前单语句限制会报 Memgraph `expecting <EOF>`。
-   - **cypher 只含交付目标本身，禁止夹带自造的「校验/checksum 节点」**（2026-10-20 踩过：往建议里塞 `MERGE (chk:…) ON CREATE SET chk.title='__checksum__'` 想做执行标记，结果是必然产生的孤儿节点，用户在图上看到还要手工清）。执行校验一律由 agent 在用户回报执行后用只读查询回查目标节点完成。
+   - **cypher 只含交付目标本身，禁止夹带自造的「校验/checksum 节点」**（曾踩过：往建议里塞 `MERGE (chk:…) ON CREATE SET chk.title='__checksum__'` 想做执行标记，结果是必然产生的孤儿节点，用户在图上看到还要手工清）。执行校验一律由 agent 在用户回报执行后用只读查询回查目标节点完成。
 4. **汇报收尾**：文件路径 + 建议条数与 priority 分布 + 跳过清单 + 审批入口提示：
    - dashboard `/events` 页「📥 补全建议」弹窗查看；
    - 逐条审过后经 `/data` Cypher 控制台执行写库（两段确认 + 级联预览）；MERGE 幂等，执行前自查该条是否已写回。

@@ -2,7 +2,7 @@
 
 section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b 之后的应用）：
   candidates  查图产候选池 JSON（每 (scene_block, who) 的可选立绘 + 兜底 IllusDesign 决策）
-  apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + uses 边幂等替换（2026-10-26 起不再补建 depicts/ref_style——边已废止）
+  apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + uses 边幂等替换
 
 设计约束（00_init/Schema/剧情.md uses 边）：
   - 选绘范围 ⊇ 配音挑行：say 且 status∈{0,-1}，另含 status=10 且无 uses 边的
@@ -11,7 +11,7 @@ section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b
     status=11 已批行不自动纳入——重选须经显式驳回）
   - 每句 say 行都显式建 uses 边（sync=false）；apply 先全量校验后单事务写，任一项不合法即
     整体拒绝（不写图）——LLM 漏判可补 tasks 后重跑，无图副作用
-  - **Event 驱动化（2026-10-26）**：候选池与 apply 共用同一 IllusDesign 解析——
+  - **Event 驱动化**：候选池与 apply 共用同一 IllusDesign 解析——
     `Section→includes→Event→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign`
     直读，零推理；多个终点按 id 字典序取首并记 warning，重跑稳定。原 depicts/wears/
     has_costume 三路推演已随边删除废止
@@ -44,8 +44,7 @@ _EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
 # ── 公共查询 ─────────────────────────────────────────────────
 
 def fetch_section_head(section_id: str) -> dict:
-    """Section 头信息（sec.status≠11 raise）。2026-10-27 块方案清理：Section.scene_blocks
-    已废止——块 id=scene_id，块→场景名经 id 直查图（_scene_names_of）。"""
+    """Section 头信息（sec.status≠11 raise）。Section.scene_blocks 已废止——块 id=scene_id，块→场景名经 id 直查图（_scene_names_of）。"""
     rows = _run_cypher(
         "MATCH (sec:Section {id:'" + section_id + "'}) "
         "RETURN sec.status AS st LIMIT 1"
@@ -139,7 +138,7 @@ def _effective_ds(section_id: str, who: str, warnings: list):
 def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) -> tuple:
     """该 (scene, who) 的着装 IllusDesign 决策 → (illus_id, source)。
 
-    Event 驱动化（2026-10-26）：`Section→includes→Event→anchored_at→Scene(块名)` 的
+    Event 驱动化：`Section→includes→Event→anchored_at→Scene(块名)` 的
     事件 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
     零推理——形象版本判定在写 appears_as 边时已物化，读路径不做 active_from 过滤。
     多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
@@ -329,13 +328,13 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                     f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
                     f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true, e.variant_label={_q(label)};"
                 )
-                # ref_style 兜底已删（2026-10-26 边废止）：立绘取语言风格改经
+                # ref_style 兜底已删：立绘取语言风格改经
                 # Character→has_voice_style 反查（char-stand-designer 前驱）
                 report["counts"]["new_variants"] += 1
                 report["new_variants"].append({"id": sid, "variant_label": label,
                                                "illus_id": p["illus_id"], "char": p["who"],
                                                "scene_name": p["scene_name"]})
-        # depicts 补建已删（2026-10-26 边废止）：着装可用性由 appears_as 承载
+        # depicts 补建已删：着装可用性由 appears_as 承载
         stmts.append(
             f"MATCH (l:LineAudio {{" + f"id:{_q(p['node_id'])}" + "}) "
             f"OPTIONAL MATCH (l)-[o:uses]->() DELETE o "

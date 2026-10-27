@@ -2,7 +2,7 @@
 
 > Schema 按模块拆分，渐进式披露。每个文件自包含节点定义、边定义、ID 规则。
 
-> **⚠️ 2026-10-26 Event 驱动化定稿（本文件已按目标形态改写；图数据待原子迁移窗口）**：新增 `includes`（Section→Event）与 `appears_as`（Event→IllusDesign）；`anchored_at` 端点 Spot→Scene；`part_of` 翻转为 Location→Spot；删除 `contains`/`depicts`/`ref_style`/旧 `wears`。详见各模块文件与工作区《Event驱动化改造提案.md》。
+> **Event 驱动化（已实施）**：新增 `includes`（Section→Event）与 `appears_as`（Event→IllusDesign）；`anchored_at` 端点 Spot→Scene；`part_of` 翻转为 Location→Spot；删除 `contains`/`depicts`/`ref_style`/旧 `wears`。详见各模块文件与工作区《Event驱动化改造提案.md》。
 
 ---
 
@@ -48,7 +48,7 @@
 | Scene | snowflake Base62 | 地点内的子场景视觉设定 |
 | SceneLayer | snowflake Base62 | 场景的单一图层（背景/地面/陈设/遮罩） |
 | Chapter | snowflake Base62 | 剧本章节编排单元（章级：结构 / 分节规划） |
-| Section | snowflake Base62 | 章节内的节编排容器 + 定稿态载体（节序/标题/概要 + scene_block_ids 预分配块 id + script_path 指 台词.ink + scene_blocks + status 定稿态；节成员=includes 物化、时间由成员推导（time_day 已废止 2026-10-27）；小说.md 为纯文件产物不入图） |
+| Section | snowflake Base62 | 章节内的节编排容器 + 定稿态载体（节序/标题/概要 + script_path 指 台词.ink + status 定稿态；节成员=includes 物化、时间由成员推导；小说.md 为纯文件产物不入图） |
 | LineAudio | snowflake Base62 | **逐句台词行**（Section-produces{order}-> 1:N；节点 id=行身份；行 status 只代表音频审批 0→10→11，非 say 行拆分即 11；wav 按 voice key 落盘） |
 | VoiceDesign | snowflake Base62 | 角色基线音色设计（instruct + 参考音频；多候选流程：3 候选 ref + 3×3 情绪试听 → dashboard 采用固化） |
 | BgmTrack | snowflake Base62 | 场景背景音乐（人工生成链；0→1 描述产出→2 用户手动放 wav 归档；无审批） |

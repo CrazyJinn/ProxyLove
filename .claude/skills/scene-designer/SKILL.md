@@ -145,7 +145,7 @@ MERGE (l:Location {name: '<Location名>'})
 MERGE (sp:Spot {name: '<Location名>-<区域>'})
   ON CREATE SET sp.id = '<snowflake_id>', sp.kind = 'zone', sp.description = '...';
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
-MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot（2026-10-26 翻转）
+MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
 MATCH (e:Event {id: '<event_id>'})-[old:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
 MATCH (e:Event {id: '<event_id>'}), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene

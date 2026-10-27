@@ -6,14 +6,14 @@ chapter-publisher 在全章各节产物就绪时调用：图（Section-produces{
 - 图查询：Chapter→has_section→Section(按 section_no)→produces→LineAudio
   -[p:produces]->LineAudio（ORDER BY p.order）；块时段另查 Scene.time_of_day；立绘整键另查
   uses 边（fetch_uses_portrait_keys，与 scene_times 同款二次查询——防主查询行乘积）。
-- 舞台调度（say.pos / hide 下台行）自 ink 注入（2026-10-20 起不落图）：复用
+- 舞台调度（say.pos / hide 下台行）自 ink 注入：复用
   script_splitter 的 parse_ink/座位算法/对齐签名（单一实现防两份解析器漂移）；ink
   内容行与图行逐行 _sig 校验，漂移即报错引导重拆（发布 gate 保证拆分后两边同构）。
 - 投影：graph_lines_to_doc（ink 行序驱动）→ {meta, scenes}（requires 从行推导；
   voice_key→voice；say.portrait = uses 边解析的 guid 整键，无边的 say 行空串并计缺口；
   say.pos = 块规则座位 + stage/pos 声明现算；hide 行由 ink 直出）。
 - meta：chapter/title 取 Chapter 节点；requires = 各节并集（保序去重）。
-- scenes：按节序拼接各 scene-block（块 id=scene_id，2026-10-27 块方案清理——同机位多段为同 id 多区间，段序由行序承载；跨节同名 id 由章级拼接天然加节前缀去重）。
+- scenes：按节序拼接各 scene-block（块 id=scene_id——同机位多段为同 id 多区间，段序由行序承载；跨节同名 id 由章级拼接天然加节前缀去重）。
 - BGM 注入：--chapter-map 的 bgm 段（Scene-has_bgm->BgmTrack，status=2 才进 map）写入 scene-block.bgm。
 - 合并后校验 scene-block id 章内唯一（防御性）。
 - 部分发布：--sections 0,1 仅合并指定节（section_no 逗号分隔）——章内其余节未就绪时
@@ -87,12 +87,11 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     """一节投影：ink 行序驱动（舞台调度）+ 图行内容对齐（音频/选绘）→ doc {meta, scenes}。
 
     ink = parse_ink_text(台词.ink) 结果 {rows(含 hide), pos_overrides}——舞台调度
-    （say.pos / hide 行）的唯一事实源（2026-10-20 起不落图）。开投影前先校验 ink
+    （say.pos / hide 行）的唯一事实源。开投影前先校验 ink
     内容行（除 hide）与图行逐行 _sig 同构——漂移即 raise 引导重拆（发布 gate 保证
     拆分后两边一致）。
 
-    blocks = 行 scene_block_id 派生块表 [{block, scene_name, time}]（2026-10-27 块方案清理：
-    块 id=scene_id 直连图，Section.scene_blocks 已废止）；
+    blocks = 行 scene_block_id 派生块表 [{block, scene_name, time}]；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
     内容文本取 ink 行（内容权威）；音频/选绘事实取图行（voice_key/ambient_track/lid）。
@@ -292,7 +291,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         )
     chapter_no, chapter_title = rows[0]["no"], rows[0]["title"]
 
-    # 块时段/块结构（2026-10-27 块方案清理）：行 scene_block_id（=scene_id）直查 Scene——
+    # 块时段/块结构：行 scene_block_id（=scene_id）直查 Scene——
     # id 直连取 time_of_day 与场景名（scene_blocks 已废止；ink 注释名仅供人读，投影以图为准）
     scene_of = {}
     bid_set = sorted({r["scene_block_id"] for r in rows if r.get("scene_block_id")})
@@ -325,7 +324,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         if not line_rows:
             problems.append(f"{sec_tag}：无 LineAudio 行（先跑 section-voice-publisher 拆分进图）")
             continue
-        # 块结构从行派生（保序去重）：块 id=scene_id 直连图（scene_blocks 已废止 2026-10-27）
+        # 块结构从行派生（保序去重）：块 id=scene_id 直连图（scene_blocks 已废止）
         blocks = []
         _seen_b = set()
         for r in line_rows:

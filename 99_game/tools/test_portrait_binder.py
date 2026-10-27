@@ -1,7 +1,7 @@
 """portrait_binder 纯函数单测（build_candidates / build_actions）——不连 Neo4j。
 
 candidates/apply 的图查询与写图经 monkeypatch 替换；split 主流程端到端验证见 E2E。
-Event 驱动化（2026-10-26）：IllusDesign 解析改 `Section→includes→Event→anchored_at→Scene`
+Event 驱动化：IllusDesign 解析改 `Section→includes→Event→anchored_at→Scene`
 的事件 `→appears_as` 单路直读；apply 不再补建 depicts/ref_style。
 在 99_game/tools 下跑：python -m pytest test_portrait_binder.py -v
 """
@@ -196,7 +196,7 @@ def test_apply_new_variant_creates_node_and_edges(base):
     assert "st.variant_label='赧然'" in joined and "st.description='被戳穿后强撑镇定'" in joined
     assert "MERGE (i)-[e:expands_to]->" in joined and "e.variant_label='赧然'" in joined
     assert "MERGE (l)-[u:uses]->" in joined and "u.sync=false" in joined
-    assert "ref_style" not in joined                       # 语言风格边已删（2026-10-26）
+    assert "ref_style" not in joined                       # 语言风格边已删
     assert "depicts" not in joined
     assert report["counts"]["new_variants"] == 1
     assert report["new_variants"][0]["variant_label"] == "赧然"

@@ -2,7 +2,7 @@
 name: chapter-publisher
 description: |
   把全章各节产物就绪（各节 Section.status=11 ∧ 该节全部台词行 LineAudio=11）的章节从图发布到运行时 `99_game/`：
-  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（Section-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，2026-10-20 起不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
+  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（Section-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为 guid 整键 `<char>-<costume>-<variant>-<stand_id>`——stand_id 全局唯一解决同角色换装同名覆盖；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest + 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
   在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 推进到全章就绪即止）。
 argument-hint: <chapter_id>
 arguments:
@@ -29,7 +29,7 @@ allowed-tools: Read, Bash, Write, Edit
 通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查 Chapter + 各 Section + 编排子图：
 
 ```cypher
-// (1) Chapter 本体（无 status——2026-10-25 起章无审批态）
+// (1) Chapter 本体（无 status 起章无审批态）
 MATCH (ch:Chapter {id:'<chapter_id>'})
 RETURN ch.title AS title, ch.chapter_no AS no;
 // (2) 各 Section（按 section_no）+ 定稿态 + 逐句行聚合 + 前驱校验
@@ -40,7 +40,7 @@ RETURN sec.section_no AS no, sec.title AS title,
        count(l) AS line_count,
        sum(CASE WHEN coalesce(l.status, 0) = 11 THEN 1 ELSE 0 END) AS line_done
 ORDER BY sec.section_no;
-// (3) 全章 background 图层（场景集 = 各节行 scene_block_id 集合→Scene id 直查——发布投影权威，2026-10-27 块方案清理起替代 scene_blocks 链；
+// (3) 全章 background 图层（场景集 = 各节行 scene_block_id 集合→Scene id 直查——发布投影权威；
 //     历史节（无 includes）与新节通吃；场景名集由 generate_portrait_map._scene_names_of_chapter 同源解析）
 MATCH (s:Scene)
 WHERE s.id IN ['<各行 scene_block_id 去重集合（即 scene_id）>']
@@ -66,7 +66,7 @@ RETURN count(l) AS say_no_stand;
 ```
 
 **前驱校验**：
-- **每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿在位 + 该节全部台词行声音已批）——章真正可发布 = 全部节产物就绪（章无 status，2026-10-25）。任一不满足则停止并提示先在 dashboard 推进对应节（含拆分配音、逐句音频审）。
+- **每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿在位 + 该节全部台词行声音已批）——章真正可发布 = 全部节产物就绪（章无 status）。任一不满足则停止并提示先在 dashboard 推进对应节（含拆分配音、逐句音频审）。
 - 被引用立绘（uses 边目标）：`status=11` 且 `image_path` 非空的才拷贝；`status≠11` 的逐个**警告**（运行时该变体走占位图），不阻断发布（让已就绪资源先上线）。`say_no_stand>0` 时**警告** N 句缺选绘（该批句运行时保持上一张/占位图）。
 - background SceneLayer：同理，`status=11` 且 `image_path` 非空才拷贝。
 - BgmTrack：`status=2` 且 `audio_path` 文件存在的才拷贝/注入；`<2` 或文件缺失逐个**警告**（该场景运行时无 BGM，静默），不阻断发布。

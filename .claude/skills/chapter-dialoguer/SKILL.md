@@ -1,7 +1,7 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=11`（定稿在位；2026-10-25 取消定稿审——产出即定稿，人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11）。
+  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=11`（定稿在位；产出即定稿，人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11）。
   双模式：① 常规创作（本节无定稿/被作废 -1/或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回（sec.status 保持 11；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；sec.status=11 即可由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
   **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 nrt-gap-filler，均不写 status。
 argument-hint: <section_id>
@@ -63,7 +63,7 @@ LIMIT 1
 
 ```cypher
 // 出场角色 + 语言习惯（创作对话的核心依据）——图关系遍历，不按名字列表猜：
-// 本节 includes 的事件 ← 参与的角色（2026-10-26 Event 驱动化：includes 直连，无需经场景链）
+// 本节 includes 的事件 ← 参与的角色
 MATCH (sec:Section {id:'<input>'})-[:includes]->(e:Event)
 MATCH (e)<-[:involved]-(char:Character)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
@@ -135,7 +135,7 @@ bed- rain
 -> END
 ```
 
-1. **场景块标记**：`=== <scene_block_id> // <Scene 名>（<时段>）`（knot，v3 行式）——scene_block_id 照搬小说 `###` 段标题值（2026-10-27 块方案清理：块 id = scene_id（Scene 节点雪花 id，ASCII 天然合法），同机位多段共用同一 id，段序由行序承载；structurer 预分配已废止），Scene 名/时段照搬小说段标题挂行尾注释——**注释是场景名唯一人类可读来源**（图上不再存块→名映射）。时段仅供人读（运行时时段以 Scene.time_of_day 为准，拆分进图不存）。
+1. **场景块标记**：`=== <scene_block_id> // <Scene 名>（<时段>）`（knot，v3 行式）——scene_block_id 照搬小说 `###` 段标题值（块 id = scene_id（Scene 节点雪花 id，ASCII 天然合法），同机位多段共用同一 id，段序由行序承载），Scene 名/时段照搬小说段标题挂行尾注释——**注释是场景名唯一人类可读来源**（图上不再存块→名映射）。时段仅供人读（运行时时段以 Scene.time_of_day 为准，拆分进图不存）。
 2. **说话行**：`角色名:台词`——一行一句，冒号用**半角**，角色名用 Character.name 原名（「旁白」「sfx」「llm」是保留字）。**禁止写 `[表情]` 标注**（如 `[微笑]`）：本 skill 专注台词创作，演出层（立绘变体选择）与台词**彻底分离**——由 section-voice-publisher 配音判断期为每句 say 行按台词氛围选定（`LineAudio-[:uses]->StandingIllustration` 边），定稿不承载任何演出标注。**残留 `[表情]` 会在拆分时报错**（parse_ink 拒绝带方括号的说话行，报行号+原文）。pos 不进定稿（拆分时定）。
 3. **旁白行**：`旁白:叙述`——一行一句，承载环境/动作/心理等非台词叙述。
 4. **音频三型（v3，只写声音语义、不写资产名；旧「环境音」两型已废止——写了报错）**：
@@ -186,7 +186,7 @@ SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink
 
 > BGM 不在本 skill 职责内：BgmTrack（Scene-has_bgm->BgmTrack）由 **scene-design agent 编排 `bgm-designer`** 统一管理（缺口兜底、描述生成、wav 归档检测），plot-design 与本 skill 均不查不调。
 
-**status 写入**：固定 `Section.status=11`（定稿在位——2026-10-25 取消定稿审，产出即定稿；人工微调走 dashboard 定稿编辑器，保存即 11）；创作质量 FAIL → 不写 status（见段 2 末尾）。
+**status 写入**：固定 `Section.status=11`（定稿在位 取消定稿审，产出即定稿；人工微调走 dashboard 定稿编辑器，保存即 11）；创作质量 FAIL → 不写 status（见段 2 末尾）。
 
 最后汇总：定稿 `Section.script_path`（台词.ink）、`Section.status=11`、说话行/旁白行/场景段计数。若触发创作质量 FAIL，汇总「结构性问题报告」而非定稿路径。
 

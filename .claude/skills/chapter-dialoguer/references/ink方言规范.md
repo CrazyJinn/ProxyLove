@@ -71,14 +71,14 @@ bed- rain
 | 行型 | 行式 | 解析产物 | 进图 |
 |---|---|---|---|
 | 注释行 | `// …` | 无（跳过） | 否 |
-| 场景块标记 | `=== <scene_block_id> // <Scene 名>（<时段>）`（v3：id=scene_id 雪花 id，2026-10-27 块方案清理） | blocks += {block, scene_name}；后续行携带 scene_block_id | 无图落点——块归属在行属性 scene_block_id，场景名仅存本注释（人读唯一来源） |
+| 场景块标记 | `=== <scene_block_id> // <Scene 名>（<时段>）`（v3：id=scene_id 雪花 id） | blocks += {block, scene_name}；后续行携带 scene_block_id | 无图落点——块归属在行属性 scene_block_id，场景名仅存本注释（人读唯一来源） |
 | 说话行 | `角色名:台词`（半角冒号） | {op:"say", who, text} | 是（status=0 待配音） |
 | 旁白行 | `旁白:叙述` | {op:"narrate", text} | 是（11） |
 | 点状音效行 | `sfx:语义` | {op:"transition", text} | 是（status=0；Freesound 实录） |
 | 音床起始行 | `bed+ <id> // <语义>` | {op:"bed_start", bed:id, text:语义} | 是（status=0；AudioFly 循环段） |
 | 音床终止行 | `bed- <id>` | {op:"bed_end", bed:id} | 是（11） |
 | 分支行 | `= <label 名>`（stitch） | {op:"label", text} | 是（11） |
-| 立绘下台行 | `hide: <角色名>` | 无（**舞台调度不落图**，2026-10-20 起；合成期由 ink 直出投影） | 否 |
+| 立绘下台行 | `hide: <角色名>` | 无（**舞台调度不落图**；合成期由 ink 直出投影） | 否 |
 | 舞台声明行 | `stage: <角色名>=<位>（<角色名>=<位>）*`（多项空格/逗号分隔；推荐块头一处声明） | 无（**不产行**；合成期展开为块级 pos 覆盖现算） | 否 |
 | 立绘位覆盖行 | `pos: <角色名>=<left\|center\|right>` | 无（**不产行**；合成期覆盖该块内该角色 say 行的规则 pos；与 stage 同容器，同角色**后出现者胜**） | 否 |
 | 结局落点行 | `<落点一句话> # ending: <kind>` + 紧随裸 `-> END` | 单条 {op:"ending", kind, text} | 是（11） |
@@ -125,7 +125,7 @@ bed- rain
   解析器文件级校验（重复起始/未闭合/跨块/无起始 均报错带行号）。
 - 存量 chapter00 中文 id（s00_酒店 等）封存兼容，新章不再产生中文 id。
 
-## 立绘下台行（hide，2026-09-25 起；2026-10-20 起不落图）
+## 立绘下台行（hide；不落图）
 
 - `hide: <角色名>` → 清立绘槽中该角色（slots 按 who 匹配清位）。**舞台调度不落图**：
   合并工具（merge_sections_to_chapter）投影期从 ink 直出 `{"op":"hide","who"}`，

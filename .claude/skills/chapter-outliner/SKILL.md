@@ -9,7 +9,7 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> ⚠️ **本 skill 已废弃（2026-10-22）**：**节的提纲即图数据本身**（Event/Info/Choice + 分支骨架 + 设计简报预分配 id）——结构推理（场景段切分/分支核验/节拍规划）已并入 `chapter-novelist` 的思维链步骤（不落提纲文件），丰满度自检与 SecOutline 兜底建同样由 novelist 承接。存量 outline.md / dayNN 蓝本文件仅兼容读取（dialoguer 存量直连模式）。目录保留停维护（同 nrt-narrative-grower 先例）；新创作一律走 `chapter-novelist <section_id>`。
+> ⚠️ **本 skill 已废弃**：**节的提纲即图数据本身**（Event/Info/Choice + 分支骨架 + 设计简报预分配 id）——结构推理（场景段切分/分支核验/节拍规划）已并入 `chapter-novelist` 的思维链步骤（不落提纲文件），丰满度自检与 SecOutline 兜底建同样由 novelist 承接。存量 outline.md / dayNN 蓝本文件仅兼容读取（dialoguer 存量直连模式）。目录保留停维护（同 nrt-narrative-grower 先例）；新创作一律走 `chapter-novelist <section_id>`。
 
 > **status=-1 = 作废重做**：当本节 SecOutline 节点被重置为 `status=-1` 时（如 Section/Chapter 属性变更沿 has_section/has_outline 级联），即使 outline.md 已落盘，也**必须重新产出并覆盖**。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧提纲内容**，直接以当前图节点数据 + 设计简报为唯一来源重新创作。
 

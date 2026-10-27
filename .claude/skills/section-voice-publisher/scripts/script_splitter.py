@@ -24,7 +24,7 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已确�
            非 say 行 → 11（无音频语义，拆分即完成）；否则 0
   微调   = 人工改 ink 重批后重拆：未变行原样保留（含已批 11），只有改动句置 0
            ——单句修改不丢
-  舞台   = 舞台调度（say 立绘位 pos / hide 下台行）**不落图**（2026-10-20 起）：hide
+  舞台   = 舞台调度（say 立绘位 pos / hide 下台行）**不落图**：hide
            不产行（存量 hide 图行随重拆自动删除、say 行存量 pos 清 null）；投影期由
            merge_sections_to_chapter 从 ink 座位算法（块规则 + stage/pos 声明）现算注入
 
@@ -761,7 +761,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
     stmts, report = build_actions(seq, plan, section_id)
-    # 块 id 校验（2026-10-27 块方案清理：Section.scene_blocks 已废止，块 id=scene_id 直连）。
+    # 块 id 校验。
     # 每个 ink 块 id 必须命中图 Scene 节点——不命中即拒绝拆分（防悬空块进图静默降级下游选绘）。
     # 块→场景名映射不再落图；ink 标记行注释是人读唯一来源，程序经 id join 图取真名。
     graph_scene_ids = {r["i"]: r["n"] for r in _run_cypher("MATCH (s:Scene) RETURN s.id AS i, s.name AS n")}
@@ -771,7 +771,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         if bid not in graph_scene_ids:
             raise ValueError(
                 f"ink 块 {bid!r}（注记场景名 {ink_name!r}）不是图上 Scene id——"
-                f"块 id 须为所写机位的 scene_id（2026-10-27 块方案清理约定）")
+                f"块 id 须为所写机位的 scene_id")
         merged_blocks.append({"block": bid, "scene_name": graph_scene_ids[bid],
                               "ink_note": ink_name})
     stmts = _order_statements(seq, section_id, reordered) + stmts
