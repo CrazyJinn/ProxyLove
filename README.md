@@ -1,6 +1,6 @@
-# 代恋 - 三大编排 Agent 流程图
+# 代恋 - 编排 Agent 流程图
 
-> **本文定位**：可视化 [.claude/agents/](.claude/agents/) 下三个编排层 Agent（`char-design` / `scene-design` / `plot-design`）的执行流程，统一用**时序图**表达。
+> **本文定位**：可视化 [.claude/agents/](.claude/agents/) 编排层 Agent（三链 `char-design` / `scene-design` / `plot-design` + 事件细化 `event-refiner`）的执行流程与上游 `grill` skill 的叙事事件生产链（[§3](#叙事事件生产流程四步)），统一用**时序图**表达。
 >
 > - **审批流程独立成节**（[§2](#2-审批流程)），不在各 Agent 时序图里展开——时序图只画"生产调度"主线，遇到待审就用 `⏸ 待审 → 批准` 一行带过并引用 §2。
 
@@ -10,10 +10,11 @@
 
 1. [三个 Agent 的共同铁律](#三个-agent-的共同铁律)
 2. [审批流程](#2-审批流程)
-3. [char-design —— 角色美术 + 声音生产链](#char-design--角色美术--声音生产链)
-4. [scene-design —— 场景美术生产链](#scene-design--场景美术生产链)
-5. [plot-design —— 剧情创作生产链](#plot-design--剧情创作生产链)
-6. [全部 Skill 功能概述](#全部-skill-功能概述)
+3. [叙事事件生产流程（四步）](#叙事事件生产流程四步)
+4. [char-design —— 角色美术 + 声音生产链](#char-design--角色美术--声音生产链)
+5. [scene-design —— 场景美术生产链](#scene-design--场景美术生产链)
+6. [plot-design —— 剧情创作生产链](#plot-design--剧情创作生产链)
+7. [全部 Skill 功能概述](#全部-skill-功能概述)
 
 ---
 
@@ -80,16 +81,83 @@ sequenceDiagram
 | 节点 | 进入待审 | 批准解锁的下游 |
 |------|---------|-----------------|
 | DesignSheet | 图片完成 → 10 | IllusDesign |
-| IllusDesign | 图片完成 → 10 | StandingIllustration（plot-design 按 appears_as 推进） |
+| IllusDesign | 图片完成 → 10 | StandingIllustration（选绘沿 SubEvent→appears_as→expands_to 取形象；plot-design 按 uses 边推进立绘） |
 | StandingIllustration | 图片完成 → 10 | 无下游；作为发布前置（质量确认） |
 | SceneLayer | 图片完成 → 10 | 无下游；作为发布前置 |
 | VoiceDesign | 候选+试听落盘即写 `10`（无 submit 步；`candidates_path` 非空=候选待选，dashboard 试听「采用」固化 ref 后仍 10 走二审） | `11` → 节级配音（section-voice-publisher 要求 VoiceDesign=11） |
-| Chapter | 结构完成 → `10`（structurer 直写，不经 submit） | `11` → 进入节级生产（提纲 / 定稿 / 拆分配音） |
 | Section（定稿态） | ~~定稿审已取消~~：创建即 `11`（定稿在位标记）；-1 作废（novelist stale）↔ dialoguer 恢复 11；**编辑保存即 11** | `11` → 节级拆分+配音 + 该节立绘推进 |
 | LineAudio（逐句音频审） | 配音完成 → 行节点 `10`（section-voice-publisher 的 bind-graph 直写，不经 submit；**行级** status 只代表音频审批） | 全部行 `11` = 该节配音完成（派生判断，无节级批准按钮；全章各节产物就绪 + 立绘全 11 才发布） |
 
-> AppearanceStyle / LanguageStyle / CostumeStyle / Scene 等数据节点完成值 `1`，**无审批**。
-> 产物各态独立——驳回定稿（Section.status→0）只重写定稿（行不动）、驳回单句 LineAudio 行只重配该句；上游变更的作废走 sync 级联（见 §5）。定稿支持**人工微调回路**：直接编辑 台词.ink 改单句 → dashboard「重新提交审批」0/1/11→10（**仅改 Section.status、不动行节点**；不经 dialoguer，手改不丢——重批后重拆按 text_sha1 保留未变句审批结果，只重配被改句）；「保存并同步 LineAudio」**保存即 11**（编辑即审批）。
+> Chapter **无 status**（结构审已取消，组章即结构就绪）；AppearanceStyle / LanguageStyle / CostumeStyle / Scene 等数据节点完成值 `1`，**无审批**。
+> 产物各态独立——驳回定稿（Section.status→0）只重写定稿（行不动）、驳回单句 LineAudio 行只重配该句；上游变更的作废走 sync 级联（见 §6）。定稿支持**人工微调回路**：直接编辑 台词.ink 改单句 → dashboard「重新提交审批」0/1/11→10（**仅改 Section.status、不动行节点**；不经 dialoguer，手改不丢——重批后重拆按 text_sha1 保留未变句审批结果，只重配被改句）；「保存并同步 LineAudio」**保存即 11**（编辑即审批）。
+
+---
+
+## 叙事事件生产流程（四步）
+
+> **职责**：叙事事件从无到有的完整生产线——**① grill 敲定新事件 → ② event-refiner 细化 + 补缺 → ③ Task 派单 char-design / scene-design 产资产 → ④ plot-design 写作**。
+>
+> **门控说明**：plot-design 写作**不等美术资产**（前驱只看叙事素材——novelist 丰满度自检），美术与写作并行推进；资产门控天然留在配音选绘（IllusDesign ≠ 11 报警跳过）与发布阶段，流程顺序靠 event-refiner 留单 + 用户跑 design 链保证。
+
+### 分工边界
+
+| 环节 | 定位 | 产物通道 |
+|------|------|---------|
+| `grill`（skill） | **新事件的创作前端**——策划编辑式追问（一次一问 + 每问附推荐答案）从零敲定 Event | 建议 JSON（source='grill'）→ dashboard 审阅写回 |
+| `nrt-gap-filler`（skill） | **存量图的治理端**——图算法发现断点 → 修复 / 渐进丰满 | 建议 JSON（source='nrt-gap-filler'）→ dashboard 审阅写回 |
+| `event-refiner`（agent） | **细化层**——补 involved / occurs_at / 建档 + 拆 SubEvent + 留单派 design 链 | 白名单直接写图（逐题确认） |
+
+### 时序图
+
+```mermaid
+sequenceDiagram
+    actor U as 用户
+    participant GR as grill skill
+    participant DB as Neo4j 图
+    participant DA as Dashboard 人工
+    participant ER as event-refiner 编排Agent
+    participant CD as char-design 编排Agent
+    participant SD as scene-design 编排Agent
+    participant PD as plot-design 编排Agent
+
+    rect rgb(235, 245, 255)
+    Note over GR,DA: ① grill：策划编辑式追问敲定新 Event（一次一问 + 每问附推荐答案，零图写入）
+    U->>GR: 事件主题 / 时间窗 / 口述
+    GR->>DB: 只读查上下文（时间窗既有事件 / 实体名录 / 待审建议防重）
+    Note over GR: 读 00_init/大纲.md——推荐答案必须有大纲依据
+    loop 每个事件 × 决策维度（弧线贡献删除测试 / title / time / occurs_at / involved+role / description / 因果）
+        GR-->>U: 一问（附推荐答案 + 理由标签）
+        U->>GR: 敲定 / 修改 / 放弃
+    end
+    GR-->>U: 建议 JSON 落盘 02_剧情数据/（至多 3 Event；未建档实体只提示不入建议）
+    U->>DA: /events 页「📥 补全建议」弹窗逐条审阅「采纳」
+    DA->>DB: 执行建议 cypher（Event 节点 + involved/occurs_at 挂边，MERGE 幂等）
+    end
+
+    rect rgb(240, 255, 240)
+    Note over ER,DB: ② event-refiner：确定性缺口修复 + 机位级细化（白名单直接写图，逐题确认）
+    U->>ER: event-refiner <新事件 id/title 列表>
+    ER->>DB: ① 修复：缺 involved / 缺 occurs_at / 提及实体未建档（新建 Character/Location）
+    ER->>DB: ② 空间轨迹推理 → SubEvent（refines{sync:true}）<br/>anchored_at 只挂既有 Scene（无则留空报缺口）<br/>appears_as 只继承兄弟 sub（无则留空报缺口）
+    ER->>DB: ③ 演出型 Info 升格（Info → sub.description）
+    ER-->>U: ④ 缺口清单（IllusDesign 缺 / Scene 缺）→ Task 并行派单，派后即结束
+    end
+
+    rect rgb(255, 248, 240)
+    Note over CD,SD: ③ 资产生成（两链并行，各自完整生产链见 §4 / §5）
+    ER->>CD: Task 派单：sub 缺 appears_as 的角色清单
+    ER->>SD: Task 派单：sub 缺 anchored_at 的 Location 清单
+    CD-->>U: IllusDesign → 10 待审 ⏸（见 §2 审批流程）
+    SD-->>U: Scene → 1（无审批）/ SceneLayer → 10 待审 ⏸（见 §2 审批流程）
+    end
+
+    rect rgb(255, 240, 245)
+    Note over PD,DB: ④ plot-design：写作（不等美术资产——前驱只看叙事素材丰满度）
+    U->>PD: plot-design 章节 / section id（完整生产链见 §6）
+    PD->>DB: 按 Section→includes→Event→refines→SubEvent→anchored_at/appears_as 取材
+    Note over PD: novelist 丰满度自检不足 → 报缺口退出（用户跑 grill / nrt-gap-filler 补素材）<br/>立绘上游 IllusDesign≠11 → 报警跳过（美术与写作并行，门控在配音选绘 / 发布）
+    end
+```
 
 ---
 
@@ -220,11 +288,11 @@ sequenceDiagram
 
 ## plot-design —— 剧情创作生产链
 
-> **唯一职责**：推进某章节从「建结构 → 创作（提纲 + 细节对话）→ 拆分+配音 → 立绘」到全章就绪为止。输入**章节标题、序号或 ID**（如「新皮肤」、`1`、snowflake ID），或**小节 section id**（单节聚焦，由 dashboard「推进此节」入口触发，只推该节的提纲/定稿/配音/该节台词 uses 边引用的立绘，不做后续节的事情）。
+> **唯一职责**：推进某章节从「建结构 → 创作（小说 + 细节对话）→ 拆分+配音 → 立绘」到全章就绪为止。输入**章节标题、序号或 ID**（如「新皮肤」、`1`、snowflake ID），或**小节 section id**（单节聚焦，由 dashboard「推进此节」入口触发，只推该节的提纲/定稿/配音/该节台词 uses 边引用的立绘，不做后续节的事情）。
 >
 > 创作链（混合粒度）= **章级结构段 → 各节小说段（`chapter-novelist`：提纲已内化——结构推理在思维链完成，产 小说.md 纯文件产物，零图写入）→ 各节定稿段（台词.ink，dialoguer 从小说提炼，写 Section.status=11 定稿在位）→ 各节拆分+选绘+配音段 → 各节逐句音频审 → 立绘（按需）**，到全章就绪为止；BGM 走 scene-design 编排（`bgm-designer`），plot-design 不查不调 BgmTrack。结构段是**章级**，节级链是**节级**（各节独立推进、独立重做）；**发布不在 plot-design 职责内**——全章就绪后汇报退出，`chapter-publisher` 由用户直接触发：
-> 1. 创作侧拆为 `chapter-structurer`（建结构+scene_block_ids 预分配，零文件产出）→ `chapter-novelist`（节级小说·**提纲内化**，纯文件产物）→ `chapter-dialoguer`（台词.ink，从小说提炼，写 Section 定稿态）→ `section-voice-publisher`（拆分进图 + 选绘建边 + 配音），原 `screenwriter`/`chapter-outliner` 已删除/废弃、`SecOutline`/`SecScript` 节点已删、设计简报已废止；BGM 走 `bgm-designer`（scene-design 编排：产描述文字 → 用户手动生成 wav 归档 `13_BGM/`）。
-> 2. **节级链（最薄图）**：`Section（编排+定稿态 status/script_path/scene_blocks） -[:produces {order}]-> LineAudio(×N 逐句行)`——**文件是节级产物的唯一载体**（小说.md/台词.ink 不入图），图只存结构真相（行）与最小状态（Section 定稿态）；sync 级联：节属性变更自动作废全部行。「节完成」= Section.status=11 ∧ 该节全部行 LineAudio=11。
+> 1. 创作侧拆为 `chapter-structurer`（建结构，块 id=scene_id 由 novelist 现场取用、structurer 不碰块，零文件产出）→ `chapter-novelist`（节级小说·**提纲内化**，纯文件产物）→ `chapter-dialoguer`（台词.ink，从小说提炼，写 Section 定稿态）→ `section-voice-publisher`（拆分进图 + 选绘建边 + 配音），原 `screenwriter`/`chapter-outliner` 已删除/废弃、`SecOutline`/`SecScript` 节点已删、设计简报已废止；BGM 走 `bgm-designer`（scene-design 编排：产描述文字 → 用户手动生成 wav 归档 `13_BGM/`）。
+> 2. **节级链（最薄图）**：`Section（编排+定稿态 status/script_path） -[:produces {order}]-> LineAudio(×N 逐句行)`——**文件是节级产物的唯一载体**（小说.md/台词.ink 不入图），图只存结构真相（行）与最小状态（Section 定稿态）；sync 级联：节属性变更自动作废全部行。「节完成」= Section.status=11 ∧ 该节全部行 LineAudio=11。
 > 3. **台词双轨分离**：`台词.ink`（人读/人改的唯一定稿格式，ink 方言机器可解析）↔ 图行（结构化真相：行身份=节点雪花 id，顺序=produces 边 order 大间距 ×1000 中点插入）。确认（Section.status=11）后由 section-voice-publisher 第一步拆分进图（script_splitter.py 幂等对齐：新增建行+中点 order、修改沿用节点置 0、删除 DETACH DELETE、级联未变句恢复）再配音。`台词.jsonl` 已停产（历史文件留创作区，链路不再读取）。
 > 4. 立绘侧：**StandingIllustration 由 plot-design 直接调 `char-stand-designer <stand_id>`**（按需；Section.status=11 定稿已确认后通用动作，独立于声音门控——立绘不依赖配音）；上游 `IllusDesign` 未就绪时**报警跳过**（不跨链调 `char-design`，角色美术链由人工单独跑）。
 > 5. 素材门控：**novelist 丰满度自检 event 不够时拒绝产出并报告缺口**，plot-design 汇报后退出（剧情链不内置自增长）——用户手动跑 `nrt-gap-filler`（交互式补缺口）补全叙事基础后重调 plot-design。
@@ -235,22 +303,23 @@ sequenceDiagram
 |------|-------|------|------|
 | ① 建章节结构 | `chapter-structurer` | ✅ 已实现 | 建 Chapter + 分节建 Section（has_section，编排容器；节成员=includes 物化，节时间由成员事件推导；定稿态由下游写）+ 各节 `Section-includes->Event`；零文件产出 |
 | ② 出节级小说 | `chapter-novelist` | ✅ 已实现 | **提纲内化（原 chapter-outliner 已废弃并入）——节的提纲即图数据本身**：按 `Section→includes` 物化成员圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）+ 丰满度自检（不足报缺口）→ **结构推理在思维链完成、不落提纲文件**（场景段切分/分支核验/节拍规划）→ 方法论五步产节级散文 **小说.md**（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约；头部**取材指纹**＝实际取用素材 id+内容指纹，`scripts/fingerprint.py`）；素材 stale 时重写覆盖并显式作废定稿链（sec.status=-1 + 全部行 -1）；对账新实体走 gap-filler 建议 JSON（source='chapter-novelist'） |
-| ③ 节级细节对话 | `chapter-dialoguer` | ✅ 已实现 | **从小说提炼台词**：读章概要（Chapter.summary）+ 小说.md（小说模式：场景段照搬 `###` 标题拓扑契约 + 入场同源指纹自检，stale 回退 novelist；**存量直连模式**：无小说.md 且 script_path 已有历史值的旧流程节读历史文件照旧创作）→ 产出 `25_剧本/.../sec<MM>_/台词.ink`（人读 ink 方言、机器可解析：场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——**不写演出标注**，立绘由配音期选绘判定；入参 section_id；唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位——产出即定稿，人工微调走 dashboard 定稿编辑器**编辑保存即 11**） |
+| ③ 节级细节对话 | `chapter-dialoguer` | ✅ 已实现 | **从小说提炼台词**：读本节小说.md（小说模式：场景段照搬 `###` 标题拓扑契约 + 入场同源指纹自检，stale 回退 novelist；**存量直连模式**：无小说.md 且 script_path 已有历史值的旧流程节读历史文件照旧创作）→ 产出 `25_剧本/.../sec<MM>_/台词.ink`（人读 ink 方言、机器可解析：场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——**不写演出标注**，立绘由配音期选绘判定；入参 section_id；唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位——产出即定稿，人工微调走 dashboard 定稿编辑器**编辑保存即 11**） |
 | ④ 节级拆分+选绘+配音 | `section-voice-publisher` | ✅ 已实现 | 定稿已确认（Section.status=11）后**拆分进图**（script_splitter.py 对齐 md↔已有行 → 逐句 LineAudio + produces{order}）→ 挑行（say 且 status∈{0,-1}）+ 产选绘候选池（portrait_binder candidates）+ **LLM 判 emotion + 产 tts_text 变体 + 选立绘 stand**（按台词氛围每句选，池中无贴切变体则提新变体）→ **apply 建边**（`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 status=0 + expands_to）+ Qwen3 Base Voice Clone 逐句克隆 → 母带 `15_声音/<chapter_stem>/<scene_block_id>/` + bind-graph 写行节点（待审行 status=10，dashboard 按节聚合逐句通过=11/驳回=0，试听读母带）。不拷运行时副本——`99_game/assets/` 只由发布期按 status=11 收录（立绘整键沿 uses 边投影） |
 
 > **门控**：① 建章节结构（组章即结构就绪，无审批）→ 进入 ②③④ 节级创作；无小说.md 且 script_path 为空由 novelist 推进；**无小说.md 且 script_path 有历史值 = 存量直连**（旧流程节）；小说模式节 dialoguer 必经指纹自检；Section.status=11（定稿在位）才拆分配音、才推该节立绘（立绘独立于音频门控）；**全章就绪 = 各节产物就绪（sec.status=11 ∧ 行全 11）∧ 立绘全 `11`**——plot-design 到此汇报退出，发布由用户直接触发 `chapter-publisher`。
-> **status**：Chapter **无 status**；节级 **Section.status 定稿态**（**创建即 `11`** 定稿在位；`-1` 作废（novelist stale）↔ dialoguer 恢复 11；**编辑保存即 11**；script_path/scene_blocks 同挂 Section）· 小说.md 无 status（纯文件产物：已产=文件存在、新鲜=取材指纹自检，dialoguer 兜底——「调度只看 status」铁律的唯一显式例外）· LineAudio 逐句行（say 行 `0→10→11` 行级音频审，10 由 bind-graph 直写；非 say 行拆分即 11）**；BgmTrack `0→1→2`（无审批，2=音频已归档）——全图统一通用值（SecOutline/SecScript 节点类型已删）。
+> **status**：Chapter **无 status**；节级 **Section.status 定稿态**（**创建即 `11`** 定稿在位；`-1` 作废（novelist stale）↔ dialoguer 恢复 11；**编辑保存即 11**；script_path 同挂 Section）· 小说.md 无 status（纯文件产物：已产=文件存在、新鲜=取材指纹自检，dialoguer 兜底——「调度只看 status」铁律的唯一显式例外）· LineAudio 逐句行（say 行 `0→10→11` 行级音频审，10 由 bind-graph 直写；非 say 行拆分即 11）**；BgmTrack `0→1→2`（无审批，2=音频已归档）——全图统一通用值（SecOutline/SecScript 节点类型已删）。
 > **推进粒度**：dashboard 章行「推进剧情创作」= 章节全量（structurer / 全量循环，到全章就绪即止，不发布）；各节「推进此节」（该节未全就绪时出现）= 单节聚焦（plot-design 按节级链当前段推进该节；sec.status=11 时拆分配音后推该节台词 uses 边引用的立绘——appears_as 枚举中未被本节台词引用的仅提示不推进；不碰其他节、不做后续节的事情、不发布）。
 
 ### 节点 → Skill 映射
 
 | 图节点 | Skill | Status 流程 | 审批 |
 |--------|-------|------------|------|
-| Chapter | `chapter-structurer` | -1/0→1→10→11 | ✅ |
+| Chapter | `chapter-structurer` | 无 status（组章即结构就绪，属性已从图删除） | — |
 | Section（编排容器） | `chapter-structurer`（创建；定稿态由 dialoguer 写） | status 见下行 | — |
 | Section.status（定稿态） | `chapter-dialoguer`（写 script_path+status；台词.ink 为纯文件产物） | 创建即 11；-1 作废↔恢复 11（编辑保存即 11） | —（已取消定稿审） |
 | 小说.md（节级小说·**纯文件产物，不入图**） | `chapter-novelist` | 无 status——文件存在 + 指纹新鲜（stale 重写并作废定稿链） | 无 |
 | LineAudio（逐句台词行 ×N） | `section-voice-publisher`（拆分进图 + 配音） | say 行：-1/0→10→11；非音频行拆分即 11 | ✅（逐句审） |
+| LineAudio（音频环境行 op=transition / bed_start） | `ambient-sfx-designer`（plot-design 单节聚焦在配音步之后编排） | sfx / bed 行：0→10→11 | ✅（逐句审） |
 | StandingIllustration | `char-stand-designer`（直调 stand_id） | -1/0→1→2→10→11 | ✅ |
 | BgmTrack | `bgm-designer`（**scene-design 编排**，plot-design 不查不调） | -1/0→1→2 | 无（手工放入文件夹即合格） |
 
@@ -282,7 +351,7 @@ sequenceDiagram
     Note over A,SV: ② 创作+拆分配音（structurer 建结构（无审批）→ 各节 novelist 小说.md（纯文件产物，零图写入）→ dialoguer 台词.ink（写 Section.status=11 定稿在位）<br/>→ 拆分进图+配音 → 逐句音频审；节级链 Section→LineAudio×N）
     opt 章节结构未就绪（未建 / 用户明示重做）
         A->>ST: Skill chapter-structurer ch_id
-        Note right of ST: 建 Chapter + 按情感弧分节建 Section（has_section，创建即 status=11）<br/>+ 各节 Section-includes->Event，预分配 scene-block id
+        Note right of ST: 建 Chapter + 按情感弧分节建 Section（has_section，创建即 status=11）<br/>+ 各节 Section-includes->Event（块 id=scene_id 由 novelist 现场取用）
         ST-->>A: 结构完成（Chapter 无 status，组章即结构就绪，无审批）
     end
     loop 章已建后，遍历各 Section（按 section_no 逐节推进产物链）
@@ -312,8 +381,8 @@ sequenceDiagram
     end
 
     rect rgb(255, 240, 245)
-    Note over A,Stand: ③ 立绘（sec.status=11 定稿已确认后通用动作，独立于声音门控；<br/>plot-design 按 appears_as 直调 char-stand-designer）
-    loop 每个 appears_as 立绘
+    Note over A,Stand: ③ 立绘（sec.status=11 定稿已确认后通用动作，独立于声音门控；<br/>plot-design 按该节台词 uses 边引用直调 char-stand-designer，appears_as 枚举仅提示）
+    loop 每个该节台词 uses 边引用的立绘
         A->>DB: 查该 stand 上游 IllusDesign.status（只读）
         DB-->>A: illus_status
         alt IllusDesign = 11
@@ -327,7 +396,7 @@ sequenceDiagram
     end
     end
 
-    opt 全章各节产物就绪（sec.status=11 ∧ 行全 11）且 立绘全 11 且 ch=11（全章就绪）
+    opt 全章各节产物就绪（sec.status=11 ∧ 行全 11）且 立绘全 11（全章就绪）
         Note over A,U: ✅ 全章就绪，可发布——plot-design 到此为止<br/>chapter-publisher 由用户直接触发（不经 plot-design）
     end
 
@@ -338,13 +407,14 @@ sequenceDiagram
 
 ## 全部 Skill 功能概述
 
-> 下表覆盖三条生产链的全部 skill + 叙事层 + 基础设施。**纯产出层**（只产文件、不读写图、不写 status）单独标注。三个**编排 Agent**（`char-design` / `scene-design` / `plot-design`）不在此表——它们是调度者，调度的对象就是表里的 skill。
+> 下表覆盖三条生产链的全部 skill + 叙事层 + 基础设施。**纯产出层**（只产文件、不读写图、不写 status）单独标注。四个**编排 Agent**（`char-design` / `scene-design` / `plot-design` / `event-refiner`）不在此表——它们是调度者，调度的对象就是表里的 skill。
 
 ### 叙事层（创作输入 → 叙事图）
 
 | Skill | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|---------|-------------------|
-| nrt-gap-filler | 叙事图缺口交互式补全（体检发现 + 逐题确认修法；叙事基础层增补唯一入口） | `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json` | ✅（建议经 dashboard 审阅 + 控制台写回） |
+| grill | 新事件策划编辑式追问（四步流程①；一次一问 + 每问附推荐答案从零敲定 Event，只产 Event + 用户明确给出的 involved/occurs_at 挂边，新建实体留给 event-refiner ①修复） | `02_剧情数据/<日期>_round<N>_<主题>_grill_建议.json` | ✅（建议经 dashboard 审阅写回） |
+| nrt-gap-filler | 叙事图缺口交互式治理 + 创作类补全（存量图入口；图算法体检发现 + 逐题确认修法） | `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json` | ✅（建议经 dashboard 审阅写回） |
 
 ### 角色美术 + 声音层（Character → IllusDesign / VoiceDesign）
 
@@ -371,11 +441,12 @@ sequenceDiagram
 
 | Skill | 阶段 | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|------|---------|-------------------|
-| chapter-structurer | ① 章级结构 | 建 Chapter + 按情感弧分节建 Section（纯编排容器）+ 各节 `Section-includes->Event` + 预分配 scene-block id | Chapter + has_section + Section + includes 边 | ✅ |
+| chapter-structurer | ① 章级结构 | 建 Chapter + 按情感弧分节建 Section（纯编排容器）+ 各节 `Section-includes->Event`（块 id=scene_id 由 novelist 现场取用，structurer 不碰块） | Chapter + has_section + Section + includes 边 | ✅ |
 | chapter-outliner | ~~节级提纲~~ | ⚠️ **已废弃**——提纲内化，结构推理并入 `chapter-novelist` 思维链 | （历史 outline.md） | ❌ 停维护 |
 | chapter-novelist | ② 节级小说（提纲内化） | 按 `Section→includes` 物化成员圈定取材素材（本节 Scene 源 Spot 归组的 Event + involved 角色/Event 一跳 link 的 Info）+ 丰满度自检 → **结构推理在思维链完成、不落提纲文件** → 方法论五步产节级散文 **小说.md**（**纯文件产物，零图写入**；正文 `### <scene_block_id> …` 场景段标题承载拓扑契约；头部**取材指纹** `scripts/fingerprint.py`——dialoguer 入场同源自检，stale 时本 skill 重写覆盖并作废定稿链；对账新实体走 gap-filler 建议 JSON，source='chapter-novelist'） | `25_剧本/.../sec<MM>_/小说.md` + `02_剧情数据/..._补全_建议.json` | ✅（零图写入；唯一例外 = stale 作废定稿链） |
-| chapter-dialoguer | ③ 节级定稿 | **从小说提炼台词**：读章概要（Chapter.summary）+ 小说.md（小说模式：场景段照搬 `###` 拓扑契约 + 入场同源指纹自检，stale 回退 novelist；存量直连：读 script_path 历史文件）创作逐句对话，产出人读 ink 方言定稿（场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——不写演出标注，立绘由配音期选绘判定；入参 section_id；唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位） | `25_剧本/.../sec<MM>_/台词.ink` + Section 定稿态 | — |
+| chapter-dialoguer | ③ 节级定稿 | **从小说提炼台词**：读本节小说.md（小说模式：场景段照搬 `###` 拓扑契约 + 入场同源指纹自检，stale 回退 novelist；存量直连：读 script_path 历史文件）创作逐句对话，产出人读 ink 方言定稿（场景块标记带 scene_block_id、说话行 `角色名:台词`、选择/分支/结局标记——不写演出标注，立绘由配音期选绘判定；入参 section_id；唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位） | `25_剧本/.../sec<MM>_/台词.ink` + Section 定稿态 | — |
 | section-voice-publisher | ④ 节级拆分+选绘+配音 | 定稿已确认（Section.status=11）：script_splitter 拆分对齐进图（逐句 LineAudio + produces{order} 中点排序）→ 挑行 + portrait_binder candidates 候选池 → LLM 判 emotion + 产 tts_text 变体 + 选立绘 stand → apply 建 `LineAudio-[:uses]->stand` 边（新变体兜底建 status=0 + expands_to）→ Qwen3 Base Voice Clone 逐句克隆 → bind-graph 写行节点 status=10（母带即产物，运行时副本不在此步） | 图逐句行 + uses 选绘边 + 立绘缺口 + `15_声音/<chapter_stem>/<scene_block_id>/<key>.wav` 母带 | ✅ |
+| ambient-sfx-designer | ⑤ 节级环境音 | 推进单节音频环境行（sfx 点状行走 Freesound CC0 实录检索、bed 音床行走 AudioFly 生成；先落盘试听后写图 ambient_track + status=10；不拷运行时副本——发布期按 status=11 收录） | `15_声音/` sfx / bed 母带 + `15_声音/sfx_raw/SOURCES.md` | ✅ |
 | chapter-publisher | 章级发布（用户直接触发，不经 plot-design） | 全章各节产物就绪（各节 Section.status=11 ∧ 行全 11）时**从图投影**合并 + 立绘/背景/BGM/已批音频（voices+sfx，voice_bundler publish 按 status=11）到运行时 + 补 manifest.voices / chapter_packs | `99_game/` 资源 + manifest | ✅ |
 
 ### 基础设施 & 元工具
@@ -397,9 +468,9 @@ sequenceDiagram
 ```
 代恋/
 ├── .claude/                          # Claude Code 自动化层
-│   ├── agents/                       # 编排 agent：char-design / scene-design / plot-design
+│   ├── agents/                       # 编排 agent：char-design / scene-design / plot-design / event-refiner
 │   ├── scripts/                      # cypher_exec.py · snowflake_base62.py · voice/（Qwen3 声音链脚本）
-│   └── skills/                       # 全部生产 skill（见 §6 全部 Skill 功能概述）
+│   └── skills/                       # 全部生产 skill（见 §7 全部 Skill 功能概述）
 │
 ├── 00_init/                          # 创作输入 + Schema（唯一事实来源）
 │   ├── Schema/                       # Neo4j Schema（叙事基础 / 角色美术 / 场景美术 / 剧情 / 声音）
@@ -408,7 +479,7 @@ sequenceDiagram
 ├── 01_叙事数据/                      # 历史：初始建图离线产出
 │   └── csv/                          # 实体/关系 CSV + import.cypher
 │
-├── 02_剧情数据/                      # gap-filler 建议 JSON（<日期>_round<N>_<主题>_补全_建议.json + _reviewed.json 审批留痕）
+├── 02_剧情数据/                      # grill / gap-filler / chapter-novelist 建议 JSON（<日期>_round<N>_<主题>_grill/补全_建议.json + _reviewed.json 审批留痕）
 │
 ├── 06_角色美术/                      # 角色美术产出（DesignSheet / IllusDesign / StandingIllustration）
 │   ├── 沈暮雪/

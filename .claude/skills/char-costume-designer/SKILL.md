@@ -1,7 +1,7 @@
 ---
 name: char-costume-designer
 description: |
-  推进 CostumeStyle 图节点：查询状态 → 分析事件着装需求并生成内容 → 保存结果（绑事件出场形象 appears_as 边（wears 已废）；新建着装 MERGE 节点+边+内容，status=1 已完成）。
+  推进 CostumeStyle 图节点：查询状态 → 分析事件着装需求并生成内容 → 保存结果（绑演出段出场形象 appears_as 边（SubEvent→IllusDesign，wears 已废）；新建着装 MERGE 节点+边+内容，status=1 已完成）。
   在需要为角色创建/追加着装方案时使用。
 argument-hint: <char_id>
 arguments:
@@ -11,7 +11,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 着装设计（CostumeStyle）
 
-为角色的每个事件分析着装需求，推进 CostumeStyle 节点并绑定事件出场形象 `appears_as` 边（Event → IllusDesign，写时按事件时间拍生效形象版本；着装本体仍经 has_costume 归角色）。新建着装写入内容后即 `status=1`（已完成，无审批），直接参与下游 IllusDesign 生产。
+为角色的每个事件分析着装需求，推进 CostumeStyle 节点并绑定演出段出场形象 `appears_as` 边（SubEvent → IllusDesign，写时按事件时间拍生效形象版本；着装本体仍经 has_costume 归角色）。新建着装写入内容后即 `status=1`（已完成，无审批），直接参与下游 IllusDesign 生产。
 
 ## 参数
 

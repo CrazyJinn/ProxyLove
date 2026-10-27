@@ -130,7 +130,7 @@ EA5（Event 直挂两边 / sub 孤儿）必须为 0。
 
 | 上游 | 接什么 |
 |---|---|
-| 人工 / nrt-gap-filler | 粗 Event（involved/occurs_at 或缺）|
+| grill / 人工 / nrt-gap-filler | 粗 Event（involved/occurs_at 或缺）|
 | nrt-gap-filler | 创作类补全（新事件/Info/因果）——本 agent 不做 |
 
 | 下游 | 交什么 |
