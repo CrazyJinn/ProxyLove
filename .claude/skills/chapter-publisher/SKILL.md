@@ -81,7 +81,7 @@ RETURN count(l) AS say_no_stand;
 mkdir -p 99_game/data/chapters 99_game/assets/portraits 99_game/assets/scenes 99_game/assets/bgm
 
 # (a.0) 章映射 chapter-map：bgm 段（Scene-has_bgm->BgmTrack，仅 status=2 进 map）。
-#       portraits 段已废弃——立绘整键由 merge 沿 LineAudio-[:uses]->stand 边在投影期直接解析
+#       立绘整键由 merge 沿 LineAudio-[:uses]->stand 边在投影期直接解析
 python 99_game/tools/generate_portrait_map.py '<chapter_id>' -o '99_game/data/.cache/chapter-map-<stem>.json'
 
 # (a) 剧本：从图投影全章台词行 → 99_game/data/chapters/<stem>.json（Chapter→Section(section_no)→

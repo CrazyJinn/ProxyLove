@@ -328,13 +328,11 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                     f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
                     f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true, e.variant_label={_q(label)};"
                 )
-                # ref_style 兜底已删：立绘取语言风格改经
                 # Character→has_voice_style 反查（char-stand-designer 前驱）
                 report["counts"]["new_variants"] += 1
                 report["new_variants"].append({"id": sid, "variant_label": label,
                                                "illus_id": p["illus_id"], "char": p["who"],
                                                "scene_name": p["scene_name"]})
-        # depicts 补建已删：着装可用性由 appears_as 承载
         stmts.append(
             f"MATCH (l:LineAudio {{" + f"id:{_q(p['node_id'])}" + "}) "
             f"OPTIONAL MATCH (l)-[o:uses]->() DELETE o "

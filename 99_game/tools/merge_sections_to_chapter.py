@@ -292,7 +292,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
     chapter_no, chapter_title = rows[0]["no"], rows[0]["title"]
 
     # 块时段/块结构：行 scene_block_id（=scene_id）直查 Scene——
-    # id 直连取 time_of_day 与场景名（scene_blocks 已废止；ink 注释名仅供人读，投影以图为准）
+    # id 直连取 time_of_day 与场景名（ink 注释名仅供人读，投影以图为准）
     scene_of = {}
     bid_set = sorted({r["scene_block_id"] for r in rows if r.get("scene_block_id")})
     if bid_set:
@@ -324,7 +324,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         if not line_rows:
             problems.append(f"{sec_tag}：无 LineAudio 行（先跑 section-voice-publisher 拆分进图）")
             continue
-        # 块结构从行派生（保序去重）：块 id=scene_id 直连图（scene_blocks 已废止）
+        # 块结构从行派生（保序去重）：块 id=scene_id 直连图
         blocks = []
         _seen_b = set()
         for r in line_rows:

@@ -4,7 +4,6 @@
 
 > 本脚本承担声音链全部合成：设计音色出 ref_audio（VoiceDesign）+ 逐句配音 clone
 > （Base Voice Clone，`publish` 子命令）。早期 CosyVoice3 inference_instruct2 后端
-> （cosyvoice_runner.py）已废弃删除。
 >
 > 子命令：`ensure-ref`（单 ref，下游配音用） / `design-candidates`（多候选流程第一步：
 > 同一 instruct × N 次采样出候选 ref 24k + candidates.json manifest） / `audition`

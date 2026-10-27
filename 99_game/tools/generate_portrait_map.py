@@ -5,7 +5,7 @@
   bgm：本章 Section-contains->Scene-has_bgm->BgmTrack（仅 status=2 音频已归档的进 map，
        <2 的打印警告由发布方处理）。填入 {scene: {track, mode, loop}}。
 
-原 portraits 段已废弃（选绘 uses 边架构）：立绘整键由 merge_sections_to_chapter.py 沿
+章映射只含 bgm 段；立绘整键由 merge_sections_to_chapter.py 沿
 LineAudio-[:uses]->StandingIllustration 边在投影期直接解析，不再需要 scene 级映射改写。
 工具名与 CLI 保持不变（chapter-publisher 调用零改）。
 
@@ -97,7 +97,7 @@ def generate_bgm(chapter_id: str) -> tuple:
 
 
 def generate_map(chapter_id: str) -> dict:
-    """产出章映射 {"bgm": {...}}（portraits 段已废弃，见模块 docstring）。"""
+    """产出章映射 {"bgm": {...}}（见模块 docstring）。"""
     bgm, warnings = generate_bgm(chapter_id)
     for w in warnings:
         print(f"[warn] {w}", file=sys.stderr)

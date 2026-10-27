@@ -36,7 +36,7 @@
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
-| Spot | snowflake Base62 | 地点内子空间（zone；default 已废止仅存量）；场景化时由 scene-designer 建，事件归组经 anchored_at 直挂 Scene；无 status |
+| Spot | snowflake Base62 | 地点内子空间（zone）；场景化时由 scene-designer 建，事件归组经 anchored_at 直挂 Scene；无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |

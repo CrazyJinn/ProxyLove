@@ -261,7 +261,7 @@ MERGE (c)-[r:involved]->(e) SET r.role = '<建议值：当事人/目击者/参�
 ### X1 补 leads_to
 
 因果链：`MATCH (a {id:'<from>'}), (b {id:'<to>'}) WHERE (a:Event OR a:Info) AND (b:Event OR b:Info) MERGE (a)-[r:leads_to]->(b) ON CREATE SET r.detail = '<因果语境>', r.sync = false;`
-时序不建边，由 Event.time 承载（evt_relation 已废止）。
+时序不建边，由 Event.time 承载。
 
 ### X2 补落点事件（创作类，先节点后边）
 

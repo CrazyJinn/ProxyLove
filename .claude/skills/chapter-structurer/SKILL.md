@@ -2,7 +2,7 @@
 name: chapter-structurer
 description: |
   推进 Chapter 图节点的结构段：解析/创建 Chapter → 校验 Scene 前驱 → 把时间窗事件清单按叙事段落规划成若干节（Section；节时间由成员事件推导；块 id=scene_id 由 novelist 现场取用，structurer 不碰块）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status。Section 是编排容器 + 定稿态载体（script_path 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
-  在需要建立章节结构或重做章节结构时使用。原「章节设计简报」与 Chapter.summary/branch_summary 均已废止——章的叙事范围由调用方建章时给定（时间窗/事件范围），预分配块 id 上图。
+  在需要建立章节结构或重做章节结构时使用。章的叙事范围由调用方建章时给定（时间窗/事件范围）。
 argument-hint: <chapter_id_or_title>
 arguments:
   - chapter_id_or_title
@@ -69,7 +69,7 @@ ORDER BY first_evt LIMIT 50
 - 每节定 `section_no`（章内从 0 起）、`title`（节标题）、`summary`（本节戏剧职责一句话）；节的时间坐标由成员事件时间承载（time_day 已废止，不写）。
 - 分节依据是叙事段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是事件时间序的**连续切片**，不交错（节 A 含事件 t0–t5，节 B 含 t6–t10）。
-- **块 id**：块 id = 所写机位的 scene_id（Scene 节点 id），无分配动作、无章内唯一性要求（跨节拍平冲突由 chapter-publisher 发布期加节序前缀解决）。存量 `s<MM>_<short>` 形态（含 chapter00 中文 id）已随 603 行 scene_block_id 重写迁移完毕，仅存于 voice_key 出生快照与 15_声音 归档目录名，不再出现在任何活数据中。
+- **块 id**：块 id = 所写机位的 scene_id（Scene 节点 id），无分配动作、无章内唯一性要求（跨节拍平冲突由 chapter-publisher 发布期加节序前缀解决）。
 
 > 这一步确定「本章分几节、每节含哪些事件（includes+order）」。段级切分（块）是 novelist 的创作自由，structurer 不预设。分支拓扑由图 Choice/option 承载（novelist 结构推理时核验）。
 

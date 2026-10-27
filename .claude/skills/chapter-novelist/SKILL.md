@@ -148,6 +148,6 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 - 方法论（节级裁剪）：[references/小说方法论精简版.md](references/小说方法论精简版.md)——五步展开、对账四分类、惯性签名轻检清单
 - 指纹契约：[scripts/fingerprint.py](scripts/fingerprint.py) 顶部 docstring（归一化规则 / gen --ids / check）
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section 定稿态 / 创作流程注记「小说段」
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构；块 id 预分配已废止，见 1a）
+- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
 - 建议通道：[nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4（建议 JSON 字段 / 多语句 / 控制台执行）

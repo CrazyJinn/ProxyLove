@@ -80,7 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；事件到机位的归组 `anchored_at → Scene` 由 scene-designer 场景化时建（归组时顺带拍机位），叙事层 skill（gap-filler）禁建；节成员 `Section ─includes{order}→ Event`（替代原 contains，order=事件 time 序）；事件出场形象 `appears_as → IllusDesign`（替代原 wears，写边时按 DesignSheet.active_from 选版，读路径零推理）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；事件到机位的归组 `anchored_at → Scene` 由 scene-designer 场景化时建（归组时顺带拍机位），叙事层 skill（gap-filler）禁建；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；事件出场形象 `appears_as → IllusDesign`（写边时按 DesignSheet.active_from 选版，读路径零推理）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -116,7 +116,7 @@ python .claude/scripts/cypher_exec.py -c "MATCH (n:Character) RETURN n.name AS n
 cd 99_game/tools && pip install -r requirements.txt       # 数据校验（无需 Godot）
 cd 99_game/tools && python validate_chapter.py ../data/chapters/chapter00_序章.json ../data/剧本.schema.json
 cd 99_game/tools && python -m pytest test_validate.py -v   # 预期 3 用例通过 + CLI 输出 OK
-godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit   # GUT 单测（需装 Gut；依赖旧示例章的 5 个测试已删，剩 placeholder_gen/save_manager）
+godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit   # GUT 单测（需装 Gut）
 
 # ── Web 发布到 R2（先关 Godot 编辑器！字体会被临时子集覆盖）──
 python 99_game/tools/publish_web.py    # 子集化→headless 导出→(按开关)章包→恢复字体；产物在 Desktop/export
