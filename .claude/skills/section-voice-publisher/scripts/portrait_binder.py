@@ -44,24 +44,28 @@ _EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
 # ── 公共查询 ─────────────────────────────────────────────────
 
 def fetch_section_head(section_id: str) -> dict:
-    """Section 头信息 + scene_blocks（sec.status≠11 raise）。"""
+    """Section 头信息（sec.status≠11 raise）。2026-10-27 块方案清理：Section.scene_blocks
+    已废止——块 id=scene_id，块→场景名经 id 直查图（_scene_names_of）。"""
     rows = _run_cypher(
         "MATCH (sec:Section {id:'" + section_id + "'}) "
-        "RETURN sec.status AS st, sec.scene_blocks AS scene_blocks LIMIT 1"
+        "RETURN sec.status AS st LIMIT 1"
     )
     if not rows:
         raise ValueError(f"Section {section_id} 不存在")
     st = rows[0]["st"]
     if st != 11:
         raise ValueError(f"Section.status={st}（须 11 定稿已确认才能选绘）")
-    blocks = []
-    raw = rows[0].get("scene_blocks")
-    if raw:
-        try:
-            blocks = json.loads(raw) if isinstance(raw, str) else raw
-        except (TypeError, json.JSONDecodeError):
-            blocks = []
-    return {"section_id": section_id, "scene_blocks": blocks or []}
+    return {"section_id": section_id}
+
+
+def _scene_names_of(scene_ids: list) -> dict:
+    """块 id（scene_id）→ 图 Scene 真名。id 直连（无 name join，无漂移空间）。"""
+    if not scene_ids:
+        return {}
+    quoted = ",".join(_q(i) for i in scene_ids if i)
+    rows = _run_cypher(
+        "MATCH (s:Scene) WHERE s.id IN [" + quoted + "] RETURN s.id AS i, s.name AS n")
+    return {r["i"]: r["n"] for r in rows if r.get("i")}
 
 
 def judgeable_lines(section_id: str) -> list:
@@ -139,7 +143,7 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
     事件 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
     零推理——形象版本判定在写 appears_as 边时已物化，读路径不做 active_from 过滤。
     多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
-    scene_name 为空（scene_blocks 缺块定义）时退化为「节内该角色全部事件的 appears_as」。
+    scene_name 为空（块 id 不命中图 Scene）时退化为「节内该角色全部事件的 appears_as」。
     """
     where = ("WHERE scn.name = " + _q(scene_name) + " ") if scene_name else ""
     rows = _run_cypher(
@@ -152,8 +156,8 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
     )
     if scene_name and not rows:
         warnings.append(f"{scene_name}：本节 includes 事件无 anchored_at 命中此 Scene"
-                        f"（名字与图 Scene 名不符，或未归组）——请核对 Section.scene_blocks"
-                        f" 的 scene_name 与 scene-designer 归组")
+                        f"（块 id 与图 Scene 不符，或未归组）——请核对 ink 块标记 id 是否为 scene_id"
+                        f" 及 scene-designer 归组")
     vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
     if len(vals) > 1:
         warnings.append(f"{scene_name}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
@@ -176,16 +180,16 @@ def stands_of_illus(illus_id: str) -> list:
 
 def build_candidates(section_id: str) -> dict:
     """待判行 + 每 (block, who) 候选立绘池 → JSON dict（供 3b LLM 读）。"""
-    head = fetch_section_head(section_id)
+    fetch_section_head(section_id)
     warnings = []
-    scene_name_of = {b.get("block"): b.get("scene_name") for b in head["scene_blocks"]}
     lines = judgeable_lines(section_id)
+    scene_name_of = _scene_names_of([l.get("block") for l in lines])
 
     scenes = {}
     for block in dict.fromkeys(l.get("block") for l in lines):  # 保序去重
         scene_name = scene_name_of.get(block) or ""
         if not scene_name:
-            warnings.append(f"{block}：scene_blocks 无此块（scene_name 未知），选绘 IllusDesign 解析降级")
+            warnings.append(f"{block}：块 id 不命中图 Scene（非 scene_id？）——选绘 IllusDesign 解析降级")
         chars = {}
         for who in dict.fromkeys(l.get("who") for l in lines if l.get("block") == block):
             illus_id, source = resolve_illus(section_id, scene_name, who, warnings)
@@ -200,7 +204,7 @@ def build_candidates(section_id: str) -> dict:
             chars[who] = entry
         scenes[block] = {"scene_name": scene_name, "chars": chars}
 
-    return {"section_id": section_id, "scene_blocks": head["scene_blocks"],
+    return {"section_id": section_id, "scene_name_of": scene_name_of,
             "scenes": scenes, "lines": lines, "warnings": warnings}
 
 
@@ -233,9 +237,9 @@ def _lookup_stand(stand_id: str) -> dict:
 
 def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
     """tasks + 候选解析 → (cypher 语句列表, 报告 dict)。校验失败 raise ValueError（一次列出全部坏项）。"""
-    head = fetch_section_head(section_id)
-    scene_name_of = {b.get("block"): b.get("scene_name") for b in head["scene_blocks"]}
+    fetch_section_head(section_id)
     judgeable = {l["node_id"]: l for l in judgeable_lines(section_id)}
+    scene_name_of = _scene_names_of([l.get("block") for l in judgeable.values()])
     items = _flat_tasks(tasks)
 
     errors = []

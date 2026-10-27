@@ -47,8 +47,8 @@ def _ink_row(op, text=None, *, who=None, kind=None, bed=None, scene_block_id=Non
 
 
 def _blocks(*pairs):
-    """scene_blocks（[{block, scene_name}]）。"""
-    return [{"block": b, "scene_name": s} for b, s in pairs]
+    """块表（[{block, scene_name, time}]，行 scene_block_id 派生形态）。"""
+    return [{"block": b, "scene_name": s, "time": ""} for b, s in pairs]
 
 
 def _ink(rows, pos_overrides=None):
@@ -81,8 +81,8 @@ def test_graph_lines_to_doc_projects_uses_portrait_key():
         _line("ending", "没赶上飞机", kind="BE", scene_block_id="s00_酒店", lid="N4"),
     ]
     keys = {"N2": "顾盈-酒店晨离-挑眉-P2vQL2d9db"}
-    doc = graph_lines_to_doc(lines, _blocks(("s00_酒店", "酒店-客房")),
-                             {"酒店-客房": "清晨"}, 0, "酒店醒来",
+    blocks = [{"block": "s00_酒店", "scene_name": "酒店-客房", "time": "清晨"}]
+    doc = graph_lines_to_doc(lines, blocks, {}, 0, "酒店醒来",
                              portrait_keys=keys, ink=ink)
     assert doc["meta"]["chapter"] == 0 and doc["meta"]["title"] == "酒店醒来"
     assert doc["meta"]["requires"] == {"characters": ["顾盈"], "scenes": ["酒店-客房"],
@@ -110,7 +110,7 @@ def test_graph_lines_to_doc_missing_key_empty_and_excluded_from_requires():
 
 
 def test_graph_lines_to_doc_blocks_drive_scene_structure():
-    """scene-block 结构来自 scene_blocks（scene 行已去图化），ink 行按块归属归块。"""
+    """scene-block 结构来自行派生块表（块 id=scene_id），ink 行按块归属归块。"""
     ink = _ink([
         _ink_row("say", "屋里。", who="陆择", scene_block_id="s0"),
         _ink_row("say", "外面。", who="陆择", scene_block_id="s1"),

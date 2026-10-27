@@ -40,10 +40,10 @@ RETURN sec.section_no AS no, sec.title AS title,
        count(l) AS line_count,
        sum(CASE WHEN coalesce(l.status, 0) = 11 THEN 1 ELSE 0 END) AS line_done
 ORDER BY sec.section_no;
-// (3) 全章 background 图层（场景集 = 各节 scene_blocks 的场景名——发布投影权威，2026-10-26 起替代 contains/includes 链；
+// (3) 全章 background 图层（场景集 = 各节行 scene_block_id 集合→Scene id 直查——发布投影权威，2026-10-27 块方案清理起替代 scene_blocks 链；
 //     历史节（无 includes）与新节通吃；场景名集由 generate_portrait_map._scene_names_of_chapter 同源解析）
 MATCH (s:Scene)
-WHERE s.name IN ['<scene_blocks 解析出的全部场景名>']
+WHERE s.id IN ['<各行 scene_block_id 去重集合（即 scene_id）>']
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer {layer_type:'background'})
 RETURN DISTINCT s.name AS scene_name, sl.image_path AS bg_image, sl.status AS bg_status;
 // (3b) 全章 BGM（同上场景集 JOIN has_bgm；status=2 才拷贝/注入，<2 警告跳过；generate_bgm 已内置此逻辑）

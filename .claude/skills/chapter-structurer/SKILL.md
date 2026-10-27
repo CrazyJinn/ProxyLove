@@ -1,7 +1,7 @@
 ---
 name: chapter-structurer
 description: |
-  推进 Chapter 图节点的结构段：解析/创建 Chapter → 校验 Scene 前驱 → 把时间窗事件清单按叙事段落规划成若干节（Section，预分配 scene-block id 写入 Section.scene_block_ids；time_day 已废止 2026-10-27——节时间由成员事件推导）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status（2026-10-25 取消结构审，产出即可用）。Section 是编排容器 + 定稿态载体（script_path/scene_blocks 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
+  推进 Chapter 图节点的结构段：解析/创建 Chapter → 校验 Scene 前驱 → 把时间窗事件清单按叙事段落规划成若干节（Section；time_day 已废止 2026-10-27——节时间由成员事件推导；scene_block_ids 预分配已废止 2026-10-27 块方案清理——块 id=scene_id 由 novelist 现场取用，structurer 不再碰块）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status（2026-10-25 取消结构审，产出即可用）。Section 是编排容器 + 定稿态载体（script_path 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
   在需要建立章节结构或重做章节结构时使用。原「章节设计简报」与 Chapter.summary/branch_summary 均已废止（2026-10-23）——章的叙事范围由调用方建章时给定（时间窗/事件范围），预分配块 id 上图。
 argument-hint: <chapter_id_or_title>
 arguments:
@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write
 
 # 章节结构（Chapter 结构段 · 章无 status）
 
-剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=11` 创建即定稿在位）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path/scene_blocks 由 dialoguer 写，逐句行由拆分建）+ **预分配全章 scene-block id 写入各节 `Section.scene_block_ids`**（章内唯一，下游 novelist（小说场景段标题）/dialoguer（ink 场景块）的段 id 来源）。**Chapter 无 status**（2026-10-25 取消结构审：结构产出即可用，无审批无门控）。**不创作对话**。
+剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=11` 创建即定稿在位）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path 由 dialoguer 写，逐句行由拆分建）+ **不再预分配块 id**（2026-10-27 块方案清理：块 id = scene_id，novelist 按所写机位现场取用，图即档案）。**Chapter 无 status**（2026-10-25 取消结构审：结构产出即可用，无审批无门控）。**不创作对话**。
 
 > 结构段只定 Scene 序 + 分节，不定分支拓扑（分支/结局拓扑由图 Choice/option 承载，chapter-novelist 结构推理时核验）。
 
@@ -69,9 +69,9 @@ ORDER BY first_evt LIMIT 50
 - 每节定 `section_no`（章内从 0 起）、`title`（节标题）、`summary`（本节戏剧职责一句话）；节的时间坐标由成员事件时间承载（time_day 已废止，不写）。
 - 分节依据是叙事段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是事件时间序的**连续切片**，不交错（节 A 含事件 t0–t5，节 B 含 t6–t10）。
-- **预分配全章每个 scene-block 的 id**：为每个 Scene 在剧本里的首次出现分配一个**章内唯一**的段标识，**写入该节 `Section.scene_block_ids`（JSON 有序数组）**（下游 novelist（小说 `### <id> 场景段标题，拓扑契约载体）/dialoguer（ink 场景块）直接用它，保证跨节 jump 与发布时拍平合并不冲突）。命名 `s<MM>_<short>`（MM=节序零填充，short=简短英文标识），**ASCII 字母数字下划线、禁连字符**（voice key 解析 rsplit 约束 + 标准 ink 标识符——knot 名即此 id），如 `s00_hotel`、`s01_road`。存量 chapter00 中文 id（`s00_酒店` 等）已封存，新章不再产生中文 id。
+- **块 id（已废止预分配）**：2026-10-27 块方案清理——块 id = 所写机位的 scene_id（Scene 节点 id），无分配动作、无章内唯一性要求（跨节拍平冲突由 chapter-publisher 发布期加节序前缀解决）。存量 `s<MM>_<short>` 形态（含 chapter00 中文 id）已随 603 行 scene_block_id 重写迁移完毕，仅存于 voice_key 出生快照与 15_声音 归档目录名，不再出现在任何活数据中。
 
-> 这一步确定「本章分几节、每节含哪些 Scene（按 order）、每节的 scene_block_ids」。分支拓扑由图 Choice/option 承载（novelist 结构推理时核验）。
+> 这一步确定「本章分几节、每节含哪些事件（includes+order）」。段级切分（块）是 novelist 的创作自由，structurer 不预设。分支拓扑由图 Choice/option 承载（novelist 结构推理时核验）。
 
 ### 3. 保存结果（MERGE 兜底 + 建 Section + 写 status）
 
@@ -91,12 +91,11 @@ MATCH (ch:Chapter {id:'<chapter_id>'})
 SET ch.title = '<title>',
     ch.chapter_no = <chapter_no>;
 
-// 2. 每节：MERGE Section（编排字段含 scene_block_ids + status=11 创建即定稿在位）+ has_section(sync=true)；节内每事件：includes(order,sync=false)
+// 2. 每节：MERGE Section（编排字段 + status=11 创建即定稿在位）+ has_section(sync=true)；节内每事件：includes(order,sync=false)
 //    （对 K 个节循环；每个 sec_id 用 snowflake_base62.py 新生成）
 MERGE (sec:Section {id:'<sec_id>'});
 MATCH (sec:Section {id:'<sec_id>'})
 SET sec.section_no = <MM>, sec.title = '<sec_title>', sec.summary = '<sec_summary>',
-    sec.scene_block_ids = '["s<MM>_<short>", …]',   // 预分配块 id 有序数组（JSON 字符串，章内唯一）
     sec.status = 11;    // 创建即定稿在位（2026-10-25 取消定稿审；-1 作废态由 novelist stale 重写设置、dialoguer 恢复）
 MATCH (ch:Chapter {id:'<chapter_id>'}), (sec:Section {id:'<sec_id>'})
 MERGE (ch)-[r:has_section]->(sec) SET r.sync = true;
@@ -109,10 +108,10 @@ MERGE (sec)-[r:includes]->(e) SET r.order = <order>, r.sync = false;
 
 **status 写入**：Chapter 无 status（属性已从图删除）。Section 创建即 `status=11`（定稿在位标记）。结构段完成即可进入各节的 `chapter-novelist`，无审批门控。
 
-最后汇总：分节列表（section_no/title/scene_block_ids/所含事件+order 及各事件 anchored Scene）、K 个 Section（编排容器 + status=11）。**零文件产出**。
+最后汇总：分节列表（section_no/title/所含事件+order 及各事件 anchored Scene）、K 个 Section（编排容器 + status=11）。**零文件产出**。
 
 ## 参考文档
 
-- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Chapter/Section（scene_block_ids + 定稿态）/LineAudio/has_section/produces/includes 定义、status 流转
+- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Chapter/Section（定稿态）/LineAudio/has_section/produces/includes 定义、status 流转
 - 场景美术 Schema：[00_init/Schema/场景美术.md](../../../00_init/Schema/场景美术.md) — Scene 字段
 - 下游：[chapter-novelist](../chapter-novelist/SKILL.md)（结构产出即可用，按节圈定取材/结构推理/产小说）

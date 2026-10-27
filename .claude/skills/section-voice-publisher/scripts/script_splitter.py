@@ -729,8 +729,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     """拆分对齐进图。前置：Section.status=11。返回报告 dict（查询/解析/写图失败 raise）。"""
     rows = _run_cypher(
         "MATCH (sec:Section {id:'" + section_id + "'}) "
-        "RETURN sec.script_path AS p, sec.status AS st, "
-        "sec.scene_blocks AS sb LIMIT 1"
+        "RETURN sec.script_path AS p, sec.status AS st LIMIT 1"
     )
     if not rows:
         raise ValueError(f"Section {section_id} 不存在")
@@ -762,31 +761,19 @@ def split(section_id: str, dry_run: bool = False) -> dict:
     plan = align(script_rows, graph_rows)
     seq, reordered = assign_orders(script_rows, plan)
     stmts, report = build_actions(seq, plan, section_id)
-    # 块定义写入 Section.scene_blocks（scene 行已去图化，块元数据的图上落点）。
-    # 图上已有同 block 映射为权威（人工/上游落的图 Scene 名），ink 块头注记仅作新块初值——
-    # 剧作化注记（如「床前」）≠图名（「床铺区」）时若盲写会让下游 depicts 选绘静默降级。
-    try:
-        existing_sb = json.loads(rows[0]["sb"]) if isinstance(rows[0].get("sb"), str) else (rows[0].get("sb") or [])
-    except (TypeError, json.JSONDecodeError):
-        existing_sb = []
-    existing_of = {b.get("block"): b.get("scene_name") for b in existing_sb if isinstance(b, dict)}
-    graph_scene_names = {r["n"] for r in _run_cypher("MATCH (s:Scene) RETURN s.name AS n") if r.get("n")}
+    # 块 id 校验（2026-10-27 块方案清理：Section.scene_blocks 已废止，块 id=scene_id 直连）。
+    # 每个 ink 块 id 必须命中图 Scene 节点——不命中即拒绝拆分（防悬空块进图静默降级下游选绘）。
+    # 块→场景名映射不再落图；ink 标记行注释是人读唯一来源，程序经 id join 图取真名。
+    graph_scene_ids = {r["i"]: r["n"] for r in _run_cypher("MATCH (s:Scene) RETURN s.id AS i, s.name AS n")}
     merged_blocks = []
     for b in blocks:
         bid, ink_name = b.get("block"), b.get("scene_name")
-        if bid in existing_of and existing_of[bid]:
-            name = existing_of[bid]
-            if ink_name and ink_name != name:
-                report.setdefault("scene_block_name_overrides", []).append(
-                    {"block": bid, "graph": name, "ink": ink_name})
-        else:
-            name = ink_name
-            if name and name not in graph_scene_names:
-                report.setdefault("scene_block_name_unmatched", []).append(
-                    {"block": bid, "scene_name": name})
-        merged_blocks.append({"block": bid, "scene_name": name})
-    stmts.append(f"MATCH (sec:Section {{id:{_q(section_id)}}}) "
-                 f"SET sec.scene_blocks={_q(json.dumps(merged_blocks, ensure_ascii=False))};")
+        if bid not in graph_scene_ids:
+            raise ValueError(
+                f"ink 块 {bid!r}（注记场景名 {ink_name!r}）不是图上 Scene id——"
+                f"块 id 须为所写机位的 scene_id（2026-10-27 块方案清理约定）")
+        merged_blocks.append({"block": bid, "scene_name": graph_scene_ids[bid],
+                              "ink_note": ink_name})
     stmts = _order_statements(seq, section_id, reordered) + stmts
     report.update({"section_id": section_id, "script_path": script_path,
                    "reordered": reordered, "statements": len(stmts), "dry_run": dry_run,

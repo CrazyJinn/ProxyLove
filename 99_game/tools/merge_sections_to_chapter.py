@@ -13,7 +13,7 @@ chapter-publisher 在全章各节产物就绪时调用：图（Section-produces{
   voice_key→voice；say.portrait = uses 边解析的 guid 整键，无边的 say 行空串并计缺口；
   say.pos = 块规则座位 + stage/pos 声明现算；hide 行由 ink 直出）。
 - meta：chapter/title 取 Chapter 节点；requires = 各节并集（保序去重）。
-- scenes：按节序拼接各 scene-block（scene_block_id 由 structurer 预分配、章内唯一，纯 concat）。
+- scenes：按节序拼接各 scene-block（块 id=scene_id，2026-10-27 块方案清理——同机位多段为同 id 多区间，段序由行序承载；跨节同名 id 由章级拼接天然加节前缀去重）。
 - BGM 注入：--chapter-map 的 bgm 段（Scene-has_bgm->BgmTrack，status=2 才进 map）写入 scene-block.bgm。
 - 合并后校验 scene-block id 章内唯一（防御性）。
 - 部分发布：--sections 0,1 仅合并指定节（section_no 逗号分隔）——章内其余节未就绪时
@@ -91,8 +91,8 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     内容行（除 hide）与图行逐行 _sig 同构——漂移即 raise 引导重拆（发布 gate 保证
     拆分后两边一致）。
 
-    blocks = Section.scene_blocks 解析结果 [{block, scene_name}]（scene 行已去图化，
-    scene-block 结构从这里生成）；scene_times = {scene_name: time_of_day}（块时段）；
+    blocks = 行 scene_block_id 派生块表 [{block, scene_name, time}]（2026-10-27 块方案清理：
+    块 id=scene_id 直连图，Section.scene_blocks 已废止）；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
     内容文本取 ink 行（内容权威）；音频/选绘事实取图行（voice_key/ambient_track/lid）。
@@ -116,11 +116,9 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
         if v and v not in seq:
             seq.append(v)
 
-    scenes = [{"id": b["block"], "scene": b.get("scene_name") or ""} for b in blocks]
+    scenes = [{"id": b["block"], "scene": b.get("scene_name") or "",
+               **({"time": b["time"]} if b.get("time") else {})} for b in blocks]
     for s in scenes:
-        t = scene_times.get(s["scene"])
-        if t:
-            s["time"] = t
         _keep(scenes_seq, s["scene"])
     # Day 过场数据（ink 是唯一来源，此处只搬运）：节标题 + 块 day（块级覆盖，缺省节级；
     # 无日（如序章）两键都不写，运行时节间不播 Day 过场）
@@ -273,7 +271,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         "OPTIONAL MATCH (sec)-[p:produces]->(l:LineAudio) "
         "RETURN ch.chapter_no AS no, ch.title AS title, sec.section_no AS section_no, "
         "sec.title AS sec_title, sec.status AS sc_status, "
-        "sec.scene_blocks AS scene_blocks, sec.script_path AS script_path, "
+        "sec.script_path AS script_path, "
         "l.id AS lid, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.voice_key AS voice_key, l.ambient_track AS ambient_track, l.options AS options, "
@@ -294,24 +292,16 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         )
     chapter_no, chapter_title = rows[0]["no"], rows[0]["title"]
 
-    # 块时段：scene_blocks 的 scene_name → Scene.time_of_day（图为准）
-    all_blocks = []
-    for r in rows:
-        raw = r.get("scene_blocks")
-        if raw:
-            try:
-                all_blocks.extend(json.loads(raw))
-            except (TypeError, json.JSONDecodeError):
-                pass
-    scene_times = {}
-    names = sorted({b.get("scene_name") for b in all_blocks if b.get("scene_name")})
-    if names:
+    # 块时段/块结构（2026-10-27 块方案清理）：行 scene_block_id（=scene_id）直查 Scene——
+    # id 直连取 time_of_day 与场景名（scene_blocks 已废止；ink 注释名仅供人读，投影以图为准）
+    scene_of = {}
+    bid_set = sorted({r["scene_block_id"] for r in rows if r.get("scene_block_id")})
+    if bid_set:
         for t in _run_cypher(
-                "MATCH (s:Scene) WHERE s.name IN ["
-                + ",".join("'" + n.replace("'", "\\'") + "'" for n in names)
-                + "] RETURN s.name AS name, s.time_of_day AS t"):
-            if t.get("t"):
-                scene_times[t["name"]] = t["t"]
+                "MATCH (s:Scene) WHERE s.id IN ["
+                + ",".join("'" + b.replace("'", "\\'") + "'" for b in bid_set)
+                + "] RETURN s.id AS bid, s.name AS name, s.time_of_day AS t"):
+            scene_of[t["bid"]] = {"scene_name": t.get("name") or "", "time": t.get("t") or ""}
 
     # 立绘整键：沿 uses 边二次查询（say 行无 uses = 选绘缺口，发布警告、投影空串）
     portrait_keys, no_uses = fetch_uses_portrait_keys(chapter_id, section_nos=section_nos)
@@ -335,15 +325,20 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         if not line_rows:
             problems.append(f"{sec_tag}：无 LineAudio 行（先跑 section-voice-publisher 拆分进图）")
             continue
+        # 块结构从行派生（保序去重）：块 id=scene_id 直连图（scene_blocks 已废止 2026-10-27）
         blocks = []
-        raw = sec_rows[0].get("scene_blocks")
-        if raw:
-            try:
-                blocks = json.loads(raw)
-            except (TypeError, json.JSONDecodeError):
-                blocks = []
-        if not blocks:
-            problems.append(f"{sec_tag}：Section.scene_blocks 缺失（重跑拆分写入）")
+        _seen_b = set()
+        for r in line_rows:
+            b = r.get("scene_block_id")
+            if b and b not in _seen_b:
+                _seen_b.add(b)
+                info = scene_of.get(b)
+                if not info:
+                    problems.append(f"{sec_tag}：行块 id {b} 不命中图 Scene（非 scene_id？）")
+                    continue
+                blocks.append({"block": b, "scene_name": info["scene_name"],
+                               "time": info["time"]})
+        if problems:
             continue
         not_done = [r for r in line_rows if r.get("line_status") != 11]
         if not_done:
@@ -366,7 +361,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         if sec_day is None and int(chapter_no) > 0:
             sys.stderr.write(f"[warn] {sec_tag}：ink 头注释未解析到 Day，本节 day/节标题不注入\n")
         try:
-            sections.append(graph_lines_to_doc(line_rows, blocks, scene_times, chapter_no, sec_title,
+            sections.append(graph_lines_to_doc(line_rows, blocks, {}, chapter_no, sec_title,
                                                portrait_keys=portrait_keys, ink=ink,
                                                sec_day=sec_day, ink_title=ink_title, block_days=blk_days))
         except ValueError as e:
