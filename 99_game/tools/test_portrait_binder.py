@@ -1,7 +1,7 @@
 """portrait_binder 纯函数单测（build_candidates / build_actions）——不连 Neo4j。
 
 candidates/apply 的图查询与写图经 monkeypatch 替换；split 主流程端到端验证见 E2E。
-Event 驱动化：IllusDesign 解析改 `Section→includes→Event→anchored_at→Scene`
+Event 驱动化：IllusDesign 解析改 `Section→includes→Event→refines→SubEvent→anchored_at→Scene`
 的事件 `→appears_as` 单路直读；apply 不再补建 depicts/ref_style。
 在 99_game/tools 下跑：python -m pytest test_portrait_binder.py -v
 """
@@ -46,6 +46,7 @@ def base(monkeypatch):
         captured["called"] = True
 
     monkeypatch.setattr(pb, "_run_cypher_multi", fake_multi)
+    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_GEN", _FakeGen())
     return captured, monkeypatch
 
@@ -60,7 +61,7 @@ def test_resolve_illus_single_hit(monkeypatch):
 
 
 def test_resolve_illus_query_shape(monkeypatch):
-    """查询必须沿 includes→anchored_at→Scene 过滤 + appears_as 经着装链限定该角色。"""
+    """查询必须沿 includes→refines→SubEvent→anchored_at→Scene + appears_as 经着装链限定。"""
     seen = {}
 
     def fake(cypher):
@@ -71,6 +72,7 @@ def test_resolve_illus_query_shape(monkeypatch):
     pb.resolve_illus(SEC, "酒店-客房", "陆择", [])
     c = seen["cypher"]
     assert "-[:includes]->(e:Event)" in c
+    assert "-[:refines]->(sub:SubEvent)" in c
     assert "-[:anchored_at]->(scn:Scene)" in c
     assert "WHERE scn.name = " in c                     # 块名过滤（scene_name 非空时）
     assert "-[:appears_as]->(il:IllusDesign)" in c
@@ -115,6 +117,7 @@ def test_resolve_illus_all_empty(monkeypatch):
 def test_build_candidates_pool_structure(monkeypatch):
     monkeypatch.setattr(pb, "fetch_section_head", lambda sid: HEAD)
     monkeypatch.setattr(pb, "judgeable_lines", lambda sid: [dict(l) for l in LINES])
+    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_effective_ds", lambda sid, who, w: None)   # 版本信息为展示项,隔离查询
     monkeypatch.setattr(pb, "resolve_illus",
                         lambda sid, scene, who, w: ("I1", "appears_as"))
@@ -132,6 +135,7 @@ def test_build_candidates_pool_structure(monkeypatch):
 def test_build_candidates_no_illus_warns(monkeypatch):
     monkeypatch.setattr(pb, "fetch_section_head", lambda sid: HEAD)
     monkeypatch.setattr(pb, "judgeable_lines", lambda sid: [dict(l) for l in LINES])
+    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_effective_ds", lambda sid, who, w: None)
     monkeypatch.setattr(pb, "resolve_illus", lambda sid, scene, who, w: ("", ""))
     monkeypatch.setattr(pb, "stands_of_illus", lambda iid: [])

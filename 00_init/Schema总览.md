@@ -35,6 +35,7 @@
 |------|---------|-----------|
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
+| SubEvent | snowflake Base62 | 事件在机位层的演出物化（到场/换区/离开/换装）；由 event-refiner 产生，只挂 anchored_at/appears_as，无 status |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
 | Spot | snowflake Base62 | 地点内子空间（zone）；场景化时由 scene-designer 建，事件归组经 anchored_at 直挂 Scene；无 status |
 | Info | snowflake Base62 | 一条有意义的认知碎片 |
@@ -65,6 +66,7 @@
 | relation | Character → Character | N:N | ❌ | 人物关系 |
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
+| refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
 | link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体；因果归 leads_to） |
 | leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通（先后时序由 Event.time 承载，evt_relation 已废止） |
@@ -78,10 +80,10 @@
 | produces | AppearanceStyle → DesignSheet | 1:N | ✅ | 外貌产出设计图（版本链：永久变更图生图新增版本） |
 | produces | DesignSheet → IllusDesign | 1:N | ✅ | 设计图→立绘设计图 |
 | outfit_for | CostumeStyle → IllusDesign | 1:N | ✅ | 着装→立绘设计图（每 (DesignSheet, CostumeStyle) 组合一个） |
-| appears_as | Event → IllusDesign | N:N | ❌ | 事件出场形象（直挂形象版本；写边时按 active_from 选版，读零推理；每事件每角色至多 1 条） |
+| appears_as | SubEvent → IllusDesign | N:N | ❌ | 演出段出场形象（直挂形象版本；写边时按 active_from 选版，读零推理；每事件每角色至多 1 条） |
 | expands_to | IllusDesign → StandingIllustration | 1:N | ✅ | 拓展表情/动作变体 |
 | **场景美术** | | | | |
-| anchored_at | Event → Scene | N:N | ❌ | 事件机位归组（默认每涉及地点各归组 1 个机位 Scene；scene-designer 归组时建并拍机位，叙事层禁建） |
+| anchored_at | SubEvent → Scene | N:N | ❌ | 演出段机位归组（默认每段一挂归组 1 个机位 Scene；scene-designer 归组时建并拍机位，叙事层禁建） |
 | part_of | Location → Spot | 1:N | ❌ | 空间从属（父→子；每 Spot 恰 1 入边） |
 | realizes | Spot → Scene | 1:N | ❌ | Spot 实现场景（原 has_scene，sync 语义变更见场景美术.md） |
 | has_layer | Scene → SceneLayer | 1:N | ✅ | 场景→图层 |
@@ -102,6 +104,7 @@ flowchart LR
     subgraph 叙事["叙事基础"]
         Character["Character"]
         Event["Event"]
+        SubEvent["SubEvent（演出物化）"]
         Location["Location"]
         Info["Info"]
         Choice["Choice"]
@@ -144,8 +147,9 @@ flowchart LR
     Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
     Event -->|"occurs_at ❌ N:N"| Location
-    Event -.->|"anchored_at ❌ N:N（scene-designer）"| Scene
-    Event -->|"appears_as ❌ N:N"| IllusDesign
+    Event -->|"refines ✅ 1:N（event-refiner）"| SubEvent
+    SubEvent -.->|"anchored_at ❌ N:N"| Scene
+    SubEvent -->|"appears_as ❌ N:N"| IllusDesign
     Event -->|"leads_to ❌ N:N"| Event
     Event -->|"leads_to ❌ N:N"| Info
     Info -->|"leads_to ❌ N:N"| Event

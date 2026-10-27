@@ -37,8 +37,9 @@ RETURN ch, app, collect(cos) AS costumes;
 // 事件 + 空间 + 已有着装绑定
 MATCH (ch:Character {id: '<char_id>'})-[r:involved]->(e:Event)
 OPTIONAL MATCH (e)-[:occurs_at]->(l:Location)
-OPTIONAL MATCH (e)-[:anchored_at]->(scn:Scene)
-OPTIONAL MATCH (e)-[:appears_as]->(il:IllusDesign)
+OPTIONAL MATCH (e)-[:refines]->(sub:SubEvent)
+OPTIONAL MATCH (sub)-[:anchored_at]->(scn:Scene)
+OPTIONAL MATCH (sub)-[:appears_as]->(il:IllusDesign)
 RETURN e.id AS event_id, e.title AS event_title, r.role AS role, r.detail AS detail,
        l.id AS loc_id, l.name AS loc_name,
        scn.id AS scene_id, scn.name AS scene_name, scn.time_of_day AS scene_tod,
@@ -48,7 +49,7 @@ ORDER BY e.id;
 
 ### 2. 完成任务
 
-对每个**没有 `appears_as` 边的 Event** 分析着装需求：
+对每个**sub 缺 `appears_as` 边的 Event**（含无 sub 的事件——先提示跑 event-refiner 细化）分析着装需求：
 
 1. 提取事件上下文：事件 detail（角色行为）、Location 环境、角色身份（character_tags）。
 2. 判断是否可复用已有 CostumeStyle：
@@ -79,8 +80,8 @@ ORDER BY e.id;
 ```cypher
 // 出场形象直挂 IllusDesign（写时选版：多版本角色按「事件时间 vs 版本边界（如理发时刻）」拍
 // 当前生效版——单版本角色即该着装唯一 IllusDesign；版本边界由叙事事实驱动，拍板归本 skill）
-MATCH (e:Event {id: '<event_id>'}), (il:IllusDesign {id: '<生效版 IllusDesign_id>'})
-MERGE (e)-[r:appears_as]->(il) ON CREATE SET r.detail = '<着装语境>', r.sync = false;
+MATCH (sub:SubEvent {id: '<sub_id>'}), (il:IllusDesign {id: '<生效版 IllusDesign_id>'})
+MERGE (sub)-[r:appears_as]->(il) ON CREATE SET r.detail = '<着装语境>', r.sync = false;
 ```
 
 该着装在生效版本下尚无 IllusDesign 时**不挂空**——留 E1 体检标红，汇报提示 `char-illus-designer` 补（传 design_sheet 聚焦版本）。复用无需审批，直接生效。
@@ -94,7 +95,7 @@ MATCH (ch:Character {id: '<char_id>'}), (cos:CostumeStyle {id: '<snowflake_id>'}
 MERGE (ch)-[r:has_costume]->(cos) SET r.sync = true;
 MATCH (e:Event) WHERE e.id IN ['<event_id_1>', '<event_id_2>', ...]
 // 出场形象直挂（同上:appears_as→生效版 IllusDesign;此处省略,逐事件按上方模板执行)
-// MERGE (e)-[r:appears_as]->(il) ON CREATE SET r.sync = false;
+// MERGE (sub)-[r:appears_as]->(il) ON CREATE SET r.sync = false;
 MATCH (cos:CostumeStyle {id: '<snowflake_id>'})
 SET cos.name = '<角色名-着装描述>',
     cos.outfit_style = '...', cos.garment = '...', cos.footwear = '...', cos.accessory_type = '...',

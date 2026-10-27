@@ -23,7 +23,7 @@ Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section（定稿态载体�
 - **LineAudio 行级审批**（行节点 status，只代表音频——文字审批已在定稿审完成）：say 行 `0` 待配/被驳回 → `10` 配完待审 → `11` 已通过；非 say 行拆分即 11。「节完成」gate = 该节全部行 status=11（派生判断）；单句驳回后审批卡出现「重生成」deeplink 唤起本 agent 单节聚焦（voice-publisher `--nodes <行id>` 只重做该句）。
 - **人工微调回路（不经 plot-design）**：用户在 dashboard 定稿编辑器直改 `台词.ink` → 「保存并同步 LineAudio」（写文件 + 对齐进图：被改句置 0、删行清 wav、新行入图，未变句审批结果不动）→ **sec.status=11（编辑保存即定稿，人工编辑免审）** → 重跑 voice-publisher 重拆：text_sha1 匹配的行原样保留审批结果（含 11），只有被改句置 0 重配——手改不丢。**plot-design 看到行 status≠11 即需推配音**。
 - **节完成**（派生判断）= Section.status=11 ∧ 该节全部 LineAudio 行=11（Section.status 即定稿态）。
-- 立绘由 plot-design 按引用直调 `char-stand-designer` 推进（已从 char-design 剥离；推进范围按模式取——章节全量 = `includes→Event→appears_as` 枚举，单节聚焦 = 本节 say 行 uses 边可达，严禁做后续节的事情）。**立绘上游 IllusDesign 未就绪时报警，不跨链调 char-design**。**event 素材不足时 novelist 丰满度自检拒绝产出并报告缺口**，plot-design 汇报后退出——用户需用独立流程 `nrt-gap-filler` 补全叙事基础后重调 plot-design。
+- 立绘由 plot-design 按引用直调 `char-stand-designer` 推进（已从 char-design 剥离；推进范围按模式取——章节全量 = `includes→Event→refines→SubEvent→appears_as` 枚举，单节聚焦 = 本节 say 行 uses 边可达，严禁做后续节的事情）。**立绘上游 IllusDesign 未就绪时报警，不跨链调 char-design**。**event 素材不足时 novelist 丰满度自检拒绝产出并报告缺口**，plot-design 汇报后退出——用户需用独立流程 `nrt-gap-filler` 补全叙事基础后重调 plot-design。
 - **BGM 不归 plot-design 编排**：BgmTrack（`Scene -has_bgm-> BgmTrack`，0→1→2 无审批）由 **scene-design agent 编排 `bgm-designer`** 推进（缺口兜底建 + 产描述 → 用户手动生成 wav 归档 `13_BGM/`）。plot-design 不调 bgm-designer、不检查 BgmTrack status（发布时 publisher 对 status<2 的警告跳过）。
 - **发布不在 plot-design 职责内**：全章就绪（全节产物就绪 ∧ 立绘全 11）后汇报并退出；`chapter-publisher` 由**用户直接触发**，plot-design **任何情况下不调它**（如同不跨链调 char-design）。
 
@@ -50,8 +50,8 @@ MATCH (ch:Chapter {id:'<章节ID>'})
 OPTIONAL MATCH (ch)-[:has_section]->(sec:Section)
 OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
 OPTIONAL MATCH (sec)-[inc:includes]->(e:Event)
-OPTIONAL MATCH (e)-[:anchored_at]->(s:Scene)
-OPTIONAL MATCH (e)-[:appears_as]->(illus:IllusDesign)
+OPTIONAL MATCH (e)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
+OPTIONAL MATCH (e)-[:refines]->(:SubEvent)-[:appears_as]->(illus:IllusDesign)
 OPTIONAL MATCH (illus)-[:expands_to]->(stand:StandingIllustration)
 OPTIONAL MATCH (char:Character)-[:has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to*1..5]->(stand)
 RETURN ch.id AS ch_id, ch.title AS title, ch.chapter_no AS chapter_no,
@@ -83,15 +83,15 @@ ORDER BY sec.section_no, inc.order, illus_id, variant
 
 **写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/剧情.md](00_init/Schema/剧情.md) 与 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md)。`has_section` 是 `Chapter→Section`；`produces` 是 `Section→LineAudio`（1:N 带 order）；`includes` 是 `Section→Event`（order=事件 time 序;节内 Scene 经 `Event→anchored_at` 推导）；`appears_as` 是 `Event→IllusDesign`（形象版本写边时物化;变体经 `IllusDesign-[:expands_to]->StandingIllustration` 枚举）；`uses` 是 `LineAudio→StandingIllustration`（选绘行级引用，sync=false 固定）；`StandingIllustration` 是 `expands_to`/`uses` 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报「节点未创建」。
 
-> **单节聚焦模式**以目标 Section 为锚点查询（含行聚合、该节 say 行 uses 引用的立绘（**推进范围**）、includes→Event→appears_as 立绘（**仅提示**））：
+> **单节聚焦模式**以目标 Section 为锚点查询（含行聚合、该节 say 行 uses 引用的立绘（**推进范围**）、includes→Event→refines→SubEvent→appears_as 立绘（**仅提示**））：
 > ```cypher
 > MATCH (sec:Section {id:'<sec_id>'})
 > MATCH (ch:Chapter)-[:has_section]->(sec)
 > OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
 > OPTIONAL MATCH (l)-[:uses]->(ustand:StandingIllustration)
 > OPTIONAL MATCH (sec)-[:includes]->(e2:Event)
-> OPTIONAL MATCH (e2)-[:anchored_at]->(s:Scene)
-> OPTIONAL MATCH (e2)-[:appears_as]->(illus:IllusDesign)
+> OPTIONAL MATCH (e2)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
+> OPTIONAL MATCH (e2)-[:refines]->(:SubEvent)-[:appears_as]->(illus:IllusDesign)
 > OPTIONAL MATCH (illus)-[:expands_to]->(stand:StandingIllustration)
 > RETURN ch.id AS ch_id, ch.title AS ch_title,
 >        sec.id AS sec_id, sec.section_no AS sec_no, sec.title AS sec_title,
@@ -165,7 +165,7 @@ ORDER BY sec.section_no, inc.order, illus_id, variant
 - **全部节产物就绪（各节 sec.status=11 ∧ 行全 11）** → 检查 appears_as 立绘：对每个 `stand.status ≠ 11` 的立绘推进（见下方「立绘委派方式」）
 - **全部 `stand.status = 11` AND 全部节产物就绪**（全章就绪）→ **汇报「全章就绪，可发布（chapter-publisher 由用户直接触发）」并退出**——plot-design 的职责到此为止，**任何情况下不调 `chapter-publisher`**
 
-**立绘委派方式**（StandingIllustration 已从 char-design 剥离至 plot-design，按需出图）：各节定稿已批（`sc_status=11`）后推进立绘，**推进范围按模式取**——章节全量 = `includes→Event→appears_as` 可达且 `stand.status ≠ 11`（全章就绪 gate 要求全部 appears_as 立绘 11）；单节聚焦 = 本节 say 行 uses 边可达且 `stand.status ≠ 11`（见单节决策，appears_as 中未被本节引用的仅提示）。对范围内每个立绘：
+**立绘委派方式**（StandingIllustration 已从 char-design 剥离至 plot-design，按需出图）：各节定稿已批（`sc_status=11`）后推进立绘，**推进范围按模式取**——章节全量 = `includes→Event→refines→SubEvent→appears_as` 可达且 `stand.status ≠ 11`（全章就绪 gate 要求全部 appears_as 立绘 11）；单节聚焦 = 本节 say 行 uses 边可达且 `stand.status ≠ 11`（见单节决策，appears_as 中未被本节引用的仅提示）。对范围内每个立绘：
 1. **先查其上游 IllusDesign 是否 = 11**（query 一次）。
 2. **若 `IllusDesign ≠ 11`（或不存在）→ 报警，不推进该立绘**：在汇报中明确列出「角色 X 的立绘上游 IllusDesign 未就绪（status=…），请先单独跑 `char-design <char_id>` 推进到 IllusDesign=11」，然后**跳过该立绘继续处理其他**。**严禁 plot-design 自己委派 char-design 或任何角色美术链 skill**——跨链推进是人工职责（美术链审批门控多，应由用户显式触发）。
 3. **若 `IllusDesign = 11`** → 用 **Skill 工具直调** `char-stand-designer`，传逗号分隔的 stand_id 列表（≥2 个走批量模式并发出图，1 个即单变体；一次委派整批，**禁止逐个串行委派堵链**）。stand_id 来自 appears_as 查询结果。

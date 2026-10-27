@@ -34,7 +34,7 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (sec:Section {id:'<input>'})
 OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
-OPTIONAL MATCH (sec)-[:includes]->(:Event)-[:anchored_at]->(s:Scene)
+OPTIONAL MATCH (sec)-[:includes]->(:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
 RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
        sec.status AS sec_status, sec.script_path AS script_path,
        ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
@@ -50,9 +50,9 @@ LIMIT 1
 
 #### 1b. 章级依据（图）+ 圈定取材素材
 
-- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内；想写集合外机位（无事件锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含事件未建[走 gap-filler 补事件+anchored_at] / 越界脑补[重切] / 事件锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
+- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-refiner 补 sub+anchored_at] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
@@ -67,6 +67,8 @@ RETURN 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
        null AS description, null AS ending_kind, null AS condition,
        i.content AS content, i.knowledge_level AS knowledge_level
 ```
+
+演出段素材（父事件细化出的 SubEvent 是机位级演出事实，写场景段时按 sub 对号）：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent) OPTIONAL MATCH (sub)-[:anchored_at]->(sc:Scene) RETURN sub.id AS sub_id, sub.title AS title, sub.time AS time, sub.description AS description, sc.name AS scene`——sub.description 承载演出内容（升格自 Info 的台词/动作），空缺 = 待 event-refiner 细化，可作素材不足信号。
 
 Bash 落盘复用（段 3 的 gen 还要用同一份）：`python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<上句>" --json > .tmp/novelist/<sec_id>_materials.json`（UNION 是单语句，`--json` 输出数组即素材 JSON）。
 

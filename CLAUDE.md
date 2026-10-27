@@ -80,7 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；事件到机位的归组 `anchored_at → Scene` 由 scene-designer 场景化时建（归组时顺带拍机位），叙事层 skill（gap-filler）禁建；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；事件出场形象 `appears_as → IllusDesign`（写边时按 DesignSheet.active_from 选版，读路径零推理）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-refiner 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -127,7 +127,7 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 
 ## 何时用 skill / agent
 
-- 要按事件范围预检叙事基础完整性并推进下游 → 调 `event-precheck` agent（传事件 id/title 列表或时间窗；发现 char/location 缺口时逐条建议、用户确认后直接建 Character/Location 节点与 involved/occurs_at 边——写入白名单仅此四类，创作类补全走 nrt-gap-filler；修复完复查为 0 缺口后 Task 并行唤起 char-design + scene-design 推进涉及角色与 Location）。
+- 要细化事件到机位层（SubEvent）并补叙事基础缺口 → 调 `event-refiner` agent（传事件 id/title 列表或时间窗；四步：白名单修复 involved/occurs_at/建档 → 空间轨迹推理产 SubEvent（anchored_at 只挂既有 Scene、appears_as 继承兄弟 sub）→ 演出型 Info 升格 → 留单派发 char-design/scene-design；写入白名单 = 原四类 + SubEvent/refines/anchored_at(既有)/appears_as(继承) + Info 升格，创作类补全走 nrt-gap-filler）
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
 - 叙事基础层增补/缺口治理（新增实体、补关系、时间段补桥、人物丰满）一律 → `nrt-gap-filler`（有人值守逐题确认，产 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`，人工经 dashboard 建议弹窗审阅 + Cypher 控制台写回）。

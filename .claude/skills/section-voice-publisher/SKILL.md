@@ -3,7 +3,7 @@ name: section-voice-publisher
 description: |
   把单节已确认定稿（Section.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
   ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
-  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 `Section→includes→Event→anchored_at→Scene` 的事件 `→appears_as→IllusDesign` 直读形象（版本已在写边时物化，零推理）再 `→expands_to` 列已有立绘）→
+  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene` 的事件 `→appears_as→IllusDesign` 直读形象（版本已在写边时物化，零推理）再 `→expands_to` 列已有立绘）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
   ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to；不补建 depicts/ref_style（边已废止））→
   ⑤ Qwen3 单 venv（env/.venv-qwen，voice_clone_runner.py）：ensure-ref 出/复用 ref → publish 按 Qwen3 Base Voice Clone 逐句克隆（输入 tts_text 变体承载情绪，clone_mode 逐句选演绎通道：icl=ref 韵律迁移缺省 / xvec=仅说话人向量文本主导演绎；emotion 仅作图标注）→
@@ -97,7 +97,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
   -o '.tmp/portrait-candidates-<stem>-sec<MM>.json'
 ```
 
-`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）；`chars[who].design_sheet` 带生效版本 `{id, slug, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
+`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）；`chars[who].design_sheet` 带生效版本 `{id, slug, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 

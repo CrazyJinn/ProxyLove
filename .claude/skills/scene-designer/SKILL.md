@@ -57,13 +57,13 @@ RETURN l.name AS loc_name, l.description AS loc_desc,
 
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）
 MATCH (e:Event)-[:occurs_at]->(l:Location {id: '<loc_id>'})
-WHERE NOT (e)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
+WHERE NOT (e)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
 RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.time AS time
 ORDER BY e.time;
 
 // ③ 既有 zone Spot 归组分布（「既有 spot 够用性」的量化依据）
 MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
-OPTIONAL MATCH (e:Event)-[:anchored_at]->(:Scene)<-[:realizes]-(sp)
+OPTIONAL MATCH (e:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(sp)
 RETURN sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, sp.dsl_path AS dsl_path,
        count(e) AS grouped_cnt, collect(e.title)[..5] AS sample
 ORDER BY grouped_cnt DESC;
@@ -147,9 +147,10 @@ MERGE (sp:Spot {name: '<Location名>-<区域>'})
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
 MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
-MATCH (e:Event {id: '<event_id>'})-[old:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
+MATCH (sub:SubEvent)-[old:anchored_at]->(:Scene)<-[:realizes]
+WHERE (:Event {id: '<event_id>'})-[:refines]->(sub)-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
 MATCH (e:Event {id: '<event_id>'}), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene
-MERGE (e)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.sync = false;
+MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.sync = false;
 ```
 
 #### Scene 写入（MERGE 节点 + realizes 边，status=1 已完成）

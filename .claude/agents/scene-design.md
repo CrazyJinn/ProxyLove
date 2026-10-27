@@ -52,7 +52,7 @@ RETURN l.name AS loc, l.id AS loc_id, evt_cnt, size(spots) AS spot_cnt, size(sce
 ```cypher
 // 未归组事件补充查（Spot 归组缺口 = scene-designer 待推进信号）
 MATCH (e:Event)-[:occurs_at]->(l:Location)
-WHERE NOT (e)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
+WHERE NOT (e)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
 RETURN l.name AS loc, l.id AS loc_id, count(e) AS ungrouped ORDER BY ungrouped DESC
 ```
 

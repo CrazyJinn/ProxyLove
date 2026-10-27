@@ -12,7 +12,7 @@ section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b
   - 每句 say 行都显式建 uses 边（sync=false）；apply 先全量校验后单事务写，任一项不合法即
     整体拒绝（不写图）——LLM 漏判可补 tasks 后重跑，无图副作用
   - **Event 驱动化**：候选池与 apply 共用同一 IllusDesign 解析——
-    `Section→includes→Event→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign`
+    `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign`
     直读，零推理；多个终点按 id 字典序取首并记 warning，重跑稳定。原 depicts/wears/
     has_costume 三路推演已随边删除废止
   - **形象版本判定已物化到写边时**（appears_as 建边/回填时按事件时间 vs
@@ -138,25 +138,26 @@ def _effective_ds(section_id: str, who: str, warnings: list):
 def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) -> tuple:
     """该 (scene, who) 的着装 IllusDesign 决策 → (illus_id, source)。
 
-    Event 驱动化：`Section→includes→Event→anchored_at→Scene(块名)` 的
-    事件 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
+    SubEvent 细化层：`Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)`
+    的演出段 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
     零推理——形象版本判定在写 appears_as 边时已物化，读路径不做 active_from 过滤。
     多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
-    scene_name 为空（块 id 不命中图 Scene）时退化为「节内该角色全部事件的 appears_as」。
+    scene_name 为空（块 id 不命中图 Scene）时退化为「节内该角色全部 sub 的 appears_as」。
     """
     where = ("WHERE scn.name = " + _q(scene_name) + " ") if scene_name else ""
     rows = _run_cypher(
         "MATCH (sec:Section {id:" + _q(section_id) + "})-[:includes]->(e:Event) "
-        "OPTIONAL MATCH (e)-[:anchored_at]->(scn:Scene) " + where +
+        "MATCH (e)-[:refines]->(sub:SubEvent) "
+        "OPTIONAL MATCH (sub)-[:anchored_at]->(scn:Scene) " + where +
         "OPTIONAL MATCH (c0:Character {name:" + _q(who) + "})-[:involved]->(e) "
-        "OPTIONAL MATCH (e)-[:appears_as]->(il:IllusDesign)"
+        "OPTIONAL MATCH (sub)-[:appears_as]->(il:IllusDesign)"
         "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
         "RETURN DISTINCT il.id AS illus_id"
     )
     if scene_name and not rows:
-        warnings.append(f"{scene_name}：本节 includes 事件无 anchored_at 命中此 Scene"
-                        f"（块 id 与图 Scene 不符，或未归组）——请核对 ink 块标记 id 是否为 scene_id"
-                        f" 及 scene-designer 归组")
+        warnings.append(f"{scene_name}：本节 sub 无 anchored_at 命中此 Scene"
+                        f"（块 id 与图 Scene 不符，或未归组/未细化）——请核对 ink 块标记 id 是否为 scene_id"
+                        f" 及 event-refiner/scene-designer 归组")
     vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
     if len(vals) > 1:
         warnings.append(f"{scene_name}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
