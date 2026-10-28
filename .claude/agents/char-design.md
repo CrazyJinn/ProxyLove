@@ -18,6 +18,8 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 
 **DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（约定路径 `06_角色美术/<角色名>/参考图.png|jpg|jpeg`，推荐经 dashboard 角色详情页上传——自动压缩与规范命名）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
 
+**占位消化模式（status=0 挂账）**：event-stager/event-ideator 经建议 JSON 创建的占位节点（CostumeStyle/IllusDesign/Character，status=0）由本 agent 消化——入口查询天然圈到（0 与 -1 同为待办）；占位节点在图上的位置（挂在哪个 CostumeStyle 下、被哪个 sub 的 appears_as 引用）自带需求上下文，按既有链路补全字段并推进生产即可。**占位 Character（无外貌链的裸节点）由本 agent 兜底创建外貌链**（AppearanceStyle 起），这是 Q2 拍板的分工：ideator 只建裸节点，链由本侧现场建。
+
 ---
 
 ## 工作流

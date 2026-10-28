@@ -50,7 +50,7 @@ LIMIT 1
 
 #### 1b. 章级依据（图）+ 圈定取材素材
 
-- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-refiner 补 sub+anchored_at] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
+- 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-stager 补 sub+anchored_at，含 Scene 占位物化] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
 圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
@@ -68,7 +68,7 @@ RETURN 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
        i.content AS content, i.knowledge_level AS knowledge_level
 ```
 
-演出段素材（父事件细化出的 SubEvent 是机位级演出事实，写场景段时按 sub 对号）：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent) OPTIONAL MATCH (sub)-[:anchored_at]->(sc:Scene) RETURN sub.id AS sub_id, sub.title AS title, sub.time AS time, sub.description AS description, sc.name AS scene`——sub.description 承载演出内容（升格自 Info 的台词/动作），空缺 = 待 event-refiner 细化，可作素材不足信号。
+演出段素材（父事件细化出的 SubEvent 是机位级演出事实，写场景段时按 sub 对号）：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent) OPTIONAL MATCH (sub)-[:anchored_at]->(sc:Scene) RETURN sub.id AS sub_id, sub.title AS title, sub.time AS time, sub.description AS description, sc.name AS scene`——sub.description 承载演出内容（升格自 Info 的台词/动作），空缺 = 待 event-stager 拆解，可作素材不足信号。
 
 Bash 落盘复用（段 3 的 gen 还要用同一份）：`python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<上句>" --json > .tmp/novelist/<sec_id>_materials.json`（UNION 是单语句，`--json` 输出数组即素材 JSON）。
 
@@ -103,7 +103,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" check --novel "<小说.md �
 2. **三件事钉人物 + 强场景锚**：每个主要出场角色钉「想要什么 / 怕什么 / 有什么不肯告诉别人的伤」→ 写入 `## 人物速写`（dialoguer 提炼台词的依据）；场景段序 = 强场景锚，**不可动**。
 3. **节拍对齐**：按 2a 思维链节拍逐段展开——一场景段一节正文，覆盖全部节拍；**不增删场景、不改分支拓扑**（选择项归属图未定时按「纯角色内心」缺省并标注待定）。
 4. **落稿**：只写图素材与节拍已背书的区间；**称谓规则**（穿越/换宿主题材）：内心独白与叙述用本名，说出口的台词用宿主名，叙述句身体动作与心理活动拆开归属；**禁裸 Day 计数**（叙述层用场景指称，如「那天在桥上」）；对白按 LanguageStyle（词汇/节奏/口头禅/情绪模式）。
-5. **自检（就地修，不过关不进段 3）**：惯性签名轻检——同一比喻模板连用 ≥3 砍到最妙的 2 处、签名短语全篇 ≤1、场景结尾落点错开（画面/他人的话/动作各占其分）；拓扑复查——场景段数/顺序/分支与 2a 推理及图 Choice 一致；称谓与 Day 计数复查。**去 AI 味重工序不做**——留给 ink 定稿层（chapter-dialoguer）。
+5. **自检（就地修，不过关不进段 3）**：**去 AI 味工序**（重工序已从 ink 定稿层前移到本层）——按 [references/小说去AI味工序.md](references/小说去AI味工序.md) 执行：叙述层四病灶（价值拔高/narrator 腔/破折号过密/翻译腔）+ 对白层八反模式逐段过，再走 Pass 1 保真回读（拓扑复查——场景段数/顺序/分支与 2a 推理及图 Choice 一致；称谓与 Day 计数复查；声音一致）+ Pass 2 残留味回读（含原惯性签名轻检三样，已并入该文档）。修不掉的病灶记录进汇报不阻塞落盘。
 6. **标记实际取用素材**（段 3 gen 的输入）：指纹只记**正文实际取用**的素材，不是圈定全部——未使用的 Info 日后修订不得误 stale 本节。创作完成后从圈定清单列出实际用到的素材 id（Event 通常全用；Info 按正文真实引用挑），供段 3 `gen --ids` 使用。
 
 #### 小说.md 结构（固定骨架；`###` 场景段标题 = 拓扑契约，dialoguer 照搬）
@@ -147,7 +147,8 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 
 ## 参考文档
 
-- 方法论（节级裁剪）：[references/小说方法论精简版.md](references/小说方法论精简版.md)——五步展开、对账四分类、惯性签名轻检清单
+- 方法论（节级裁剪）：[references/小说方法论精简版.md](references/小说方法论精简版.md)——五步展开、对账四分类
+- 去AI味工序（段 2b.5 执行）：[references/小说去AI味工序.md](references/小说去AI味工序.md)——叙述层四病灶、对白层八反模式、两遍回读
 - 指纹契约：[scripts/fingerprint.py](scripts/fingerprint.py) 顶部 docstring（归一化规则 / gen --ids / check）
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section 定稿态 / 创作流程注记「小说段」
 - 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构）

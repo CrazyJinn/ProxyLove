@@ -157,7 +157,7 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
     if scene_name and not rows:
         warnings.append(f"{scene_name}：本节 sub 无 anchored_at 命中此 Scene"
                         f"（块 id 与图 Scene 不符，或未归组/未细化）——请核对 ink 块标记 id 是否为 scene_id"
-                        f" 及 event-refiner/scene-designer 归组")
+                        f"及 event-stager/scene-designer 归组")
     vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
     if len(vals) > 1:
         warnings.append(f"{scene_name}/{who}：appears_as 命中多个 IllusDesign（{vals}），"

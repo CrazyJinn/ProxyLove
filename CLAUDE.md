@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 「代恋」（ProxyLove）是一个**以 Neo4j 图数据库为唯一事实来源、由 Claude Code skills/agents 驱动的 AI 游戏生产流水线**，最终产物是一个 Godot 2D Galgame（`99_game/`），Web 版托管在 Cloudflare R2。整条链路把"世界观文字 → 叙事图 → 美术提示词 → 文生图/图生图 → 剧本 JSON → 游戏成品"自动化，人工只审关键产物（行级音频、立绘、美术与声音设计；章/节无审批 起 Chapter 无 status、Section 创建即 11）。
 
 项目级文档，动手前按需读：
-- [README.md](README.md) — **编排流程视角**：四个编排 Agent（`char-design` / `scene-design` / `plot-design` / `event-refiner`）的时序图、叙事事件生产四步流程（grill → event-refiner → design 链 → plot-design）、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
+- [README.md](README.md) — **编排流程视角**：三个编排 Agent（`char-design` / `scene-design` / `plot-design`）的时序图、叙事事件生产四步流程（event-ideator → event-stager → design 链 → plot-design）、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
 - 节点 status 流转 / 审批规则 / sync 级联的权威源：[00_init/Schema/](00_init/Schema/) 与治理后台 dailian-dashboard（独立项目，见下）的 `app/services/status.py`（`NODE_STATUS`）、`app/services/cascade.py`。**改任何节点/边/status 逻辑前必读。**
 
 子项目 [99_game/README.md](99_game/README.md)（Godot 工程）有自己的指南。人工治理后台不在本仓库——已外迁为独立项目 **dailian-dashboard**（gitee `crazyjinn/dailian-dashboard`，本地克隆 `D:\project\ProxyLove\Dashboard\`，与本仓库同处一个工作区，指南见该仓库 CLAUDE.md）。
@@ -80,7 +80,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-refiner 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。**占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -127,8 +127,8 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 
 ## 何时用 skill / agent
 
-- 要从零敲定并产出新 Event（策划编辑式一次一问+每问附推荐答案；只产 Event+用户明确给出的 involved/occurs_at 挂边，零图写入）→ `grill`（传事件主题或时间窗；产 `02_剧情数据/<日期>_round<N>_<主题>_grill_建议.json`，人工经 dashboard 建议弹窗审阅写回；写回后跑 event-refiner 细化；存量图缺口治理仍走 nrt-gap-filler）。
-- 要细化事件到机位层（SubEvent）并补叙事基础缺口 → 调 `event-refiner` agent（传事件 id/title 列表或时间窗；四步：白名单修复 involved/occurs_at/建档 → 空间轨迹推理产 SubEvent（anchored_at 只挂既有 Scene、appears_as 继承兄弟 sub）→ 演出型 Info 升格 → 留单派发 char-design/scene-design；写入白名单 = 原四类 + SubEvent/refines/anchored_at(既有)/appears_as(继承) + Info 升格，新事件生产走 grill、创作类补全走 nrt-gap-filler）
+- 要从零敲定并产出新 Event（三模式启发：动机链/质感/间隙填充；一次一问+每问附推荐答案；产 Event+involved/occurs_at 边+Character/Location 占位，零图写入）→ `event-ideator`（传 char + 可选 base event；产 `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json`，人工经 dashboard 建议弹窗审阅写回；写回后跑 event-stager 细化；存量图缺口治理仍走 nrt-gap-filler）。
+- 要细化事件到机位层（SubEvent）并占位物化演出缺口 → `event-stager`（传事件 id/title 列表或时间窗；四步：缺口核验[叙事基础缺退回 ideator] → 探索演出资源+拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0，替代留单] → 逐 event 拍板产建议 JSON；单轮 ≤3 event；新事件生产走 event-ideator、创作类补全走 nrt-gap-filler）
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
 - 叙事基础层增补/缺口治理（新增实体、补关系、时间段补桥、人物丰满）一律 → `nrt-gap-filler`（有人值守逐题确认，产 `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json`，人工经 dashboard 建议弹窗审阅 + Cypher 控制台写回）。

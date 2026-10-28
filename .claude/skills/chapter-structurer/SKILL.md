@@ -65,7 +65,7 @@ ORDER BY first_evt LIMIT 50
 
 #### 2a. 选 Scene + 排序 + 分节规划
 
-据调用方给定的叙事范围，圈定本章事件清单（按 Event.time 时间序），**按叙事段落感把有序事件列表切成 K 个连续段，每段一节**——节 = 事件的有序组合。节的 Scene 序由节内事件的 `refines→SubEvent→anchored_at→Scene` 首现序推导（未细化事件提示先跑 `event-refiner`；未场景化事件报缺口、提示先推进 `scene-designer`）。
+据调用方给定的叙事范围，圈定本章事件清单（按 Event.time 时间序），**按叙事段落感把有序事件列表切成 K 个连续段，每段一节**——节 = 事件的有序组合。节的 Scene 序由节内事件的 `refines→SubEvent→anchored_at→Scene` 首现序推导（未细化事件提示先跑 `event-stager`；未场景化事件报缺口、提示 scene-design 消化 Scene 占位或先跑 `event-stager` 建占位）。
 - 每节定 `section_no`（章内从 0 起）、`title`（节标题）、`summary`（本节戏剧职责一句话）；节的时间坐标由成员事件时间承载（time_day 已废止，不写）。
 - 分节依据是叙事段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是事件时间序的**连续切片**，不交错（节 A 含事件 t0–t5，节 B 含 t6–t10）。

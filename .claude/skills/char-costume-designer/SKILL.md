@@ -49,7 +49,7 @@ ORDER BY e.id;
 
 ### 2. 完成任务
 
-对每个**sub 缺 `appears_as` 边的 Event**（含无 sub 的事件——先提示跑 event-refiner 细化）分析着装需求：
+对每个**sub 缺 `appears_as` 边的 Event**（含无 sub 的事件——先提示跑 event-stager 细化）分析着装需求；event-stager 产出的 CostumeStyle/IllusDesign 占位（status=0）也经本 skill 消化（补全字段并推进生产，见入口「消化占位」注记）：
 
 1. 提取事件上下文：事件 detail（角色行为）、Location 环境、角色身份（character_tags）。
 2. 判断是否可复用已有 CostumeStyle：

@@ -57,6 +57,7 @@ RETURN l.name AS loc, l.id AS loc_id, count(e) AS ungrouped ORDER BY ungrouped D
 ```
 
 - **待办 Location 定义** = `need_scene`（有事件但无任何 realizes Scene）∨ `ungrouped > 0`（有事件漏归组）∨ 任一 Scene `status∈{-1,0}` 待重做/待设计 ∨ Scene 缺图层 ∨ Scene 缺 has_bgm。无事件且无 Scene 的 Location 非待办（美术按需）。
+- **占位消化模式（status=0 挂账）**：event-stager 经建议 JSON 创建的 Spot/Scene 占位（status=0）由本 agent 消化——主查询天然圈到（0 与 -1 同为待办）；占位在图上的位置（挂在哪个 Location 下、realizes 到哪个 Spot、被哪个 sub 的 anchored_at 引用）自带需求上下文，按既有链路细化（room.yml/机位字段）并推进 status。Spot 占位（status=0）同样入待办清单。
 - **图层缺口排查**需单独一查（SceneLayer 节点不存在时主查询查不到；dialogue 型 Scene=1 即需 background 层）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.status = 1 AND s.scene_type = 'dialogue' AND NOT (s)-[:has_layer]->(:SceneLayer {layer_type:'background'}) RETURN s.id AS scene_id, s.name AS name`，命中的按其 realizes 源 spot 归组，委派 `scene-layer-designer <scene_id>`。
 - **BgmTrack 缺口排查**需单独一查（has_bgm 是边，节点不存在时查不到）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.id IN [...] OPTIONAL MATCH (s)-[:has_bgm]->(b) RETURN s.name, b.id, b.status`，`b IS NULL` 的即缺口，由 `bgm-designer` 兜底建。
 
