@@ -6,13 +6,15 @@ description: |
   落盘 02_剧情数据/ → 人工经 dashboard 建议弹窗审阅写回。零图写入、纯文件产物。
   产物范围：Event 节点 + involved/occurs_at 挂边 + Character/Location 占位节点（三要素
   细化时所需实体图上不存在 → 占位 status=0，后续由 char-design/scene-design 消化）+
-  （仅用户明说因果时）leads_to。三种启发模式：char→new→base（动机链补桥，抵达既定
-  事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）。
+  （仅用户明说因果时）leads_to。五种启发模式：char→new→base（动机链补桥，抵达既定
+  事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）/
+  base→new（既定事件的后果链推演）/ new→base（无角色锚的因果回溯）。入参 char 与
+  base 至少给一个。
   不做：拆解、机位、着装、任何演出域决策（走 event-stager）。稀疏纪律：单次至多
   3 个 Event，不产 Info——多次运行逐步丰满，留白即叙事。在用户说「想事件」「启发
   事件」「敲定事件」「新增事件」或要从零产出新叙事事件时使用；存量图缺口治理走
   nrt-gap-filler；机位级细化走 event-stager。
-argument-hint: <char 名或 id> [base event id或title]
+argument-hint: <char 名或 id | base event id或title | 两者都给>（char 与 base 至少一个）
 arguments:
   - char_and_base
 allowed-tools: Read, Bash, Write
@@ -60,7 +62,7 @@ OUTPUT_DIR="02_剧情数据"
 
 ```
 0. explore  解析入参（char 必填 + base event 可选）→ 读大纲 + 只读查图上下文
-1. ideate   三模式启发 → 候选 new event 批（多条差异化候选 + 评分对比表）
+1. ideate   五模式启发 → 候选 new event 批（多条差异化候选 + 评分对比表）
 2. enrich   三要素细化：char / location / time 补全；缺失实体 → Character/Location 占位提案
 3. ask      一次一问逐事件敲定（候选评分表 → 用户挑选/修改/放弃）
 4. commit   问尽 → 组装建议 JSON 落盘 → 报审批入口与下一步
@@ -70,8 +72,9 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 0. explore — 解析入参 + 拉上下文
 
-- 入参两态：`char`（人名或 id，必填——启发的人物锚点；多个角色用顿号分隔）；`base event`
-  （id 或 title，可选——既定目标事件，启用动机链/间隙模式）。
+- 入参（char 与 base 至少给一个，可同给）：`char`（人名或 id——启发的人物锚点，多个角色顿号分隔）；
+  `base event`（id 或 title——既定目标事件；给 char 时启用动机链/间隙模式，只给 base 时
+  启用后果链/回溯模式）。
 - 读 `00_init/大纲.md`——**推荐答案必须有大纲依据**（事件要服务弧线，不凭空造戏）。
 - 只读查图（全部带 LIMIT）：
   1. **char 深读**：人物设定（description/tags/relation）+ LanguageStyle + 历史
@@ -84,25 +87,56 @@ OUTPUT_DIR="02_剧情数据"
      1 基编号，现查不靠记忆）；
   5. 扫最近几份 `*_建议.json`——已提案未审批的事件标「待审」，不重复起草。
 
-**探索失败要报可操作错误**（char 查无此人 / base event 不存在），不静默降级不猜。
+**邻域探索（启发的主依据——从图连通性入手，不是从模型想象入手）**：以入参锚点
+（char 节点 / base event 节点）为中心，只读查图做 **1~2 跳邻域**扫描，候选 new event
+必须从邻域结构里长出来：
 
-## 1. ideate — 三模式启发（候选批，不是逐个问）
+```cypher
+// 锚点 1~2 跳邻域（char 锚示例；base 锚同型。关系全走无向，任何边类型都算连通）
+MATCH (a {id:'<anchor_id>'})-[r1*1..2]-(n)
+WHERE n:Character OR n:Event OR n:Info OR n:Location OR n:Choice
+RETURN DISTINCT labels(n)[0] AS kind, n.id AS id, coalesce(n.name,n.title) AS name,
+       min(size(r1)) AS hops, count(DISTINCT r1) AS paths
+ORDER BY hops, paths DESC LIMIT 40
+```
 
-按入参组合选定模式（可组合），每模式产 2~3 条候选，合成本轮候选批（合计 ≤6 条）：
+**读图口径（启发从邻域里找信号，不凭空造）**：
+
+- **断头信号**（`paths=1` 且 hop-1 的 Event）——孤立事件/单向邻居：因果链的缺口，
+  喂 `base→new`/`new→base` 模式；
+- **热点信号**（`paths` 高的 Character/Location）——被多条路径穿过的节点是叙事枢纽，
+  喂 `char→new`/`char→new→base` 模式（枢纽周边最可能缺质感事件）；
+- **间隙信号**（邻域内时间相邻 Event 的 time 差 > 1 天）——喂 `base→new→base` 模式；
+- **跨簇信号**（hop-2 才相遇的两批邻居 = 图上两个聚簇经锚点相连）——跨簇事件
+  （把两簇人物/地点拉进同一事件）通常戏剧价值高、查图去重分也高。
+
+**跳数纪律：≤2 跳**。3 跳以上邻域在叙事上已无直接因果/共场意义，且组合爆炸稀释
+信号——宁可贵在深读 1 跳邻居（邻居的 description/relation 细节），不在广扫 3 跳。
+每条候选的理由必须标注它来自哪条邻域信号（依据分离标注同样适用：图上实查信号
+vs 由信号做的创作推断，分开表述）。
+
+**探索失败要报可操作错误**（char 查无此人 / base event 不存在 / 锚点邻域为空图），
+不静默降级不猜。
+
+## 1. ideate — 五模式启发（候选批，不是逐个问）
+
+按入参组合选定模式（可组合），每模式产 2~3 条候选，合成本轮候选批（合计 ≤6 条）。**候选从 0 步邻域信号中长出来**（断头→补链 / 热点→质感 / 间隙→补桥 / 跨簇→汇流），每条候选标注来源信号：
 
 | 模式 | 触发条件 | 回答的创作问题 | 产出类型 |
 |---|---|---|---|
-| `char → new → base` | base event 给定 | 角色经历了什么才抵达既定事件？ | 动机链事件（因果补桥） |
-| `char → new` | 总是可用 | 这个人平时会干什么？ | 人物质感事件（血肉填充） |
+| `char → new → base` | char + base 给定 | 角色经历了什么才抵达既定事件？ | 动机链事件（因果补桥） |
+| `char → new` | char 给定 | 这个人平时会干什么？ | 人物质感事件（血肉填充） |
 | `base → new → base` | base 给定且有时间邻接事件 | 两个既定事件之间发生了什么（可有关可无关）？ | 间隙填充事件 |
+| `base → new` | base 给定 | 这个既定事件之后引发了什么连锁反应？ | 后果链事件（向前推演，leads_to 正向延伸） |
+| `new → base` | base 给定 | 什么导致了这个既定事件（不限单一角色）？ | 无锚因果回溯（多角色/环境前因，补 leads_to 上游） |
 
 **每条候选必带结构化字段**（对比表列）：
 
 - 一句话核心（这个事件是什么）
 - 情绪价值（给玩家什么感受）
-- 与 base 的关系（因果铺垫 / 反差 / 无关）
+- 与 base 的关系（因果铺垫 / 后果延伸 / 反差 / 无关；无 base 时填与聚焦锚的关系）
 - 评分（四维 1-5 + 综合，评分依据必须可归因）：
-  - **人设契合**：与 char 的设定/创伤/目标的一致性（对照 0 步深读）
+  - **人设契合**：与相关角色（char 锚 / base 事件 involved）的设定/创伤/目标一致性（对照 0 步深读）
   - **查图去重**：与既有事件的重复度（时间/地点/参与人重叠 → 低分）
   - **戏剧价值**：对情绪曲线的贡献（铺垫→触发→释放→余韵，缺环处加分）
   - **生产成本**：需新建多少占位（新 Location/新 Character 越多分越低）

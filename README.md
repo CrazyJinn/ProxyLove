@@ -103,7 +103,7 @@ sequenceDiagram
 
 | 环节 | 定位 | 产物通道 |
 |------|------|---------|
-| `event-ideator`（skill） | **需求提出层（发散）**——三模式启发（char→new→base 动机链 / char→new 质感填充 / base→new→base 间隙填充）+ 一次一问敲定，产 Event + involved/occurs_at 边 + Character/Location 占位 | 建议 JSON（source='event-ideator'）→ dashboard 审阅写回 |
+| `event-ideator`（skill） | **需求提出层（发散）**——五模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯）+ 一次一问敲定，产 Event + involved/occurs_at 边 + Character/Location 占位 | 建议 JSON（source='event-ideator'）→ dashboard 审阅写回 |
 | `nrt-gap-filler`（skill） | **存量图的治理端**——图算法发现断点 → 修复 / 渐进丰满 | 建议 JSON（source='nrt-gap-filler'）→ dashboard 审阅写回 |
 | `event-stager`（skill） | **需求细化层（收敛）**——拆 SubEvent + 演出域占位物化（Spot/Scene/CostumeStyle/IllusDesign，status=0），缺口不再文本留单而是图上占位自描述 | 建议 JSON（source='event-stager'）→ dashboard 审阅写回 |
 
@@ -121,7 +121,7 @@ sequenceDiagram
     participant PD as plot-design 编排Agent
 
     rect rgb(235, 245, 255)
-    Note over IDE,DA: ① event-ideator：三模式启发新 Event + 敲定（一次一问附推荐，零图写入）
+    Note over IDE,DA: ① event-ideator：五模式启发新 Event + 敲定（一次一问附推荐，零图写入）
     U->>IDE: char（必填）+ base event（可选）
     IDE->>DB: 只读查上下文（人物深读 / 邻接事件 / 实体名录 / 待审建议防重）
     Note over IDE: 读 00_init/大纲.md——推荐答案必须有大纲依据
@@ -417,7 +417,7 @@ sequenceDiagram
 
 | Skill | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|---------|-------------------|
-| event-ideator | 新事件需求提出（四步流程①：探索图 → 三模式启发[动机链/质感/间隙] → 三要素细化 → 一次一问敲定；产 Event + involved/occurs_at 边 + Character/Location 占位 status=0；至多 3 Event/次） | `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json` | ✅（建议经 dashboard 审阅写回） |
+| event-ideator | 新事件需求提出（四步流程①：探索图 → 五模式启发[动机链/质感/间隙/后果链/回溯] → 三要素细化 → 一次一问敲定；产 Event + involved/occurs_at 边 + Character/Location 占位 status=0；至多 3 Event/次） | `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json` | ✅（建议经 dashboard 审阅写回） |
 | nrt-gap-filler | 叙事图缺口交互式治理 + 创作类补全（存量图入口；图算法体检发现 + 逐题确认修法） | `02_剧情数据/<日期>_round<N>_<主题>_补全_建议.json` | ✅（建议经 dashboard 审阅写回） |
 | event-stager | 事件细化落地（四步流程②：缺口修复 → 探索演出资源 + 拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0 替代文本留单] → 逐 event 拍板；单轮 ≤3 event；叙事基础缺口退回 ideator） | `02_剧情数据/<日期>_round<N>_<主题>_stager_建议.json` | ✅（建议经 dashboard 审阅写回） |
 
