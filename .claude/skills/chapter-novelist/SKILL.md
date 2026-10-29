@@ -1,7 +1,7 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 nrt-gap-filler 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走 gap-filler 建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
   前驱：无（章无 status、节创建即 11 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
@@ -76,7 +76,7 @@ Bash 落盘复用（段 3 的 gen 还要用同一份）：`python "${CLAUDE_SKIL
 
 #### 1c. 丰满度自检（素材门控，不足拒绝产出）
 
-圈定后体检本节素材丰满度（体检查询沿用原 outliner 范式，聚焦本节 Scene 源 Spot 的 Event）：(1) Event 数量（每 Scene 平均不足 ~1 个 = 过少）；(2) Event 间 leads_to 连贯性（链断裂）；(3) Choice option 指向的 target Event 是否存在（分支无落点）；(4) 出场角色 involved 事件数（角色弧空转）。**命中任一 → 停止——不写 status、不落盘**，产出「素材不足报告」（缺口明细）返回，提示用户跑 `nrt-gap-filler` 补全后重调。**禁止硬凑**。够 → 进段 2。
+圈定后体检本节素材丰满度（体检查询沿用原 outliner 范式，聚焦本节 Scene 源 Spot 的 Event）：(1) Event 数量（每 Scene 平均不足 ~1 个 = 过少）；(2) Event 间 leads_to 连贯性（链断裂）；(3) Choice option 指向的 target Event 是否存在（分支无落点）；(4) 出场角色 involved 事件数（角色弧空转）。**命中任一 → 停止——不写 status、不落盘**，产出「素材不足报告」（缺口明细）返回，提示用户跑 `event-ideator` 补全后重调。**禁止硬凑**。够 → 进段 2。
 
 #### 1d. 指纹自检（小说.md 已存在时）
 
@@ -122,7 +122,7 @@ info  <id> <hash16> <title>
 - 怕：<…>
 - 伤：<…>
 ## 正文
-### <scene_block_id> <场景名> <时段>   ← 契约 id/场景名/时段（预分配 id + Scene.name + 时段），每场景段一节
+### <scene_block_id> <场景名> <时段>   ← 契约 id/场景名/时段（id = 所写机位的 Scene.id + Scene.name + 时段），每场景段一节
 <散文正文…>
 ```
 
@@ -139,9 +139,9 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 
 > 作废后行级恢复走重拆机制（text_sha1 匹配且 wav 在的行恢复 10），plot-design 按产物链现状续推 dialoguer 重新提炼。
 
-4. **对账建议（可选）**：段 2 中长出的新 Event/Info（图上查无、值得回写大纲的）→ 组装建议 JSON（契约与纪律见 [nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4，差异仅三处）：
+4. **对账建议（可选）**：段 2 中长出的新 Event/Info（图上查无、值得对账入图的）→ 组装建议 JSON（顶层数组，逐项 `{check, priority, reason, content, cypher}` + `source:'chapter-novelist'`；cypher 开箱可执行、可多语句 `;` 分隔先节点后边、**禁止夹带校验节点**；落盘 `*_建议.json` 由 dashboard「📥 补全建议」弹窗拾取写回）：
    - `check = 'N1_novel_new_entity'`，`source = 'chapter-novelist'`
-   - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_建议.json`（必须 `_建议.json` 结尾；轮次 N 扫描 `02_剧情数据/*round*_建议.json` 取 max+1，与 gap-filler 共用计数器）
+   - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_建议.json`（必须 `_建议.json` 结尾；轮次 N = `python .claude/scripts/suggest_round.py` 输出，共享计数器，勿手写扫描）
    - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/link/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）。稀疏纪律：单次至多 3 Event + 2 Info，无新增不落盘只汇报。
 5. **汇总**：小说路径 + 取材条数（event/info 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
 
@@ -153,4 +153,4 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section 定稿态 / 创作流程注记「小说段」
 - 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
-- 建议通道：[nrt-gap-filler](../nrt-gap-filler/SKILL.md) §4（建议 JSON 字段 / 多语句 / 控制台执行）
+- 建议通道：本文件段 4 内联契约（建议 JSON 字段 / 多语句 / dashboard 弹窗写回）

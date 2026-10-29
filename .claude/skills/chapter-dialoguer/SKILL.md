@@ -3,7 +3,7 @@ name: chapter-dialoguer
 description: |
   推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=11`（定稿在位；产出即定稿，人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11）。
   双模式：① 常规创作（本节无定稿/被作废 -1/或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回（sec.status 保持 11；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；sec.status=11 即可由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
-  **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 nrt-gap-filler，均不写 status。
+  **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 event-ideator，均不写 status。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -156,7 +156,7 @@ bed- rain
 创作完成后自检，若发现**根本问题在创作土壤而非台词**——再怎么写也写不出合格对话，按根因分两路（都不落盘、不写 status，产出「结构性问题报告」）：
 
 - **根因在小说层**（小说模式）：人物速写自相矛盾 / 视角漂移 / scene 间无情绪推进（无 turning point/climax）/ 小说场景段结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 小说层」，由 plot-design 接住后调 `chapter-novelist` 强制重写（重写即按其段 3 作废定稿链）。**与 novelist 素材不足报告对称**——不硬凑烂对话交付。
-- **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `nrt-gap-filler` 补全 Choice 分化或落点事件后重调。
+- **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `event-ideator` 补全 Choice 分化或落点事件后重调。
 
 > 通过自检才进段 3 写图。
 

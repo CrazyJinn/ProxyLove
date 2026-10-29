@@ -118,7 +118,7 @@ bed- rain
 
 ## 命名契约（ASCII 标识符的唯一来源）
 
-- **scene_block_id**：chapter-structurer 预分配（章内唯一），`[A-Za-z0-9_]+` 禁
+- **scene_block_id**：取图上 Scene 的 id（novelist 现场取用，雪花 id 全局唯一故章内唯一），`[A-Za-z0-9_]+` 禁
   连字符；outliner/dialoguer 反引号契约值**原样搬、不自创不改写**。
 - **label 名**：分支拓扑产出（图 Choice/option 为事实权威，chapter-novelist 结构推理核验后落进小说场景段），同字符集约束；dialoguer 照搬。
 - **bed id**：创作者在 ink 内起名（`[A-Za-z0-9_]+`），同场景块内 bed+/bed- 配对；

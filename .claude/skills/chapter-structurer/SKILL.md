@@ -1,7 +1,7 @@
 ---
 name: chapter-structurer
 description: |
-  推进 Chapter 图节点的结构段：解析/创建 Chapter → 校验 Scene 前驱 → 把时间窗事件清单按叙事段落规划成若干节（Section；节时间由成员事件推导；块 id=scene_id 由 novelist 现场取用，structurer 不碰块）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status。Section 是编排容器 + 定稿态载体（script_path 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
+  推进 Chapter 图节点的结构段：解析/创建 Chapter → 把时间窗事件清单按叙事段落规划成若干节（Section；节时间由成员事件推导；块 id=scene_id 由 novelist 现场取用，structurer 不碰块）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status。Section 是编排容器 + 定稿态载体（script_path 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
   在需要建立章节结构或重做章节结构时使用。章的叙事范围由调用方建章时给定（时间窗/事件范围）。
 argument-hint: <chapter_id_or_title>
 arguments:
@@ -9,11 +9,11 @@ arguments:
 allowed-tools: Read, Bash, Write
 ---
 
-> **作废重做**：Chapter 无 status，重做由**用户显式重调本 skill** 触发（或 dashboard 重组章）。重做时即使 has_section/includes 边已存在，也**必须重新分节、重新统合 Scene、重写全部 Section 编排字段并覆盖**。重做时先删除旧 has_section 边 + DETACH DELETE 旧 Section 节点**及其逐句行产物链**（LineAudio，分节可能变，旧行全部作废）再重建。禁止因产物已存在而跳过。
+> **作废重做**：Chapter 无 status，重做由**用户显式重调本 skill** 触发（或 dashboard 重组章）。重做时即使 has_section/includes 边已存在，也**必须重新分节、重写全部 Section 编排字段并覆盖**。重做时先删除旧 has_section 边 + DETACH DELETE 旧 Section 节点**及其逐句行产物链**（LineAudio，分节可能变，旧行全部作废）再重建。禁止因产物已存在而跳过。
 
 # 章节结构（Chapter 结构段 · 章无 status）
 
-剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=11` 创建即定稿在位）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path 由 dialoguer 写，逐句行由拆分建）+ **不再预分配块 id**。**Chapter 无 status**。**不创作对话**。
+剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=11` 创建即定稿在位）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path 由 dialoguer 写，逐句行由拆分建）。**Chapter 无 status**。**不创作对话**。
 
 > 结构段只定 Scene 序 + 分节，不定分支拓扑（分支/结局拓扑由图 Choice/option 承载，chapter-novelist 结构推理时核验）。
 

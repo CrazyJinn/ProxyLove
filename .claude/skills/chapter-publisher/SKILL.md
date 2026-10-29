@@ -95,7 +95,7 @@ python 99_game/tools/merge_sections_to_chapter.py \
   -o '99_game/data/chapters/<stem>.json'
 python 99_game/tools/validate_chapter.py '99_game/data/chapters/<stem>.json' 99_game/data/剧本.schema.json
 #   validate FAIL → 中断发布，报警（剧本 schema 不合，回 台词.ink 修对应节并重新走拆分/审批）
-#   注：合并工具内置 scene-block id 章内唯一性校验（重复则报错）——若报 id 重复，说明 structurer 预分配环节 id 冲突，需回上游修正。
+#   注：合并工具内置 scene-block id 章内唯一性校验（重复则报错）——若报 id 重复，说明图数据/上游产物引用了重复块 id，需回上游修正。
 
 # (b) 立绘：透明原图直通 + 头位归一化 → 99_game/assets/portraits/<整键>.png
 #     立绘由生成端直出透明 PNG（提示词英文透明措辞驱动，绿幕抠图已退役）；本步不抠图，
