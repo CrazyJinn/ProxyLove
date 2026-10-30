@@ -457,6 +457,7 @@ sequenceDiagram
 |------|------|------|
 | infra-image-generator | 读 prompt 调 OfoxAI API 出图（纯产出） | 文生图 / 图生图；不写图、不写 status |
 | cypher_exec.py | 执行 Cypher（统一图读写入口） | 所有 skill 读写 Neo4j 的唯一脚本，支持 `-c`/`-f`/`--stdin`/`--multi`/`--json` |
+| suggest_round.py | 建议 JSON 轮次推导（共享计数器，全量取 max+1） | event-ideator / event-stager / chapter-novelist 共用；防文件名排序跳号 |
 | `.claude/skills/section-voice-publisher/scripts/` | 声音链脚本组（收编进 skill） | script_splitter.py（台词.ink 拆分对齐进图：parse_ink + difflib 对齐 + 单事务写图）· voice_clone_runner.py（Qwen3 全家：候选/试听/ref + 逐句配音 publish，env/.venv-qwen）· voice_bundler.py（voice key 单一源 make_voice_key + tasks-from-graph/bind-graph + publish 发布期拷运行时）· paths.py（模型路径配置，读 settings.json）；char-voice-design / chapter-publisher 跨 skill 引用 |
 
 > 纯产出层（`char-prompt-assembler` / `scene-prompt-assembler` / `infra-image-generator`）只产文件，节点字段与 status 一律由调用方生产 skill 在「保存结果」步用 MERGE 兜底写入。
