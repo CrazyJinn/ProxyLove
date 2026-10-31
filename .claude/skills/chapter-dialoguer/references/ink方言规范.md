@@ -1,7 +1,7 @@
 # 台词.ink 方言规范（节级定稿格式，v3 · 2026-09-03）
 
 台词定稿文件是 **ink（Inkle 叙事脚本语言）方言 v3**，落盘
-`25_剧本/<hexid(ch_id)>/<hexid(sec_id)>/台词.ink`（hexid 目录段），人读/人改、机器可解析
+`25_剧本/ch<NN>/sec<MM>/台词.ink`（编号目录：ch=chapter_no、sec=section_no），人读/人改、机器可解析
 （`script_splitter.py parse_ink`——本规范的机器侧唯一权威，两者互链）。
 
 **v2 起文件本身是标准合法 ink**——可被任何标准 ink 工具解析（inklecate 将来可选）。
@@ -199,6 +199,6 @@ say 写槽 / hide 清槽 / 换块清场）：
 
 ## 手改回路（直接编辑文件）
 
-直接编辑 `25_剧本/<hexid(ch)>/<hexid(sec)>/台词.ink` → dashboard 定稿编辑器「保存并同步
+直接编辑 `25_剧本/ch<NN>/sec<MM>/台词.ink` → dashboard 定稿编辑器「保存并同步
 LineAudio」（写文件 + 对齐进图；保存即定稿，sec.status=11）。重拆按 text_sha1 保留
 未变句审批结果，只有被改句置 0 重配——手改不丢。

@@ -117,7 +117,7 @@ python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q        # 
 python .claude/scripts/snowflake_base62.py -x <id1> <id2>                     # 批量 id → hexid
 ```
 
-引用已有叙事节点时通过**名称查 ID**（`MATCH (c:Character {name:'陆择'}) RETURN c.id`），不靠前缀推断。六域目录规范：`06_角色美术/<char>/<ds>/<costume>/立绘/<stand>`、`07_场景美术/<loc>/<spot>/<spot>.yml` 与 `…/<scene>/<layer_type>/`、`13_BGM/<bgm>/<bgm>.md|.wav`、`14_声音设计/<char>/ref.wav`、`15_声音/<ch>/<block>/<行>.wav`、`25_剧本/<ch>/<sec>/`（段全 hexid）。
+引用已有叙事节点时通过**名称查 ID**（`MATCH (c:Character {name:'陆择'}) RETURN c.id`），不靠前缀推断。六域目录规范：`06_角色美术/<char>/<ds>/<costume>/立绘/<stand>`、`07_场景美术/<loc>/<spot>/<spot>.yml` 与 `…/<scene>/<layer_type>/`、`13_BGM/<bgm>/<bgm>.md|.wav`、`14_声音设计/<char>/ref.wav`、`15_声音/<ch>/<block>/<行>.wav`、`25_剧本/ch<NN>/sec<MM>/`（编号目录——人读区例外，title 改名零漂移）。
 
 ## 常用命令速查
 

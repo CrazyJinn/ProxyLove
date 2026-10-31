@@ -14,7 +14,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 节细节对话（Section 定稿态 · status=11/-1）
 
-剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/<hexid(ch_id)>/<hexid(sec_id)>/，hexid 目录）——人读/人改的定稿 ink 方言（**机器可解析**：确认后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/<hexid(ch_id)>/<hexid(sec_id)>/`（hexid 目录；**创作/审阅区，非运行时**）。
+剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：确认后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
 
 ## 参数
 
@@ -149,7 +149,7 @@ bed- rain
 9. **覆盖完整**：提纲全部场景段、分支、结局都要写，不得增删场景/分支。
 10. **情感递进**：每个场景内部情绪有起伏（不是平铺），对齐事件时序与章概要的节奏。
 11. **机器可解析（硬约束）**：台词.ink 是 section-voice-publisher 拆分进图（`script_splitter.py parse_ink`）的输入——行型严格依赖行首标记（`===`/`=`/`* `/`+ `/`-> `/`//`/`sfx:`/`llm:`/`bed+`/`bed-`/`旁白:`/`角色名:`），**台词正文中不得出现这些行首前缀**（换行重写）；无法解析的行会在拆分时报错（行号+原文），拆分前必须修 ink。行首 `->` 仅支持裸 `-> END`（其余 divert 报错——jump 暂无图行建模）。
-12. **Write 落盘**：`25_剧本/<hexid(ch_id)>/<hexid(sec_id)>/台词.ink`（hexid 目录段，与该节小说.md 同目录；id→hexid 用 `.claude/scripts/snowflake_base62.py` 的 to_hexid）。`Section.script_path` 指向此 `.ink` 路径。Write 自动创建章/节目录。
+12. **Write 落盘**：`25_剧本/ch<NN>/sec<MM>/台词.ink`（编号目录：NN=chapter_no、MM=section_no 零填充，与该节小说.md 同目录）。`Section.script_path` 指向此 `.ink` 路径。Write 自动创建章/节目录。
 
 #### 创作质量自检（发现 outline 破碎 → FAIL 报告）
 
