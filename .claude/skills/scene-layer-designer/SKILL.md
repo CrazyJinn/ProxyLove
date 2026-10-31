@@ -2,8 +2,9 @@
 name: scene-layer-designer
 description: |
   推进 SceneLayer 图节点：查询状态 → 按 scene_type 查所需图层并组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  V1 仅实现 background 层；floor/decor/mask 留 V2 TODO。单轮直推到最大门控（图片完成即待审 10）。
-  在需要生成场景图层或 SceneLayer 节点需推进时使用。
+  出图双链自动分流：源 Spot 有 dsl_path（已 3D 建模）走 slice_scenes.py --emit-prompt 现场投影（零 LLM 转抄）；为空走 scene-prompt-assembler 自由文本链（存量回退）。
+  V1 仅实现 background 层；floor/decor/mask 留 V2 TODO。单轮直推到最大门控（图片完成即待审 10）；status=-1 级联作废时必须重生成覆盖旧产物（禁止因文件存在跳过）。
+  在需要生成场景图层/背景图、推进或重做 SceneLayer 节点、或发现场景缺背景产物时使用（由 scene-design agent 编排触发，亦可用户直触）。
 argument-hint: <scene_id>
 arguments:
   - scene_id
@@ -33,7 +34,8 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (s:Scene {id: '<scene_id>'})<-[:realizes]-(sp:Spot)-[:part_of]->(l:Location)
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
-RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
+RETURN l.id AS loc_id, sp.id AS spot_id,
+       l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
        sp.dsl_path AS dsl_path,
        s.id AS scene_id, s.name AS scene_name,
        s.scene_type AS scene_type, s.status AS scene_status,
@@ -58,7 +60,7 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
   python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n <缺几个> -q
   ```
   已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
-- 记录 `loc_name` 与 **spot 目录名**（产物路径用）：spot_name 去掉 `<loc_name>-` 前缀得短名；短名=loc_name（整点 zone）或 `未细分`（存量 default Spot，兼容历史）时目录名用 loc_name。
+- 记录 `loc_id`/`spot_id`/`scene_id`（产物路径段用，hexid 形态，批量转换 `python .claude/scripts/snowflake_base62.py -x <loc_id> <spot_id> <scene_id>`）；name 仅展示（目录不锚 name，改名零漂移）。
 - **查询必含源 Spot 的 `dsl_path`**（模式 E 触发依据：非空 = 该 spot 已 3D 建模，走模式 E；为空 = 未建模，走模式 A 旧自由文本链。Scene 节点不持有 dsl_path）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
@@ -74,8 +76,8 @@ RETURN l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
 **模式 E（dsl_path 非空——spot 已 3D 建模）**：直接 Bash 调 `slice_scenes.py` 现场投影生成 prompt（纯确定性计算，零 LLM 转抄，不经 assembler）：
 
 ```bash
-python 07_场景美术/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_id> \
-  --out "07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/prompt.md" \
+python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_id> \
+  --out "07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(scene_id)>/background/prompt.md" \
   --scene-type <scene_type> --tod <图 Scene.time_of_day> \
   --deco <图 Scene.deco> --atmosphere <图 Scene.atmosphere>
 ```
@@ -94,7 +96,7 @@ python 07_场景美术/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_i
   },
   "location": {"name": "<loc_name>"},
   "node": {"id": "<layer_id>"},
-  "output_path": "07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/prompt.md"
+  "output_path": "07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(scene_id)>/background/prompt.md"
 }
 ```
 
@@ -104,7 +106,7 @@ scene 字段的值从步骤 1 查询的 Scene 节点属性读取。在 data 中�
 
 使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH>`（文生图，无参考图）：
 
-`OUTPUT_PATH = 07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/background.png`（与 background/prompt.md 同层——图层子目录内配对；spot 目录名规则见步骤 1）。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
+`OUTPUT_PATH = 07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(scene_id)>/background/background.png`（与 prompt.md 同层——图层子目录内配对；hexid 段见步骤 1）。infra-image-generator 生成图片并返回路径 `IMAGE_PATH`。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 
@@ -128,7 +130,7 @@ SET sl.name = '<scene_name>-背景',
 
 ## 参考文档
 
-- 提示词组装：DSL 链 = `07_场景美术/slice_scenes.py --emit-prompt`（现场投影直写 prompt.md）；自由文本链 = [scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式 A（dsl_path 为空的存量）
+- 提示词组装：DSL 链 = `.claude/scripts/slice_scenes.py --emit-prompt`（现场投影直写 prompt.md）；自由文本链 = [scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式 A（dsl_path 为空的存量）
 - [场景美术 Schema](../../00_init/Schema/场景美术.md) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
-- [场景美术 Schema](00_init/Schema/场景美术.md) — scene_type 与所需图层映射
+- id 锚定与 hexid：[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)（`-x` 转换）+ [Schema/场景美术.md](../../00_init/Schema/场景美术.md) 头部注记

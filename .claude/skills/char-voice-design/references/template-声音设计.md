@@ -73,7 +73,7 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
   | 愤怒 | 我说过多少次了，这份文件不能再出错！ |
 
   > 试听与下游配音**同引擎、同 ref 的 xvec 通道**（仅说话人向量克隆音色、丢 ref 韵律）——试听是「音色 + 文本自主演绎」的真实预览；下游配音逐句选 **icl**（ref 韵律迁移，缺省通道）的句子其韵律表现不能由 xvec 试听外推，需配音期逐句审听把关。
-- **产物布局**（`14_声音设计/<char>/candidates/` 临时文件夹，dashboard 采用后整夹删除；绝不放 `15_声音/`——那是逐句配音母带区，发布期按 status=11 收进运行时；设计阶段无重采样副产物）：
+- **产物布局**（`14_声音设计/<char_id>/candidates/` 临时文件夹（hexid 目录），dashboard 采用后整夹删除；绝不放 `15_声音/`——那是逐句配音母带区，发布期按 status=11 收进运行时；设计阶段无重采样副产物）：
 
   | 文件 | 说明 |
   |------|------|
@@ -81,7 +81,7 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
   | `<char>_cN_平静/高兴/愤怒.wav` | 9 个情绪试听（Qwen3 Base clone，试听文本=上表） |
   | `candidates.json` | manifest（instruct/ref_text/audition_texts + 候选路径，dashboard 采用流程消费） |
 
-- 采用后固化 `<char>_ref.wav` 为角色目录下唯一正式产物（图 `ref_audio_path` 指向它；下游 voice_clone_runner publish 直接消费该 24k ref，无重采样副产物）。
+- 采用后固化 `<char_id>/ref.wav` 为角色目录下唯一正式产物（图 `ref_audio_path` 指向它；下游 voice_clone_runner publish 直接消费该 24k ref，无重采样副产物）。
 
 ## 反模式（避免）
 

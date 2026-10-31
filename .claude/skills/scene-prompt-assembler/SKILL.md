@@ -60,7 +60,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色�
   },
   "location": {"name": "..."},
   "node": {"id": "<scenelayer_node_id>"},
-  "output_path": "07_场景美术/<loc_name>/<spot目录名>/<scene_name>/background/prompt.md"
+  "output_path": "07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(scene_id)>/background/prompt.md"
 }
 ```
 
@@ -72,7 +72,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色�
 
 ## 模式E：dsl_2d（Room DSL → 2D 布局出图）≈ 已代码化（不再经本 skill）
 
-> **模式 E 已下沉为脚本**：`python3 07_场景美术/slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type <t>]`——scene-layer-designer 出图时直接 Bash 调用，现场从 room.yml + 机位投影生成 prompt 并直写 prompt.md（用途前缀 + 导语 + 布局正文 + 收尾串，规则同下述历史版本），**零 LLM 转抄、零中间文件**（scene2d.yml 派生文件已废止）。本 skill 仅保留模式 A 服务 dsl_path 为空的存量 Scene。
+> **模式 E 已下沉为脚本**：`python .claude/scripts/slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type <t>]`——scene-layer-designer 出图时直接 Bash 调用，现场从 room.yml + 机位投影生成 prompt 并直写 prompt.md（用途前缀 + 导语 + 布局正文 + 收尾串，规则同下述历史版本），**零 LLM 转抄、零中间文件**（scene2d.yml 派生文件已废止）。本 skill 仅保留模式 A 服务 dsl_path 为空的存量 Scene。
 
 <details>
 <summary>历史规则（模式 E 原 LLM 流程，已被脚本取代）</summary>

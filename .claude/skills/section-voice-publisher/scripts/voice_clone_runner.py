@@ -9,7 +9,7 @@
 > 同一 instruct × N 次采样出候选 ref 24k + candidates.json manifest） / `audition`
 > （第二步：Qwen3 Base Voice Clone **xvec 通道**出每候选 3 情绪试听——仅说话人向量克隆
 > 音色、丢 ref 韵律，情绪演绎由试听句文本语义主导） /
-> `publish`（逐句配音：按角色 ref + tts_text 变体逐句 clone，母带 → 15_声音/<chapter_stem>/<scene_block_id>/；
+> `publish`（逐句配音：按角色 ref + tts_text 变体逐句 clone，母带 → task.master_path（图行属性，15_声音/<ch_hexid>/<block_hexid>/）；
 > 情绪由 tts_text 变体承载，emotion 不参与合成参数；clone_mode 逐句选演绎通道——
 > icl（缺省）=ref 韵律迁移 / xvec=仅说话人向量文本主导演绎，每角色按模式懒建 prompt）。
 
@@ -17,7 +17,7 @@
   - Qwen VoiceDesign / Base 模型路径：from paths import（读 settings.json）
   - VoiceDesign（instruct + ref_text + ref_audio_path）
 
-输出：ref_audio 落 VoiceDesign.ref_audio_path（如 14_声音设计/<char>/<char>_ref.wav，24kHz），publish 用。
+输出：ref_audio 落 VoiceDesign.ref_audio_path（如 14_声音设计/<char_id>/ref.wav，24kHz），publish 用。
 """
 import argparse
 import json
@@ -29,7 +29,7 @@ import torch
 import soundfile as sf
 from qwen_tts import Qwen3TTSModel
 from paths import QWEN_VOICE_DESIGN as VOICE_DESIGN_PATH, QWEN_BASE, to_abs, to_rel
-from voice_bundler import split_voice_key, normalize_clone_mode
+from voice_bundler import normalize_clone_mode
 
 # 多候选流程默认值：每角色候选数 + 情绪试听文本（每情绪一句，语义与情绪匹配）。
 # audition_texts 固化进 candidates.json（单一源），本脚本 audition 子命令消费——
@@ -212,7 +212,7 @@ def audition(manifest_path: str, device="cuda:0") -> dict:
 
 
 def publish(tasks: dict, profiles: dict, out_dir, keys=None, device="cuda:0") -> dict:
-    """按角色批量 Qwen3 Base Voice Clone（逐句配音母带落 out_dir/<stem>/<block>/<key>.wav）。
+    """按角色批量 Qwen3 Base Voice Clone（逐句母带落 task.master_path 唯一权威位置）。
 
     tasks: {char: [{key, text, tts_text?, clone_mode?, emotion, ...}]}（voice_bundler
            tasks-from-graph 产 + skill 已填 emotion/tts_text/clone_mode）
@@ -276,12 +276,12 @@ def publish(tasks: dict, profiles: dict, out_dir, keys=None, device="cuda:0") ->
                 tts_input = it.get("tts_text") or it["text"]
                 wavs, sr = model.generate_voice_clone(
                     text=tts_input, language="Chinese", voice_clone_prompt=_prompt(mode))
-                # 母带按章节整理：15_声音/<chapter_stem>/<scene_block_id>/<key>.wav
-                # （段信息从 key 自身解析，角色名不进目录）
-                t = split_voice_key(it["key"])
-                if t is None:
-                    raise ValueError(f"key 无法解析：{it['key']!r}")
-                out = os.path.join(out_dir, t[1], t[2], f"{it['key']}.wav")
+                # 母带落位：tasks 携带的 master_path（唯一权威，
+                # 15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav）——键已不再可反解目录
+                mp = it.get("master_path")
+                if not mp:
+                    raise ValueError(f"task 缺 master_path（应由 tasks-from-graph 产出）")
+                out = to_abs(mp)
                 os.makedirs(os.path.dirname(out), exist_ok=True)
                 sf.write(out, wavs[0], sr)
                 paths.append(out)
@@ -323,7 +323,7 @@ def main():
 
     p_pub = sub.add_parser(
         "publish",
-        help="按角色批量 Qwen3 Base Voice Clone（逐句配音母带 → 15_声音/<chapter_stem>/<scene_block_id>/，消费 tasks.json + profiles.json）")
+        help="按角色批量 Qwen3 Base Voice Clone（逐句母带 → task.master_path，消费 tasks.json + profiles.json）")
     p_pub.add_argument("tasks", help="voice_bundler.py tasks-from-graph 产出的 tasks.json（skill 已填 emotion/tts_text/clone_mode）")
     p_pub.add_argument("--profiles", required=True, help="{char: VoiceDesign dict} JSON（需 ref_audio_path + ref_text）")
     p_pub.add_argument("--out-dir", default="15_声音", help="母带根目录（写 <out-dir>/<chapter_stem>/<scene_block_id>/<key>.wav，路径段从 key 解析；运行时副本由 chapter-publisher 发布时收录）")

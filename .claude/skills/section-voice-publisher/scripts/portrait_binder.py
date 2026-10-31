@@ -44,7 +44,7 @@ _EFF_CACHE = {}   # (section_id, who) → 生效 DesignSheet dict 或 None
 # ── 公共查询 ─────────────────────────────────────────────────
 
 def fetch_section_head(section_id: str) -> dict:
-    """Section 头信息（sec.status≠11 raise）。Section.scene_blocks 已废止——块 id=scene_id，块→场景名经 id 直查图（_scene_names_of）。"""
+    """Section 头信息（sec.status≠11 raise）。Section.scene_blocks 已废止——块 id=scene_id，块→场景解析走 id 直连（resolve_illus scn.id join）。"""
     rows = _run_cypher(
         "MATCH (sec:Section {id:'" + section_id + "'}) "
         "RETURN sec.status AS st LIMIT 1"
@@ -55,16 +55,6 @@ def fetch_section_head(section_id: str) -> dict:
     if st != 11:
         raise ValueError(f"Section.status={st}（须 11 定稿已确认才能选绘）")
     return {"section_id": section_id}
-
-
-def _scene_names_of(scene_ids: list) -> dict:
-    """块 id（scene_id）→ 图 Scene 真名。id 直连（无 name join，无漂移空间）。"""
-    if not scene_ids:
-        return {}
-    quoted = ",".join(_q(i) for i in scene_ids if i)
-    rows = _run_cypher(
-        "MATCH (s:Scene) WHERE s.id IN [" + quoted + "] RETURN s.id AS i, s.name AS n")
-    return {r["i"]: r["n"] for r in rows if r.get("i")}
 
 
 def judgeable_lines(section_id: str) -> list:
@@ -135,16 +125,17 @@ def _effective_ds(section_id: str, who: str, warnings: list):
     return eff
 
 
-def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) -> tuple:
+def resolve_illus(section_id: str, scene_id: str, who: str, warnings: list) -> tuple:
     """该 (scene, who) 的着装 IllusDesign 决策 → (illus_id, source)。
 
-    SubEvent 细化层：`Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)`
+    SubEvent 细化层：`Section→includes→Event→refines→SubEvent→anchored_at→Scene`
     的演出段 `→appears_as→IllusDesign` 直读（经 outfit_for←has_costume 限定到该 Character），
     零推理——形象版本判定在写 appears_as 边时已物化，读路径不做 active_from 过滤。
     多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
-    scene_name 为空（块 id 不命中图 Scene）时退化为「节内该角色全部 sub 的 appears_as」。
+    scene_id 为块 id（LineAudio.scene_block_id，id 直连无 name join）；
+    为空（不命中图 Scene）时退化为「节内该角色全部 sub 的 appears_as」。
     """
-    where = ("WHERE scn.name = " + _q(scene_name) + " ") if scene_name else ""
+    where = ("WHERE scn.id = " + _q(scene_id) + " ") if scene_id else ""
     rows = _run_cypher(
         "MATCH (sec:Section {id:" + _q(section_id) + "})-[:includes]->(e:Event) "
         "MATCH (e)-[:refines]->(sub:SubEvent) "
@@ -154,13 +145,13 @@ def resolve_illus(section_id: str, scene_name: str, who: str, warnings: list) ->
         "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
         "RETURN DISTINCT il.id AS illus_id"
     )
-    if scene_name and not rows:
-        warnings.append(f"{scene_name}：本节 sub 无 anchored_at 命中此 Scene"
+    if scene_id and not rows:
+        warnings.append(f"{scene_id}：本节 sub 无 anchored_at 命中此 Scene"
                         f"（块 id 与图 Scene 不符，或未归组/未细化）——请核对 ink 块标记 id 是否为 scene_id"
                         f"及 event-stager/scene-designer 归组")
     vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
     if len(vals) > 1:
-        warnings.append(f"{scene_name}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
+        warnings.append(f"{scene_id}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
                         f"按 id 字典序取首 {vals[0]}")
     if vals:
         return vals[0], _SOURCE
@@ -183,16 +174,12 @@ def build_candidates(section_id: str) -> dict:
     fetch_section_head(section_id)
     warnings = []
     lines = judgeable_lines(section_id)
-    scene_name_of = _scene_names_of([l.get("block") for l in lines])
 
     scenes = {}
-    for block in dict.fromkeys(l.get("block") for l in lines):  # 保序去重
-        scene_name = scene_name_of.get(block) or ""
-        if not scene_name:
-            warnings.append(f"{block}：块 id 不命中图 Scene（非 scene_id？）——选绘 IllusDesign 解析降级")
+    for block in dict.fromkeys(l.get("block") for l in lines):  # 保序去重（block=scene_id）
         chars = {}
         for who in dict.fromkeys(l.get("who") for l in lines if l.get("block") == block):
-            illus_id, source = resolve_illus(section_id, scene_name, who, warnings)
+            illus_id, source = resolve_illus(section_id, block or "", who, warnings)
             stands = stands_of_illus(illus_id) if illus_id else []
             if not illus_id:
                 warnings.append(f"{block}/{who}：无着装 IllusDesign（该场景事件无 appears_as "
@@ -202,9 +189,9 @@ def build_candidates(section_id: str) -> dict:
             if eff:
                 entry["design_sheet"] = eff                  # {"id","slug","notes"}——剪发后形象以 notes 为准
             chars[who] = entry
-        scenes[block] = {"scene_name": scene_name, "chars": chars}
+        scenes[block] = {"scene_id": block or "", "chars": chars}
 
-    return {"section_id": section_id, "scene_name_of": scene_name_of,
+    return {"section_id": section_id,
             "scenes": scenes, "lines": lines, "warnings": warnings}
 
 
@@ -239,7 +226,6 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
     """tasks + 候选解析 → (cypher 语句列表, 报告 dict)。校验失败 raise ValueError（一次列出全部坏项）。"""
     fetch_section_head(section_id)
     judgeable = {l["node_id"]: l for l in judgeable_lines(section_id)}
-    scene_name_of = _scene_names_of([l.get("block") for l in judgeable.values()])
     items = _flat_tasks(tasks)
 
     errors = []
@@ -259,7 +245,7 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
             continue
         who = line.get("who") or ""
         block = line.get("block") or ""
-        scene_name = scene_name_of.get(block) or ""
+        scene_name = block or ""  # 块 id（scene_id），id 直连解析
 
         def _resolve():
             if (scene_name, who) not in resolve_cache:
@@ -285,7 +271,7 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
             if not (2 <= len(label) <= 24):
                 errors.append(f"行 {node_id}：新变体 variant_label 须 2~24 字（得 {label!r}）")
                 continue
-            illus_id, _src = _resolve() if scene_name else ("", "")
+            illus_id, _src = _resolve() if scene_name else ("", "")  # scene_name=块 id
             if not illus_id:
                 errors.append(f"行 {node_id}：{block}/{who} 无着装 IllusDesign，无法兜底建新变体")
                 continue

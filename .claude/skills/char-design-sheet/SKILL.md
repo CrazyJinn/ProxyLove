@@ -24,12 +24,12 @@ allowed-tools: Read, Bash, Write, Edit
 |------|------|--------|
 | char_id | 角色 ID（snowflake） | 必传 |
 | base_ds_id | 参考版 DesignSheet 节点 ID（增量模式必传；缺省 = 常规模式） | — |
-| notes | 口述改动（增量模式必传，引号包裹）。须含：变更描述（如「清爽利落的黑色短发，发丝干净有型」）+ 生效点（`ch<NN>/sec<MM>`）+ 版本短名（`slug=<短名>`） | — |
+| notes | 口述改动（增量模式必传，引号包裹）。须含：变更描述（如「清爽利落的黑色短发，发丝干净有型」）+ 生效点（`ch<NN>/sec<MM>`） | — |
 
 ## 模式判定
 
 - **无 base_ds_id → 常规模式**：推进该角色已有 DesignSheet（status ∈ {-1,0} 逐个重做/生成），或首版不存在时新建（参考图图生图 Mode A）。
-- **有 base_ds_id + notes → 增量模式**：从参考版图生图新增版本节点。口述缺生效点或 slug → **停止并询问，禁止猜**。
+- **有 base_ds_id + notes → 增量模式**：从参考版图生图新增版本节点（新版本=新 ds_id 目录，天然隔离零覆盖）。口述缺生效点 → **停止并询问，禁止猜**。
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
@@ -44,14 +44,14 @@ MATCH (ch:Character {id: '<char_id>'})-[:has_appearance]->(app:AppearanceStyle)
 OPTIONAL MATCH (app)-[:produces]->(ds:DesignSheet)
 RETURN ch.name AS char_name,
        app.id AS app_id, app.status AS app_status, app {.*} AS app_data,
-       ds.id AS ds_id, ds.status AS ds_status, ds.slug AS slug,
+       ds.id AS ds_id, ds.status AS ds_status,
        ds.active_from AS active_from, ds.delta_notes AS delta_notes
 ```
 
 - **前驱校验**：`app_status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
 - **常规模式目标判定**：多版本时对每个 `ds_status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
 - **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds_status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
-- 记录 `char_name`（产物路径用）、`app_id`（保存步建 `produces` 边用）、`app_data`（外貌 tags + 自由文本 + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
+- 记录 `char_id`（产物路径段用，hexid）、`app_id`（保存步建 `produces` 边用）、`app_data`（外貌 tags + 自由文本 + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
 
 ### 2. 完成任务
 
@@ -59,7 +59,7 @@ RETURN ch.name AS char_name,
 
 按当前 status 单轮直推到图片完成（待审 10）。生成以**单张真人参考照片**为底图生图，AppearanceStyle 外貌属性全量作为补充特征写入提示词（冲突以属性为准）。
 
-**① 参考图探测（用户动作阻塞，同 BGM wav 归档模式）**：`ls "06_角色美术/<char_name>/"`，按 `参考图.png` > `参考图.jpg` > `参考图.jpeg` 优先级**精确匹配文件名**。目录缺失或三者皆无 → **停止并提示**：期望路径 `06_角色美术/<char_name>/参考图.jpg`（三种合法扩展名 png/jpg/jpeg 均可）、「经 dashboard 角色详情页上传（推荐，自动压缩与规范命名）或手动放入后重新触发本 skill」、**不回退文生图**；不写图、不写任何文件。status=-1 级联重做同受此约束（参考图被删同样阻塞，重传后重跑）。
+**① 参考图探测（用户动作阻塞，同 BGM wav 归档模式）**：先查 `Character.ref_image_path` 属性（dashboard 上传时 SET），非空且文件在 → 直接用该路径；属性缺失时回落盘探测 `ls "06_角色美术/<char_id>/"`（hexid 目录），按 `参考图.png` > `参考图.jpg` > `参考图.jpeg` 优先级**精确匹配文件名**。两者皆无 → **停止并提示**：期望路径 `06_角色美术/<char_id>/参考图.jpg`（三种合法扩展名 png/jpg/jpeg 均可）、「经 dashboard 角色详情页上传（推荐，自动压缩与规范命名并写属性）或手动放入后重新触发本 skill」、**不回退文生图**；不写图、不写任何文件。status=-1 级联重做同受此约束（参考图被删同样阻塞，重传后重跑）。
 
 **② 组装提示词**：Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheet '<data_json>'`：
 
@@ -67,22 +67,22 @@ RETURN ch.name AS char_name,
 {
   "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "appearance":"...","visual_tone":"...","first_impression":"...", "height_cm": "可选 int" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
-  "base": { "image": "06_角色美术/<char_name>/参考图.<ext>", "summary": "真人参考照片（单张）" },
+  "base": { "image": "06_角色美术/<char_id>/参考图.<ext>", "summary": "真人参考照片（单张）" },
   "node": { "id":"<DESIGN_ID>" },
-  "output_path": "06_角色美术/<char_name>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/prompt.md"
 }
 ```
 
-（`appearance` 数据取自第 1 步查询的 `app_data`；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 slug 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
+（`appearance` 数据取自第 1 步查询的 `app_data`；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 ds_id 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
 
-**③ 生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base.image>`（**图生图**，第三参 = 探测到的参考图路径）：`OUTPUT_PATH = 06_角色美术/<char_name>/设计图.png`。dashboard 上传的参考图已完成压缩（EXIF 转正 + 长边 ≤1536 + JPEG），直接使用；手动放置的原图亦直传。
+**③ 生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base.image>`（**图生图**，第三参 = 探测到的参考图路径）：`OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/设计图.png`。dashboard 上传的参考图已完成压缩（EXIF 转正 + 长边 ≤1536 + JPEG），直接使用；手动放置的原图亦直传。
 
 #### 增量模式（图生图新增版本）
 
 **解析口述**（缺项停止询问，禁止猜）：
 - 变更描述：notes 正文（图生图 prompt 变更段唯一来源）
 - 生效点：形如 `ch01/sec02` → `active_from = chapter_no*1000 + section_no`（如 1002）
-- slug：形如 `slug=短发` → 版本短名（产物路径目录段，禁 Windows 非法字符）
+- （slug 版本短名已废——目录锚 ds_id，无需口述）
 - 否定锚定 `negation`：由 LLM 据「变更描述 × AppearanceStyle 对应旧字段值」生成对旧特征的显式否定（如旧 hair「黑色凌乱短发，油腻缺乏打理」→「头发不油腻、不凌乱，无颓废未打理感」）——压制参考图惯性，**只否定被变更的维度**，不得引入新否定
 
 **组装提示词**：Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheetDelta '<data_json>'`：
@@ -93,19 +93,18 @@ RETURN ch.name AS char_name,
   "delta": { "notes": "<口述变更描述>", "negation": "<否定锚定>" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<DESIGN_ID>" },
-  "output_path": "06_角色美术/<char_name>/<slug>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<新ds_id>/prompt.md"
 }
 ```
 
 **生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base_image>`（**图生图**，第三参 = 参考版设计图路径）：
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/<slug>/设计图.png`。
+`OUTPUT_PATH = 06_角色美术/<char_id>/<新ds_id>/设计图.png`（新 ds_id 用 snowflake_base62.py 生成）。
 
 #### 路径规则（两模式通用）
 
-- slug 为空的版本（首版/单版角色）：`06_角色美术/<char_name>/prompt.md` 与 `设计图.png`（旧路径零迁移）。
-- slug 非空的版本：`06_角色美术/<char_name>/<slug>/prompt.md` 与 `设计图.png`。
-- 反向校验：角色已有多个版本而本版 slug 为空（且非 active_from 为空的首版）→ 停止并提示补 slug（防两版同路径物理覆盖）。
+- 统一路径：`06_角色美术/<char_id>/<ds_id>/prompt.md` 与 `设计图.png`（hexid 目录段——每版本独立 ds_id 目录，物理覆盖结构上不存在；slug 分支已废）。
+- 路径段 id→hexid：`python .claude/scripts/snowflake_base62.py -x <id1> <id2>`（或读图上已有 prompt_path 同目录推导）。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 
@@ -123,7 +122,7 @@ SET ds.prompt_path = '<PROMPT_PATH>',
     ds.image_path  = '<IMAGE_PATH>',
     ds.delta_notes = '<增量模式：口述变更描述；常规模式：保持原值不动>',
     ds.active_from = <增量模式：生效锚点 int；常规模式：保持原值不动>,
-    ds.slug        = '<增量模式：版本短名；常规模式：保持原值不动>',
+
     ds.status = 10;                      // 图片完成即待审（直写，不经 submit）
 ```
 

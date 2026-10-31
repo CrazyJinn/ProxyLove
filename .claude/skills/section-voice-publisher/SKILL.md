@@ -7,8 +7,8 @@ description: |
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
   ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to；不补建 depicts/ref_style（边已废止））→
   ⑤ Qwen3 单 venv（env/.venv-qwen，voice_clone_runner.py）：ensure-ref 出/复用 ref → publish 按 Qwen3 Base Voice Clone 逐句克隆（输入 tts_text 变体承载情绪，clone_mode 逐句选演绎通道：icl=ref 韵律迁移缺省 / xvec=仅说话人向量文本主导演绎；emotion 仅作图标注）→
-  母带落 15_声音/<chapter_stem>/<scene_block_id>/<key>.wav（按章节/场景块归档，key 自身即含两段信息） → bind-graph 写回图行节点（voice_key/emotion/tts_text/clone_mode/attempts/text_sha1/status=10 待审）。不拷运行时副本——dashboard 逐句审批试听直接读母带，99_game/assets/ 只由 chapter-publisher 发布时按 status=11 收录（立绘整键由发布期沿 uses 边投影）。
-  voice key = <char>-<chapter_stem>-<scene_block_id>-<行节点id>（节点 id 即行身份，插入/删除行不漂移）。在单节定稿已批、需要拆分/选绘/配音或重配被驳回/已改句时使用（由 plot-design 单节聚焦触发）。
+  母带落图行 master_path 属性位置 15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav（按章节/场景块 hexid 归档） → bind-graph 写回图行节点（voice_key=hexid(行id)/master_path/emotion/tts_text/clone_mode/attempts/text_sha1/status=10 待审）。不拷运行时副本——dashboard 逐句审批试听直接读母带，99_game/assets/ 只由 chapter-publisher 发布时按 status=11 收录（立绘整键由发布期沿 uses 边投影）。
+  voice key = hexid(行节点id)（16 位小写 hex，to_hexid；节点 id 即行身份，插入/删除行不漂移；母带唯一权威 = 行属性 master_path）。在单节定稿已批、需要拆分/选绘/配音或重配被驳回/已改句时使用（由 plot-design 单节聚焦触发）。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -18,10 +18,10 @@ allowed-tools: Read, Bash, Write, Edit
 # 节级拆分进图 + 配音发布（Section 定稿态 → 逐句 LineAudio → 行级 TTS）
 
 把**单节已确认定稿**（`Section.status=11` 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `Section-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
-按本节出场角色 `VoiceDesign`，用 [voice_clone_runner.py](scripts/voice_clone_runner.py) ensure-ref 出/复用 ref_audio → 同脚本 `publish` 逐句 clone（Qwen3 Base Voice Clone，输入 tts_text 变体承载情绪，均 env/.venv-qwen）→ 母带落 `15_声音/<chapter_stem>/<scene_block_id>/`（按章节归档），再用 [voice_bundler.py](scripts/voice_bundler.py) `bind-graph` 给每个（重）生成行写节点属性（`status=10` 待审）。**不拷运行时副本**：dashboard 逐句审批试听直接读母带 `15_声音/`；`99_game/assets/voices|sfx` 只由 chapter-publisher 发布时按 `status=11` 收录（`voice_bundler.py publish`），未批音频不进成品目录。
+按本节出场角色 `VoiceDesign`，用 [voice_clone_runner.py](scripts/voice_clone_runner.py) ensure-ref 出/复用 ref_audio → 同脚本 `publish` 逐句 clone（Qwen3 Base Voice Clone，输入 tts_text 变体承载情绪，均 env/.venv-qwen）→ 母带落图行 `master_path`（`15_声音/<ch_hexid>/<block_hexid>/`，jobs 已带路径），再用 [voice_bundler.py](scripts/voice_bundler.py) `bind-graph` 给每个（重）生成行写节点属性（`status=10` 待审）。**不拷运行时副本**：dashboard 逐句审批试听直接读母带 `15_声音/`；`99_game/assets/voices|sfx` 只由 chapter-publisher 发布时按 `status=11` 收录（`voice_bundler.py publish`），未批音频不进成品目录。
 
 > **拆分幂等**（script_splitter.py 对齐算法）：台词.ink 与图行按签名（op+who+text）difflib 对齐——未变行原样保留（级联 -1 的未变 say 行且 wav 在 → 恢复 10，**resubmit 微调回路下未变行连 status 都不动**，已批 11 保持）；text 变化行沿用节点置 0（voice key 不变覆盖 wav）；定稿新增行建新节点（order 取上下句中点，**单句插入不丢任何行**）；定稿删除行 DETACH DELETE。order 中点耗尽时全节重排（order 不进 voice key，安全）。
-> **行身份 = 节点雪花 id**（voice key 末段，永不复用）——md 插入/删除/移动行不改变其他行的 key，旧 wav 不成孤儿。
+> **行身份 = 节点雪花 id**（voice key = hexid(它)，永不复用）——md 插入/删除/移动行不改变其他行的 key，旧 wav 不成孤儿。
 
 ## 参数
 
@@ -32,7 +32,7 @@ allowed-tools: Read, Bash, Write, Edit
 ## 前置条件
 
 - 本节 `Section.status=11`（定稿在位；`-1` 作废态先重走 novelist→dialoguer）；否则停止，提示先走 chapter-dialoguer。
-- 须已组章（voice key 的 `chapter_stem` 段依赖章；章无 status 起组章即结构就绪）。自由节（无所属章）不可拆分配音，先在 dashboard 组章。
+- 须已组章（母带目录的章段依赖章；章无 status 起组章即结构就绪）。自由节（无所属章）不可拆分配音，先在 dashboard 组章。
 - 本节出场角色的 `VoiceDesign.status=11`（声音已批）。未就绪（无 VoiceDesign 或 status≠11）角色**警告跳过**（该角色 say 行保持 status=0 待配，运行时静默不播），提示先经 `char-design` 跑 `char-voice-design` 并审批，不阻断其他角色配音。
 
 ## 流程
@@ -59,7 +59,7 @@ RETURN DISTINCT c.name AS char, v.status AS vstatus, v.instruct AS instruct,
 ```
 
 - `vstatus≠11` 的角色警告跳过（不写进 profiles）。
-- **stem 构造**：由 `voice_bundler.chapter_stem_from_meta(no, title)` 算（`chapter<NN>_<title>`，NN=chapter_no 零填充），与 chapter-publisher 产出的章 JSON 文件名一致——本 skill 与 chapter-publisher 共用此函数，杜绝 stem 漂移。
+- **章目录段**：`hexid(Chapter.id)`（16 位小写 hex，tasks-from-graph 已在 jobs 里带 `master_path` 全路径，无需自算——章 title 改名零漂移；旧 chapter_stem_from_meta 已废）。
 
 ### 2. 拆分对齐进图（幂等——每次配音前必跑）
 
@@ -150,7 +150,7 @@ env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/voice_clone_runne
   --profiles '.tmp/voice-profiles-<stem>-sec<MM>.json'
 ```
 
-`ref_audio_path` 文件存在则复用，否则 Qwen VoiceDesign 合成（`14_声音设计/<char>/<char>_ref.wav`，24kHz）。正常情况下 ref_audio 已由 char-voice-design 在设计阶段合成，此处多为 [reuse]。
+`ref_audio_path` 文件存在则复用，否则 Qwen VoiceDesign 合成（`14_声音设计/<char_id>/ref.wav`，24kHz）。正常情况下 ref_audio 已由 char-voice-design 在设计阶段合成，此处多为 [reuse]。
 
 #### 5b. Qwen3 Base Voice Clone 逐句合成（env/.venv-qwen，输入 tts_text 变体承载情绪）
 
@@ -158,7 +158,7 @@ env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/voice_clone_runne
 env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/voice_clone_runner.py" publish \
   '.tmp/voice-tasks-<stem>-sec<MM>.json' \
   --profiles '.tmp/voice-profiles-<stem>-sec<MM>.json' \
-  --out-dir '15_声音'   # 母带 <out-dir>/<chapter_stem>/<scene_block_id>/<key>.wav（24kHz 原生，路径段从 key 解析）
+  --out-dir '15_声音'   # 母带落 task.master_path（24kHz 原生；路径唯一权威，不从 key 解析）
 ```
 
 逐句 try/except：单句失败记入 failed 列表（退出码 1 + stderr 逐条列出）——**失败句不 bind**（保持待配下轮重挑），成功句正常。汇报必须包含 failed 清单。`clone_mode=xvec` 的句子用仅说话人向量 prompt（每角色按模式懒构建，同角色 icl/xvec 可混排，全 icl 节零额外开销）。
@@ -190,7 +190,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 
 ## 重做与对齐
 
-- **行身份不漂移**：voice key 末段是 LineAudio 节点雪花 id——台词.ink 插入/删除/移动行不会使其他行的 key 失效，旧 wav 不成孤儿。台词被改的行在重拆时判 stale 置 0 自动重配；人工微调走 dashboard「重新提交审批」（仅 sc→10，**不动行节点**），重批后重拆只重做被改句，未变句审批结果原样保留。
+- **行身份不漂移**：voice key = hexid(LineAudio 节点雪花 id)——台词.ink 插入/删除/移动行不会使其他行的 key 失效，旧 wav 不成孤儿。台词被改的行在重拆时判 stale 置 0 自动重配；人工微调走 dashboard「重新提交审批」（仅 sc→10，**不动行节点**），重批后重拆只重做被改句，未变句审批结果原样保留。
 - **status=-1 级联**：Section/上游被 sync 级联 → 该节全部行 -1。重跑本 skill：拆分对齐把「text_sha1 匹配且 wav 在」的行恢复 10（音频复用不重配），其余置 0 重配；若 Section.status 本身 -1，先经 dialoguer 重做定稿升 11，再重跑本 skill。
 - **批量强制重做（演绎质量迁移等）置 0 不置 -1**：-1 会被拆分对齐的恢复机制判定「wav 在即复用旧音频」恢复 10，重配不发生；置 0 才是「待配重做，覆盖母带」的归一入口（挑行 status∈{0,-1} 均可挑中，但 -1 行先经拆分恢复分诊）。
 

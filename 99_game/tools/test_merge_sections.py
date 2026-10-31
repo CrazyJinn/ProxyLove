@@ -47,8 +47,8 @@ def _ink_row(op, text=None, *, who=None, kind=None, bed=None, scene_block_id=Non
 
 
 def _blocks(*pairs):
-    """块表（[{block, scene_name, time}]，行 scene_block_id 派生形态）。"""
-    return [{"block": b, "scene_name": s, "time": ""} for b, s in pairs]
+    """块表（[{block, scene_key, time}]，行 scene_block_id 派生形态；scene_key=hexid(Scene.id)）。"""
+    return [{"block": b, "scene_key": s, "time": ""} for b, s in pairs]
 
 
 def _ink(rows, pos_overrides=None):
@@ -81,7 +81,7 @@ def test_graph_lines_to_doc_projects_uses_portrait_key():
         _line("ending", "没赶上飞机", kind="BE", scene_block_id="s00_酒店", lid="N4"),
     ]
     keys = {"N2": "顾盈-酒店晨离-挑眉-P2vQL2d9db"}
-    blocks = [{"block": "s00_酒店", "scene_name": "酒店-客房", "time": "清晨"}]
+    blocks = [{"block": "s00_酒店", "scene_key": "酒店-客房", "time": "清晨"}]
     doc = graph_lines_to_doc(lines, blocks, {}, 0, "酒店醒来",
                              portrait_keys=keys, ink=ink)
     assert doc["meta"]["chapter"] == 0 and doc["meta"]["title"] == "酒店醒来"
@@ -300,7 +300,8 @@ def test_merge_validates_against_schema(tmp_path):
     assert ok, errors
 
 
-def test_merge_rejects_duplicate_scene_id():
+def test_merge_cross_section_duplicate_gets_prefix():
+    """跨节复用同 block id（多节同机位）：后续节前缀化 secNN-<id>（章内唯一）；节内多区间原样保留。"""
     ink1 = _ink([_ink_row("narrate", "a", scene_block_id="路口")])
     ink2 = _ink([_ink_row("narrate", "b", scene_block_id="路口")])
     sec1 = graph_lines_to_doc(
@@ -308,9 +309,28 @@ def test_merge_rejects_duplicate_scene_id():
         _blocks(("路口", "马路-路口")), {}, 1, "节1", ink=ink1)
     sec2 = graph_lines_to_doc(
         [_line("narrate", "b", scene_block_id="路口", lid="N2")],
-        _blocks(("路口", "出租屋")), {}, 1, "节2", ink=ink2)   # 与节1 id 重复
-    with pytest.raises(ValueError, match="重复"):
-        merge([sec1, sec2], chapter=1, title="x")
+        _blocks(("路口", "马路-路口")), {}, 2, "节2", ink=ink2)
+    sec2["_section_no"] = 1
+    sec1["_section_no"] = 0
+    doc = merge([sec1, sec2], chapter=1, title="x")
+    ids = [s["id"] for s in doc["scenes"]]
+    assert ids == ["路口", "sec01-路口"]
+
+
+def test_graph_lines_same_block_reentry_opens_new_segment():
+    """同机位切走再切回（V→T→V）：第二个 V 新开同 id 区间——行序按 ink 顺序、末段不回填首块。"""
+    rows = [
+        _line("narrate", "a", scene_block_id="V", lid="N1"),
+        _line("narrate", "b", scene_block_id="T", lid="N2"),
+        _line("narrate", "c", scene_block_id="V", lid="N3"),
+    ]
+    ink = _ink([_ink_row("narrate", t, scene_block_id=b)
+                for t, b in (("a", "V"), ("b", "T"), ("c", "V"))])
+    doc = graph_lines_to_doc(rows, _blocks(("V", "门口"), ("T", "屋内")), {}, 1, "节", ink=ink)
+    ids = [s["id"] for s in doc["scenes"]]
+    texts = [l["text"] for s in doc["scenes"] for l in s.get("lines", [])]
+    assert ids == ["V", "T", "V"]           # 同 id 两个区间，段序由行序承载
+    assert texts == ["a", "b", "c"]          # 末段 c 在 T 之后，不被提前
 
 
 def test_merge_with_chapter_map_injects_bgm_only(tmp_path):

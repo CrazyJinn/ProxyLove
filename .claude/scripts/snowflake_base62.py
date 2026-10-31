@@ -37,6 +37,33 @@ def base62_encode(num: int) -> str:
     return "".join(reversed(chars))
 
 
+def base62_decode(s: str) -> int:
+    """将 Base62 字符串解码回非负整数（与 base62_encode 互逆）。"""
+    num = 0
+    for ch in s:
+        idx = BASE62_CHARSET.find(ch)
+        if idx < 0:
+            raise ValueError(f"非法 Base62 字符: {ch!r}")
+        num = num * BASE + idx
+    return num
+
+
+# ── hexid：文件系统/运行时键安全形态 ──────────────────────────
+# NTFS/大小写不敏感文件系统与 Base62（大小写敏感）不兼容：同批雪花 id 共享前缀、
+# 仅末位大小写不同（如 QZXoBBWJMG / QZXoBBWJMg），裸 id 作文件名必撞。凡进
+# 文件名/目录名/manifest 键的 id 一律用 hexid（16 位小写 hex，可逆、全平台安全）；
+# 图内部 join 仍用裸 Base62 id。
+
+def to_hexid(base62_id: str) -> str:
+    """Base62 id → 16 位小写 hex（文件名/目录名/运行时键安全形态）。"""
+    return f"{base62_decode(base62_id):016x}"
+
+
+def from_hexid(hexid: str) -> str:
+    """hexid → Base62 id（与 to_hexid 互逆）。"""
+    return base62_encode(int(hexid, 16))
+
+
 # ── 雪花算法 ──────────────────────────────────────────────────
 
 TIMESTAMP_BITS = 41
@@ -152,7 +179,8 @@ class SnowflakeGenerator:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="雪花算法 Base62 ID 生成器")
+    parser = argparse.ArgumentParser(
+        description="雪花算法 Base62 ID 生成器 + hexid 转换（文件名/键安全形态）")
     parser.add_argument(
         "-n", "--count", type=int, default=5, help="生成数量（默认 5）"
     )
@@ -162,15 +190,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "-q", "--quiet", action="store_true", help="安静模式：仅输出 ID，每行一个"
     )
+    parser.add_argument(
+        "-x", "--hexid", nargs="+", metavar="ID",
+        help="Base62 id → 16 位小写 hexid（可批量；产物路径/键段专用，每行一个输出）"
+    )
     args = parser.parse_args()
 
-    gen = SnowflakeGenerator(machine_id=args.machine_id)
-    ids = gen.batch(args.count)
-
-    if args.quiet:
-        for uid in ids:
-            print(uid)
+    if args.hexid:
+        for i in args.hexid:
+            print(to_hexid(i))
     else:
-        print(f"生成 {args.count} 个 ID（machine_id={args.machine_id}）:")
-        for i, uid in enumerate(ids, 1):
-            print(f"  {i:>3}. {uid}")
+        gen = SnowflakeGenerator(machine_id=args.machine_id)
+        ids = gen.batch(args.count)
+
+        if args.quiet:
+            for uid in ids:
+                print(uid)
+        else:
+            print(f"生成 {args.count} 个 ID（machine_id={args.machine_id}）:")
+            for i, uid in enumerate(ids, 1):
+                print(f"  {i:>3}. {uid}")

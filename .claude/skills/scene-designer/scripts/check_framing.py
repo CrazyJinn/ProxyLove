@@ -12,8 +12,8 @@
   R2 近景大块压中: depth<4m ∧ 面积>20% ∧ 中心 x∈(15,85) ∧ 底缘>45%(远景墙元豁免)
 
 用法:
-  python 07_场景美术/check_framing.py [room.yml ...]     # 默认扫全部 yaml
-  python 07_场景美术/check_framing.py --strict            # 有 FAIL 即 exit 1(供门禁)
+  python .claude/skills/scene-designer/scripts/check_framing.py [room.yml ...]  # 默认扫 07_场景美术/ 全部 yaml
+  python .claude/skills/scene-designer/scripts/check_framing.py --strict      # 有 FAIL 即 exit 1(供门禁)
 退出码:0=全 PASS;1=存在 FAIL(--strict 时非零退出才阻断,默认恒 0 便于人读)
 """
 import sys
@@ -21,7 +21,8 @@ from pathlib import Path
 
 import yaml
 
-sys.path.insert(0, str(Path(__file__).parent))
+# slice_scenes 已按「公用脚本」归 .claude/scripts/（本脚本单 skill 引用归 skill scripts/）
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 import slice_scenes as ss
 
 ASPECT = 1.5          # 1536x1024
@@ -78,7 +79,7 @@ def run(paths: list[Path]) -> int:
 
 
 if __name__ == "__main__":
-    here = Path(__file__).parent
+    here = Path(__file__).resolve().parents[4] / "07_场景美术"  # 项目根产物区（脚本已内化到 skill）
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     strict = "--strict" in sys.argv
     paths = [Path(a) for a in args] or sorted(set(here.rglob("*.yml")) - set(here.rglob("prompt.yml")))

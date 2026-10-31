@@ -63,17 +63,17 @@ RETURN ch.name AS char_name,
   "illus": { "adaptation_notes": "<根据着装补充需求填写，如'左臂夹持文件夹'；无则空>" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<ILLUS_ID>" },
-  "output_path": "06_角色美术/<char_name>/<dir>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"
 }
 ```
 
-在 data 中声明 `output_path = 06_角色美术/<char_name>/<dir>/prompt.md`（`<dir>` = 所属设计图 slug 非空时 `<slug>/<cos_name>`，空时 `<cos_name>`——多版本隔离，单版角色旧路径零迁移）；char-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
+在 data 中声明 `output_path = 06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md`（hexid 目录段——目录=图链路径 `Character→DS→Costume`，多版本天然隔离；各 id 段查图得）；char-prompt-assembler 写入该路径并返回 `PROMPT_PATH`。
 
 #### 生成图片
 
 使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <ds_image>`（图生图，以**该版本** DesignSheet 图片为参考）：
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/<dir>/立绘设计图.png`（`<dir>` 同上 slug 规则）。infra-image-generator 返回路径 `IMAGE_PATH`。
+`OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘设计图.png`（hexid 目录段同上）。infra-image-generator 返回路径 `IMAGE_PATH`。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 

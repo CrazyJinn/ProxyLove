@@ -69,10 +69,10 @@ RETURN sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, sp.dsl_path AS dsl_pa
 ORDER BY grouped_cnt DESC;
 ```
 
-**1c. 探测本 Location 各 spot 的 room.yml**：1b 返回的各 `dsl_path` 非空 → 直接用该路径（spot 已建模）；为空则按规则探测磁盘 `07_场景美术/<loc_name>/<Spot目录名>/<Spot短名>.yml`（路径与命名速查见 [references/room-yml-v3.md](references/room-yml-v3.md) §3）。存在则必须复用（空间只建模一次）。
+**1c. 探测本 Location 各 spot 的 room.yml**：1b 返回的各 `dsl_path` 非空 → 直接用该路径（spot 已建模）；为空则按 hexid 规则探测磁盘 `07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_id)>.yml`（id→hexid：`python .claude/scripts/snowflake_base62.py -x <id1> <id2>`；命名规范见 [references/room-yml-v3.md](references/room-yml-v3.md) §3）。存在则必须复用（空间只建模一次）。
 
 **1d. 探测同 Location 其他 spot 的既有 yaml**（拷贝起步候选）：
-`ls 07_场景美术/<loc_name>/*/*.yml`。
+`ls 07_场景美术/<hexid(loc_id)>/*/*.yml`（hexid 目录）。
 
 **1e. Location 不存在时**：与调用方确认后**只新建 Location**（不连带建 Spot——Spot 由本流程 2b 按事件证据决定）：
 
@@ -89,9 +89,9 @@ MERGE (l:Location {name: '<Location名>'})
 2. **证据明确命中唯一既有 zone**（线索词与该 zone 短名/`description` 语义同空间）→ **自动归组不打扰**，建 `anchored_at(u → 该 zone 拍定机位 Scene)`（归组即拍机位：优先复用既有 Scene，证据指向时段/版本差异才新建），detail 写证据词。判「命中」须引用三条旁证（汇报中列明）：① 语义重合；② 该 zone 已有 Scene（归组即达绿档，零出图成本）；③ 该 zone grouped_cnt 未过载（单 zone 事件叙事密度合理）。
 3. **歧义点 → 停下问（AskUserQuestion 多选，有歧义就问）**：
    - **触发面**：① 证据可命中**多个**既有 zone；② 粒度歧义——拆新 zone vs 同 Spot 多 Scene（机位/时间窗版本）均可行；③ 证据不足/笼统，需拆 zone。
-   - **候选构成**：按事件语义拟 1-3 个 zone 方案（含短名=Location 名的**整点 zone** 候选——整点建模、目录名即 Location 名；Other 由工具自动提供）。
+   - **候选构成**：按事件语义拟 1-3 个 zone 方案（含短名=Location 名的**整点 zone** 候选——整点建模、全 Location 一个 Spot；Other 由工具自动提供）。
    - **多选语义**（multiSelect=true）：可同时勾选多个拆 zone 方案——事件归入最贴切的 zone，其余选中 zone 建为**预留**（无归组事件 → 2b 判「暂不出图」不建 Scene，零出图成本）。
-   - **提问纪律**：每题附推荐选项（首位 + Recommended）且**可归因**——理由标签 + 数据依据（如「零拆分成本」「为后续事件预留细分」），不许「我觉得」；facts 不问用户（候选 zone 方案、既有归组分布现查），只问取舍；同 Location 多事件同模式**聚合为一题**、单题列全实体；**一题一答**、依赖排序（用户选拆 zone → 追问 zone 名/短名合法性，短名不得含文件系统保留字符）。
+   - **提问纪律**：每题附推荐选项（首位 + Recommended）且**可归因**——理由标签 + 数据依据（如「零拆分成本」「为后续事件预留细分」），不许「我觉得」；facts 不问用户（候选 zone 方案、既有归组分布现查），只问取舍；同 Location 多事件同模式**聚合为一题**、单题列全实体；**一题一答**、依赖排序（用户选拆 zone → 追问 zone 名——name 是人读显示名，不锚定目录，无字符约束）。
 4. **按敲定结果执行**：新增 zone Spot（命名 `<Location名>-<区域>`，kind='zone'——**不再有 default kind**，整点即区域段=Location 名）建 part_of + anchored_at（→拍定机位 Scene），或归入用户选定的既有 zone。「评估过但无子空间证据」的自动兜底已废止，一律经 3 敲定。
 5. **粒度铁律**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间、新 room.yml 文件）时才新建；「新建 zone 一张图起」vs「归组到既有 zone 零成本」作为取舍依据写进提问的推荐理由与汇报。
 
@@ -124,7 +124,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 > **room.yml 是空间事实的唯一真源，图是投影**。结构模板与硬约束、坐标系、路径命名、校验规则、立绘安全区阈值、数值基线、外景分支、atmosphere/deco 例句——统一见 [references/room-yml-v3.md](references/room-yml-v3.md)（**写 yaml 前必读**，规则出处标注到 slice_scenes.py / check_framing.py 行号）。
 
-- **读/产路径**：`07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.yml`（目录名=Spot 短名；整点 zone 短名=Location 名，详见 references §3）。**挂靠单元 = Spot（建模单元，通常即物理房间）**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间）时才产新文件。
+- **读/产路径**：`07_场景美术/<location_id>/<spot_id>/<spot_id>.yml`（hexid 目录段；文件名=Spot 节点 id 的 hexid——name 改名零漂移，详见 references §3）。**挂靠单元 = Spot（建模单元，通常即物理房间）**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间）时才产新文件。
 - **复用（文件已存在）**：只追加 scenes[] 条目（新 Scene=新机位），objects 除非有新事件证据不动。
 - **产（不存在时）三分支**：
   - ① 同 Location 其他 Spot 已有 yaml → 拷贝其房间壳与共享物件起步（显式复制，禁止跨文件引用），删与本 spot 无关物件、聚焦子空间；
@@ -134,16 +134,16 @@ MERGE (l:Location {name: '<Location名>'})
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
 - **文字归图**：deco/atmosphere/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
 
-**2e. 校验（写后质量门，两门都必跑）**：写/改 room.yml 后必跑 ① `python 07_场景美术/slice_scenes.py <room.yml> --check`（几何/结构校验）② `python 07_场景美术/check_framing.py <room.yml>`（立绘安全区），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py 由 scene-prompt-assembler 模式 E 出图前调用（消费侧重切）。
+**2e. 校验（写后质量门，两门都必跑）**：写/改 room.yml 后必跑 ① `python .claude/scripts/slice_scenes.py <room.yml> --check`（几何/结构校验）② `python "${CLAUDE_SKILL_DIR}/scripts/check_framing.py" <room.yml>`（立绘安全区），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py（公用脚本，归 .claude/scripts/）由 scene-layer-designer 出图前调用（消费侧重切）。
 
 ### 3. 保存结果
 
 #### Spot 新建与事件归组（若段 2a 建了新 Spot / 归组了事件）
 
 ```cypher
-// 新建 zone Spot（幂等；整点 zone 同型，区域段=Location 名）
-MERGE (sp:Spot {name: '<Location名>-<区域>'})
-  ON CREATE SET sp.id = '<snowflake_id>', sp.kind = 'zone', sp.description = '...';
+// 新建 zone Spot（幂等；MERGE 锚 id——name 可改名不建重复节点；整点 zone 同型，区域段=Location 名）
+MERGE (sp:Spot {id: '<snowflake_id>'})
+  ON CREATE SET sp.name = '<Location名>-<区域>', sp.kind = 'zone', sp.description = '...';
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
 MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
@@ -168,7 +168,7 @@ SET s.name = '<Location名-区域>',
 // 构图/光影/配色无字段（真源=room.yml 几何 + 美术风格.md；weather/composition/lighting/color_direction 已废止清理）。
 // Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）
 MATCH (sp:Spot {id: '<spot_id>'})
-SET sp.dsl_path = '07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.yml';
+SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_id)>.yml';
 ```
 
 > realizes 重建时先清后建（幂等模板见 00_init/Schema/场景美术.md 引用；Scene 节点不删，层链由 scene-layer-designer 管理）。

@@ -35,10 +35,6 @@ DEFAULT_MANIFEST = ROOT / "99_game" / "data" / "manifest.json"
 PORTRAIT_PREFIX = "assets/portraits/"
 SCENE_PREFIX = "assets/scenes/"
 
-# Character → StandingIllustration 的限定美术边类型集（与 plot-design 一致，阻止越界到叙事 Event）
-CHAR_TO_STAND_EDGES = "has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to"
-
-
 def _run_cypher(cypher: str) -> list:
     """调 cypher_exec.py --json，提取返回的 JSON 数组（cypher_exec 输出含连接提示行）。"""
     proc = subprocess.run(
@@ -57,60 +53,47 @@ def _run_cypher(cypher: str) -> list:
 
 
 def collect_portraits() -> tuple[dict, dict]:
-    """status=11 的立绘 → guid 整键: assets/portraits/<整键>.png
+    """status=11 的立绘 → hexid(stand_id): assets/portraits/<hexid>.png
 
-    整键 = make_key(char, variant, stand_id, costume) = <char>-<costume_short>-<variant>-<stand_id>。
-    stand_id（图 StandingIllustration.id）全局唯一，无需冲突检测；同角色换装两套图各得各键。
-    旧二维键（如陈默.沉重）由 build_manifest 的 existing 保留，供旧章 fallback。
-    返回 (portraits, portrait_scales)：顺带带回 IllusDesign.display_scale（同一次查图，避免查两次），
-    portrait_scales = {整键: scale}，仅收录 display_scale 非 null 的立绘。
+    键 = make_key(stand_id) = hexid(StandingIllustration.id)（全局唯一，改名零漂移；
+    角色名/着装/变体名不进键）。旧 name 整键/二维键由 --rebuild 清除。
+    返回 (portraits, portrait_scales)：顺带带回 IllusDesign.display_scale（同一次查图），
+    portrait_scales = {键: scale}，仅收录 display_scale 非 null 的立绘。
     """
     cypher = (
-        "MATCH (char:Character)-[:" + CHAR_TO_STAND_EDGES + "*1..5]->"
-        "(stand:StandingIllustration {status:11}) "
-        "OPTIONAL MATCH (stand)<-[:expands_to]-(illus:IllusDesign)<-[:outfit_for]-(costume:CostumeStyle) "
-        "RETURN DISTINCT char.name AS char_name, stand.id AS stand_id, "
-        "stand.variant_label AS variant, costume.name AS costume_name, "
-        "illus.display_scale AS scale "
-        "ORDER BY char_name, variant"
+        "MATCH (stand:StandingIllustration {status:11}) "
+        "OPTIONAL MATCH (stand)<-[:expands_to]-(illus:IllusDesign) "
+        "RETURN DISTINCT stand.id AS stand_id, illus.display_scale AS scale"
     )
     portraits = {}
     scales = {}
-    warned_orphan = []
     for r in _run_cypher(cypher):
-        char_name = (r.get("char_name") or "").strip()
         stand_id = (r.get("stand_id") or "").strip()
-        variant = (r.get("variant") or "").strip()
-        costume = r.get("costume_name")
-        if not char_name or not stand_id or not variant:
+        if not stand_id:
             continue
-        if not costume:
-            warned_orphan.append(f"{char_name}.{variant}({stand_id})")
-        key = make_key(char_name, variant, stand_id, costume)
+        key = make_key(stand_id)
         portraits[key] = f"{PORTRAIT_PREFIX}{key}.png"
         scale = r.get("scale")
         if scale is not None:
             scales[key] = scale
-    if warned_orphan:
-        sys.stderr.write(
-            f"[warn] {len(warned_orphan)} 张立绘缺 CostumeStyle 绑定（整键去着装段）：{warned_orphan}\n"
-        )
     return portraits, scales
 
 
 def collect_scenes() -> dict:
-    """所有 Scene → <Scene.name>: assets/scenes/<...>.png"""
-    rows = _run_cypher("MATCH (s:Scene) RETURN s.name AS name ORDER BY name")
+    """所有 Scene → hexid(Scene.id): assets/scenes/<hexid>.png"""
+    from snowflake_base62 import to_hexid
+    rows = _run_cypher("MATCH (s:Scene) RETURN s.id AS sid")
     scenes = {}
     for r in rows:
-        name = (r.get("name") or "").strip()
-        if name:
-            scenes[name] = f"{SCENE_PREFIX}{name}.png"
+        sid = (r.get("sid") or "").strip()
+        if sid:
+            key = to_hexid(sid)
+            scenes[key] = f"{SCENE_PREFIX}{key}.png"
     return scenes
 
 
 def collect_sfx() -> dict:
-    """已批环境音行 → <ambient_track>: assets/sfx/<track>.wav（图驱动收集，status=11）。
+    """已批环境音行 → hexid(行id): assets/sfx/<hexid>.wav（图驱动收集，status=11）。
 
     以 ambient_track 字段存在为准、不看 op——点状音效行（op=transition）与音床行
     （op=bed_start）同样收集。"""
@@ -123,7 +106,7 @@ def collect_sfx() -> dict:
 
 
 def collect_voices() -> dict:
-    """已批配音行 → <voice_key>: assets/voices/<key>.wav（图驱动收集，status=11）。
+    """已批配音行 → hexid(行id): assets/voices/<hexid>.wav（图驱动收集，status=11）。
 
     以 voice_key 字段存在为准（say 行）。此前 voices 段由 chapter-publisher 流程维护、
     manifest_builder 输出清单未含——单独重跑会静默抹掉 voices 段致运行时全部配音
@@ -136,7 +119,22 @@ def collect_voices() -> dict:
             for r in rows if (r.get("key") or "").strip()}
 
 
-def build_manifest(manifest_path: Path) -> dict:
+def collect_bgm() -> dict:
+    """status=2 的 BgmTrack → hexid(bgm_id): assets/bgm/<hexid>.wav（图驱动，取代旧手写 name 键）。"""
+    from snowflake_base62 import to_hexid
+    rows = _run_cypher(
+        "MATCH (b:BgmTrack {status:2}) WHERE b.audio_path IS NOT NULL RETURN b.id AS bid"
+    )
+    bgm = {}
+    for r in rows:
+        bid = (r.get("bid") or "").strip()
+        if bid:
+            key = to_hexid(bid)
+            bgm[key] = "assets/bgm/" + key + ".wav"
+    return bgm
+
+
+def build_manifest(manifest_path: Path, rebuild: bool = False) -> dict:
     # 读现有 manifest，保留 bgm/cg（非图来源）
     existing = {}
     if manifest_path.exists():
@@ -145,15 +143,23 @@ def build_manifest(manifest_path: Path) -> dict:
         except json.JSONDecodeError:
             print(f"[warn] {manifest_path} JSON 解析失败，bgm/sfx/cg 从空重建", file=sys.stderr)
 
-    # portraits/scenes/sfx/voices 合并：保留现有手写，图查到的覆盖/补充（向后兼容）；bgm/cg 保留现有
+    # 缺省：图查覆盖/补充 existing（向后兼容）；--rebuild：图驱动段全量重建清旧 name 键。
+    # bgm 恒图驱动（status=2 才收）——旧手写 name 键在 rebuild 时一并淘汰。
     portraits, scales = collect_portraits()
+    scenes, voices, sfx, bgm = collect_scenes(), collect_voices(), collect_sfx(), collect_bgm()
+    if rebuild:
+        return {
+            "portraits": portraits, "portrait_scales": scales,
+            "scenes": scenes, "voices": voices, "bgm": bgm, "sfx": sfx,
+            "cg": existing.get("cg", {}),
+        }
     return {
         "portraits": {**existing.get("portraits", {}), **portraits},
         "portrait_scales": {**existing.get("portrait_scales", {}), **scales},
-        "scenes": {**existing.get("scenes", {}), **collect_scenes()},
-        "voices": {**existing.get("voices", {}), **collect_voices()},
-        "bgm": existing.get("bgm", {}),
-        "sfx": {**existing.get("sfx", {}), **collect_sfx()},
+        "scenes": {**existing.get("scenes", {}), **scenes},
+        "voices": {**existing.get("voices", {}), **voices},
+        "bgm": {**existing.get("bgm", {}), **bgm},
+        "sfx": {**existing.get("sfx", {}), **sfx},
         "cg": existing.get("cg", {}),
     }
 
@@ -162,10 +168,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="从 Neo4j 图生成/更新 manifest.json")
     ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST), help="manifest.json 路径")
     ap.add_argument("--dry-run", action="store_true", help="只打印，不写盘")
+    ap.add_argument("--rebuild", action="store_true",
+                    help="全量重建图驱动段（清旧 name 键；随 id 锚定全章重发布使用）")
     args = ap.parse_args()
 
     manifest_path = Path(args.manifest)
-    data = build_manifest(manifest_path)
+    data = build_manifest(manifest_path, rebuild=args.rebuild)
     text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
 
     if args.dry_run:

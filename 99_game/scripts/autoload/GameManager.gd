@@ -25,6 +25,8 @@ func _apply_env_override() -> void:
 	var sc := OS.get_environment("PROXYLOVE_SCENE")
 	if sc != "":
 		start_scene = sc
+	if start_chapter == "":
+		start_chapter = _default_chapter()  # chapter_packs 首章（PROXYLOVE_CHAPTER 可覆盖）
 
 func _register_inputs() -> void:
 	_add_action("advance", [KEY_SPACE, KEY_ENTER], [MOUSE_BUTTON_LEFT])
@@ -67,9 +69,29 @@ func _apply_default_font() -> void:
 
 ## 起始章节配置（Game 场景 _ready 时读这两个值启动解释器）。
 ## start_new_game() 可传参覆盖（标题的章/小节下拉即经此传入）；start_scene 留空 = 章首段
-## （scene-block id 随发布变，如 chapter00 曾从 "酒店" 变 "s00_酒店"，硬编码会漂移导致"找不到场景段"）。
-var start_chapter := "chapter00_序章"
+## （scene-block id 随发布变，硬编码会漂移导致"找不到场景段"）。
+## id 锚定（2026-10-31 起）：章 stem = hexid(Chapter.id)（16 位小写 hex），缺省值
+## 运行时从 chapter_packs.json 取 chapter_no 最小章（不再硬编码章名）。
+var start_chapter := ""
 var start_scene := ""
+
+func _default_chapter() -> String:
+	## chapter_packs.json 中 chapter_no 最小的章 stem；读不到回退空串（启动报错可见）。
+	var txt := FileAccess.get_file_as_string("res://data/chapter_packs.json")
+	if txt != "":
+		var packs = JSON.parse_string(txt)
+		if packs is Dictionary and not packs.is_empty():
+			var best_stem := ""
+			var best_no := 999999
+			for k in packs.keys():
+				var meta: Dictionary = packs[k] if packs[k] is Dictionary else {}
+				var no: int = int(meta.get("chapter_no", 9999))
+				if no < best_no:
+					best_no = no
+					best_stem = str(k)
+			if best_stem != "":
+				return best_stem
+	return ""
 
 func start_new_game(chapter: String = "", scene: String = "") -> void:
 	# Game 场景 _ready 时自行调 ScriptInterpreter.start，避免跨场景 call_deferred 时序问题

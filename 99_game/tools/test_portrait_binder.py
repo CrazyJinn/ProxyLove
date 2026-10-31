@@ -46,7 +46,6 @@ def base(monkeypatch):
         captured["called"] = True
 
     monkeypatch.setattr(pb, "_run_cypher_multi", fake_multi)
-    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_GEN", _FakeGen())
     return captured, monkeypatch
 
@@ -74,7 +73,7 @@ def test_resolve_illus_query_shape(monkeypatch):
     assert "-[:includes]->(e:Event)" in c
     assert "-[:refines]->(sub:SubEvent)" in c
     assert "-[:anchored_at]->(scn:Scene)" in c
-    assert "WHERE scn.name = " in c                     # 块名过滤（scene_name 非空时）
+    assert "WHERE scn.id = " in c                      # 块 id 过滤（scene_id 非空时）
     assert "-[:appears_as]->(il:IllusDesign)" in c
     assert "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0)" in c
 
@@ -89,7 +88,7 @@ def test_resolve_illus_scene_name_empty_degrades(monkeypatch):
 
     monkeypatch.setattr(pb, "_run_cypher", fake)
     assert pb.resolve_illus(SEC, "", "陆择", []) == ("I1", "appears_as")
-    assert "WHERE scn.name" not in seen["cypher"]
+    assert "WHERE scn.id" not in seen["cypher"]
 
 
 def test_resolve_illus_multiple_takes_lexicographic_first(monkeypatch):
@@ -117,14 +116,13 @@ def test_resolve_illus_all_empty(monkeypatch):
 def test_build_candidates_pool_structure(monkeypatch):
     monkeypatch.setattr(pb, "fetch_section_head", lambda sid: HEAD)
     monkeypatch.setattr(pb, "judgeable_lines", lambda sid: [dict(l) for l in LINES])
-    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_effective_ds", lambda sid, who, w: None)   # 版本信息为展示项,隔离查询
     monkeypatch.setattr(pb, "resolve_illus",
                         lambda sid, scene, who, w: ("I1", "appears_as"))
     monkeypatch.setattr(pb, "stands_of_illus", lambda iid: [
         {"id": "S1", "variant_label": "慵懒", "status": 11, "description": "宿醉"}])
     data = pb.build_candidates(SEC)
-    assert data["scenes"]["s00_酒店"]["scene_name"] == "酒店-客房"
+    assert data["scenes"]["s00_酒店"]["scene_id"] == "s00_酒店"
     char = data["scenes"]["s00_酒店"]["chars"]["陆择"]
     assert char["illus_id"] == "I1" and char["illus_source"] == "appears_as"
     assert char["stands"][0]["variant_label"] == "慵懒"
@@ -135,7 +133,6 @@ def test_build_candidates_pool_structure(monkeypatch):
 def test_build_candidates_no_illus_warns(monkeypatch):
     monkeypatch.setattr(pb, "fetch_section_head", lambda sid: HEAD)
     monkeypatch.setattr(pb, "judgeable_lines", lambda sid: [dict(l) for l in LINES])
-    monkeypatch.setattr(pb, "_scene_names_of", lambda ids: {"s00_酒店": "酒店-客房"})
     monkeypatch.setattr(pb, "_effective_ds", lambda sid, who, w: None)
     monkeypatch.setattr(pb, "resolve_illus", lambda sid, scene, who, w: ("", ""))
     monkeypatch.setattr(pb, "stands_of_illus", lambda iid: [])

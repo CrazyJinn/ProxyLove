@@ -25,11 +25,14 @@ func _ready() -> void:
 	title.add_theme_font_size_override("font_size", 72)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_vbox.add_child(title)
-	# 章节选择：stem 清单读 chapter_packs.json 键（发布工具维护，随章自动增长）；
-	# 排序后默认选首章，「开始游戏」从所选章进入
+	# 章节选择：清单读 chapter_packs.json（发布工具维护，随章自动增长）；
+	# id 锚定（2026-10-31 起）键 = hexid(Chapter.id)，显示名取条目 meta 的 title、
+	# 排序按 chapter_no（缺 meta 的条目回退键文本/字典序）；metadata 存 stem（真名）。
+	# 默认选首章，「开始游戏」从所选章进入
 	_chapter = OptionButton.new()
-	for stem in _chapter_stems():
-		_chapter.add_item(stem)
+	for e in _chapter_entries():
+		_chapter.add_item(e["title"])
+		_chapter.set_item_metadata(_chapter.item_count - 1, e["stem"])
 	if _chapter.item_count > 0:
 		_chapter.select(0)
 	_chapter.custom_minimum_size = Vector2(220, 40)
@@ -77,23 +80,32 @@ func _apply_layout() -> void:
 	_center.size = s
 	_log_layout("apply")
 
-func _chapter_stems() -> Array:
-	"""已发布章 stem 清单（chapter_packs.json 键，章号排序）；读不到时退回默认章。"""
+func _chapter_entries() -> Array:
+	"""已发布章条目 [{stem, title, no}]（chapter_packs.json；chapter_no 排序，
+	title 显示）；读不到时退回默认章。stem = hexid(Chapter.id)（章 JSON/pck 文件名主体）。"""
 	var txt := FileAccess.get_file_as_string("res://data/chapter_packs.json")
 	if txt != "":
 		var packs = JSON.parse_string(txt)
 		if packs is Dictionary and not packs.is_empty():
-			var stems := (packs.keys() as Array).duplicate()
-			stems.sort()  # chapterNN_ 前缀字典序 = 章号序
-			return stems
-	return [GameManager.start_chapter]
+			var entries := []
+			for k in packs.keys():
+				var meta: Dictionary = packs[k] if packs[k] is Dictionary else {}
+				entries.append({
+					"stem": str(k),
+					"title": str(meta.get("title", k)),
+					"no": int(meta.get("chapter_no", 9999)),
+				})
+			entries.sort_custom(func(a, b): return a["no"] < b["no"])
+			return entries
+	return [{"stem": GameManager.start_chapter, "title": GameManager.start_chapter, "no": 0}]
 
 func _on_chapter_selected(_index: int) -> void:
 	_refresh_scene_options()
 
 func _refresh_scene_options() -> void:
-	# 按所选章重填小节下拉：节 = Section 粒度（block id 的 sNN 前缀归组，项文本
-	# 「sNN 节标题」——section_title 由发布链注入章 JSON；id 不合 sNN 格式时该 block 单列兜底）。
+	# 按所选章重填小节下拉：节 = Section 粒度（项文本「节标题」——section_title 由
+	# 发布链注入章 JSON；id 锚定后 block id 为雪花形无 sNN 前缀，_section_prefix 返回 ""
+	# → 直接显示 section_title，无节标题才回退 block id 单列兜底）。
 	# metadata 存该节首个 block id 供 start；首项「从头开始」metadata 空 = 章首段。
 	# 段清单经 ChapterLoader 读章 JSON（透明解密加密剧本、带结构校验）；
 	# 先 ensure_chapter（幂等；当前全量主包模式为 no-op）保证 Web 分包模式下章 JSON 可读。
@@ -104,7 +116,7 @@ func _refresh_scene_options() -> void:
 	_scene.select(0)
 	if _chapter.item_count == 0:
 		return
-	var stem := _chapter.get_item_text(_chapter.selected)
+	var stem := str(_chapter.get_item_metadata(_chapter.selected))
 	await ChapterPackLoader.ensure_chapter(stem)
 	# await 后本节点可能已随切场景被释放（Web 分包下载耗时期间点开始/退出）
 	if not is_instance_valid(_scene):
@@ -125,8 +137,8 @@ func _refresh_scene_options() -> void:
 		var label: String = blk.get("section_title", "")
 		if label == "":
 			label = sid if prefix == "" else prefix  # 无节标题：回退 block id / 节号
-		else:
-			label = "%s %s" % [prefix, label]
+		elif prefix != "":
+			label = "%s %s" % [prefix, label]  # id 锚定后 block id 为雪花形（prefix 恒空），显示纯节标题
 		_scene.add_item(label)
 		_scene.set_item_metadata(_scene.item_count - 1, sid)
 		if prefix != "":
@@ -141,7 +153,7 @@ func _section_prefix(sid: String) -> String:
 
 func _on_start_pressed() -> void:
 	if _chapter.item_count > 0:
-		var stem := _chapter.get_item_text(_chapter.selected)
+		var stem := str(_chapter.get_item_metadata(_chapter.selected))
 		# 选中项 metadata 即起始段 id（首项空 = 章首段）
 		var scene_id: String = str(_scene.get_item_metadata(_scene.selected)) if _scene.item_count > 0 else ""
 		GameManager.start_new_game(stem, scene_id)

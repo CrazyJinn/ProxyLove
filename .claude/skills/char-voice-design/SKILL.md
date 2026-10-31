@@ -1,8 +1,8 @@
 ---
 name: char-voice-design
 description: |
-  推进 VoiceDesign 图节点（角色基线音色设计）**多候选流程**：查询状态 → 生成 instruct + 统一长句 ref_text → 先合成 3 个候选 ref（voice_clone_runner design-candidates）+ 每候选 3 个情绪试听（voice_clone_runner audition，Qwen3 Base Voice Clone，均 env/.venv-qwen）落盘验证 → 后写图（MERGE 兜底建节点+has_voice_design 边，写内容+ref_audio_path+candidates_path+status=10 候选待选）。
-  依据 Character 基础属性 + LanguageStyle + Info/Event，按声线三要素（音色基底/演绎方式/情绪域）生成**简明**自然语言 instruct（1-2 句、≤60 字，措辞遵循 Qwen VoiceDesign 官方原则：简洁/具体/客观，禁比喻修辞），并做同场角色频谱避让。同一 instruct × 3 次随机采样出候选（人工在 dashboard 审批中心试听 ref+情绪试听后「采用」其一，固化为 <char>_ref.wav，status 保持 10 走二审）。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
+  推进 VoiceDesign 图节点（角色基线音色设计）**多候选流程**：查询状态 → 生成 instruct + 统一长句 ref_text → 先合成 3 个候选 ref（voice_clone_runner design-candidates）+ 每候选 3 个情绪试听（voice_clone_runner audition，Qwen3 Base Voice Clone，均 env/.venv-qwen）落盘验证 → 后写图（MERGE 兜底建节点+has_voice_design 边，写内容+ref_audio_path+candidates_path+status=10 候选待选；路径=14_声音设计/<char_id>/，hexid 目录）。
+  依据 Character 基础属性 + LanguageStyle + Info/Event，按声线三要素（音色基底/演绎方式/情绪域）生成**简明**自然语言 instruct（1-2 句、≤60 字，措辞遵循 Qwen VoiceDesign 官方原则：简洁/具体/客观，禁比喻修辞），并做同场角色频谱避让。同一 instruct × 3 次随机采样出候选（人工在 dashboard 审批中心试听 ref+情绪试听后「采用」其一，固化为 <char_id>/ref.wav，status 保持 10 走二审）。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
 argument-hint: <char_id>
 arguments:
   - char_id
@@ -17,7 +17,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 推进 VoiceDesign（角色基线音色设计）图节点：生成 instruct + 统一长句 ref_text 设计描述，合成 **3 个候选 ref（同一 instruct × 3 次随机采样，24kHz）+ 每候选 3 个情绪试听（平静/高兴/愤怒，各配不同语义文本，Qwen3 Base Voice Clone）**，交 dashboard 审批中心人工采用。
 
-**status 流转**：`0` 待设计 → `1` instruct 完成（仅文本）→ `10` 候选固化（生产完成，**直接待审，无需 submit**；由 `candidates_path` 分两态：非空=**候选待选**——dashboard 逐候选试听后「采用」（固化 `<char>_ref.wav` + 清理临时文件夹 + 删 candidates_path，status 保持 10）；空=单 ref 待审——通过 `11` / 驳回回 `0`）→ `11` 批准。下游配音（voice-publisher / section-voice-publisher）要求 `11`。`2` 为历史兼容值（旧流程的生产完成态）：存量节点 status=2 时可在 dashboard 编辑器手动「提交审批」迁到 10，**本 skill 一律写 10、不写 2**。
+**status 流转**：`0` 待设计 → `1` instruct 完成（仅文本）→ `10` 候选固化（生产完成，**直接待审，无需 submit**；由 `candidates_path` 分两态：非空=**候选待选**——dashboard 逐候选试听后「采用」（固化 `<char_id>/ref.wav` + 清理临时文件夹 + 删 candidates_path，status 保持 10）；空=单 ref 待审——通过 `11` / 驳回回 `0`）→ `11` 批准。下游配音（voice-publisher / section-voice-publisher）要求 `11`。`2` 为历史兼容值（旧流程的生产完成态）：存量节点 status=2 时可在 dashboard 编辑器手动「提交审批」迁到 10，**本 skill 一律写 10、不写 2**。
 
 ## 参数
 
@@ -77,15 +77,15 @@ RETURN DISTINCT other.name AS name, vd.instruct AS instruct, vd.description AS d
 **① 重做清理**（status∈{-1,0} 重跑**必做**——两步脚本均为「文件存在即复用」，不删旧文件就不会重新合成）：
 
 ```bash
-rm -rf '14_声音设计/<角色名>/candidates'
-rm -f '14_声音设计/<角色名>/<角色名>_ref.wav'
+rm -rf '14_声音设计/<char_id>/candidates'
+rm -f '14_声音设计/<char_id>/ref.wav'
 ```
 
 **② design-candidates**（Qwen 同一 instruct × 3 次采样出候选 ref 24k + manifest）：
 
 ```bash
 # 写 99_game/data/.cache/voice-candidates-<角色名>.json，内容：
-# { "<角色名>": { "instruct": "<instruct>", "ref_text": "<ref_text>", "candidates_dir": "14_声音设计/<角色名>/candidates", "count": 3 } }
+# { "<角色名>": { "instruct": "<instruct>", "ref_text": "<ref_text>", "candidates_dir": "14_声音设计/<char_id>/candidates", "count": 3 } }
 
 env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/../section-voice-publisher/scripts/voice_clone_runner.py" design-candidates \
   --profiles '99_game/data/.cache/voice-candidates-<角色名>.json'
@@ -95,12 +95,12 @@ env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/../section-voice-publishe
 
 ```bash
 env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/../section-voice-publisher/scripts/voice_clone_runner.py" audition \
-  --manifest '14_声音设计/<角色名>/candidates/candidates.json'
+  --manifest '14_声音设计/<char_id>/candidates/candidates.json'
 ```
 
-产物落 `14_声音设计/<角色名>/candidates/`（临时文件夹，dashboard 采用后整夹删除；设计阶段不产 16k 文件）：`<角色名>_c1..c3_ref.wav`（3 候选，24kHz 原生）+ `<角色名>_cN_平静/高兴/愤怒.wav`（9 试听）+ `candidates.json`（manifest，audition 回填路径）。
+产物落 `14_声音设计/<char_id>/candidates/`（hexid 目录）（临时文件夹，dashboard 采用后整夹删除；设计阶段不产 16k 文件）：`<角色名>_c1..c3_ref.wav`（3 候选，24kHz 原生）+ `<角色名>_cN_平静/高兴/愤怒.wav`（9 试听）+ `candidates.json`（manifest，audition 回填路径）。
 
-**校验**：`candidates.json` 存在；3 个 `_cN_ref.wav` 与 9 个 `_cN_<情绪>.wav` 各 >10KB（`ls -la '14_声音设计/<角色名>/candidates/'`）。**任一失败则停止、不写图**，报告失败原因与排查指引（env/.venv-qwen 环境 / settings.json `voice.model_dir`，见 [15_声音/README.md](../../../15_声音/README.md)）。
+**校验**：`candidates.json` 存在；3 个 `_cN_ref.wav` 与 9 个 `_cN_<情绪>.wav` 各 >10KB（`ls -la '14_声音设计/<char_id>/candidates/'`）。**任一失败则停止、不写图**，报告失败原因与排查指引（env/.venv-qwen 环境 / settings.json `voice.model_dir`，见 [15_声音/README.md](../../../15_声音/README.md)）。
 
 ### 3. 保存结果（后写图，节点不存在则兜底创建）
 
@@ -115,8 +115,8 @@ MATCH (v:VoiceDesign {id: '<VD_ID>'})
 SET v.name = '<角色名>声音设计',
     v.instruct = '...',
     v.ref_text = '...',
-    v.ref_audio_path = '14_声音设计/<角色名>/<角色名>_ref.wav',
-    v.candidates_path = '14_声音设计/<角色名>/candidates/candidates.json',
+    v.ref_audio_path = '14_声音设计/<char_id>/ref.wav',
+    v.candidates_path = '14_声音设计/<char_id>/candidates/candidates.json',
     v.description = '...',
     v.status = 10;
 ```

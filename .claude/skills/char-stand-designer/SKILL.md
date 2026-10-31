@@ -73,11 +73,11 @@ RETURN ch.name AS char_name, ch.id AS char_id,
   "voice": { "emotion_patterns":"...", "description":"..." },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<stand_id>" },
-  "output_path": "06_角色美术/<char_name>/<dir>/立绘/<variant_label>.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md"
 }
 ```
 
-char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<dir>/立绘/<variant_label>.md`（`<dir>` = 所属设计图 `ds_slug` 非空时 `<ds_slug>/<cos_name>`，空时 `<cos_name>`——多版本形象分目录隔离防物理覆盖）并返回路径 `PROMPT_PATH`。
+char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md`（hexid 目录段——目录=图链路径，文件名=本节点 id；多版本形象天然隔离）并返回路径 `PROMPT_PATH`。
 
 #### 生成图片
 
@@ -85,7 +85,7 @@ char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_name>/<dir>
 
 > **透明参数必传**（2026-09-13 生产实测）：仅靠 prompt 英文透明措辞连续 3 次返回 RGB（服务端行为已变）；措辞 + `--background transparent --output-format png` 同时在场才稳定直出 RGBA。
 
-`OUTPUT_PATH = 06_角色美术/<char_name>/<dir>/立绘/<variant_label>.png`（`<dir>` 同上 slug 规则）。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
+`OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.png`（hexid 目录段同上；文件名=本节点 id——运行时立绘键 = hexid(stand_id) 与此同源）。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
 
 #### 透明校验（生成后、写图前——先产物后写图铁律的校验步）
 
@@ -127,13 +127,13 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 ## 批量模式流程（≥2 个 stand_id 时替代第 2~3 步的串行子 skill 链）
 
 1. **批量查状态**：第 1 步的查询把 `id:'<stand_id>'` 换成 `stand.id IN ['<id1>','<id2>',...]`，一次取回全部（含各自 illus/voice/cos/ds 上游）。前驱校验同单变体：`illus_status≠11` 的**剔除并在汇报中报警跳过**，不阻塞其余。
-2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char>/<dir>/立绘/<variant>.md`，Mode C 模板与画风段不变、透明措辞行原样保留）。
+2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md`，Mode C 模板与画风段不变、透明措辞行原样保留）。
 3. **构造任务清单** Write 到 `.tmp/stand-batch-<stem>-sec<MM>.json`：
 
    ```json
    [{"stand_id": "...", "variant_label": "...",
-     "prompt_path": "06_角色美术/.../<variant>.md",
-     "output_path": "06_角色美术/.../<variant>.png",
+     "prompt_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md",
+     "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.png",
      "ref_image": "<illus_image>",
      "illus_id": "...", "voice_id": "...",
      "tags": {"eye": "...", "brow": "...", "mouth": "...",

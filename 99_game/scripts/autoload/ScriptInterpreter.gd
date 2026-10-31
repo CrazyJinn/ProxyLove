@@ -326,9 +326,12 @@ func _find_label(name: String) -> int:
 	return -1
 
 # 存档快照：V1 无变量无 flag，状态 = 文件/段/指针/槽。供 SaveManager 持久化。
+# v2（2026-10-31 id 锚定）：file = hexid(Chapter.id)——章 stem 全量换 id 后旧档
+# （v1 chapterNN_ 名 / 旧键）必然失配，restore 护栏拦截（见 restore）。
 func snapshot() -> Dictionary:
 	var blk: Dictionary = _scenes[_scene_idx] if _scene_idx < len(_scenes) else {}
 	return {
+		"v": 2,
 		"file": _file,
 		"scene_id": blk.get("id", ""),
 		"line_idx": _line_idx,
@@ -338,6 +341,12 @@ func snapshot() -> Dictionary:
 
 # 从快照恢复运行时状态，套用当前段视觉并从 line_idx 继续执行。
 func restore(snapshot_data: Dictionary) -> void:
+	if int(snapshot_data.get("v", 1)) < 2:
+		# v1 旧档（章名 stem / 旧资源键）与 id 锚定发布产物不兼容——明示废弃，
+		# 不做映射层（3 章未上线，迁移收益为负）。回标题由调用方处理。
+		push_error("ScriptInterpreter: 存档版本过旧（v%d < 2，id 锚定切换前的档）——已废弃" % int(snapshot_data.get("v", 1)))
+		chapter_finished.emit()
+		return
 	if _loader == null:
 		_loader = _ChapterLoader.new()
 	slots = snapshot_data.get("slots", {"left": null, "center": null, "right": null})

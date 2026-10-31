@@ -2,7 +2,7 @@
 name: ambient-sfx-designer
 description: |
   推进单节音频环境行（LineAudio op=transition 点状音效 sfx + op=bed_start 音床起，status=0）的音频产出——「实录 foley + AudioFly 声景」双通道：
-  ① ambient_tasks.py 查待产行并预计算 track（前缀 amb-/bed-，杜绝手拼 key；bed 行并带出行上存量 prompt 供复用）→
+  ① ambient_tasks.py 查待产行并预计算 track（= hexid(行id)，杜绝手拼 key；bed 行并带出行上存量 prompt 供复用）→
   ② 类型由图行 op 决定（ambient_tasks.py 直带 kind）：sfx 点状行（短事件，1~2s 播完接下一句）走 Freesound CC0 实录检索，bed 音床行（声景 ~10s 全长原样）走 AudioFly 生成 →
   ③ Freesound 链：匿名 curl 搜索（CC0+时长过滤）→ 取最佳 1 条候选落 .tmp/ambient/ 请用户试听 → 转码落母带 + 15_声音/sfx_raw/SOURCES.md 登记；
   AudioFly 链：prompt 复用行上存量或现场翻写（AudioCaps 风格英文）→ ambient_fly.py jobs 单候选（env/.venv-audiofly）→ 用户试听 → finalize（bed 全长原样无淡入淡出，一次性播放；未播完时用户推进由程序 1s 淡出）→
@@ -27,7 +27,7 @@ allowed-tools: Read, Bash, Write, Edit, Skill
 | sfx | 点状短事件（有明确起振/动作语义） | **Freesound CC0 实录** | 1~2s（峰值截取）+ 短淡出，**播完再接下一句** | 扩散模型对秒级高频单发事件糊，实录真实感碾压 |
 | bed | 持续声景（底噪/氛围语义，区间播放） | **AudioFly 生成** | ~10s **全长原样**（无淡入淡出，**一次性播放不循环**——自然播完后推进直接切句；未播完时用户推进 → **1s 程序淡出**后再切句） | AudioCaps 评测超 Stable Audio Open（FD 40.1 vs 78.24），Apache 2.0 |
 
-**track（= 母带/manifest 统一键）**：`<prefix>-<chapter_stem>-<scene_block_id>-<行节点id>`（sfx 行 prefix=amb（历史沿用）；bed 行 prefix=bed），由 ambient_tasks.py 预计算——**LLM 不手拼 key**；**行上已有 track 沿用原键**（键一经落图终身不换前缀，重跑覆盖母带）。母带 `15_声音/<stem>/<block>/<track>.wav`（审批试听源）；运行时副本 `99_game/assets/sfx/<track>.wav` 由 chapter-publisher 发布时按 status=11 拷贝，本 skill 不碰 99_game。
+**track（= 母带/manifest 统一键）**：`hexid(行节点id)`（16 位小写 hex；voice/sfx 归属由图字段区分，播放行为由 op 分发——amb-/bed- 前缀已废），由 ambient_tasks.py 预计算——**LLM 不手拼 key**。母带 = 图行 `master_path` 属性（`15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，审批试听源；jobs JSON 已带）；运行时副本 `99_game/assets/sfx/<track>.wav` 由 chapter-publisher 发布时按 status=11 拷贝，本 skill 不碰 99_game。
 
 ## 参数
 
@@ -72,7 +72,7 @@ curl -s "https://freesound.org/people/<user>/sounds/<id>/" -H "User-Agent: Mozil
 - 候选下载后**停下请用户试听**（`.tmp/ambient/`）。
 **单候选制**（用户 2026-08-29 定）：每行只出 1 个候选试听，不做多选一——不满意就换检索词/换 seed 重出下一版，迭代到满意为止。
 - 选定后：mp3 转 wav（`env/.venv-audiofly` 的 soundfile 可读 mp3）+ 裁剪（峰值截取 1~2s，可复用 `ambient_fly.py finalize --kind sfx --cut <秒>`，传 mp3 转出的临时 wav）+ 落母带路径。
-- **SOURCES.md 登记**（Steam 商售合规留存）：在 `15_声音/sfx_raw/SOURCES.md` 追加一行 `| <文件 stem> | <声音名> | <作者> | <详情页 URL> | CC0 | <成品 track> | 备注 |`（成品 track 列填本行 amb-… 键——dashboard 批准后**人工**按此列清理原始素材，登记文本保留）。
+- **SOURCES.md 登记**（Steam 商售合规留存）：在 `15_声音/sfx_raw/SOURCES.md` 追加一行 `| <文件 stem> | <声音名> | <作者> | <详情页 URL> | CC0 | <成品 track> | 备注 |`（成品 track 列填本行 hexid 键——dashboard 批准后**人工**按此列清理原始素材，登记文本保留）。
 - **无损升级可选不阻塞**：先以预览版落盘写图（流水线不断）；SKILL 汇报里注明「用户可事后登录 freesound.org 下载无损原件覆盖同名母带，track 不变图不动」。
 - curl 失败/限流 → 降级：报告搜索结果页链接请用户手选，不硬造。
 
@@ -83,7 +83,7 @@ curl -s "https://freesound.org/people/<user>/sounds/<id>/" -H "User-Agent: Mozil
 env/.venv-audiofly/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/ambient_fly.py" jobs '.tmp/ambient-jobs-<stem>-sec<MM>.json'
 # ② 用户选定后 finalize（音床：全长 ~10s 原样无淡入淡出；点状语义误判可 --kind sfx --cut 1.5）
 env/.venv-audiofly/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/ambient_fly.py" finalize \
-  '.tmp/ambient/<track>_c<N>.wav' '15_声音/<stem>/<block>/<track>.wav' --kind bed
+  '.tmp/ambient/<track>_c<N>.wav' '<jobs 内 master_path>' --kind bed
 ```
 
 **prompt（bed 行专用，持久化）**：jobs JSON 的 `prompt` 字段——**行上已有存量 prompt（ambient_tasks 已带出）则直接复用**（汇报注明「沿用行上 prompt」，用户明确要求换措辞才重写）；为空才由 LLM 从中文语义翻写为**英文**（AudioCaps 风格：声源+空间+氛围修饰，如「雨点骤然砸落」→ `Rain suddenly starts falling on a city street, rapidly growing heavier, raindrops hitting wet asphalt`），回填 jobs 后再跑 ①。**最终 prompt 随 §3 写图持久化到行节点**（`l.prompt`）——重产可复用、dashboard 可查看。
@@ -122,6 +122,6 @@ EOF
 ## 参考文档
 
 - 行模型：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md)（LineAudio op=transition/bed_start/bed_end / bed / ambient_track / status）
-- track 解析与母带路径：[voice_bundler.py](../section-voice-publisher/scripts/voice_bundler.py)（split_voice_key / voice_master_path / make_ambient_track）
+- 键生成与母带路径：[voice_bundler.py](../section-voice-publisher/scripts/voice_bundler.py)（make_ambient_track / make_master_path）
 - AudioFly 环境（env/.venv-audiofly 重建）与能力边界：[ambient_fly.py](scripts/ambient_fly.py) 模块 docstring
 - Freesound 素材登记：[15_声音/sfx_raw/SOURCES.md](../../../15_声音/sfx_raw/SOURCES.md)

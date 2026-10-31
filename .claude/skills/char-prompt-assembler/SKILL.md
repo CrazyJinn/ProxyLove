@@ -59,9 +59,9 @@ allowed-tools: Read, Bash, Write, Edit
     "appearance":"...(自由文本:综合气质/身高)","visual_tone":"...","first_impression":"...", "height_cm":"(可选 int)"
   },
   "character": {"id":"<char_id>","name":"..."},
-  "base": {"image":"06_角色美术/<char_name>/参考图.<png|jpg|jpeg>","summary":"真人参考照片（单张）"},
+  "base": {"image":"06_角色美术/<char_id>/参考图.<png|jpg|jpeg>","summary":"真人参考照片（单张，路径=Character.ref_image_path 属性或 hexid 目录探测）"},
   "node": {"id":"<designsheet_node_id>"},
-  "output_path": "06_角色美术/<char_name>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/prompt.md"
 }
 ```
 
@@ -74,11 +74,11 @@ allowed-tools: Read, Bash, Write, Edit
 **data 参数结构**：
 ```json
 {
-  "base": { "image": "06_角色美术/<char_name>/设计图.png", "summary": "参考版设计图（同人物）" },
+  "base": { "image": "06_角色美术/<char_id>/<base_ds_id>/设计图.png", "summary": "参考版设计图（同人物）" },
   "delta": { "notes": "<口述改动原文>", "negation": "<对参考图旧特征的显式否定（只否定被变更维度）>" },
   "character": {"id":"<char_id>","name":"..."},
   "node": {"id":"<新designsheet_node_id>"},
-  "output_path": "06_角色美术/<char_name>/<slug>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<新ds_id>/prompt.md"
 }
 ```
 
@@ -97,7 +97,7 @@ allowed-tools: Read, Bash, Write, Edit
   "illus": {"adaptation_notes":"...(可选)"},
   "character": {"id":"<char_id>","name":"..."},
   "node": {"id":"<illusdesign_node_id>"},
-  "output_path": "06_角色美术/<char_name>/<CostumeStyle.name>/prompt.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"
 }
 ```
 
@@ -117,7 +117,7 @@ allowed-tools: Read, Bash, Write, Edit
   "voice": {"emotion_patterns":"...","description":"..."},
   "character": {"id":"<char_id>","name":"..."},
   "node": {"id":"<standing_node_id>"},
-  "output_path": "06_角色美术/<char_name>/<CostumeStyle.name>/立绘/<variant_label>.md"
+  "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md"
 }
 ```
 

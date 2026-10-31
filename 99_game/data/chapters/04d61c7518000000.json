@@ -1,0 +1,579 @@
+{
+  "meta": {
+    "chapter": 0,
+    "title": "序章",
+    "requires": {
+      "characters": [
+        "顾盈",
+        "陆择",
+        "小夏",
+        "伊芙"
+      ],
+      "scenes": [
+        "04a4d0ca64800000",
+        "04c03a73cbc00004",
+        "04a4d6069f800000",
+        "04af869238800000"
+      ],
+      "portraits": [
+        "04b49acbc8000004",
+        "04bfdff75b800000",
+        "04b49acbc8000002",
+        "04e30d6864400000",
+        "04b49acbc8000003",
+        "04bfdff75b800001",
+        "04e30f382c000000",
+        "04c18863ac400000",
+        "04c18863ac400002",
+        "04e30f3aec800000",
+        "04e30f4b73c00000",
+        "04b49acbc8000005",
+        "04b49acbc8000007",
+        "04b49acbc800000a",
+        "04e30fa00b800000",
+        "04b49acbc8000009",
+        "04b49acbc8000006",
+        "04b49acbc8000008",
+        "04c7e986f2400000",
+        "04e30fc96dc00000"
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "OiZR8tKjLc",
+      "scene": "04a4d0ca64800000",
+      "time": "清晨",
+      "section_title": "酒店醒来",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "清晨，一缕阳光从窗帘的缝隙钻进来。"
+        },
+        {
+          "op": "narrate",
+          "text": "昨夜的酒气还没散透。外套歪在椅背上，两只杯子空在床头，谁也没打算收拾。"
+        },
+        {
+          "op": "bed_start",
+          "bed": "bath",
+          "track": "04e050a416400003"
+        },
+        {
+          "op": "narrate",
+          "text": "浴室传来哗哗的水声。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "bath"
+        },
+        {
+          "op": "narrate",
+          "text": "顾盈的身影透过磨砂玻璃，若隐若现。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择朦胧地睁开眼睛，摇了摇头，想尽快从宿醉中清醒过来。"
+        },
+        {
+          "op": "narrate",
+          "text": "水声停了，一阵窸窸窣窣之后，顾盈推开门走了出来。"
+        },
+        {
+          "op": "narrate",
+          "text": "白衬衫松松垮垮地罩在她身上，发梢还滴着水。"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000004",
+          "pos": "left",
+          "text": "哟，醒这么早？",
+          "voice": "04e050a416400007"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800000",
+          "pos": "right",
+          "text": "哎……没办法，等下还要赶飞机。",
+          "voice": "04e050a416400008"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800000",
+          "pos": "right",
+          "text": "这不是我的衬衫嘛。",
+          "voice": "04e050a416400009"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000002",
+          "pos": "left",
+          "text": "这儿乱七八糟的，随手抓到了这件。",
+          "voice": "04e050a41640000a"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04e30d6864400000",
+          "pos": "right",
+          "text": "别说，你穿着还挺好看。",
+          "voice": "04e050a41640000b"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000003",
+          "pos": "left",
+          "text": "和不穿比呢？",
+          "voice": "04e050a41640000c"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800001",
+          "pos": "right",
+          "text": "都好看，各有各的韵味。",
+          "voice": "04e050a41640000d"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000004",
+          "pos": "left",
+          "text": "哼，嘴可真甜呀。",
+          "voice": "04e050a41640000e"
+        },
+        {
+          "op": "narrate",
+          "text": "顾盈对着镜子擦头发。"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000003",
+          "pos": "left",
+          "text": "没看出来，昨晚你还挺厉害的。要不加个微信？",
+          "voice": "04e050a416400010"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800001",
+          "pos": "right",
+          "text": "还是别了，昨晚地动山摇的，下次我怕床受不了。",
+          "voice": "04e050a416400011"
+        },
+        {
+          "op": "narrate",
+          "text": "顾盈耸了耸肩，没再坚持。"
+        },
+        {
+          "op": "narrate",
+          "text": "顾盈开始化妆。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800000",
+          "pos": "right",
+          "text": "这附近有咖啡店么？",
+          "voice": "04e050a416400014"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000004",
+          "pos": "left",
+          "text": "怎么，想请我喝咖啡？",
+          "voice": "04e050a416400015"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04e30d6864400000",
+          "pos": "right",
+          "text": "我倒是想，可是等不及你化妆了，10点的飞机。",
+          "voice": "04e050a416400016"
+        },
+        {
+          "op": "say",
+          "who": "顾盈",
+          "portrait": "04b49acbc8000002",
+          "pos": "left",
+          "text": "街角有一家，拿铁还不错。",
+          "voice": "04e050a416400017"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04bfdff75b800000",
+          "pos": "right",
+          "text": "谢啦。",
+          "voice": "04e050a416400018"
+        },
+        {
+          "op": "narrate",
+          "text": "顾盈换回自己裙子，对着镜子继续上妆。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择穿戴整齐，推门而出。"
+        },
+        {
+          "op": "narrate",
+          "text": "门在身后合上。房间里，吹风机的声音很快响了起来。"
+        }
+      ],
+      "bgm": {
+        "track": "04d620dfa3000000",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "PHuTf3ogEu",
+      "scene": "04c03a73cbc00004",
+      "time": "清晨",
+      "section_title": "骤雨车祸",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "街角的咖啡店。刚开门的清晨，店里没有顾客，咖啡机吐着蒸汽，暖黄的灯光落在空着的座位上。"
+        },
+        {
+          "op": "transition",
+          "track": "04e1b3bd29400000"
+        },
+        {
+          "op": "say",
+          "who": "小夏",
+          "portrait": "04e30f382c000000",
+          "pos": "left",
+          "text": "欢迎光临，请问想喝点什么。",
+          "voice": "04e0742360800002"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04c18863ac400000",
+          "pos": "right",
+          "text": "来一杯拿铁，打包。",
+          "voice": "04e0742360800003"
+        },
+        {
+          "op": "say",
+          "who": "小夏",
+          "portrait": "04e30f382c000000",
+          "pos": "left",
+          "text": "抱歉，我们刚开门，牛奶还没备好——美式可以么？",
+          "voice": "04e0742360800004"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04c18863ac400002",
+          "pos": "right",
+          "text": "行吧，看在你这么可爱的份上。",
+          "voice": "04e0742360800005"
+        },
+        {
+          "op": "narrate",
+          "text": "小夏耳根一红，低下头去。"
+        },
+        {
+          "op": "say",
+          "who": "小夏",
+          "portrait": "04e30f3aec800000",
+          "pos": "left",
+          "text": "您的美式。",
+          "voice": "04e0742360800007"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04c18863ac400000",
+          "pos": "right",
+          "text": "请问，机场大巴在哪儿坐？",
+          "voice": "04e0742360800008"
+        },
+        {
+          "op": "say",
+          "who": "小夏",
+          "portrait": "04e30f382c000000",
+          "pos": "left",
+          "text": "就在街对面，20分钟一趟。",
+          "voice": "04e0742360800009"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择道了声谢，拎着打包杯走到门口。"
+        }
+      ],
+      "bgm": {
+        "track": "04d62197ccc00000",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "Oib4U5kSnI",
+      "scene": "04a4d6069f800000",
+      "time": "白天",
+      "section_title": "骤雨车祸",
+      "lines": [
+        {
+          "op": "bed_start",
+          "bed": "rain",
+          "track": "04e1b3bd29400001"
+        },
+        {
+          "op": "narrate",
+          "text": "天突然暗了下来，接着淅淅沥沥地落起雨来。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "rain"
+        },
+        {
+          "op": "narrate",
+          "text": "雨点砸在湿滑的沥青路面上，积水洼里晃着破碎的霓虹。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择推开咖啡店的门，一股湿冷的水汽扑面而来。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04e30f4b73c00000",
+          "pos": "left",
+          "text": "什么鬼天气。",
+          "voice": "04e074236080000f"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择低声骂了一句，把衣领竖了起来。"
+        },
+        {
+          "op": "bed_start",
+          "bed": "motor",
+          "track": "04e1b3bd29400002"
+        },
+        {
+          "op": "narrate",
+          "text": "远处一辆摩托车发出了巨大的轰鸣。"
+        },
+        {
+          "op": "bed_end",
+          "bed": "motor"
+        },
+        {
+          "op": "narrate",
+          "text": "人行横道的绿灯开始倒计时。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择加快脚步小跑起来，想抢在红灯之前冲过马路。"
+        },
+        {
+          "op": "narrate",
+          "text": "摩托车轰鸣着冲了出来。"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择被重重地撞飞了出去，后脑勺磕在马路牙子上。"
+        },
+        {
+          "op": "narrate",
+          "text": "所有声音在同一瞬间被抽空。"
+        }
+      ],
+      "bgm": {
+        "track": "04d62197e9000000",
+        "mode": "play",
+        "loop": true
+      }
+    },
+    {
+      "id": "OwNTDArnfs",
+      "scene": "04af869238800000",
+      "time": "黄昏",
+      "section_title": "夹缝试炼",
+      "lines": [
+        {
+          "op": "narrate",
+          "text": "这里像一座荒废的神庙——断裂的列柱沿着石板路排向远方，尽头隐在细雾里。"
+        },
+        {
+          "op": "narrate",
+          "text": "暮光停在将暗未暗的时刻，不再往下沉。四下安静得没有风，也没有回声。"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04b49acbc8000005",
+          "pos": "left",
+          "text": "这……是哪？",
+          "voice": "04e0752194400003"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000007",
+          "pos": "right",
+          "text": "这是你意识里的世界",
+          "voice": "04e0752194400004"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04b49acbc8000005",
+          "pos": "left",
+          "text": "你是谁",
+          "voice": "04e0752194400005"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc800000a",
+          "pos": "right",
+          "text": "按你们凡间的说法，算是天使吧",
+          "voice": "04e0752194400006"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04e30fa00b800000",
+          "pos": "left",
+          "text": "我……这是死了么？",
+          "voice": "04e0752194400007"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000007",
+          "pos": "right",
+          "text": "嗯，你被一辆闯红灯的摩托车撞倒，在送去医院的路上就没了呼吸",
+          "voice": "04e0752194400008"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择瞪大了双眼，一脸不可置信地看着眼前的女孩。"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000007",
+          "pos": "right",
+          "text": "嗯……我看看接下来的流程",
+          "voice": "04e075219440000a"
+        },
+        {
+          "op": "narrate",
+          "text": "伊芙掏出了一张羊皮纸。"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000009",
+          "pos": "right",
+          "text": "你要下地狱！",
+          "voice": "04e075219440000c"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04e30fa00b800000",
+          "pos": "left",
+          "text": "为什么，我可没做过什么伤天害理的事",
+          "voice": "04e075219440000d"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc800000a",
+          "pos": "right",
+          "text": "呃……这上面写着：因为伤害众多女孩感情",
+          "voice": "04e075219440000e"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04b49acbc8000006",
+          "pos": "left",
+          "text": "这就得下地狱啦？",
+          "voice": "04e075219440000f"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000008",
+          "pos": "right",
+          "text": "以前倒是还好，但是现在审判庭换了一个姐姐。不过你还有一个机会拯救自己",
+          "voice": "04e0752194400010"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04b49acbc8000006",
+          "pos": "left",
+          "text": "什么机会",
+          "voice": "04e0752194400011"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000009",
+          "pos": "right",
+          "text": "用你的特长去拯救6个弱者",
+          "voice": "04e0752194400012"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000007",
+          "pos": "right",
+          "text": "你的灵魂会穿越到弱者的身上，进入他的身体，以他的身份替他生活30天。",
+          "voice": "04e0752194400013"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04b49acbc8000007",
+          "pos": "right",
+          "text": "至于什么样的人算弱者——对于你的特长来说，是那些认真对待了感情，结果却落得伤痕累累的人。",
+          "voice": "04e0752194400014"
+        },
+        {
+          "op": "say",
+          "who": "陆择",
+          "portrait": "04c7e986f2400000",
+          "pos": "left",
+          "text": "拯救了他们，对我有什么好处",
+          "voice": "04e0752194400015"
+        },
+        {
+          "op": "say",
+          "who": "伊芙",
+          "portrait": "04e30fc96dc00000",
+          "pos": "right",
+          "text": "好处是……糟糕要来不及了!",
+          "voice": "04e0752194400016"
+        },
+        {
+          "op": "narrate",
+          "text": "陆择突然眼前一花，感觉被吸入了一个巨大的漩涡。"
+        }
+      ],
+      "bgm": {
+        "track": "04d6226350c00000",
+        "mode": "play",
+        "loop": true
+      }
+    }
+  ]
+}

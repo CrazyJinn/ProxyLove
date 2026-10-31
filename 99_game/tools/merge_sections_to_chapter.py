@@ -32,6 +32,7 @@ import sys
 from pathlib import Path
 
 from portrait_key import make_key
+from snowflake_base62 import to_hexid
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]  # Asset 项目根（图上 rel_path 的锚）
 _SCRIPTS_DIR = _REPO_ROOT / ".claude" / "scripts"
@@ -91,7 +92,7 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     内容行（除 hide）与图行逐行 _sig 同构——漂移即 raise 引导重拆（发布 gate 保证
     拆分后两边一致）。
 
-    blocks = 行 scene_block_id 派生块表 [{block, scene_name, time}]；
+    blocks = 行 scene_block_id 派生块表 [{block, scene_key, time}]（scene_key=hexid(Scene.id)）；
     portrait_keys = {行id: 立绘 guid 整键}（fetch_uses_portrait_keys 沿 uses 边解析——
     say.portrait 的唯一来源，无边的 say 行投影空串）。
     内容文本取 ink 行（内容权威）；音频/选绘事实取图行（voice_key/ambient_track/lid）。
@@ -115,16 +116,17 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
         if v and v not in seq:
             seq.append(v)
 
-    scenes = [{"id": b["block"], "scene": b.get("scene_name") or "",
+    scenes = [{"id": b["block"], "scene": b.get("scene_key") or "",
                **({"time": b["time"]} if b.get("time") else {})} for b in blocks]
     for s in scenes:
         _keep(scenes_seq, s["scene"])
     # Day 过场数据（ink 是唯一来源，此处只搬运）：节标题 + 块 day（块级覆盖，缺省节级；
     # 无日（如序章）两键都不写，运行时节间不播 Day 过场）
-    if ink_title:
+    title_out = ink_title or (sec_title or "")  # ink 头优先，图 Section.title 兜底（旧流程 ink 无头注释）
+    if title_out:
         for s in scenes:
-            s["section_title"] = ink_title
-            d = (block_days or {}).get(s["id"], sec_day)
+            s["section_title"] = title_out
+            d = (block_days or {}).get(s["id"], sec_day)  # day 仅 ink 来源（图无日概念）
             if d is not None:
                 s["day"] = d
 
@@ -134,12 +136,24 @@ def graph_lines_to_doc(lines: list, blocks, scene_times: dict, chapter_no, sec_t
     block2scene = {b["block"]: s for b, s in zip(blocks, scenes)}
     cur = None
     prev_block = None
+    opened = {}  # block -> 当前打开的 scene dict——同 id 切走再切回时新开区间
+    # （同机位多段：块 id=scene_id 直连，节内 V→T→V 的第二个 V 是独立区间——运行时
+    #  背景切回该机位；若回填首块会把末段行提到前面、且丢失背景切换）
     pos_map = {}
     gi = 0  # 图行指针（content 与 lines 同序同构，已校验）
     for m in ink_rows:
         if m.get("scene_block_id") != prev_block:  # 换块：切块 + 重算座位表（块规则 + 声明覆盖）
             prev_block = m.get("scene_block_id")
-            cur = block2scene.get(prev_block)
+            base = block2scene.get(prev_block)
+            if prev_block in opened and base is not None:
+                # 切走再切回：克隆块头新开区间（同 id 第二个 scene-block，段序由行序承载）
+                cur = {k: v for k, v in base.items() if k != "lines"}
+                scenes.append(cur)
+                opened[prev_block] = cur
+            else:
+                cur = base
+                if base is not None:
+                    opened[prev_block] = base
             pos_map = _block_pos_map(rows_by_block.get(prev_block) or [])
             pos_map.update(pos_overrides.get(prev_block) or {})
         if cur is None:
@@ -225,11 +239,10 @@ def _in_sections(no, wanted) -> bool:
 
 
 def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
-    """沿 uses 边解析全章 say 行立绘整键 → ({行id: 整键}, [缺边行id])。
+    """沿 uses 边解析全章 say 行立绘键 → ({行id: 键}, [缺边行id])。
 
-    与 scene_times 同款的二次查询模式（主查询不内联 OPTIONAL uses 边——防行乘积破坏
-    逐行投影）。costume 经 stand 自身 IllusDesign 回溯（stand 唯一 → 键唯一，同场换装
-    歧义结构上不存在）；孤儿立绘（无 outfit_for）→ make_key 的 None costume 三段键。
+    键 = hexid(stand_id)（id 锚定，与 manifest.portraits/assets 文件名同源）——
+    stand 唯一 → 键唯一，无需回溯 costume/variant（旧整键的 name 段已废）。
     section_nos={0,1} 时仅解析所选节（部分发布——未选节的缺边行不进 missing 警告）。
     """
     rows = _run_cypher(
@@ -237,10 +250,7 @@ def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
         "-[:produces]->(l:LineAudio) "
         "WHERE l.op = 'say' "
         "OPTIONAL MATCH (l)-[:uses]->(st:StandingIllustration) "
-        "OPTIONAL MATCH (illus:IllusDesign)-[:expands_to]->(st) "
-        "OPTIONAL MATCH (costume:CostumeStyle)-[:outfit_for]->(illus) "
-        "RETURN l.id AS lid, l.who AS who, st.id AS stand_id, st.variant_label AS variant, "
-        "costume.name AS costume, sec.section_no AS sno"
+        "RETURN l.id AS lid, st.id AS stand_id, sec.section_no AS sno"
     )
     keys, missing, seen = {}, [], set()
     for r in rows:
@@ -250,11 +260,10 @@ def fetch_uses_portrait_keys(chapter_id: str, section_nos=None) -> tuple:
         if not r.get("stand_id"):
             missing.append(lid)
             continue
-        if lid in seen:      # 防御：多 costume/多 illus 回溯行乘积，取首行
+        if lid in seen:      # 防御：行乘积取首行
             continue
         seen.add(lid)
-        keys[lid] = make_key(r.get("who") or "", r.get("variant") or "",
-                             r.get("stand_id"), r.get("costume"))
+        keys[lid] = make_key(r.get("stand_id"))
     return keys, missing
 
 
@@ -292,15 +301,15 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
     chapter_no, chapter_title = rows[0]["no"], rows[0]["title"]
 
     # 块时段/块结构：行 scene_block_id（=scene_id）直查 Scene——
-    # id 直连取 time_of_day 与场景名（ink 注释名仅供人读，投影以图为准）
+    # id 直连取 time_of_day；场景段 scene 键 = hexid(Scene.id)（id 锚定，name 不进投影）
     scene_of = {}
     bid_set = sorted({r["scene_block_id"] for r in rows if r.get("scene_block_id")})
     if bid_set:
         for t in _run_cypher(
                 "MATCH (s:Scene) WHERE s.id IN ["
                 + ",".join("'" + b.replace("'", "\\'") + "'" for b in bid_set)
-                + "] RETURN s.id AS bid, s.name AS name, s.time_of_day AS t"):
-            scene_of[t["bid"]] = {"scene_name": t.get("name") or "", "time": t.get("t") or ""}
+                + "] RETURN s.id AS bid, s.time_of_day AS t"):
+            scene_of[t["bid"]] = {"scene_key": to_hexid(t["bid"]), "time": t.get("t") or ""}
 
     # 立绘整键：沿 uses 边二次查询（say 行无 uses = 选绘缺口，发布警告、投影空串）
     portrait_keys, no_uses = fetch_uses_portrait_keys(chapter_id, section_nos=section_nos)
@@ -335,7 +344,7 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
                 if not info:
                     problems.append(f"{sec_tag}：行块 id {b} 不命中图 Scene（非 scene_id？）")
                     continue
-                blocks.append({"block": b, "scene_name": info["scene_name"],
+                blocks.append({"block": b, "scene_key": info["scene_key"],
                                "time": info["time"]})
         if problems:
             continue
@@ -360,9 +369,11 @@ def fetch_chapter(chapter_id: str, section_nos=None) -> dict:
         if sec_day is None and int(chapter_no) > 0:
             sys.stderr.write(f"[warn] {sec_tag}：ink 头注释未解析到 Day，本节 day/节标题不注入\n")
         try:
-            sections.append(graph_lines_to_doc(line_rows, blocks, {}, chapter_no, sec_title,
-                                               portrait_keys=portrait_keys, ink=ink,
-                                               sec_day=sec_day, ink_title=ink_title, block_days=blk_days))
+            sec_doc = graph_lines_to_doc(line_rows, blocks, {}, chapter_no, sec_title,
+                                         portrait_keys=portrait_keys, ink=ink,
+                                         sec_day=sec_day, ink_title=ink_title, block_days=blk_days)
+            sec_doc["_section_no"] = int(section_no)  # 章级拼接跨节去重用
+            sections.append(sec_doc)
         except ValueError as e:
             problems.append(str(e))
     if problems:
@@ -417,7 +428,7 @@ def _union(*lists):
 
 
 def _inject_bgm(scenes, bgm_map):
-    """把 bgm_map（{scene_name: {track, mode, loop}}）写入对应 scene-block 的 bgm 字段。
+    """把 bgm_map（{scene_hexid: {track, mode, loop}}）写入对应 scene-block 的 bgm 字段。
 
     map 由 generate_portrait_map.py 查图产出（仅 status=2 的 BgmTrack 进 map，
     未就绪的上游已打警告）。mode/loop 在 map 侧已填默认（play/true），此处原样写入。
@@ -444,17 +455,32 @@ def merge(sections, chapter, title, chapter_map=None):
         "portraits": _union(*[r.get("portraits") for r in reqs]),
     }
 
-    # scenes 按节序拼接 + id 章内唯一性校验
+    # scenes 按节序拼接；id 章内唯一——同机位跨节复用（合法形态：多节同景）时
+    # 后续节加节前缀去重（secNN-<block_id>），首次出现保持原图 block id。
+    # 前缀仅存在于章 JSON（运行时段定位键章内自洽）；图行 scene_block_id 不变。
     scenes = []
     seen_ids = set()
     for s in sections:
+        sec_no = int(s.get("_section_no", 0))
+        sec_map = {}  # 本节 原始 id → 输出 id（节内多区间复用同一输出 id；跨节首见才前缀）
         for blk in s.get("scenes", []) or []:
             bid = blk.get("id")
-            if bid in seen_ids:
-                raise ValueError(
-                    f"scene-block id 重复（非章内唯一）：{bid!r}——structurer 应在分节规划时预分配唯一 id"
-                )
-            seen_ids.add(bid)
+            if not bid:
+                scenes.append(blk)
+                continue
+            if bid in sec_map:            # 本节多区间：复用输出 id（原样或本节前缀形态）
+                out_id = sec_map[bid]
+            elif bid in seen_ids:         # 跨节复用首见：节前缀去重
+                out_id = f"sec{sec_no:02d}-{bid}"
+                while out_id in seen_ids:
+                    out_id += "x"
+            else:                          # 全章首见
+                out_id = bid
+            sec_map[bid] = out_id
+            seen_ids.add(out_id)
+            if out_id != bid:
+                blk = dict(blk)
+                blk["id"] = out_id
             scenes.append(blk)
 
     # BGM 注入（chapter-map 现仅 bgm 段）

@@ -407,7 +407,7 @@ def test_order_exhaustion_triggers_full_reorder():
 # ── build_actions：keep 的恢复与保留 ──
 
 def test_keep_restores_minus1_with_wav(monkeypatch):
-    monkeypatch.setattr(sp, "_wav_exists", lambda key: True)
+    monkeypatch.setattr(sp, "_wav_exists", lambda mp, key="": True)
     g = _g("say", "第一句", who="A", order=1000, nid="a", status=-1, voice_key="k1")
     md = [{"op": "say", "who": "A", "text": "第一句", "scene_block_id": "s0"}]
     plan = sp.align(md, [g])
@@ -418,7 +418,7 @@ def test_keep_restores_minus1_with_wav(monkeypatch):
 
 
 def test_keep_restores_minus1_without_wav_to_zero(monkeypatch):
-    monkeypatch.setattr(sp, "_wav_exists", lambda key: False)
+    monkeypatch.setattr(sp, "_wav_exists", lambda mp, key="": False)
     g = _g("say", "第一句", who="A", order=1000, nid="a", status=-1, voice_key="k1")
     md = [{"op": "say", "who": "A", "text": "第一句", "scene_block_id": "s0"}]
     plan = sp.align(md, [g])
@@ -431,7 +431,7 @@ def test_keep_restores_minus1_transition_and_bed_with_wav(monkeypatch):
     """修复锁定：transition/bed_start 行 -1 恢复按「track 在+wav 在→10 否则 0」——
     旧写法 `op=='ambient' or ambient_text` 是死条件（md 侧永无 ambient op），
     实际落 else 置 11，违反 ambient-sfx-designer 宣称。"""
-    monkeypatch.setattr(sp, "_wav_exists", lambda key: True)
+    monkeypatch.setattr(sp, "_wav_exists", lambda mp, key="": True)
     for op, extra in (("transition", {}), ("bed_start", {"bed": "rain"})):
         g = dict(_g(op, "雨声", order=1000, nid="t1", status=-1), ambient_track="amb-x-t1", **extra)
         md = [dict({"op": op, "text": "雨声", "scene_block_id": "s0"}, **extra)]
@@ -439,7 +439,7 @@ def test_keep_restores_minus1_transition_and_bed_with_wav(monkeypatch):
         seq, _ = sp.assign_orders(md, plan)
         _, report = sp.build_actions(seq, plan, "SC")
         assert report["restored"] == [{"id": "t1", "to": 10}], op
-    monkeypatch.setattr(sp, "_wav_exists", lambda key: False)
+    monkeypatch.setattr(sp, "_wav_exists", lambda mp, key="": False)
     g = dict(_g("transition", "雨声", order=1000, nid="t2", status=-1), ambient_track="amb-x-t2")
     md = [{"op": "transition", "text": "雨声", "scene_block_id": "s0"}]
     plan = sp.align(md, [g])

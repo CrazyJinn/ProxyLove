@@ -3,17 +3,21 @@
 被 section-voice-publisher / chapter-publisher 与手动流程共用，保证
 「wav/ogg 文件名 / manifest.voices 键 / 章 JSON 的 say.voice 字段」三处对齐。
 
-键格式：<char>-<chapter_stem>-<scene_block_id>-<行节点id>
-  - chapter_stem = chapter JSON 文件名（去扩展名），如 chapter00_序章
-  - scene_block_id = scene 行的块 id（章内唯一，由 chapter-structurer 预分配）；
-    块归属在行节点 scene_block_id 上直读（scene 行已去图化）
-  - 行节点 id = LineAudio 节点雪花 id（行身份，永不复用；台词.jsonl 已停产）
-→ scene_block_id 章内唯一 + 节点 id 全局唯一 → 章内全局唯一；stem 保证跨章不冲突。
-**稳定寻址**：md 插入/删除/移动行不改变其他行的 key（wav 不成孤儿）。
+键格式（2026-10-31 id 锚定重构后）：**键 = hexid(行节点id)**（16 位小写 hex）。
+  - NTFS 大小写不敏感与 Base62 不兼容（同批 id 共享前缀仅末位大小写不同），
+    凡进文件名/manifest 键的 id 一律 to_hexid（snowflake_base62.py，可逆）。
+  - 母带唯一权威 = 图行属性 master_path（15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav），
+    键仅作运行时文件名主体；voice_key 与 ambient_track 值均为 hexid(行 id)，
+    「voice 还是 sfx」由字段来源（谁非空）区分，不再依赖 amb-/bed- 前缀。
+  - 稳定寻址不变：md 插入/删除/移动行不改变其他行的 key（wav 不成孤儿）。
+
+legacy（仅存量兼容，过渡期后删）：旧四段键 <char>-<stem>-<block>-<行id> 的
+split_voice_key / voice_master_path / chapter_stem_from_meta——服务 2026-10-31
+迁移前的存量键反解，不再用于新键生成。
 
 节级挑行/绑定走图（tasks-from-graph / bind-graph，经 cypher_exec.py）：
 拆分对齐进图见 script_splitter.py（section-voice-publisher 第一步）。
-与 portrait_key.make_key 同源设计：纯函数无 I/O、Windows 非法字符清洗、三处对齐契约。
+与 portrait_key.make_key 同源设计：纯函数无 I/O、三处对齐契约。
 """
 import argparse
 import hashlib
@@ -36,6 +40,8 @@ _SCRIPTS_DIR = _REPO_ROOT / ".claude" / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 CYPHER_EXEC = _SCRIPTS_DIR / "cypher_exec.py"
+
+from snowflake_base62 import to_hexid  # noqa: E402
 
 # 键进入 wav/ogg 文件名（assets/voices/<key>.wav），需清洗 Windows 非法字符
 _ILLEGAL = re.compile(r'[\\/:*?"<>|]')
@@ -85,32 +91,32 @@ def _run_cypher_multi(statements: list) -> None:
         raise RuntimeError(f"写图失败（退出码 {proc.returncode}）:\n{proc.stderr}")
 
 
-def make_voice_key(char: str, chapter_stem: str, scene_block_id, node_id) -> str:
-    """生成 voice 资源键：<char>-<chapter_stem>-<scene_block_id>-<行节点id>。
-
-    如 陆择-chapter00_序章-s00_酒店-Nv93TkkkgC。末段是 LineAudio 行节点雪花 id
-    （行身份，永不复用）。
-    """
-    parts = [_sanitize(char), _sanitize(chapter_stem), _sanitize(scene_block_id), _sanitize(node_id)]
-    return "-".join(parts)
+def make_voice_key(node_id) -> str:
+    """voice 资源键 = hexid(行节点id)（键即运行时文件名主体，与 ambient 同构）。"""
+    return to_hexid(str(node_id))
 
 
-def make_ambient_track(chapter_stem: str, scene_block_id, node_id, prefix: str = "amb") -> str:
-    """环境音资源键：<prefix>-<chapter_stem>-<scene_block_id>-<行节点id>（无角色段，
-    前缀占位保证与 voice key 同为四段、可共用 split_voice_key 解析）。
-    prefix：'amb'（sfx 点状/迁移沿用）或 'bed'（音床起新产）——**键一经落图终身不换前缀**
-    （重跑 ambient 链沿用行上已有 track 覆盖母带，voice key 同哲学）。"""
-    parts = [prefix, _sanitize(chapter_stem), _sanitize(scene_block_id), _sanitize(node_id)]
-    return "-".join(parts)
+def make_ambient_track(node_id) -> str:
+    """环境音资源键 = hexid(行节点id)（amb-/bed- 前缀已废——运行时播放行为由 op
+    分发，voice/sfx 归属由图字段来源区分）。与 make_voice_key 同值：同一行只有
+    一个键，voice_key / ambient_track 谁非空谁是本键。"""
+    return to_hexid(str(node_id))
+
+
+def make_master_path(chapter_id, scene_block_id, node_id) -> str:
+    """母带 rel_path：15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav（纯规则派生，
+    目录段全 hexid）。图行属性 master_path 与盘上母带均按此规则。"""
+    return (f"15_声音/{to_hexid(str(chapter_id))}/{to_hexid(str(scene_block_id))}"
+            f"/{to_hexid(str(node_id))}.wav")
 
 
 def split_voice_key(key: str):
-    """资源键（voice key / ambient track）→ (char, chapter_stem, scene_block_id, node_id)。
+    """【legacy】旧四段键 <char>-<stem>-<block>-<行id> → 四元组（迁移前存量键反解）。
 
-    约束：chapter_stem / scene_block_id / node_id 均不含 '-'（stem 由
-    chapter_stem_from_meta 生成、block id 由 structurer 预分配、节点 id 为 Base62，
-    惯例已满足）；char 段（角色名）可含 '-'，故 rsplit 从右取三段。
-    ambient 键的 char 段恒为 'amb'。解析失败返回 None（调用方只报告不动）。"""
+    新键（hexid，不含 '-'）返回 None。仅服务 2026-10-31 迁移期的旧 wav 定位，
+    过渡期后删除。"""
+    if not key or "-" not in key:
+        return None
     parts = (key or "").rsplit("-", 3)
     if len(parts) != 4 or not all(p.strip() for p in parts):
         return None
@@ -127,27 +133,24 @@ def normalize_clone_mode(v) -> str:
 
 
 def voice_master_path(root, key: str) -> Path:
-    """资源键 → 母带路径 15_声音/<chapter_stem>/<scene_block_id>/<key>.wav。
-
-    从 key 自身解析（不查图——章改名后图上现算的 stem 会指错旧 wav 位置）。"""
+    """【legacy】旧四段键 → 迁移前旧母带位置 15_声音/<stem>/<block>/<key>.wav。
+    新键的母带定位读图行属性 master_path（或 make_master_path 规则派生）。"""
     t = split_voice_key(key)
     if t is None:
-        raise ValueError(f"无法解析资源键：{key!r}")
+        raise ValueError(f"无法解析旧资源键：{key!r}")
     _, stem, block, _ = t
     return Path(root) / "15_声音" / stem / block / f"{key}.wav"
 
 
 def chapter_stem_from_path(chapter_json_path) -> str:
-    """chapter JSON 文件路径 → stem（去目录与 .json）。如 .../chapter00_序章.json → chapter00_序章"""
+    """chapter JSON 文件路径 → stem（去目录与 .json）。与 chapter_stem_from_meta 同为
+    【legacy】——新章文件名 = hexid(Chapter.id)（阶段⑤起）。"""
     return Path(chapter_json_path).stem
 
 
 def chapter_stem_from_meta(no, title) -> str:
-    """Chapter 节点 chapter_no + title → stem（与 chapter-publisher 产出的章 JSON 文件名一致）。
-
-    节级配音（section-voice-publisher）在章 JSON 合并前就要算 key，靠本函数从 Chapter 节点
-    字段算出与章级等价的 stem，保证节级/章级 voice key 单一源、不漂移。如 (0, '序章') → 'chapter00_序章'。
-    """
+    """【legacy】chapter_no + title → 旧 stem。新键体系不再派生 stem；保留仅供
+    迁移期旧数据核对。"""
     return f"chapter{int(no):02d}_{_sanitize(title)}"
 
 
@@ -177,15 +180,15 @@ def build_manifest_voices(chapter: dict, ext: str = "wav") -> dict:
 # ── 节级（图行：LineAudio 按 produces.order；拆分对齐见 script_splitter.py）──
 
 def fetch_section(section_id: str) -> dict:
-    """查节定稿态 + Chapter（stem）+ 全部行（ORDER BY order）。
+    """查节定稿态 + Chapter（id 与 no/title）+ 全部行（ORDER BY order）。
 
-    返回 {section_id, sc_status, script_path, chapter_no, chapter_title, lines:[...]}。
+    返回 {section_id, sc_status, script_path, ch_id, chapter_no, chapter_title, lines:[...]}。
     行含 op/who/text/status 等节点属性 + ord + scene 行的 scene_block_id。
     """
     head = _run_cypher(
         "MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'" + section_id + "'}) "
         "RETURN sec.id AS section_id, sec.status AS sc_status, sec.script_path AS p, "
-        "ch.chapter_no AS no, ch.title AS title LIMIT 1"
+        "ch.id AS ch_id, ch.chapter_no AS no, ch.title AS title LIMIT 1"
     )
     if not head:
         raise ValueError(f"Section {section_id} 不存在")
@@ -194,6 +197,7 @@ def fetch_section(section_id: str) -> dict:
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.text AS text, "
         "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
         "l.text_sha1 AS text_sha1, l.scene_block_id AS scene_block_id, "
+        "l.master_path AS master_path, "
         "l.clone_mode AS clone_mode, p.order AS ord "
         "ORDER BY p.order"
     )
@@ -202,9 +206,10 @@ def fetch_section(section_id: str) -> dict:
     return out
 
 
-def collect_graph_tasks(lines: list, chapter_stem: str, node_ids=()) -> dict:
-    """图行 → 按角色分组的待配任务：{char: [{key, text, scene_id, node_id, clone_mode}]}。
+def collect_graph_tasks(lines: list, chapter_id: str, node_ids=()) -> dict:
+    """图行 → 按角色分组的待配任务：{char: [{key, text, scene_id, node_id, master_path, clone_mode}]}。
 
+    chapter_id：Chapter 节点 id（裸 Base62）——master_path 规则派生用。
     挑行条件 = say 行 status∈{0, -1}（0=待配/被驳回，stale 句在拆分对齐时已被置 0；
     -1=级联作废/存量迁移重做——与 0 同为需生成，禁止把 -1 滤掉）。
     node_ids：行节点 id 白名单（重生成 deeplink 定位被驳回句；缺省不过滤）。
@@ -222,10 +227,11 @@ def collect_graph_tasks(lines: list, chapter_stem: str, node_ids=()) -> dict:
         who = l.get("who") or ""
         scene_id = l.get("scene_block_id") or ""  # 行上直读块归属（scene 行已去图化）
         tasks.setdefault(who, []).append({
-            "key": make_voice_key(who, chapter_stem, scene_id, l.get("id", "")),
+            "key": make_voice_key(l.get("id", "")),
             "text": l.get("text") or "",
             "scene_id": scene_id,
             "node_id": l.get("id", ""),
+            "master_path": make_master_path(chapter_id, scene_id, l.get("id", "")),
             "clone_mode": l.get("clone_mode"),
         })
     return tasks
@@ -234,10 +240,11 @@ def collect_graph_tasks(lines: list, chapter_stem: str, node_ids=()) -> dict:
 def bind_graph(tasks: dict, keys=None) -> dict:
     """把（重）生成结果写回图行节点（经 cypher_exec --stdin --multi 单事务）。
 
-    tasks：{char: [{key, text, node_id, emotion?, tts_text?, clone_mode?}]}（publish 的成功集）。
+    tasks：{char: [{key, text, node_id, master_path?, emotion?, tts_text?, clone_mode?}]}。
     keys：可选键过滤（只 bind 生成成功的句）。写：voice_key/emotion/tts_text/
     clone_mode=归一化终值（=本句实际合成模式，下轮重配的判别初值）/
-    attempts=旧+1/text_sha1=当前台词 sha1/status=10（配完待审）。
+    attempts=旧+1/text_sha1=当前台词 sha1/status=10（配完待审）；
+    master_path 非 null 时一并落图（母带唯一权威）。
     返回 {bound, skipped} 统计。
     """
     key_set = {k.strip() for k in keys if k.strip()} if keys else None
@@ -255,6 +262,7 @@ def bind_graph(tasks: dict, keys=None) -> dict:
             stmts.append(
                 f"MATCH (l:LineAudio {{id:{_q(node_id)}}}) "
                 f"SET l.voice_key={_q(it.get('key'))}, "
+                f"l.master_path={_q(it.get('master_path'))}, "
                 f"l.emotion={_q(it.get('emotion'))}, "
                 f"l.tts_text={_q(it.get('tts_text'))}, "
                 f"l.clone_mode={_q(normalize_clone_mode(it.get('clone_mode')))}, "
@@ -269,29 +277,33 @@ def bind_graph(tasks: dict, keys=None) -> dict:
 
 
 def collect_approved_audio_keys(rows: list) -> list:
-    """publish 图查询行（{vk, at}）→ 已批音频资源键清单（去重保序）。
+    """publish 图查询行（{vk, at, mp}）→ 已批音频条目清单（去重保序）。
 
+    返回 [{"key", "kind": "voice"|"sfx", "master"}]：voice_key 非空 → voice（运行时
+    voices），ambient_track 非空 → sfx（运行时 sfx；bed 音床也走 sfx 段）——**按字段
+    来源分发**（旧 amb-/bed- 前缀判定已废，键均为 hexid）。master 取图行 master_path；
+    缺失时为 None（调用方按规则派生兜底）。
     以字段存在为准、**不看 op**——转场行（op=transition，存量 ambient 兼容）与 narrate 内嵌声景行
     （op=narrate + ambient_track）同样发布（历史版本只查 op='ambient' 会漏后者）。
     Cypher 的缺省列是 null，此处过滤。
     """
-    keys = []
+    items, seen = [], set()
     for r in rows:
-        for k in (r.get("vk"), r.get("at")):
-            if k and k not in keys:
-                keys.append(k)
-    return keys
+        for k, kind in ((r.get("vk"), "voice"), (r.get("at"), "sfx")):
+            if k and k not in seen:
+                seen.add(k)
+                items.append({"key": k, "kind": kind, "master": r.get("mp")})
+    return items
 
 
-def publish_runtime(root, keys: list, runtime_voices, runtime_sfx=None, ext: str = "wav") -> dict:
-    """已批音频键清单 → 母带拷运行时（**发布期动作**，chapter-publisher 调用）：
+def publish_runtime(root, items: list, runtime_voices, runtime_sfx=None, ext: str = "wav") -> dict:
+    """已批音频条目 → 母带拷运行时（**发布期动作**，chapter-publisher 调用）：
 
-    - amb-/bed- 前缀 → <runtime_sfx>/<key>.<ext>（默认 99_game/assets/sfx；与
+    - kind=sfx → <runtime_sfx>/<key>.<ext>（默认 99_game/assets/sfx；与
       manifest_builder.collect_sfx 的 ambient_track 口径一致——bed 音床也走 sfx 段）
-    - 其余（voice key）→ <runtime_voices>/<key>.<ext>（默认 99_game/assets/voices）
-    源一律 voice_master_path（15_声音/<stem>/<block>/，key 单一权威）。
-    幂等：按 mtime+size 跳过未变文件；母带缺失计 missing 不中断（status=11 却无
-    母带=文件被误删，发布汇报需警告）。返回
+    - kind=voice → <runtime_voices>/<key>.<ext>（默认 99_game/assets/voices）
+    源 = 图行 master_path（缺失时按规则派生兜底）；母带缺失计 missing 不中断
+    （status=11 却无母带=文件被误删，发布汇报需警告）。返回
     {copied, skipped, missing, copied_sfx, skipped_sfx, missing_sfx}。
     （生成期 sync 已废除——99_game/assets 只收已批音频，dashboard 审批试听读母带。）
     """
@@ -303,18 +315,34 @@ def publish_runtime(root, keys: list, runtime_voices, runtime_sfx=None, ext: str
         sfx.mkdir(parents=True, exist_ok=True)
     counts = {"copied": 0, "skipped": 0, "missing": 0,
               "copied_sfx": 0, "skipped_sfx": 0, "missing_sfx": 0}
-    for key in keys:
-        is_amb = key.startswith("amb-") or key.startswith("bed-")
-        if is_amb and sfx is None:
+    for it in items:
+        is_sfx = it.get("kind") == "sfx"
+        if is_sfx and sfx is None:
             continue
-        try:
-            master = voice_master_path(root, key)
-        except ValueError:
-            continue  # 键不可解析（collect 侧已按图字段过滤，双保险）
-        dst = (sfx if is_amb else voices) / f"{key}.{ext}"
+        key = it["key"]
+        master_rel = it.get("master")
+        master = Path(root) / master_rel if master_rel else None
+        if master is None or not master.exists():
+            # 图上无 master_path 或文件不在：查图派生兜底再试一次（章+块 → make_master_path）
+            from snowflake_base62 import from_hexid
+            try:
+                lid = from_hexid(key)
+            except ValueError:
+                continue
+            row = _run_cypher(
+                "MATCH (l:LineAudio {id:'" + lid + "'})"
+                "<-[:produces]-(:Section)<-[:has_section]-(ch:Chapter) "
+                "RETURN l.master_path AS mp, l.scene_block_id AS block, ch.id AS ch LIMIT 1")
+            if row:
+                r0 = row[0]
+                mp = r0["mp"] or (make_master_path(r0["ch"], r0["block"], lid)
+                                  if r0.get("block") and r0.get("ch") else None)
+                if mp:
+                    master = Path(root) / mp
+        dst = (sfx if is_sfx else voices) / f"{key}.{ext}"
         ck, sk, mk = (("copied_sfx", "skipped_sfx", "missing_sfx")
-                      if is_amb else ("copied", "skipped", "missing"))
-        if not master.exists():
+                      if is_sfx else ("copied", "skipped", "missing"))
+        if master is None or not master.exists():
             counts[mk] += 1
             continue
         if dst.exists() and dst.stat().st_mtime == master.stat().st_mtime \
@@ -370,11 +398,11 @@ def _cmd_tasks_from_graph(args):
     info = fetch_section(args.section)
     if info["sc_status"] != 11:
         raise ValueError(f"Section.status={info['sc_status']}（须 11 定稿已确认；先拆分对齐见 script_splitter）")
-    stem = chapter_stem_from_meta(info["no"], info["title"])
+    chapter_hex = to_hexid(info["ch_id"])
     node_ids = tuple(s.strip() for s in args.nodes.split(",")) if args.nodes else ()
-    tasks = collect_graph_tasks(info["lines"], stem, node_ids=node_ids)
+    tasks = collect_graph_tasks(info["lines"], info["ch_id"], node_ids=node_ids)
     n_lines = _write_tasks(tasks, args.out)
-    print(f"[tasks-from-graph] stem={stem} {n_lines} lines / {len(tasks)} chars"
+    print(f"[tasks-from-graph] chapter={info['ch_id']} ({chapter_hex}) {n_lines} lines / {len(tasks)} chars"
           + (f" nodes={args.nodes}" if args.nodes else "") + f" -> {args.out or 'stdout'}")
 
 
@@ -392,12 +420,12 @@ def _cmd_publish(args):
         "MATCH (ch:Chapter {id:" + _q(args.chapter) + "})-[:has_section]->(:Section)"
         "-[:produces]->(l:LineAudio) "
         "WHERE l.status=11 AND (l.voice_key IS NOT NULL OR l.ambient_track IS NOT NULL) "
-        "RETURN l.voice_key AS vk, l.ambient_track AS at"
+        "RETURN l.voice_key AS vk, l.ambient_track AS at, l.master_path AS mp"
     )
-    keys = collect_approved_audio_keys(rows)
-    stats = publish_runtime(_REPO_ROOT, keys, args.runtime,
+    items = collect_approved_audio_keys(rows)
+    stats = publish_runtime(_REPO_ROOT, items, args.runtime,
                             runtime_sfx=args.runtime_sfx, ext=args.ext)
-    line = (f"[publish] chapter={args.chapter} keys={len(keys)}"
+    line = (f"[publish] chapter={args.chapter} keys={len(items)}"
             f" voices copied={stats['copied']} skipped={stats['skipped']}"
             f" | sfx copied={stats['copied_sfx']} skipped={stats['skipped_sfx']}")
     miss = stats["missing"] + stats["missing_sfx"]

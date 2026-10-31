@@ -20,6 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]  # 99_game/tools/ → 项目根
 CYPHER_EXEC = ROOT / ".claude" / "scripts" / "cypher_exec.py"
+_SYS = ROOT / ".claude" / "scripts"
+if str(_SYS) not in sys.path:
+    sys.path.insert(0, str(_SYS))  # snowflake_base62.to_hexid（键 hexid 化）
 
 
 def _run_cypher(cypher: str) -> list:
@@ -41,55 +44,44 @@ def _run_cypher(cypher: str) -> list:
     return json.loads(out[start:end + 1])
 
 
-def _scene_names_of_chapter(chapter_id: str) -> list[str]:
-    """章内全部节的 scene_blocks（块→场景名，拆分时写的投影权威）解析去重。
-    历史节与新节通吃——BGM/图层按场景名 JOIN。"""
+def _scene_ids_of_chapter(chapter_id: str) -> list[str]:
+    """章内全部行块 id（LineAudio.scene_block_id=scene_id）去重。
+    id 直连（scene_blocks 属性已废），历史节与新节通吃。"""
     rows = _run_cypher(
-        "MATCH (:Chapter {id:'" + chapter_id + "'})-[:has_section]->(sec:Section) "
-        "RETURN sec.scene_blocks AS blocks"
+        "MATCH (:Chapter {id:'" + chapter_id + "'})-[:has_section]->(:Section)"
+        "-[:produces]->(l:LineAudio) "
+        "WHERE l.scene_block_id IS NOT NULL "
+        "RETURN DISTINCT l.scene_block_id AS bid"
     )
-    names: list[str] = []
-    for r in rows:
-        raw = r.get("blocks")
-        if not raw:
-            continue
-        try:
-            blocks = json.loads(raw) if isinstance(raw, str) else raw
-        except (TypeError, json.JSONDecodeError):
-            continue
-        for b in blocks or []:
-            n = (b.get("scene_name") or "").strip()
-            if n and n not in names:
-                names.append(n)
-    return names
+    return [r["bid"] for r in rows if r.get("bid")]
 
 
 def generate_bgm(chapter_id: str) -> tuple:
-    """查图生成 ({scene: {track, mode, loop}}, [未就绪警告])。仅 status=2 的 BgmTrack 进 map。
-    场景集取各节行块 id 集合直查 Scene（scene_blocks/contains 已废；
-    scene_blocks 为发布投影权威，无 includes 的历史节同样覆盖）。"""
-    names = _scene_names_of_chapter(chapter_id)
-    if not names:
+    """查图生成 ({scene_hexid: {track=bgm_hexid, mode, loop}}, [未就绪警告])。
+    仅 status=2 的 BgmTrack 进 map。场景集取各节行块 id 直查 Scene
+    （id 直连，键 = hexid(scene.id)，与章 JSON scenes[].scene 同源）。"""
+    from snowflake_base62 import to_hexid
+    bids = _scene_ids_of_chapter(chapter_id)
+    if not bids:
         return {}, []
-    in_list = ", ".join("'" + n.replace("'", "\\'") + "'" for n in names)
+    in_list = ", ".join("'" + b.replace("'", "\\'") + "'" for b in bids)
     rows = _run_cypher(
         "MATCH (scene:Scene)-[:has_bgm]->(b:BgmTrack) "
-        "WHERE scene.name IN [" + in_list + "] "
-        "RETURN DISTINCT scene.name AS scene_name, b.name AS track, b.status AS status, "
-        "b.mode AS mode, b.loop AS loop ORDER BY scene_name"
+        "WHERE scene.id IN [" + in_list + "] "
+        "RETURN DISTINCT scene.id AS sid, b.id AS bid, b.name AS bname, b.status AS status, "
+        "b.mode AS mode, b.loop AS loop ORDER BY sid"
     )
     m: dict = {}
     warnings = []
     for r in rows:
-        scene = (r.get("scene_name") or "").strip()
-        track = (r.get("track") or "").strip()
-        if not scene or not track:
+        sid, bid = (r.get("sid") or "").strip(), (r.get("bid") or "").strip()
+        if not sid or not bid:
             continue
         if r.get("status") != 2:
-            warnings.append(f"scene={scene} 的 BgmTrack {track!r} status={r.get('status')}（≠2 音频未归档），跳过注入")
+            warnings.append(f"scene={sid} 的 BgmTrack {r.get('bname')!r} status={r.get('status')}（≠2 音频未归档），跳过注入")
             continue
-        m[scene] = {
-            "track": track,
+        m[to_hexid(sid)] = {
+            "track": to_hexid(bid),
             "mode": (r.get("mode") or "play"),
             "loop": r.get("loop") if r.get("loop") is not None else True,
         }

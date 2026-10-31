@@ -474,13 +474,15 @@ def _row_name(m: dict) -> str:
     return m.get("text") or ""
 
 
-def _wav_exists(voice_key: str) -> bool:
-    """母带是否已生成（-1 恢复判定）。路径从 key 自身解析（15_声音/<stem>/<block>/），
-    不查图不按角色目录——章改名后图上现算的 stem 会指错旧 wav 位置。"""
-    if not voice_key:
+def _wav_exists(master_path, key: str = "") -> bool:
+    """母带是否已生成（-1 恢复判定）。优先读图行属性 master_path（唯一权威）；
+    缺失时 legacy 旧键解析兜底（迁移前存量）。"""
+    if master_path:
+        return (ROOT / master_path).exists()
+    if not key:
         return False
     try:
-        return voice_master_path(ROOT, voice_key).exists()
+        return voice_master_path(ROOT, key).exists()
     except ValueError:
         return False
 
@@ -488,14 +490,19 @@ def _wav_exists(voice_key: str) -> bool:
 def _purge_line_audio_files(g: dict, report: dict) -> None:
     """删除行时清理其音频产物：母带 + 运行时副本 + Godot .import 伴生。
     say 行按 voice_key（voices 目录），ambient 行按 ambient_track（sfx 目录）。"""
-    keys = [k for k in (g.get("voice_key"), g.get("ambient_track")) if k]
+    # voice/sfx 运行时目录按图字段来源分发（旧 amb-/bed- 前缀判定已废）
+    entries = [(g.get("voice_key"), "voices"), (g.get("ambient_track"), "sfx")]
     purged = []
-    for key in keys:
-        try:
-            master = voice_master_path(ROOT, key)
-        except ValueError:
+    for key, rt_kind in entries:
+        if not key:
             continue
-        runtime_root = ROOT / "99_game" / "assets" / ("sfx" if key.startswith(("amb-", "bed-")) else "voices")
+        master = (ROOT / g["master_path"]) if g.get("master_path") else None
+        if master is None:
+            try:
+                master = voice_master_path(ROOT, key)  # legacy 旧键兜底
+            except ValueError:
+                continue
+        runtime_root = ROOT / "99_game" / "assets" / rt_kind
         for p in (master, runtime_root / f"{key}.wav", Path(str(master) + ".import"),
                   Path(str(runtime_root / f"{key}.wav") + ".import")):
             if p.exists():
@@ -694,10 +701,10 @@ def build_actions(seq: list, plan: dict, section_id: str) -> tuple:
                 track = g.get("ambient_track")
                 if m["op"] == "say":
                     ok = g.get("voice_key") and g.get("text_sha1") == text_sha1(m.get("text") or "") \
-                        and _wav_exists(g.get("voice_key"))
+                        and _wav_exists(g.get("master_path"), g.get("voice_key"))
                     new_status = 10 if ok else 0
                 elif m["op"] in ("transition", "bed_start"):
-                    new_status = 10 if (track and _wav_exists(track)) else 0
+                    new_status = 10 if (track and _wav_exists(g.get("master_path"), track)) else 0
                 else:
                     new_status = 11
                 stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.status={new_status};")
@@ -754,7 +761,8 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.ambient_text AS ambient_text, l.options AS options, "
         "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
-        "l.ambient_track AS ambient_track, l.text_sha1 AS text_sha1, p.order AS ord "
+        "l.ambient_track AS ambient_track, l.master_path AS master_path, "
+        "l.text_sha1 AS text_sha1, p.order AS ord "
         "ORDER BY p.order"
     )
 

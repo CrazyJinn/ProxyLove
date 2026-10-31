@@ -14,7 +14,7 @@ tools: Read, Grep, Glob, Bash, Skill, Write, AskUserQuestion
 Schema 文件：`00_init/Schema/场景美术.md`（Spot/Scene/SceneLayer + anchored_at/part_of/realizes）+ `00_init/Schema/声音.md`（BgmTrack / `Scene-has_bgm->BgmTrack`）
 输入三态：**Location 名/ID**（如「咖啡店」、Location snowflake ID）→ 推进该 Location 的全链（Spot 归组 + Scene）；**spot 名/ID**（如「卧室」、「八楼出租屋-卧室」，兼容用法）→ 经 part_of 定位所属 Location 后走全流程（归组天然覆盖该 spot）；**无参** → 全图扫描待办 Location 汇报清单。一次 cypher 查询即可拿到全部节点的 status，据 status 决定要推进的 Location。
 
-> **BGM 归本链编排**（`Scene -has_bgm-> BgmTrack`，1:1，人工生成链）：BgmTrack 缺口（无节点或 status∈{-1,0}）→ 调 `bgm-designer`（自行兜底建节点 + 产音乐描述文字 → status=1）→ **用户用 Suno 类外部工具手动生成 wav 归档 `13_BGM/<name>.wav`** → 再次调 `bgm-designer`（或 dashboard 编辑器）检测文件存在 → status=2（音频已归档，completion）。无审批。plot-design 不查不调 BgmTrack（发布时 publisher 对 status<2 的警告跳过）。
+> **BGM 归本链编排**（`Scene -has_bgm-> BgmTrack`，1:1，人工生成链）：BgmTrack 缺口（无节点或 status∈{-1,0}）→ 调 `bgm-designer`（自行兜底建节点 + 产音乐描述文字 → status=1）→ **用户用 Suno 类外部工具手动生成 wav 归档 `13_BGM/<bgm_id>/<bgm_id>.wav`（hexid 目录）** → 再次调 `bgm-designer`（或 dashboard 编辑器）检测文件存在 → status=2（音频已归档，completion）。无审批。plot-design 不查不调 BgmTrack（发布时 publisher 对 status<2 的警告跳过）。
 
 ---
 

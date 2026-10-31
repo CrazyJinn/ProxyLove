@@ -16,7 +16,7 @@ Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/�
 
 **设计图版本链（多版本形象）**：剧情永久外貌变更（如 sec02 剪发）走 DesignSheet 增量版本——输入含 `from <参考版ds_id> <口述改动>`（口述须含变更描述 + 生效点 `ch<NN>/sec<MM>` + `slug=<短名>`）时，委派 `char-design-sheet` 增量模式（图生图，参考版设计图为底，仅变更口述维度）；推进多版本角色的 IllusDesign 时透传 `design_sheet=<ds_id>` 控出图范围。状态查询天然容忍多版本（返回多行 DS）；**汇报按版本逐个交代**（各版本 slug/active_from/status）。
 
-**DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（约定路径 `06_角色美术/<角色名>/参考图.png|jpg|jpeg`，推荐经 dashboard 角色详情页上传——自动压缩与规范命名）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
+**DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（路径锚 `Character.ref_image_path` 属性 = `06_角色美术/<char_id>/参考图.jpg`，推荐经 dashboard 角色详情页上传——自动压缩、规范命名并写属性）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
 
 **占位消化模式（status=0 挂账）**：event-stager/event-ideator 经建议 JSON 创建的占位节点（CostumeStyle/IllusDesign/Character，status=0）由本 agent 消化——入口查询天然圈到（0 与 -1 同为待办）；占位节点在图上的位置（挂在哪个 CostumeStyle 下、被哪个 sub 的 appears_as 引用）自带需求上下文，按既有链路补全字段并推进生产即可。**占位 Character（无外貌链的裸节点）由本 agent 兜底创建外貌链**（AppearanceStyle 起），这是 Q2 拍板的分工：ideator 只建裸节点，链由本侧现场建。
 
@@ -85,7 +85,7 @@ ORDER BY type, status
 - `-1` 作废重做（skill 看到 `-1` 必须重新生成并覆盖旧产物，禁止因文件已存在而跳过）
 - AppearanceStyle / LanguageStyle：`0` 待设计 → `1` 已完成（无审批）
 - CostumeStyle：`0` 待设计 → `1` 已完成（无审批）
-- VoiceDesign：`0` 待设计 → `1` instruct 完成 → `10` 候选固化（生产完成**即待审，无 submit 步**；由 `candidates_path` 分两态：非空=候选待选——3 候选 ref（24k）+ 每候选 3 情绪试听（Qwen3 Base clone）已落盘 `14_声音设计/<char>/candidates/`，dashboard 审批中心逐候选试听「采用」（固化为 `<char>_ref.wav` + 删 candidates_path，status 仍 10）；空=单 ref 待审——通过 11 / 驳回 0）→ `11` 批准（char-voice-design 先合成候选与试听全部落盘成功才写图，读 LanguageStyle/Info/Event 生成 instruct + 统一长句 ref_text）。`2` 为历史兼容值（旧流程生产态），本 skill 一律不写
+- VoiceDesign：`0` 待设计 → `1` instruct 完成 → `10` 候选固化（生产完成**即待审，无 submit 步**；由 `candidates_path` 分两态：非空=候选待选——3 候选 ref（24k）+ 每候选 3 情绪试听（Qwen3 Base clone）已落盘 `14_声音设计/<char_id>/candidates/`，dashboard 审批中心逐候选试听「采用」（固化为 `<char_id>/ref.wav` + 删 candidates_path，status 仍 10）；空=单 ref 待审——通过 11 / 驳回 0）→ `11` 批准（char-voice-design 先合成候选与试听全部落盘成功才写图，读 LanguageStyle/Info/Event 生成 instruct + 统一长句 ref_text）。`2` 为历史兼容值（旧流程生产态），本 skill 一律不写
 - 生产节点（DesignSheet / IllusDesign）：`0` 待生成 → `10` 待审 → `11` 批准。skill 单轮直推：图片完成即写 `10`（`1`/`2` 为历史可选中间态，仅由 dashboard 手动路径使用，skill 不再写）。
 - 生产态 `0/1/2`，审批专属 `10`/`11`；驳回归 `0`
 

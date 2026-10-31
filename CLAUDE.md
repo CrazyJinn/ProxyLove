@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **人工治理后台** | 独立项目 dailian-dashboard（不在本仓库） | FastAPI 应用（审批中心/生产看板/叙事图浏览/Cypher 控制台/CSV 快照），与 skills 共享同一个图数据库（Neo4j/Memgraph 双后端） |
 | **游戏运行时** | [99_game/](99_game/) | Godot 4.3+ Galgame，集中式 `ScriptInterpreter` 消费纯 JSON 剧本 |
 
-目录前缀的数字是**流水线阶段编号**（创作输入 `00_` → 叙事数据 `01_` → 剧情数据 `02_` → 美术 `06_/07_` → 声音 `14_/15_` → 成品 `99_`），并非每个阶段都已落地，按编号即可判断某产物在链路中的位置。
+目录前缀的数字是**流水线阶段编号**（创作输入 `00_` → 叙事数据 `01_` → 剧情数据 `02_` → 美术 `06_/07_` → 声音 `13_/14_/15_` → 剧本 `25_` → 成品 `99_`），并非每个阶段都已落地，按编号即可判断某产物在链路中的位置。
 
 ## 核心架构（必须跨文件理解的大图）
 
@@ -44,14 +44,14 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 3. 生产链 = DAG + status + sync 级联
 
-每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级链（**最薄图**）：`Section（编排+定稿态 status/script_path） -[:produces {order}]-> LineAudio(×N 逐句台词行)`——**节级产物节点（SecOutline/SecScript）已删除**，文件是节级产物的唯一载体：小说.md（`chapter-novelist` 产，**提纲已内化**（原 chapter-outliner 废弃）：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，**零图写入**；头部取材指纹（素材 id+内容指纹），dialoguer 入场同源自检，素材变动时 novelist 重写并显式作废定稿链（sec.status=-1 + 行 -1）；对账新实体走建议 JSON）与 台词.ink（`chapter-dialoguer` 从小说提炼，唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位，dashboard **编辑保存即 11**）。status 各用通用值（Section 定稿态**创建即 11**、-1 作废↔dialoguer 恢复/ LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），sync 级联——节属性变更自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice key 末段，插入/删除行不漂移）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。两个核心机制：
+每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`，**目录树 = 图链路径的 hexid 段**：`06_角色美术/<char_id>/<ds_id>/<costume_id>/立绘/<stand_id>`——节点 name/title 改名零漂移；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级链（**最薄图**）：`Section（编排+定稿态 status/script_path） -[:produces {order}]-> LineAudio(×N 逐句台词行)`——**节级产物节点（SecOutline/SecScript）已删除**，文件是节级产物的唯一载体：小说.md（`chapter-novelist` 产，**提纲已内化**（原 chapter-outliner 废弃）：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，**零图写入**；头部取材指纹（素材 id+内容指纹），dialoguer 入场同源自检，素材变动时 novelist 重写并显式作废定稿链（sec.status=-1 + 行 -1）；对账新实体走建议 JSON）与 台词.ink（`chapter-dialoguer` 从小说提炼，唯一图写入 `SET sec.script_path + sec.status=11` 定稿在位，dashboard **编辑保存即 11**）。status 各用通用值（Section 定稿态**创建即 11**、-1 作废↔dialoguer 恢复/ LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），sync 级联——节属性变更自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice_key = **hexid(行id)**，插入/删除行不漂移；母带唯一权威 = 行属性 `master_path` = `15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，dashboard 试听/发布/清理全读它）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。**同机位多段**（同 scene_block_id 切走再切回，ink `===` 同 id 块再现）合法——merge 投影为**同 id 多区间**（背景切回），跨节复用块 id 由章级拼接自动加 `secNN-` 前缀去重。两个核心机制：
 
 - **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准。规则在 dailian-dashboard（治理后台，独立项目）`app/services/status.py` 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
 - **`sync` 边属性**：上游节点属性变更后，沿 `sync=true` 出边 BFS，把可达下游 `status` 重置为 **`-1`**（作废重做）；`sync=false` 阻断（如叙事边 `appears_as`、`relation`）。级联实现在 dailian-dashboard 的 `app/services/cascade.py`（dashboard 审批动作不触发级联，级联只由 Cypher 控制台/节点编辑确认卡触发）。
 
 ### 4. Web 运行时与发布（全量主包模式）
 
-Web 版当前为**全量主包**：主 pck 含全部章资源（约 39MB，含子集字体），一次加载直接进游戏。`ChapterPackLoader.WEB_PACKS_ENABLED = false` 短路了按章分包；分包全套工具保留着（`build_chapter_packs.gd` 按 chapter_packs.json 产 `<stem>.pck`、挂载测试 `test_chapter_pack_mount.gd`），重新启用需同时翻开关 + 恢复 Web preset 的 `exclude_filter`（两处由 `publish_web.py`/`deploy_r2.py` 读开关联动）。发布链固定两条命令（**必须先关 Godot 编辑器**，字体会被子集临时覆盖）：
+Web 版当前为**全量主包**：主 pck 含全部章资源（当前 ~360MB：全部章音频/立绘/BGM + 子集字体），一次加载直接进游戏。运行时全部资源键与章 stem = **hexid**（manifest 五段键 / 章 JSON 文件名 `<hexid(chapter_id)>.json` / `<stem>.pck`；chapter_packs 条目内嵌 title/chapter_no 供 Title 章下拉显示排序；`manifest_builder.py --rebuild` 全量重建清旧键）。存档格式 v2（旧档护栏明示废弃）。`ChapterPackLoader.WEB_PACKS_ENABLED = false` 短路了按章分包；分包全套工具保留着（`build_chapter_packs.gd` 按 chapter_packs.json 产 `<stem>.pck`、挂载测试 `test_chapter_pack_mount.gd`），重新启用需同时翻开关 + 恢复 Web preset 的 `exclude_filter`（两处由 `publish_web.py`/`deploy_r2.py` 读开关联动）。发布链固定两条命令（**必须先关 Godot 编辑器**，字体会被子集临时覆盖）：
 
 ```bash
 python 99_game/tools/publish_web.py   # 字体子集化(含关键标点断言)→headless 导出→章包(按开关)→finally 恢复字体
@@ -80,7 +80,16 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 6. **查询加 `LIMIT`**，避免全表扫描。
 7. **多语句按依赖排序**：先建节点再建边；`--multi` 在单事务内顺序执行。
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
-9. **Event 定位一律 `occurs_at → Location`（一跳；N:N——跨地点事件多挂）**；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）；节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`；**Event 间禁建 `evt_relation`（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）**；Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。**占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
+9. **`--multi` 只按 `;` 分割语句**：仅换行分隔的多条 `MATCH...SET` 会被拼接为单条查询（变量复用使后续 MATCH 退化为过滤条件），**每批只有首条生效且退出码为 0——静默丢失**。批量写图语句必须 `;` 分隔，且写后必须读回验证。
+10. **Cypher map 字面量键用裸标识符**（本版 Neo4j 不接受双引号字符串键）：`SET n += {name: 'x'}` 而非 `{"name": ...}`。
+
+## Event 图拓扑铁律（图结构契约，写边/建节点前必读）
+
+- **Event 定位一律 `occurs_at → Location`**（一跳；N:N——跨地点事件多挂）；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）。
+- 节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`。
+- **Event 间禁建 `evt_relation`**（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）。
+- Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+- **占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -89,21 +98,26 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 - **写边严格按 Schema 方向（上游→下游）**。方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。例如 `IllusDesign` 是 `outfit_for`/`produces` 的**入边目标端**，不是源。
 - **级联下游重置为 `-1`**（不是 `0`；design.md 验收标准里写 `0` 是笔误，以代码为准）。
 - **root viewport 的 `size` 是物理像素，Control 布局要逻辑坐标**：手动铺满 UI 一律用 `get_viewport().get_visible_rect().size`。Web hidpi / stretch expand 下两者不同（曾致根 Control 随窗口形状 ±5~10% 错位、子层溢出裁切）。同理背景 `TextureRect` 默认 STRETCH 会无视纵横比拉变形，galgame 背景用 `STRETCH_KEEP_ASPECT_COVERED`。
+- **文件名/目录名/manifest 键禁用裸 Base62 id**——NTFS 大小写不敏感，同批雪花 id 共享前缀仅末位大小写异（如 `QZXoBBWJMG`/`QZXoBBWJMg`）会同目录撞名。凡进文件系统/运行时键一律 `to_hexid`（见「ID 约定」），图内部 join 用裸 Base62。
 - **Web 端 `HTTPRequest` 只认绝对 URL**（裸相对路径报 `Invalid URL scheme`），且自动解压只支持 gzip 不支持 br——所以 R2 上章包类"游戏端下载"的对象不能设 `Content-Encoding: br`，只有浏览器侧加载的 index.wasm/index.pck 可以。
 
 ## 凭证（settings.json，已 gitignore）
 
 `settings.json`（项目根，已在 `.gitignore`）持有 `neo4j_password`、`ofox_api_key`，以及 R2 部署凭证 `cloudflare_account_id` / `cloudflare_access_key_id` / `cloudflare_secret` / `cloudflare_bucket`（桶 `proxy-love`，token 限单桶无 ListBuckets 权限；[deploy_r2.py](99_game/tools/deploy_r2.py) 读，env `R2_*` 优先）。密码优先级：`--password` 参数 > `NEO4J_PASSWORD` 环境变量 > 向上搜索到的 `settings.json`。OfoxAI key 由 [infra-image-generator](.claude/skills/infra-image-generator/scripts/ofoxai_api.py) 从同一 `settings.json` 读。**治理后台凭证在 dailian-dashboard 仓库根的 `settings.json` 管理（env `NEO4J_*` 优先，模板见其 settings.example.json）——`neo4j_password` 与本项目根仍是两份，Neo4j 改密两处都要改**。
 
-## ID 约定
+## ID 约定（id 锚定，2026-10-31 全量迁移）
 
-所有节点 ID 用雪花算法 Base62 编码（如 `Nv93TkkkgC`），全局唯一、**无前缀**。生成：
+节点 ID 用雪花算法 Base62 编码（如 `Nv93TkkkgC`），全局唯一、**无前缀**；节点 name/title 是纯显示名，**不锚定任何目录/文件名/运行时键**（改名零漂移）。两种形态按用途严格区分：
+
+- **图内部 join / MERGE 锚**：裸 Base62 id（`MATCH (c:Character {id:'…'})`）
+- **文件系统路径段 / manifest 键 / voice_key / 章 stem**：**hexid**（`to_hexid(id)` = 16 位小写 hex，与 Base62 互逆；NTFS 大小写脱敏——裸 Base62 进文件名会同批撞名）
 
 ```bash
-python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
+python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q        # 生成新 id
+python .claude/scripts/snowflake_base62.py -x <id1> <id2>                     # 批量 id → hexid
 ```
 
-引用已有叙事节点时通过**名称查 ID**（`MATCH (c:Character {name:'陆择'}) RETURN c.id`），不靠前缀推断。
+引用已有叙事节点时通过**名称查 ID**（`MATCH (c:Character {name:'陆择'}) RETURN c.id`），不靠前缀推断。六域目录规范：`06_角色美术/<char>/<ds>/<costume>/立绘/<stand>`、`07_场景美术/<loc>/<spot>/<spot>.yml` 与 `…/<scene>/<layer_type>/`、`13_BGM/<bgm>/<bgm>.md|.wav`、`14_声音设计/<char>/ref.wav`、`15_声音/<ch>/<block>/<行>.wav`、`25_剧本/<ch>/<sec>/`（段全 hexid）。
 
 ## 常用命令速查
 
@@ -112,9 +126,9 @@ python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
 python .claude/scripts/cypher_exec.py -c "MATCH (n:Character) RETURN n.name AS name LIMIT 10" --json
 
 # ── Godot 游戏（需 Godot 4.3+；Godot 4.7.1 在 D:\godot\）──
-#   编辑器导入 99_game/project.godot，F5 从标题→「开始游戏」进 chapter00_序章
+#   编辑器导入 99_game/project.godot，F5 从标题→「开始游戏」进首章（chapter_packs 中 chapter_no 最小章，stem=hexid）
 cd 99_game/tools && pip install -r requirements.txt       # 数据校验（无需 Godot）
-cd 99_game/tools && python validate_chapter.py ../data/chapters/chapter00_序章.json ../data/剧本.schema.json
+cd 99_game/tools && python validate_chapter.py ../data/chapters/04d61c7518000000.json ../data/剧本.schema.json   # 章 JSON 文件名=hexid(Chapter.id)
 cd 99_game/tools && python -m pytest test_validate.py -v   # 预期 3 用例通过 + CLI 输出 OK
 godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit   # GUT 单测（需装 Gut）
 

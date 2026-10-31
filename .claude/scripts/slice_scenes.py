@@ -494,7 +494,7 @@ def _load_scene(room_path: Path, scene_id: str) -> tuple[dict, dict]:
     if errs:
         raise ValueError("room.yml 校验失败:\n  " + "\n  ".join(errs))
     for scn in data.get("scenes", []):
-        if scn.get("scene_id") == scene_id or scn.get("scene_name") == scene_id:
+        if scn.get("scene_id") == scene_id:
             return data, scn
     avail = [f"{s.get('scene_id')}({s.get('scene_name')})" for s in data.get("scenes", [])]
     raise ValueError(f"scene 未找到: {scene_id}；可用: {', '.join(avail) or '（无）'}")

@@ -1,6 +1,6 @@
 # room.yml v3 速查（scene-designer 专用）
 
-> 出处标注：`ss:N` = [07_场景美术/slice_scenes.py](../../../../07_场景美术/slice_scenes.py) 行号，`cf:N` = [07_场景美术/check_framing.py](../../../../07_场景美术/check_framing.py) 行号。**规则真源是脚本代码**，本文件是速查——脚本更新后须同步。
+> 出处标注：`ss:N` = [.claude/scripts/slice_scenes.py](../../../../scripts/slice_scenes.py) 行号，`cf:N` = [scene-designer/scripts/check_framing.py](../scripts/check_framing.py) 行号。**规则真源是脚本代码**，本文件是速查——脚本更新后须同步。
 
 ## 目录
 
@@ -36,8 +36,8 @@
 
 ## 3. 路径与命名
 
-- 产/读路径：`07_场景美术/<Location名>/<Spot目录名>/<Spot短名>.yml`（**后缀 `.yml`**，与 Schema/磁盘一致；勿写 `.room.yml`）
-- Spot 目录名：name 去 `<Location名>-` 前缀的短名；整点建模短名=Location 名，目录即 Location 名（存量 default Spot 的目录同为 Location 名，形态一致）
+- 产/读路径：`07_场景美术/<location_id>/<spot_id>/<spot_id>.yml`（hexid 目录段，文件名=Spot 节点 id 的 hexid——**后缀 `.yml`**，与 Schema/磁盘一致；勿写 `.room.yml`；name 改名零漂移）
+- Spot 目录名：`<hexid(spot_id)>`（id 锚定；旧「name 去前缀短名」规则与短名保留字符约束已废——name 仅人读展示）
 - 短名不得含文件系统保留字符 `\ / : * ? " < > |`
 - 磁盘权威样例：整点型（目录=Location 名）[服装店.yml](../../../../07_场景美术/服装店/服装店/服装店.yml)（存量 default Spot 产物，目录形态相同）；zone 型 [训练大厅.yml](../../../../07_场景美术/康复中心/训练大厅/训练大厅.yml)、[卧室.yml](../../../../07_场景美术/八楼出租屋/卧室/卧室.yml)；外景 [路口.yml](../../../../07_场景美术/马路/路口/路口.yml)
 
