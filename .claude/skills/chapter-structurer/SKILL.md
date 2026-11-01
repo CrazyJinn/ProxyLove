@@ -1,7 +1,7 @@
 ---
 name: chapter-structurer
 description: |
-  推进 Chapter 图节点的结构段：解析/创建 Chapter → 把时间窗事件清单按叙事段落规划成若干节（Section；节时间由成员事件推导；块 id=scene_id 由 novelist 现场取用，structurer 不碰块）→ 为每节建 Section 节点（编排字段 + status=11 创建即定稿在位）+ has_section/includes 边。Chapter 无 status。Section 是编排容器 + 定稿态载体（script_path 由 chapter-dialoguer 写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
+  推进 Chapter 图节点的结构段：解析/创建 Chapter → 把时间窗事件清单按叙事段落规划成若干节（Section；节时间由成员事件推导；块 id=scene_id 由 novelist 现场取用，structurer 不碰块）→ 为每节建 Section 节点（编排字段 + status=0 创建待定稿）+ has_section/includes 边。Chapter 无 status。Section 是编排容器 + 定稿态载体（status=10 定稿待审由 chapter-dialoguer 写、11 已批由 dashboard 批准/编辑保存写）；逐句行 LineAudio 由 section-voice-publisher 拆分时建。
   在需要建立章节结构或重做章节结构时使用。章的叙事范围由调用方建章时给定（时间窗/事件范围）。
 argument-hint: <chapter_id_or_title>
 arguments:
@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write
 
 # 章节结构（Chapter 结构段 · 章无 status）
 
-剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=11` 创建即定稿在位）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path 由 dialoguer 写，逐句行由拆分建）。**Chapter 无 status**。**不创作对话**。
+剧情创作流程的**第一段**（章级）。创建/补全 Chapter 节点的编排属性 + 把本章事件清单按叙事段落**规划成 K 个节**（每节建 `Section` 节点（编排字段 + `status=0` 创建待定稿——定稿审在下游：dialoguer 产出后置 10、dashboard 批准置 11）+ `has_section` 边，节内事件用 `includes` 边统合（order=事件 time 序）；Section 是编排容器 + 定稿态载体——script_path 由 dialoguer 写，逐句行由拆分建）。**Chapter 无 status**。**不创作对话**。
 
 > 结构段只定 Scene 序 + 分节，不定分支拓扑（分支/结局拓扑由图 Choice/option 承载，chapter-novelist 结构推理时核验）。
 
@@ -40,7 +40,7 @@ LIMIT 1
 ```
 
 - **已存在**：用其 `id`；本章叙事范围（时间窗/事件范围）由本次调用的入参给定。用户明示重做时进入重做流程（段 3 先清旧 has_section 边 + 删旧 Section 及其下游产物链）。
-- **不存在**（首次创建）：需从调用方（plot-design agent / 用户）获取 `title`/`chapter_no` 与本章叙事范围（时间窗 `yyyy-MM-dd~yyyy-MM-dd` 或事件清单，用于定位候选 Scene）；缺失则停止并提示。生成新 id：
+- **不存在**（首次创建）：需从调用方（用户直触本 skill；plot-design 不再编排本 skill）获取 `title`/`chapter_no` 与本章叙事范围（时间窗 `yyyy-MM-dd~yyyy-MM-dd` 或事件清单，用于定位候选 Scene）；缺失则停止并提示。生成新 id：
   ```bash
   python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
   ```
@@ -91,12 +91,12 @@ MATCH (ch:Chapter {id:'<chapter_id>'})
 SET ch.title = '<title>',
     ch.chapter_no = <chapter_no>;
 
-// 2. 每节：MERGE Section（编排字段 + status=11 创建即定稿在位）+ has_section(sync=true)；节内每事件：includes(order,sync=false)
+// 2. 每节：MERGE Section（编排字段 + status=0 创建待定稿）+ has_section(sync=true)；节内每事件：includes(order,sync=false)
 //    （对 K 个节循环；每个 sec_id 用 snowflake_base62.py 新生成）
 MERGE (sec:Section {id:'<sec_id>'});
 MATCH (sec:Section {id:'<sec_id>'})
 SET sec.section_no = <MM>, sec.title = '<sec_title>', sec.summary = '<sec_summary>',
-    sec.status = 11;    // 创建即定稿在位
+    sec.status = 0;    // 创建待定稿（定稿审在下游 dialoguer/dashboard）
 MATCH (ch:Chapter {id:'<chapter_id>'}), (sec:Section {id:'<sec_id>'})
 MERGE (ch)-[r:has_section]->(sec) SET r.sync = true;
 //    节内每个事件（按 Event.time 字符串序，order 从 0 起）：
@@ -104,11 +104,11 @@ MATCH (sec:Section {id:'<sec_id>'}), (e:Event {id:'<event_id>'})
 MERGE (sec)-[r:includes]->(e) SET r.order = <order>, r.sync = false;
 ```
 
-> `has_section` 边 `sync=true`（组成关系：人改 Chapter 属性时级联重置 Section 及其逐句行→-1）；`includes` 边 `sync=false`（编排引用，不级联；防级联 BFS 穿 Event 中继）。Section 的 `status=11` 创建即写。
+> `has_section` 边 `sync=true`（组成关系：人改 Chapter 属性时级联重置 Section 及其逐句行→-1）；`includes` 边 `sync=false`（编排引用，不级联；防级联 BFS 穿 Event 中继）。Section 的 `status=0` 创建即写。
 
-**status 写入**：Chapter 无 status（属性已从图删除）。Section 创建即 `status=11`（定稿在位标记）。结构段完成即可进入各节的 `chapter-novelist`，无审批门控。
+**status 写入**：Chapter 无 status（属性已从图删除）。Section 创建即 `status=0`（编排就绪待定稿——定稿审在下游：dialoguer 产出置 `10` → dashboard 批准置 `11`）。结构段完成即可进入各节的 `chapter-novelist`。
 
-最后汇总：分节列表（section_no/title/所含事件+order 及各事件 anchored Scene）、K 个 Section（编排容器 + status=11）。**零文件产出**。
+最后汇总：分节列表（section_no/title/所含事件+order 及各事件 anchored Scene）、K 个 Section（编排容器 + status=0）。**零文件产出**。
 
 ## 参考文档
 

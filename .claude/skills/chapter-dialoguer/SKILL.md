@@ -1,8 +1,8 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=11`（定稿在位；产出即定稿，人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11）。
-  双模式：① 常规创作（本节无定稿/被作废 -1/或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回（sec.status 保持 11；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；sec.status=11 即可由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
+  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=10`（定稿产出**待审**：人工在 dashboard 批准 10→11 后才允许拆分配音/选立绘；驳回 10→-1 重做；人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11 免审）。
+  双模式：① 常规创作（本节无定稿/被作废 -1/或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回（扩写为实质内容变更，sec.status 置 10 重审；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；sec.status=11（已批）即可由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
   **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 event-ideator，均不写 status。
 argument-hint: <section_id>
 arguments:
@@ -10,11 +10,11 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当本节 `Section.status` 被重置为 `-1` 时（如 Section/Chapter 属性变更沿 has_section/produces 级联，或小说素材变动由 chapter-novelist 显式作废），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（定稿后写回 11）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 script_path 历史文件）为唯一来源重新创作。
+> **status=-1 = 作废重做**：当本节 `Section.status` 被重置为 `-1` 时（如 Section/Chapter 属性变更沿 has_section/produces 级联、小说素材变动由 chapter-novelist 显式作废、或人工在 dashboard 驳回定稿），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（定稿后写回 10 待审）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 script_path 历史文件）为唯一来源重新创作。
 
-# 节细节对话（Section 定稿态 · status=11/-1）
+# 节细节对话（Section 定稿态 · status=10/11/-1）
 
-剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：确认后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
+剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：人工批准后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
 
 ## 参数
 
@@ -46,8 +46,9 @@ LIMIT 1
 `script_path` 已有值时，Read 该 台词.ink 并检查是否含 `llm:` 行：
 
 - **`sc_status = -1`** → 作废重做：整篇重新创作覆盖（见顶部注记）。
+- **`sc_status = 10`** → 定稿待人工审：停止并提示（批准 11 后由 voice-publisher 拆分；驳回 -1 后才轮到本 skill 重做——编排层不会在 10 态调本 skill，此处为防御）。
 - **含 `llm:` 占位** → 进入**填充模式**（直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工微调」，**禁止整篇重写覆盖手改**。
-- **无占位 且 script_path 已有值** → 定稿在位（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 novelist 作废或用户明示）。
+- **无占位 且 script_path 已有值** → 定稿已批（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 novelist 作废、dashboard 驳回或用户明示）。
 - **script_path 为空** → 常规创作流程。
 
 #### 1b. 章级依据（图）+ 创作土壤（小说 / 存量提纲）+ 查创作上下文
@@ -142,7 +143,7 @@ bed- rain
    - **点状音效**（独立行）：`sfx:语义描述`——极短声音（1~2 秒）运行时**播完再接下一句**台词/旁白（如推门风铃/开门吱呀/远处闷雷）。进图 op=transition，下游 Freesound CC0 实录。
    - **音床起止对**：`bed+ <id> // 语义描述` … `bed- <id>`——区间持续声景**循环播放**（如雨声/街道底噪/电流嗡鸣）。id 限 ASCII 字母数字下划线，同场景块内配对，多床并行/嵌套合法；起止行之间的叙述即床的覆盖区间。进图 op=bed_start（语义=text，AudioFly 声景 ~10s 首尾淡入淡出）/ op=bed_end。
    **克制使用**——只标记叙事上有意义的声音（不是每段旁白都配床），与「短节克制手法」取向一致。
-5. **LLM 占位行**：`llm:提示语`——创作期拿不准的句子先占位（简短提示语说明意图/情绪/方向），**不进图、定稿含占位无法拆分**（split 门禁拒绝）；由本 skill 填充模式（见下）扩写为正式行。常规创作完成后**不应残留占位**——占位只用于「草稿暂存、下轮补写」场景（status 保持 11，split 门禁天然防漏拆分）。
+5. **LLM 占位行**：`llm:提示语`——创作期拿不准的句子先占位（简短提示语说明意图/情绪/方向），**不进图、定稿含占位无法拆分**（split 门禁拒绝）；由本 skill 填充模式（见下）扩写为正式行。常规创作完成后**不应残留占位**——占位只用于「草稿暂存、下轮补写」场景（产出照常写 10 待审，split 门禁拒绝含占位拆分、天然防漏）。
 6. **选择行**（ink 原生 `*`/`+`）：`* 选项文本 -> 去向`——单行，**禁止缩进的选项正文块**（分支正文一律写在 `= <label>` 之后）。去向 = label 名 / scene_block_id（均 ASCII 契约值）/ `END`（直达结局的 kind 写行尾注释 `// ending: <kind>`）。**连续选择行聚合进图一条 op=choice**（options 含 label+去向，运行时弹选项跳转；选项文本改 → 行 update，无音频损失）。
 7. **分支行**（stitch）：`= <label 名>`（ASCII，照搬提纲契约值）标示分支正文起点（进图 op=label）。
 8. **结局两行式**：`<落点一句话> # ending: <kind>`（落点内容行 + 行尾 ending tag，标准 ink）+ 单独一行 `-> END`——解析为单条 op=ending（kind + 落点）。线性节末尾也可加裸 `-> END` 收束。注意 ink 中 `#` 是 tag 非注释，行首 `#` 非法。
@@ -166,32 +167,32 @@ bed- rain
 2. 逐个 `llm:` 占位：按**上下文**（前后文 + 占位提示语 + 提纲 authoring + 角色 LanguageStyle + 情感弧）扩写为正式 `旁白:` / `角色名:` 行——可一拆多行（如一句占位扩成旁白+对话），扩写内容须完全兑现提示语意图并丰满。
 3. **替换写回**：占位行删除、扩写行就位；**其余已有行（含场景块/bed±/sfx/选择/分支/结局）一字不动**——这是手改保护，违者破坏用户内容。
 4. 自检：对写回文件跑 `parse_ink`（0 报错、llm_hints 空、bed 配对闭合——Bash `python -c "import sys; sys.path.insert(0, '<skill>/../section-voice-publisher/scripts'); import script_splitter as sp; p=sp.parse_ink('<ink_path>'); assert not p['llm_hints']; print(p['rows'].__len__(), 'rows')" ` 或等价方式）。
-5. **写回定稿态**（sec.status=11，只写此字段——-1 作废节经此恢复）：
+5. **写回定稿态**（sec.status=10 重审——扩写为实质内容变更，统一回待审关口，只写此字段）：
 
 ```cypher
-MATCH (sec:Section {id:'<sec_id>'}) SET sec.status = 11;
+MATCH (sec:Section {id:'<sec_id>'}) SET sec.status = 10;
 ```
 
-6. **汇报**：填充 N 处 + 每条「占位提示语 → 扩写成文」前后对照表，提示用户可到 dashboard 定稿编辑器查看/微调（保存即 11）。**填充模式不走创作质量 FAIL**（定稿主体是用户的，不重评结构）。
+6. **汇报**：填充 N 处 + 每条「占位提示语 → 扩写成文」前后对照表，提示用户到 dashboard 审批（批准 10→11 后才可拆分配音；也可进定稿编辑器微调，保存即 11）。**填充模式不走创作质量 FAIL**（定稿主体是用户的，不重评结构）。
 
-> 常规创作模式下若确有拿不准的句子：写 `llm:` 占位（status 保持 11——split 门禁拒绝含占位拆分，天然防漏），下轮本 skill 自动进填充模式补齐。
+> 常规创作模式下若确有拿不准的句子：写 `llm:` 占位（产出照常写 10 待审——split 门禁拒绝含占位拆分，天然防漏），下轮本 skill 自动进填充模式补齐（写回重新置 10）。
 
-### 3. 保存结果（写图：SET Section.script_path + status=11，不建节点）
+### 3. 保存结果（写图：SET Section.script_path + status=10，不建节点）
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})
 SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink
-    sec.status = 11;            // 定稿在位（产出即定稿，无审批；-1 作废节经此恢复）
+    sec.status = 10;            // 定稿产出待审（-1 作废节经此恢复到待审）
 ```
 
 > BGM 不在本 skill 职责内：BgmTrack（Scene-has_bgm->BgmTrack）由 **scene-design agent 编排 `bgm-designer`** 统一管理（缺口兜底、描述生成、wav 归档检测），plot-design 与本 skill 均不查不调。
 
-**status 写入**：固定 `Section.status=11`（定稿在位 取消定稿审，产出即定稿；人工微调走 dashboard 定稿编辑器，保存即 11）；创作质量 FAIL → 不写 status（见段 2 末尾）。
+**status 写入**：固定 `Section.status=10`（定稿产出**待审**——人工在 dashboard 批准 10→11 后才允许拆分配音/选立绘；驳回 10→-1 由本 skill 重做；人工微调走 dashboard 定稿编辑器，保存即 11 免审）；创作质量 FAIL → 不写 status（见段 2 末尾）。
 
-最后汇总：定稿 `Section.script_path`（台词.ink）、`Section.status=11`、说话行/旁白行/场景段计数。若触发创作质量 FAIL，汇总「结构性问题报告」而非定稿路径。
+最后汇总：定稿 `Section.script_path`（台词.ink）、`Section.status=10`（待人工审）、说话行/旁白行/场景段计数。若触发创作质量 FAIL，汇总「结构性问题报告」而非定稿路径。
 
 ## 参考文档
 
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section（定稿态载体）/LineAudio 逐句行/produces{order}
 - 上游：[chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
-- 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）
+- 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 已批后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）

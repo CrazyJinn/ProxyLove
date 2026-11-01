@@ -4,7 +4,7 @@ description: |
   把全章各节产物就绪（各节 Section.status=11 ∧ 该节全部台词行 LineAudio=11）的章节从图发布到运行时 `99_game/`：
   用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（Section-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为立绘键 hexid(stand_id)——stand_id 全局唯一；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block，track=hexid(bgm_id)）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest（--rebuild）+ 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
   章 stem = hexid(Chapter.id)（16 位小写 hex，to_hexid——章 JSON/pck 文件名主体；chapter_packs 条目内嵌 title/chapter_no 供运行时章下拉显示排序）。
-  在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 推进到全章就绪即止）。
+  在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 单节推进到该节就绪即止）。
 argument-hint: <chapter_id>
 arguments:
   - chapter_id
@@ -66,7 +66,7 @@ RETURN count(l) AS say_no_stand;
 ```
 
 **前驱校验**：
-- **每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿在位 + 该节全部台词行声音已批）——章真正可发布 = 全部节产物就绪（章无 status）。任一不满足则停止并提示先在 dashboard 推进对应节（含拆分配音、逐句音频审）。
+- **每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿已批 + 该节全部台词行声音已批）——章真正可发布 = 全部节产物就绪（章无 status）。任一不满足则停止并提示先在 dashboard 推进对应节（含拆分配音、逐句音频审）。
 - 被引用立绘（uses 边目标）：`status=11` 且 `image_path` 非空的才拷贝；`status≠11` 的逐个**警告**（运行时该变体走占位图），不阻断发布（让已就绪资源先上线）。`say_no_stand>0` 时**警告** N 句缺选绘（该批句运行时保持上一张/占位图）。
 - background SceneLayer：同理，`status=11` 且 `image_path` 非空才拷贝。
 - BgmTrack：`status=2` 且 `audio_path` 文件存在的才拷贝/注入；`<2` 或文件缺失逐个**警告**（该场景运行时无 BGM，静默），不阻断发布。
@@ -183,7 +183,7 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
 
 `voice` 字段（`say.voice`）由 [section-voice-publisher](../section-voice-publisher/SKILL.md) 在**节级定稿后**经 `bind-graph` 写进行节点 `voice_key`，本 skill 图投影合并时自动带进章 JSON：
 
-- **生产时序**：chapter-dialoguer（台词.ink → Section.status=11 定稿在位）→ **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
+- **生产时序**：chapter-dialoguer（台词.ink → Section.status=10 定稿待审）→ **人工定稿审（dashboard 批准 10→11）** → **section-voice-publisher**（拆分进图 → 节级 TTS + bind-graph 写行节点 → 行 status=10→逐句审→11）→ **chapter-publisher**（图投影台词行[voice=voice_key] + 立绘/BGM + 补 manifest.voices / chapter_packs.voices）。
 - 本 skill 合并时 say 行节点已含 voice_key（投影把 `voice_key` 投为 `say.voice`）→ 合并后章 JSON 每 say 自带 voice，**无需再注入**。
 - **本 skill 末尾补 manifest.voices + chapter_packs.voices**（节级阶段章未合并，这两处无法写；合并后用 voice_bundler 读章 JSON 推导补齐，见第 3、4 步）。
 - **行身份稳定寻址**：voice_key = hexid(LineAudio 行节点 id)——台词.ink 插入/删除/移动行不影响其他行 key；某句台词被改（stale 重配）后重跑该节 section-voice-publisher 覆盖对应 wav 即可，无全节重配。

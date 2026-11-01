@@ -1,7 +1,7 @@
 ---
 name: section-voice-publisher
 description: |
-  把单节已确认定稿（Section.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
+  把单节已批准定稿（Section.status=11 已批 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
   ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
   ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene` 的事件 `→appears_as→IllusDesign` 直读形象（版本已在写边时物化，零推理）再 `→expands_to` 列已有立绘）→
   ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
@@ -17,7 +17,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 节级拆分进图 + 配音发布（Section 定稿态 → 逐句 LineAudio → 行级 TTS）
 
-把**单节已确认定稿**（`Section.status=11` 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `Section-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
+把**单节已批准定稿**（`Section.status=11` 已批 的 `台词.ink`）先**拆分对齐进图**（逐句 LineAudio 节点 + `Section-[:produces {order}]->LineAudio`），再对图中 say 行按需克隆 TTS 语音，行级结果写回图节点属性：
 按本节出场角色 `VoiceDesign`，用 [voice_clone_runner.py](scripts/voice_clone_runner.py) ensure-ref 出/复用 ref_audio → 同脚本 `publish` 逐句 clone（Qwen3 Base Voice Clone，输入 tts_text 变体承载情绪，均 env/.venv-qwen）→ 母带落图行 `master_path`（`15_声音/<ch_hexid>/<block_hexid>/`，jobs 已带路径），再用 [voice_bundler.py](scripts/voice_bundler.py) `bind-graph` 给每个（重）生成行写节点属性（`status=10` 待审）。**不拷运行时副本**：dashboard 逐句审批试听直接读母带 `15_声音/`；`99_game/assets/voices|sfx` 只由 chapter-publisher 发布时按 `status=11` 收录（`voice_bundler.py publish`），未批音频不进成品目录。
 
 > **拆分幂等**（script_splitter.py 对齐算法）：台词.ink 与图行按签名（op+who+text）difflib 对齐——未变行原样保留（级联 -1 的未变 say 行且 wav 在 → 恢复 10，**resubmit 微调回路下未变行连 status 都不动**，已批 11 保持）；text 变化行沿用节点置 0（voice key 不变覆盖 wav）；定稿新增行建新节点（order 取上下句中点，**单句插入不丢任何行**）；定稿删除行 DETACH DELETE。order 中点耗尽时全节重排（order 不进 voice key，安全）。
@@ -31,7 +31,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 前置条件
 
-- 本节 `Section.status=11`（定稿在位；`-1` 作废态先重走 novelist→dialoguer）；否则停止，提示先走 chapter-dialoguer。
+- 本节 `Section.status=11`（定稿**已批**——2026-11-01 起定稿审恢复：dialoguer 产出置 10、dashboard 批准置 11）；`-1` 作废态先重走 novelist→dialoguer；`10` 待审态等 dashboard 人工批准（不是走 chapter-dialoguer）；`0` 未定稿先走小说→定稿链。否则停止并按态提示。
 - 须已组章（母带目录的章段依赖章；章无 status 起组章即结构就绪）。自由节（无所属章）不可拆分配音，先在 dashboard 组章。
 - 本节出场角色的 `VoiceDesign.status=11`（声音已批）。未就绪（无 VoiceDesign 或 status≠11）角色**警告跳过**（该角色 say 行保持 status=0 待配，运行时静默不播），提示先经 `char-design` 跑 `char-voice-design` 并审批，不阻断其他角色配音。
 
@@ -131,7 +131,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" apply \
 
 `apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, description, status=0}` + `expands_to`）②该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
 
-- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿 appears_as 范围推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
+- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿本节 say 行 uses 边推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
 - **校验失败**（缺 stand / stand_id 不存在 / 行不属于本节）→ 报告逐条列出坏项且**未写图**，回 3b 补齐 tasks 后重跑 apply（无图副作用）。
 - 3a 报 `0 行待判` 时本步跳过（无新判断，已建边保持）。
 
@@ -196,7 +196,7 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 
 ## 汇报
 
-列出：节 script_path、stem、拆分对齐统计（created/updated/deleted/restored/reordered）、本轮挑行统计（待配 N 句，复用保持 M 句）、**选绘统计（建边 N 句 / 新变体 M 清单 / 复用 K——新变体为 status=0 缺口，由 plot-design 按 appears_as 范围推进 char-stand-designer 出图）**、各角色产出 wav 数（`{char: N}`）与**通道分布（icl N / xvec M）**、跳过的角色（无 VoiceDesign 或未就绪）、**failed 清单（char/key/错误）**、bind 的行数、行级 status=10 计数。提示用户去 dashboard 审批中心做逐句音频审。
+列出：节 script_path、stem、拆分对齐统计（created/updated/deleted/restored/reordered）、本轮挑行统计（待配 N 句，复用保持 M 句）、**选绘统计（建边 N 句 / 新变体 M 清单 / 复用 K——新变体为 status=0 缺口，由 plot-design 按本节 say 行 uses 边推进 char-stand-designer 出图）**、各角色产出 wav 数（`{char: N}`）与**通道分布（icl N / xvec M）**、跳过的角色（无 VoiceDesign 或未就绪）、**failed 清单（char/key/错误）**、bind 的行数、行级 status=10 计数。提示用户去 dashboard 审批中心做逐句音频审。
 
 ## 参考文档
 

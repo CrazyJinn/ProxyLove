@@ -78,10 +78,19 @@
     "05234345d7400002": "assets/portraits/05234345d7400002.png",
     "05234345d7400003": "assets/portraits/05234345d7400003.png",
     "05234345d7400004": "assets/portraits/05234345d7400004.png",
+    "04b49acbc8000005": "assets/portraits/04b49acbc8000005.png",
+    "04b49acbc8000006": "assets/portraits/04b49acbc8000006.png",
+    "04b49acbc8000007": "assets/portraits/04b49acbc8000007.png",
+    "04b49acbc8000008": "assets/portraits/04b49acbc8000008.png",
+    "04b49acbc8000009": "assets/portraits/04b49acbc8000009.png",
+    "04b49acbc800000a": "assets/portraits/04b49acbc800000a.png",
     "04c18863ac400000": "assets/portraits/04c18863ac400000.png",
     "04c18863ac400001": "assets/portraits/04c18863ac400001.png",
     "04c18863ac400002": "assets/portraits/04c18863ac400002.png",
-    "04e30f4b73c00000": "assets/portraits/04e30f4b73c00000.png"
+    "04c7e986f2400000": "assets/portraits/04c7e986f2400000.png",
+    "04e30f4b73c00000": "assets/portraits/04e30f4b73c00000.png",
+    "04e30fa00b800000": "assets/portraits/04e30fa00b800000.png",
+    "04e30fc96dc00000": "assets/portraits/04e30fc96dc00000.png"
   },
   "portrait_scales": {
     "04fe016b88800000": 0.925,
@@ -162,10 +171,19 @@
     "05234345d7400002": 0.89,
     "05234345d7400003": 0.89,
     "05234345d7400004": 0.89,
+    "04b49acbc8000005": 0.925,
+    "04b49acbc8000006": 0.925,
+    "04b49acbc8000007": 0.825,
+    "04b49acbc8000008": 0.825,
+    "04b49acbc8000009": 0.825,
+    "04b49acbc800000a": 0.825,
     "04c18863ac400000": 0.925,
     "04c18863ac400001": 0.925,
     "04c18863ac400002": 0.925,
-    "04e30f4b73c00000": 0.925
+    "04c7e986f2400000": 0.925,
+    "04e30f4b73c00000": 0.925,
+    "04e30fa00b800000": 0.925,
+    "04e30fc96dc00000": 0.825
   },
   "scenes": {
     "0507e713eac00001": "assets/scenes/0507e713eac00001.png",

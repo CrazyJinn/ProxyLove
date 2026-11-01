@@ -2,7 +2,7 @@
 name: chapter-novelist
 description: |
   推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
-  前驱：无（章无 status、节创建即 11 取消结构审/定稿审；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
+  前驱：无（章无 status 取消结构审；节创建即 0 待定稿，定稿审在下游 dialoguer 产出置 10 后由人工批准；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -151,6 +151,6 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 - 去AI味工序（段 2b.5 执行）：[references/小说去AI味工序.md](references/小说去AI味工序.md)——叙述层四病灶、对白层八反模式、两遍回读
 - 指纹契约：[scripts/fingerprint.py](scripts/fingerprint.py) 顶部 docstring（归一化规则 / gen --ids / check）
 - 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section 定稿态 / 创作流程注记「小说段」
-- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构）
+- 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构，**用户直触**，不经 plot-design；dashboard 人工编排直写为并列通道）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
 - 建议通道：本文件段 4 内联契约（建议 JSON 字段 / 多语句 / dashboard 弹窗写回）
