@@ -29,7 +29,11 @@ allowed-tools: Read, Bash, Write
 > `_建议.json` 结尾，dashboard「📥 补全建议」弹窗按此 glob 拾取最新 3 个文件，落盘
 > 即提交（不接收推送），人工经弹窗写回。**全程零直接图写入**。顶层数组，逐项
 > `{check, priority, reason, content, cypher}` + `source:'event-stager'`（check 取值见
-> §4）；一条建议的 cypher 可多语句（`;`+换行分隔，先节点后边）；**禁止夹带自造的
+> §4）；一条建议的 cypher 可多语句（`;`+换行分隔，先节点后边），**每条语句自包含
+> ——边 pattern 两端点变量必须在本语句内 MATCH/CREATE 绑定**（变量不跨 `;` 语句
+> 延续；MERGE 边端点未先绑定会在未命中时整 pattern 重建出重复节点，见
+> [references/多语句cypher与MERGE绑定语义.md](references/多语句cypher与MERGE绑定语义.md)），
+> 落盘后必须 `$SUGGEST_LINT` 全 PASS；**禁止夹带自造的
 > 校验节点**（必然孤儿）；执行校验由用户回报后只读回查完成。
 >
 > **入口核验**：范围内事件缺 occurs_at Location / 缺 involved Character → **报错停止**
@@ -43,6 +47,7 @@ CYPHER_EXEC="python ${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py"
 SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 ROUND="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_round.py"    # 轮次推导（共享计数器）
 PREFLIGHT="python ${CLAUDE_SKILL_DIR}/scripts/preflight.py"          # 前置核验（范围+契约+资源）
+SUGGEST_LINT="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_lint.py"  # 建议语句级护栏（MERGE 绑定语义）
 OUTPUT_DIR="02_剧情数据"
 ```
 
@@ -168,42 +173,64 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 - **写后复查（建议 JSON 内容层面）**：每个 event 的 sub 时间连续无重叠 / 同机位同
   角色着装一致（EA3 口径）/ sub 顺序与父 time 相容 / description 无机位名等占位字段
   引用 / EA5 违规形态零出现（Event 直挂两边）。复查发现的问题就地修正后再落盘。
+- **写后复查（建议 JSON 语句层，提交门槛）**：落盘后立即跑
+  `$SUGGEST_LINT <文件路径>`——exit 0 = 全 PASS；任何 FAIL 按输出提示就地改写
+  cypher、覆盖重写文件、重跑，直到全 PASS 才算提交（dashboard 执行侧有同规格
+  兜底，FAIL 形态会在采纳时被 400 拒绝）。
 
 ### cypher 模板（照抄改值）
 
+> **语句自包含铁律**（2026-11-02 重复 id 节点事故后的硬约束，详解见
+> [references/多语句cypher与MERGE绑定语义.md](references/多语句cypher与MERGE绑定语义.md)）：
+> ① `;` 分隔的每条语句是独立查询，**变量不跨语句延续**——挂边语句的两端点都在
+> **本语句内**先 `MATCH (x:Label {id:'…'})` 绑定，MERGE 边里只用裸变量 `(x)`；
+> ② MERGE 边端点不得写成 `(y:Label {id:'…'})` 锚定模式直接出现——未绑定的端点在
+> MERGE 未命中时**整 pattern 重建**（新建只带 {id} 的重复节点 + 幽灵节点，即事故形态）；
+> ③ 每个分号独占行尾（`;`+换行）；④ 写入建议 JSON 的 cypher 字段**不携带 `//` 注释
+> 行**——注释写在建议 reason 或本文件（cypher 字段是机器载荷，注释只增漂移面；下方
+> 注释仅是文档说明）；⑤ 同一实体的 id 在节点语句与挂边语句中是**同一字面值**（挂边
+> 靠 MATCH 该 id 重新绑定）。
+
 ```
-// Spot 占位（空间缺口）
+// ── 占位节点：节点本体与挂边各自独立语句，挂边两端点各自 MATCH 绑定 ──
+// Spot 占位（空间缺口）——节点本体
 CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;
-MATCH (l:Location {id:'<loc_id>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
-// Scene 占位（机位缺口）
+// part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
+MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
+// Scene 占位（机位缺口）——节点本体
 CREATE (sc:Scene {id:'<snowflake>'}) SET sc.name='<机位名>', sc.scene_type='<类型>', sc.status=0;
-MATCH (sp:Spot {id:'<spot_id>'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;
-// CostumeStyle 占位
+// realizes 边（Spot 可为既有或上方占位）
+MATCH (sp:Spot {id:'<spot_id_既有或上方占位>'}) MATCH (sc:Scene {id:'<snowflake>'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;
+// CostumeStyle 占位——节点本体（无挂边）
 CREATE (cs:CostumeStyle {id:'<snowflake>'}) SET cs.name='<着装名>', cs.outfit_style='<风格>', cs.status=0;
-// IllusDesign 占位（挂 outfit_for）
+// IllusDesign 占位——节点本体
 CREATE (idn:IllusDesign {id:'<snowflake>'}) SET idn.adaptation_notes='<着装补充>', idn.status=0;
-MATCH (cs:CostumeStyle {id:'<cs_id>'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;
-// SubEvent + 三边（S2 一体）
+// outfit_for 边（CostumeStyle 可为既有或上方占位）
+MATCH (cs:CostumeStyle {id:'<cs_id_既有或上方占位>'}) MATCH (idn:IllusDesign {id:'<snowflake>'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;
+// ── S2 SubEvent：本体+refines 一体语句；anchored_at / appears_as 各自独立语句 ──
 MATCH (e:Event {id:'<parent_id>'})
 MERGE (sub:SubEvent {id:'<snowflake>'})
 ON CREATE SET sub.title='<父title> · <序号或短名>', sub.time='<插值时间>',
               sub.description='<演出内容（模板五要素，不含机位名）>'
-MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true
-MERGE (sub)-[a:anchored_at]->(scn:Scene {id:'<scene_id_既有或占位>'}) ON CREATE SET a.sync=false
-MERGE (sub)-[ap:appears_as]->(il:IllusDesign {id:'<illus_id_继承或占位>'}) ON CREATE SET ap.sync=false,
-  ap.detail='<继承：同父兄弟着装 / 占位：新套装待消化>';
-// Info 升格（S3）
+MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;
+MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (scn:Scene {id:'<scene_id_既有或本建议占位>'})
+MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;
+MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (il:IllusDesign {id:'<illus_id_继承既有或本建议占位>'})
+MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='<继承：同父兄弟着装 / 占位：新套装待消化>';
+// ── S3 Info 升格：sub 本体+refines 一体；anchored_at 独立；Info 删除独立收尾 ──
 MATCH (e:Event {id:'<parent_id>'})
 MERGE (sub:SubEvent {id:'<snowflake>'})
 ON CREATE SET sub.title='<Info.title>', sub.time='<e.time>', sub.description='<Info.content>'
-MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true
-MERGE (sub)-[a:anchored_at]->(scn:Scene {id:'<scene_id>'}) ON CREATE SET a.sync=false
-MERGE (i:Info {id:'<info_id>'}) DETACH DELETE i;
+MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;
+MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (scn:Scene {id:'<scene_id>'})
+MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;
+MATCH (i:Info {id:'<info_id>'}) DETACH DELETE i;
 ```
 
 - 占位节点间边（part_of/realizes/outfit_for）sync=true（细化时级联下游）；sub 三边
   中 refines sync=true、anchored_at/appears_as sync=false（演出绑定不级联）。
-- 多语句 `;` 分隔先节点后边；MERGE 幂等；id 用 snowflake 逐个生成。
+- 多语句 `;`+换行分隔、先节点后边、每个分号独占行尾；MERGE 幂等；id 用 snowflake
+  逐个生成（`$SF_GEN -n 1 -q`）。
 
 ## 参考文档
 

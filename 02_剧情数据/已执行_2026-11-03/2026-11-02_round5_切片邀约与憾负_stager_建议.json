@@ -1,0 +1,26 @@
+[
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「林梦出几套直播切片方案叫陈默过目」(RQESahNn7I, 06-17 09:30) 清理临时旧 sub Ra7IfJLJtY 重建单段：切片过稿讨论；着装修正——旧 sub 绑廉价休闲新装 (QmFVxZtCtd)，与前一晚陪喝酒（日常户外装）+ 和衣过夜连续剧情漂移，改回 QmQCxuTrGK（还没回家换装）；林梦居家慵懒不变；机位挂既有林梦家。",
+    "content": "删旧 sub Ra7IfJLJtY；重建 1 个 SubEvent「切片过稿」09:30 (anchored_at→既有 RLFwn8iZlJ)；绑 appears_as 陈默 QmQCxuTrGK（未回家换装）+ 林梦 QSkk1LfIx8。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtY'}) DETACH DELETE old;\nMATCH (e:Event {id:'RQESahNn7I'})\nMERGE (sub:SubEvent {id:'RkaSUg0Daz'})\nON CREATE SET sub.title='林梦出几套直播切片方案叫陈默过目 · 切片过稿', sub.time='2024-06-17 09:30:00', sub.description='机位动作：沙发上并排看屏幕，林梦把剪好的几套精彩切片方案逐个放给他看，讲每套的节奏设计，他挑得认真，她得意；到场离场：无（摊开电脑直入，方案敲定收束）；参与：陆择（陈默身）、林梦；基调：被专业照顾的服气，一点得意的默契；衔接：承宿醉清晨，引紧接的漫展邀约。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Daz'}) MATCH (scn:Scene {id:'RLFwn8iZlJ'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Daz'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：和衣过夜沿用昨晚着装——陈默日常户外休闲装（修正旧sub漂移到廉价休闲新装）';\nMATCH (sub:SubEvent {id:'RkaSUg0Daz'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦居家慵懒着装';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「林梦要陈默陪她去漫展」(RU4sFkF8im, 06-17 09:30，与切片事件同时刻同地点) 清理临时旧 sub Ra7IfJLJtZ 重建单段：不容拒绝的邀约；sub time 插值 09:45 与前段切片 09:30 错峰（同日连续剧情）；着装同前段（陈默 QmQCxuTrGK 修正漂移、林梦 QSkk1LfIx8）；机位挂既有林梦家。",
+    "content": "删旧 sub Ra7IfJLJtZ；重建 1 个 SubEvent「不容拒绝的邀约」09:45 插值 (anchored_at→既有 RLFwn8iZlJ)；绑 appears_as 陈默 QmQCxuTrGK + 林梦 QSkk1LfIx8。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtZ'}) DETACH DELETE old;\nMATCH (e:Event {id:'RU4sFkF8im'})\nMERGE (sub:SubEvent {id:'RkaSUg0Db0'})\nON CREATE SET sub.title='林梦要陈默陪她去漫展 · 不容拒绝的邀约', sub.time='2024-06-17 09:45:00', sub.description='机位动作：切片看完她顺势翻开另一个页面，周末漫展票都买好了，不容拒绝地宣布他得陪她去，理由一箩筐堵得他没退路，只能应下；到场离场：无（话锋一转直入，应下收束）；参与：陆择（陈默身）、林梦；基调：先斩后奏的强势可爱，被安排的无奈宠溺；衔接：承切片过稿，引周末漫展。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Db0'}) MATCH (scn:Scene {id:'RLFwn8iZlJ'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Db0'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：和衣过夜沿用昨晚着装——陈默日常户外休闲装（修正旧sub漂移到廉价休闲新装）';\nMATCH (sub:SubEvent {id:'RkaSUg0Db0'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦居家慵懒着装';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「二队训练赛表现提升憾负」(RU608HspJw, 06-17 19:30) 清理临时旧 sub Ra7IfJLJta 重建单段：方案初见效前期优势生涩憾负+复盘肯定方向；着装修正——旧 sub 误绑理发前居家版 (QUVhvJKplY) 去除；机位沿用既有直播位·更新设备后。",
+    "content": "删旧 sub Ra7IfJLJta；重建 1 个 SubEvent「方案初见效」19:30 (anchored_at→既有 R22lVGrBuC)；绑 appears_as 陈默 QmFVxZtCtc + 沈暮雪 O0BFwtiWA4。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJta'}) DETACH DELETE old;\nMATCH (e:Event {id:'RU608HspJw'})\nMERGE (sub:SubEvent {id:'RkaSUg0Db1'})\nON CREATE SET sub.title='二队训练赛表现提升憾负 · 方案初见效', sub.time='2024-06-17 19:30:00', sub.description='机位动作：按方案首次调整打法合练，前期一度打出优势，配合仍生涩最终憾负；复盘时沈暮雪难得语气松了：路子对了，就差火候；到场离场：无；参与：陆择（陈默身）、沈暮雪（队内语音）；基调：虽败犹振，第一次看见凿开的缝透光；衔接：承闭门写方案，引差一点。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Db1'}) MATCH (scn:Scene {id:'R22lVGrBuC'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Db1'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默居家颓废着装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Db1'}) MATCH (il:IllusDesign {id:'O0BFwtiWA4'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——沈暮雪电竞经理职业装（队内语音）';",
+    "source": "event-stager"
+  }
+]

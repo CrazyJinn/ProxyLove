@@ -1,0 +1,26 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件①「陈默按图索骥探班康复中心」拍板拆2段（到场+参观），到场段需康复中心入口机位——既有空间链仅训练大厅一 Spot；占位 status=0 待场景美术链消化，命名已查重无冲突。",
+    "content": "新建占位：Spot「康复中心-门口」(zone, status=0) 挂 part_of→康复中心；Scene「康复中心-门口」(dialogue, status=0) 挂 realizes←该 Spot。",
+    "cypher": "CREATE (sp:Spot {id:'RkWSqCnC4W'}) SET sp.name='康复中心-门口', sp.kind='zone', sp.description='康复中心主入口门厅，访客报到接待处', sp.status=0;\nMATCH (l:Location {id:'QP23NrFZqm'}) MATCH (sp:Spot {id:'RkWSqCnC4W'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\nCREATE (sc:Scene {id:'RkWSqCnC4X'}) SET sc.name='康复中心-门口', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'RkWSqCnC4W'}) MATCH (sc:Scene {id:'RkWSqCnC4X'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件①「陈默按图索骥探班康复中心」(RMoHgKlbdq) 按用户拍板拆2段重建：先清理临时旧 sub Ra7IfJLJtN；到场段（09:50 前插值）挂新占位机位，参观段（10:00）挂既有康复中心-训练大厅；两段同角色着装一致（EA3），全继承真身零服装占位：陈默→日常户外休闲装·理发后 (QmQCxuTrGK)、苏晓禾→康复师工作装 (NyJ99Sgpft)。",
+    "content": "清理旧临时 sub Ra7IfJLJtN；重建 2 个 SubEvent：「到场」09:50 (anchored_at→占位机位 RkWSqCnC4X)、「参观」10:00 (anchored_at→既有 RVaUJp92GH)；各绑 appears_as 陈默 QmQCxuTrGK + 苏晓禾 NyJ99Sgpft。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtN'}) DETACH DELETE old;\nMATCH (e:Event {id:'RMoHgKlbdq'})\nMERGE (sub:SubEvent {id:'RkWSqCnC4Y'})\nON CREATE SET sub.title='陈默按图索骥探班康复中心 · 到场', sub.time='2024-06-12 09:50:00', sub.description='机位动作：循晨跑闲聊里她指过的方位按图索骥找上门来，探头张望找人，苏晓禾在岗间瞥见来客愣在原地，随即意外又好笑地迎上来寒暄；到场方式：不速之客式报到，找得到本身就是心意；参与：陆择（陈默身）、苏晓禾；基调：意外之喜的日常靠近；衔接：承晨跑闲聊指认方位，引她领他入内参观。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkWSqCnC4Y'}) MATCH (scn:Scene {id:'RkWSqCnC4X'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkWSqCnC4Y'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkWSqCnC4Y'}) MATCH (il:IllusDesign {id:'NyJ99Sgpft'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——苏晓禾康复师工作装（在岗）';\nMATCH (e:Event {id:'RMoHgKlbdq'})\nMERGE (sub:SubEvent {id:'RkWSqCnC4Z'})\nON CREATE SET sub.title='陈默按图索骥探班康复中心 · 参观', sub.time='2024-06-12 10:00:00', sub.description='机位动作：苏晓禾领他穿行参观，器械与复健人群间逐样讲解，那个爱找人下棋的老人的位置空着，两人都看见了都没说破；离场方式：参观收束自然，无独立离场演出；参与：陆择（陈默身）、苏晓禾；基调：日常靠近的松弛，一点不点破的空位余韵；衔接：承到场寒暄，引同日下午训练日程交付。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkWSqCnC4Z'}) MATCH (scn:Scene {id:'RVaUJp92GH'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkWSqCnC4Z'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkWSqCnC4Z'}) MATCH (il:IllusDesign {id:'NyJ99Sgpft'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——苏晓禾康复师工作装（在岗）';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件②「沈暮雪微信交付训练日程安排」(RMxYXuS6IC) 单段重建：先清理临时旧 sub Ra7IfJLJtO，并修正其同时绑定理发前+理发后两版陈默形象的 EA3 着装冲突；机位挂既有八楼出租屋-电脑桌直播位-更新设备后（对照直播时段调日程），陈默只绑理发后居家版 (QmFVxZtCtc)，沈暮雪微信立绘绑电竞经理职业装 (O0BFwtiWA4，继承兄弟 sub)。",
+    "content": "清理旧临时 sub Ra7IfJLJtO；重建 1 个 SubEvent「日程到手」16:00 (anchored_at→既有 R22lVGrBuC)；绑 appears_as 陈默 QmFVxZtCtc（理发后居家版）+ 沈暮雪 O0BFwtiWA4（微信立绘）。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtO'}) DETACH DELETE old;\nMATCH (e:Event {id:'RMxYXuS6IC'})\nMERGE (sub:SubEvent {id:'RkWSqCnC4a'})\nON CREATE SET sub.title='沈暮雪微信交付训练日程安排 · 日程到手', sub.time='2024-06-12 16:00:00', sub.description='机位动作：沈暮雪微信告知二队人员已齐，发来固定时段训练日程表，他对照直播时段逐一调整排期；到场离场：无实体到场，微信来讯即开场、回复定档收束；参与：陆择（陈默身）、沈暮雪（微信）；基调：口头邀约落成制度感的踏实，规律生活第一次有了课表；衔接：承连麦官宣入队，引二队训练赛全败首日。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkWSqCnC4a'}) MATCH (scn:Scene {id:'R22lVGrBuC'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkWSqCnC4a'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默居家颓废着装（理发后，修正旧sub误绑理发前版本）';\nMATCH (sub:SubEvent {id:'RkWSqCnC4a'}) MATCH (il:IllusDesign {id:'O0BFwtiWA4'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——沈暮雪电竞经理职业装（微信立绘）';",
+    "source": "event-stager"
+  }
+]

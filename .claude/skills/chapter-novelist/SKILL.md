@@ -142,6 +142,13 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 4. **对账建议（可选）**：段 2 中长出的新 Event/Info（图上查无、值得对账入图的）→ 组装建议 JSON（顶层数组，逐项 `{check, priority, reason, content, cypher}` + `source:'chapter-novelist'`；cypher 开箱可执行、可多语句 `;` 分隔先节点后边、**禁止夹带校验节点**；落盘 `*_建议.json` 由 dashboard「📥 补全建议」弹窗拾取写回）：
    - `check = 'N1_novel_new_entity'`，`source = 'chapter-novelist'`
    - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_建议.json`（必须 `_建议.json` 结尾；轮次 N = `python .claude/scripts/suggest_round.py` 输出，共享计数器，勿手写扫描）
+   - **语句自包含铁律**：每条 `;` 语句的边 pattern 两端点在本语句内 MATCH/CREATE 绑定
+     （变量不跨语句延续，MERGE 边端点未先绑定会整 pattern 重建出重复节点——见
+     event-stager/references/多语句cypher与MERGE绑定语义.md）；每个分号独占行尾；
+     cypher 字段不带 `//` 注释行
+   - **落盘后跑** `python .claude/scripts/suggest_lint.py <文件路径>`，FAIL（exit 1）
+     就地改写、覆盖重写并重跑至全 PASS（exit 0）再汇报（dashboard 执行侧有同规格
+     兜底，FAIL 形态会在采纳时被 400 拒绝）
    - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/link/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）。稀疏纪律：单次至多 3 Event + 2 Info，无新增不落盘只汇报。
 5. **汇总**：小说路径 + 取材条数（event/info 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
 

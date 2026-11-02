@@ -32,7 +32,11 @@ allowed-tools: Read, Bash, Write
 > `source:'event-ideator'`（check 取值见 §4），落盘
 > `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json`——必须 `_建议.json` 结尾，
 > dashboard「📥 补全建议」弹窗按此 glob 拾取最新 3 个文件，落盘即提交（不接收推送）。
-> 一条建议的 cypher 可多语句（`;`+换行分隔，先节点后边）；**禁止夹带自造的校验节点**
+> 一条建议的 cypher 可多语句（`;`+换行分隔，先节点后边），**每条语句自包含——边
+> pattern 两端点变量必须在本语句内 MATCH/CREATE 绑定**（变量不跨 `;` 语句延续，
+> MERGE 边端点未先绑定会整 pattern 重建出重复节点，见
+> event-stager/references/多语句cypher与MERGE绑定语义.md），落盘后 `$SUGGEST_LINT`
+> 全 PASS；**禁止夹带自造的校验节点**
 > （必然孤儿）；执行校验由用户回报后只读回查完成。轮次 N 由 `$ROUND` 推导（全
 > skill 共享计数器）。
 >
@@ -46,6 +50,7 @@ CYPHER_EXEC="python ${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py"
 SF_GEN="python ${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py"
 ROUND="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_round.py"     # 轮次推导（共享计数器）
 NBHD="python ${CLAUDE_SKILL_DIR}/scripts/neighborhood.py"             # 锚点关系查询（双锚连通性）
+SUGGEST_LINT="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_lint.py"  # 建议语句级护栏（MERGE 绑定语义）
 OUTPUT_DIR="02_剧情数据"
 ```
 
@@ -191,8 +196,11 @@ Event/Character）——并入候选批一起询问，不单独立题。
    - Info 项：`{check:'I3_new_info', priority:'low', reason, content, cypher, source:'event-ideator'}`——每个 Info 一项。
    - id 用 `$SF_GEN -n 1 -q` 逐节点生成。
 4. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_ideator_建议.json`（顶层数组，UTF-8）。
-5. **汇报**：文件路径 + 条数与 priority 分布 + 放弃清单 + 占位清单 + 审批入口
-   话术（dashboard `/events`「📥 补全建议」逐条审阅写回）。
+5. **语句层复查（提交门槛）**：`$SUGGEST_LINT <文件路径>`——exit 0 = 全 PASS；任何
+   FAIL 按输出提示就地改写 cypher、覆盖重写文件、重跑至全 PASS（dashboard 执行侧
+   有同规格兜底，FAIL 形态会在采纳时被 400 拒绝）。
+6. **汇报**：文件路径 + 条数与 priority 分布 + lint 全 PASS 确认 + 放弃清单 + 占位清单
+   + 审批入口话术（dashboard `/events`「📥 补全建议」逐条审阅写回）。
 
 ## cypher 模板（照抄改值）
 
@@ -213,6 +221,10 @@ MATCH (a {id:'<anchor_id>'}), (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
 ```
 
 - 多语句 `;`+换行分隔，逐句以 `;` 结尾；**先建节点（含占位）再挂边**。
+- **语句自包含铁律**：每条 `;` 语句的边 pattern 两端点在本语句内 MATCH 绑定——本
+  模板的边语句均为 `MATCH (a {…}), (b {…}) MERGE (a)-[r:T]->(b)` 自包含形态，保持
+  这个形态，不要拆成「CREATE 节点；MATCH 一端 MERGE 边」引用前句变量（变量不跨
+  语句延续，见 event-stager/references/多语句cypher与MERGE绑定语义.md）。
 - involved 每人一条 MERGE；occurs_at 可多条；ending_kind/condition 仅敲定时并入首句 SET。
 - 内联值单引号转义；不用 `$param`；不加时序边（时序由 `Event.time` 字符串序承载）。
 

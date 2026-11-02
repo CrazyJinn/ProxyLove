@@ -1,0 +1,26 @@
+[
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「苏晓禾问起职业陈默透露电竞选手」(RQE3BqHl0i, 06-16 07:10) 清理临时旧 sub Ra7IfJLJtV 重建单段：闲聊问工作轻描淡写透露电竞选手；着装修正——与前段避雨同逛连续，两人维持晨跑运动装（陈默 QmFVxZtCte、苏晓禾 NyJ99Sgpfs）；机位复用既有占位超市-店内。",
+    "content": "删旧 sub Ra7IfJLJtV；重建 1 个 SubEvent「轻描淡写的大事」07:10 (anchored_at→既有占位 Re2PEUaYTp)；绑 appears_as 陈默 QmFVxZtCte + 苏晓禾 NyJ99Sgpfs。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtV'}) DETACH DELETE old;\nMATCH (e:Event {id:'RQE3BqHl0i'})\nMERGE (sub:SubEvent {id:'RkaSUg0Daw'})\nON CREATE SET sub.title='苏晓禾问起职业陈默透露电竞选手 · 轻描淡写的大事', sub.time='2024-06-16 07:10:00', sub.description='机位动作：货架间闲聊，苏晓禾随口问你到底做什么工作，他掂着手里的东西轻描淡写说了句职业电竞选手，她愣了两秒，反应比他想的有意思；到场离场：无（闲聊直入，话题落定收束）；参与：陆择（陈默身）、苏晓禾；基调：坦白撞上好奇的轻快，大事化小的俏皮；衔接：承避雨同逛，引当晚小酒馆。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Daw'}) MATCH (scn:Scene {id:'Re2PEUaYTp'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Daw'}) MATCH (il:IllusDesign {id:'QmFVxZtCte'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：晨跑场景着装真身——陈默晨跑运动装（与前段避雨同逛连续）';\nMATCH (sub:SubEvent {id:'RkaSUg0Daw'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfs'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：晨跑场景着装真身——苏晓禾晨跑运动装（与前段避雨同逛连续）';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「林梦叫陈默出来陪喝酒」(RU44a1J1vs, 06-16 20:40) 清理临时旧 sub Ra7IfJLJtW 重建单段：嘲讽→对饮→穿越者身体酒量翻车；着装沿用旧 sub 正确绑定（陈默日常户外·理发后 QmQCxuTrGK + 林梦休闲电竞私服 QSkk1LfIx6）；机位复用既有占位小酒馆-吧台卡座。",
+    "content": "删旧 sub Ra7IfJLJtW；重建 1 个 SubEvent「酒量翻车」20:40 (anchored_at→既有占位 Re2PEUaYTr)；绑 appears_as 陈默 QmQCxuTrGK + 林梦 QSkk1LfIx6。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtW'}) DETACH DELETE old;\nMATCH (e:Event {id:'RU44a1J1vs'})\nMERGE (sub:SubEvent {id:'RkaSUg0Dax'})\nON CREATE SET sub.title='林梦叫陈默出来陪喝酒 · 酒量翻车', sub.time='2024-06-16 20:40:00', sub.description='机位动作：卡座对坐，林梦点了两排啤酒，他嘲笑她喝个啤酒还讲究，自诩前阵子酒量很好放开了对饮，几轮下来忘了这具身体的底细，先趴下的是他；到场方式：应邀赴约开场，醉倒被扶走收束；参与：陆择（陈默身）、林梦；基调：吹牛与翻车的喜剧感，醉话里漏半截身世险情；衔接：承白天超市闲聊的松快，引次日陌生的天花板。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Dax'}) MATCH (scn:Scene {id:'Re2PEUaYTr'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Dax'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Dax'}) MATCH (il:IllusDesign {id:'QSkk1LfIx6'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦休闲电竞私服';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「陈默在林梦家醒来」(RU4iVOG1SK, 06-17 07:40) 清理临时旧 sub Ra7IfJLJtX 重建单段：陌生的天花板独白式开场+宿醉互动；着装沿用旧 sub 正确绑定（陈默和衣而睡维持昨晚日常户外装 QmQCxuTrGK + 林梦居家慵懒 QSkk1LfIx8）；机位挂既有林梦家（未细分单机位）。",
+    "content": "删旧 sub Ra7IfJLJtX；重建 1 个 SubEvent「陌生的天花板」07:40 (anchored_at→既有 RLFwn8iZlJ)；绑 appears_as 陈默 QmQCxuTrGK（和衣）+ 林梦 QSkk1LfIx8。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtX'}) DETACH DELETE old;\nMATCH (e:Event {id:'RU4iVOG1SK'})\nMERGE (sub:SubEvent {id:'RkaSUg0Day'})\nON CREATE SET sub.title='陈默在林梦家醒来 · 陌生的天花板', sub.time='2024-06-17 07:40:00', sub.description='机位动作：睁眼是不认识的天花板，宿醉头痛，认了几秒才想起昨晚；林梦趿着拖鞋端水过来幸灾乐祸，他撑起来，衣服还穿着昨晚那身，皱得不像话；到场离场：醒即开场，缓过来收束；参与：陆择（陈默身）、林梦；基调：宿醉窘态与熟人之间的松弛调侃；衔接：承酒量翻车，引上午切片过稿。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Day'}) MATCH (scn:Scene {id:'RLFwn8iZlJ'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Day'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：和衣过夜沿用昨晚着装——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Day'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦居家慵懒着装';",
+    "source": "event-stager"
+  }
+]

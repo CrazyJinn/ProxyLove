@@ -1,0 +1,26 @@
+[
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「二队训练赛全败」(RRl7l6AeGG, 06-13 19:30) 清理临时旧 sub Ra7IfJLJtN 系列同批的 Ra7IfJLJtP 重建单段：合练首日全败+复盘沉默，机位挂既有八楼出租屋-电脑桌直播位-更新设备后；着装修正——旧 sub 误绑理发前居家版 (QUVhvJKplY)，本时期（6月中）陈默均为理发后，只绑 QmFVxZtCtc；沈暮雪队内语音绑电竞经理职业装。",
+    "content": "删旧 sub Ra7IfJLJtP；重建 1 个 SubEvent「首日全败」19:30 (anchored_at→既有 R22lVGrBuC)；绑 appears_as 陈默 QmFVxZtCtc（居家·理发后）+ 沈暮雪 O0BFwtiWA4（电竞经理·线上）。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtP'}) DETACH DELETE old;\nMATCH (e:Event {id:'RRl7l6AeGG'})\nMERGE (sub:SubEvent {id:'RkaSUg0Daq'})\nON CREATE SET sub.title='二队训练赛全败 · 首日全败', sub.time='2024-06-13 19:30:00', sub.description='机位动作：合练首日配合生疏，训练赛一场未胜，屏幕光映在脸上；赛后语音里沈暮雪组织复盘逐局摆问题，房间里只有她的声音和键盘余温；到场离场：无（赛程直入，复盘收束）；参与：陆择（陈默身）、沈暮雪（队内语音）；基调：生疏与挫败的沉闷，复盘的冷静压着失望；衔接：承训练日程交付后的首日合练，引连败第二日。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Daq'}) MATCH (scn:Scene {id:'R22lVGrBuC'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Daq'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默居家颓废着装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Daq'}) MATCH (il:IllusDesign {id:'O0BFwtiWA4'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——沈暮雪电竞经理职业装（队内语音）';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「二队训练赛全败（2）」(RU39CYtoIq, 06-14 19:30) 清理临时旧 sub Ra7IfJLJtQ 重建单段：连败第二日士气下滑；着装修正——旧 sub 陈默只绑了理发前居家版 (QUVhvJKplY)，改为理发后 QmFVxZtCtc；机位沿用既有直播位·更新设备后。",
+    "content": "删旧 sub Ra7IfJLJtQ；重建 1 个 SubEvent「连败第二日」19:30 (anchored_at→既有 R22lVGrBuC)；绑 appears_as 陈默 QmFVxZtCtc + 沈暮雪 O0BFwtiWA4。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtQ'}) DETACH DELETE old;\nMATCH (e:Event {id:'RU39CYtoIq'})\nMERGE (sub:SubEvent {id:'RkaSUg0Dar'})\nON CREATE SET sub.title='二队训练赛全败（2） · 连败第二日', sub.time='2024-06-14 19:30:00', sub.description='机位动作：连败第二日，同一位置再来一遍，失误开始重复出现，语音里的话越来越少，赛后复盘只挑两局讲完就散；到场离场：无；参与：陆择（陈默身）、沈暮雪（队内语音）；基调：士气下滑的钝感，重复失败的麻木前兆；衔接：承首日全败，引当夜林梦连麦捞人。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Dar'}) MATCH (scn:Scene {id:'R22lVGrBuC'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Dar'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默居家颓废着装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Dar'}) MATCH (il:IllusDesign {id:'O0BFwtiWA4'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——沈暮雪电竞经理职业装（队内语音）';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「林梦下播连麦把陈默从连败情绪捞出来」(RRpw8kqSLw, 06-14 21:00) 清理临时旧 sub Ra7IfJLJtR 重建单段：直播情绪低落被林梦拽连麦捞出来；着装修正——旧 sub 误绑理发前居家版 (QUVhvJKplY) 去除，陈默直播中绑居家理发后；林梦刚下播在家绑居家慵懒着装。",
+    "content": "删旧 sub Ra7IfJLJtR；重建 1 个 SubEvent「捞人连麦」21:00 (anchored_at→既有 R22lVGrBuC)；绑 appears_as 陈默 QmFVxZtCtc + 林梦 QSkk1LfIx8（居家慵懒）。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtR'}) DETACH DELETE old;\nMATCH (e:Event {id:'RRpw8kqSLw'})\nMERGE (sub:SubEvent {id:'RkaSUg0Das'})\nON CREATE SET sub.title='林梦下播连麦把陈默从连败情绪捞出来 · 捞人连麦', sub.time='2024-06-14 21:00:00', sub.description='机位动作：直播弹幕都看出他不对劲，林梦刚下播直接拽他连麦，插科打诨拿连败开涮，硬把他逗笑，挂断前留一句明天再连；到场离场：连麦来讯即开场，挂断收束；参与：陆择（陈默身）、林梦（连麦，居家刚下播）；基调：被看穿又不许消沉的热闹暖意；衔接：承连败第二日，引第三日凝固。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Das'}) MATCH (scn:Scene {id:'R22lVGrBuC'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Das'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默居家颓废着装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Das'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦居家慵懒着装（刚下播在家）';",
+    "source": "event-stager"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件「混混闹事」拆2段已拍板：伤口处理段换区承载情绪切换（喧嚣冲突→安静小心翼翼的靠近），需新机位占位——Scene「路边摊-摊外路灯下」挂既有 Spot 路边摊-夜市摊区；status=0 待场景美术链消化，命名已查重无冲突。",
+    "content": "新建占位：Scene「路边摊-摊外路灯下」(dialogue, status=0)，realizes←既有 Spot 路边摊-夜市摊区 (Re2PEUaYTs)。",
+    "cypher": "CREATE (sc:Scene {id:'RkaSUg0DbD'}) SET sc.name='路边摊-摊外路灯下', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'Re2PEUaYTs'}) MATCH (sc:Scene {id:'RkaSUg0DbD'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件「陈默陪林梦逛漫展」拆2段已拍板（入口汇合+逛展，与探班「到场+参观」同构）：汇合段需会场入口机位占位——Spot「漫展会场-入口区」挂 Location 漫展会场、Scene「漫展会场-入口」挂该 Spot；status=0 待场景美术链消化，命名已查重无冲突（漫展会场既有仅展厅区/展厅通道）。",
+    "content": "新建占位：Spot「漫展会场-入口区」(zone, status=0) part_of→漫展会场 (QP23NrFZqj)；Scene「漫展会场-入口」(dialogue, status=0) realizes←该 Spot。",
+    "cypher": "CREATE (sp:Spot {id:'RkaSUg0DbE'}) SET sp.name='漫展会场-入口区', sp.kind='zone', sp.description='漫展会场主入口，人流汇合与验票区', sp.status=0;\nMATCH (l:Location {id:'QP23NrFZqj'}) MATCH (sp:Spot {id:'RkaSUg0DbE'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\nCREATE (sc:Scene {id:'RkaSUg0DbF'}) SET sc.name='漫展会场-入口', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'RkaSUg0DbE'}) MATCH (sc:Scene {id:'RkaSUg0DbF'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「混混闹事纠缠沈暮雪陈默保护受伤」(RRl7l6AeGH, 06-19 22:30) 按拍板拆2段重建：清理临时旧 sub Ra7IfJLJth 与 Re2PEUaYTy（旧两段同挂烧烤摊机位）；冲突段 22:30 挂既有烧烤摊（对峙模式：挡在前/身后站位），伤口段 23:00 挂新占位路灯下机位（换区=情绪切换）；着装修正——沈暮雪换路边摊日常休闲装 OpaeGwlw3t。",
+    "content": "删旧 sub Ra7IfJLJth + Re2PEUaYTy；重建 2 个 SubEvent：「挡在前面」22:30 (anchored_at→既有占位 Re2PEUaYTt)、「路灯下处理伤口」23:00 (anchored_at→新占位 RkaSUg0DbD)；各绑 appears_as 陈默 QmQCxuTrGK + 沈暮雪 OpaeGwlw3t。",
+    "cypher": "MATCH (old1:SubEvent {id:'Ra7IfJLJth'}) DETACH DELETE old1;\nMATCH (old2:SubEvent {id:'Re2PEUaYTy'}) DETACH DELETE old2;\nMATCH (e:Event {id:'RRl7l6AeGH'})\nMERGE (sub:SubEvent {id:'RkaSUg0Db8'})\nON CREATE SET sub.title='混混闹事纠缠沈暮雪陈默保护受伤 · 挡在前面', sub.time='2024-06-19 22:30:00', sub.description='机位动作：散场摊边，醉酒混混缠住沈暮雪言语轻薄，周围人往后缩，陈默一步跨过去把她挡在身后，推搡间吃了下轻伤仍不退，直到摊主和路人围上来混混骂骂咧咧散去；到场离场：散场后冲突爆发即开场，混混退散收束；参与：陆择（陈默身）、沈暮雪；基调：骤然的紧张与不假思索的挡；衔接：承烧烤散场，引路灯下处理伤口。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Db8'}) MATCH (scn:Scene {id:'Re2PEUaYTt'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Db8'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与烧烤同席连续——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Db8'}) MATCH (il:IllusDesign {id:'OpaeGwlw3t'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与烧烤同席连续——沈暮雪路边摊日常休闲装';\nMATCH (e:Event {id:'RRl7l6AeGH'})\nMERGE (sub:SubEvent {id:'RkaSUg0Db9'})\nON CREATE SET sub.title='混混闹事纠缠沈暮雪陈默保护受伤 · 路灯下处理伤口', sub.time='2024-06-19 23:00:00', sub.description='机位动作：她拉他到不远的路灯下，翻出纸巾和随身酒精湿巾按住他手臂的擦伤，手比语气稳，嘴上数落手上却轻，他看着她低头处理伤口没敢动；到场离场：移步路灯下开场，贴好最后一块创可贴收束；参与：陆择（陈默身）、沈暮雪；基调：冲突后的安静余震，小心翼翼的靠近；衔接：承挡在前面，引两人关系微妙升温。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0Db9'}) MATCH (scn:Scene {id:'RkaSUg0DbD'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0Db9'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与冲突段连续——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0Db9'}) MATCH (il:IllusDesign {id:'OpaeGwlw3t'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与冲突段连续——沈暮雪路边摊日常休闲装';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「陈默陪林梦逛漫展」(RMxYXuS6IE, 06-20 13:00) 按拍板拆2段重建：清理临时旧 sub Ra7IfJLJti（旧单段挂展厅通道）；入口汇合段 12:50 前插值挂新占位漫展会场-入口（到场模式：林梦盛装提前等待的做局感 vs 陈默不知情），逛展段 13:00 挂既有展厅通道；着装沿用正确绑定（陈默日常户外 QmQCxuTrGK + 林梦漫展约会着装 QSkk1LfIx7）。",
+    "content": "删旧 sub Ra7IfJLJti；重建 2 个 SubEvent：「入口汇合」12:50 前插值 (anchored_at→新占位 RkaSUg0DbF)、「做局与不知情」13:00 (anchored_at→既有占位 Re2PEUaYTv)；各绑 appears_as 陈默 QmQCxuTrGK + 林梦 QSkk1LfIx7。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJti'}) DETACH DELETE old;\nMATCH (e:Event {id:'RMxYXuS6IE'})\nMERGE (sub:SubEvent {id:'RkaSUg0DbA'})\nON CREATE SET sub.title='陈默陪林梦逛漫展 · 入口汇合', sub.time='2024-06-20 12:50:00', sub.description='机位动作：人流里找到提前到的林梦，盛装得和平常直播间判若两人，她拿下墨镜说等挺久了，他愣神半秒被拽着往里走；到场方式：赴约到场，汇合即开场；参与：陆择（陈默身）、林梦；基调：盛装惊喜与被安排的不自知，做局的暗流；衔接：承漫展邀约，引入馆逛展。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0DbA'}) MATCH (scn:Scene {id:'RkaSUg0DbF'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0DbA'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0DbA'}) MATCH (il:IllusDesign {id:'QSkk1LfIx7'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：兄弟sub既有着装——林梦漫展约会着装（盛装做局）';\nMATCH (e:Event {id:'RMxYXuS6IE'})\nMERGE (sub:SubEvent {id:'RkaSUg0DbB'})\nON CREATE SET sub.title='陈默陪林梦逛漫展 · 做局与不知情', sub.time='2024-06-20 13:00:00', sub.description='机位动作：展位间接力逛，她目标明确地排限定、盖章、拉他合影，他负责拎袋付钱挡人潮，一天下来战利品挂满两手；到场离场：无（入馆直逛，闭馆散场收束）；参与：陆择（陈默身）、林梦；基调：节庆式的热闹，甘愿被支配的踏实；衔接：承入口汇合，引散场送她回家。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0DbB'}) MATCH (scn:Scene {id:'Re2PEUaYTv'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0DbB'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与汇合段同日连续——陈默日常户外休闲装（理发后）';\nMATCH (sub:SubEvent {id:'RkaSUg0DbB'}) MATCH (il:IllusDesign {id:'QSkk1LfIx7'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：与汇合段同日连续——林梦漫展约会着装';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「漫展散场陈默送林梦回家」(RQAZwH7RHV, 06-20 19:30) 清理临时旧 sub Ra7IfJLJtj 重建单段：拎战利品送到楼下「超幸运」余韵；着装修正——旧 sub 陈默绑廉价休闲新装 (QmFVxZtCtd) 与同日漫展（日常户外装）漂移，改回 QmQCxuTrGK，林梦维持漫展约会着装（同日未换）；机位挂既有林梦家。",
+    "content": "删旧 sub Ra7IfJLJtj；重建 1 个 SubEvent「超幸运」19:30 (anchored_at→既有 RLFwn8iZlJ)；绑 appears_as 陈默 QmQCxuTrGK（同日漫展装）+ 林梦 QSkk1LfIx7（同日漫展装）。",
+    "cypher": "MATCH (old:SubEvent {id:'Ra7IfJLJtj'}) DETACH DELETE old;\nMATCH (e:Event {id:'RQAZwH7RHV'})\nMERGE (sub:SubEvent {id:'RkaSUg0DbC'})\nON CREATE SET sub.title='漫展散场陈默送林梦回家 · 超幸运', sub.time='2024-06-20 19:30:00', sub.description='机位动作：夜色里拎着两人一天的战利品送到楼下，她数着今天的收获说超幸运，转身上楼前回头冲他挥了下手；到场离场：送到楼下开场，目送上楼收束；参与：陆择（陈默身）、林梦；基调：尽兴而归的松弛，一点不舍得收尾的甜；衔接：承逛展一日，引后续线进展。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RkaSUg0DbC'}) MATCH (scn:Scene {id:'RLFwn8iZlJ'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RkaSUg0DbC'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同日漫展着装连续——陈默日常户外休闲装（修正旧sub漂移到廉价休闲新装）';\nMATCH (sub:SubEvent {id:'RkaSUg0DbC'}) MATCH (il:IllusDesign {id:'QSkk1LfIx7'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同日漫展着装连续——林梦漫展约会着装';",
+    "source": "event-stager"
+  }
+]
