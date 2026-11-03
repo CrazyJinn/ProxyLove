@@ -42,11 +42,14 @@ Schema 文件：`00_init/Schema/场景美术.md`（Spot/Scene/SceneLayer + ancho
 ```cypher
 MATCH (l:Location)
 OPTIONAL MATCH (e:Event)-[:occurs_at]->(l)
+WITH l, count(DISTINCT e) AS evt_cnt
 OPTIONAL MATCH (l)-[:part_of]->(sp:Spot)
-OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
-WITH l, count(DISTINCT e) AS evt_cnt, collect(DISTINCT sp) AS spots, collect(DISTINCT s) AS scenes
-RETURN l.name AS loc, l.id AS loc_id, evt_cnt, size(spots) AS spot_cnt, size(scenes) AS scene_cnt,
-       (evt_cnt > 0 AND size(scenes) = 0) AS need_scene ORDER BY loc
+WITH l, evt_cnt, collect(DISTINCT sp.id) AS spot_ids
+OPTIONAL MATCH (l)-[:part_of]->(:Spot)-[:realizes]->(s:Scene)
+WITH l, evt_cnt, spot_ids, collect(DISTINCT s.id) AS scene_ids
+RETURN l.name AS loc, l.id AS loc_id, evt_cnt,
+       size(spot_ids) AS spot_cnt, size(scene_ids) AS scene_cnt,
+       (evt_cnt > 0 AND size(scene_ids) = 0) AS need_scene ORDER BY loc
 ```
 
 ```cypher

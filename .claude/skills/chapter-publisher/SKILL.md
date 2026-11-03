@@ -38,11 +38,13 @@ RETURN ch.title AS title, ch.chapter_no AS no;
 // (2) 各 Section（按 section_no）+ 定稿态 + 逐句行聚合 + 前驱校验
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(sec:Section)
 OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
-RETURN sec.section_no AS no, sec.title AS title,
-       sec.status AS sc_status, sec.script_path AS script_path,
-       count(l) AS line_count,
-       sum(CASE WHEN coalesce(l.status, 0) = 11 THEN 1 ELSE 0 END) AS line_done
-ORDER BY sec.section_no;
+WITH sec.section_no AS no, sec.title AS title,
+     sec.status AS sc_status, sec.script_path AS script_path,
+     collect(l.status) AS sts
+RETURN no, title, sc_status, script_path,
+       size([x IN sts WHERE x IS NOT NULL]) AS line_count,
+       size([x IN sts WHERE x = 11]) AS line_done
+ORDER BY no;
 // (3) 全章 background 图层（场景集 = 各节行 scene_block_id 集合→Scene id 直查——发布投影权威；
 //     历史节（无 includes）与新节通吃；scene 键 = hexid(Scene.id)，与章 JSON scenes[].scene 同源）
 MATCH (s:Scene)

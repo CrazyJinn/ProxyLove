@@ -17,7 +17,7 @@ Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section（定稿态载体�
 
 **小节产生于 event 之后**：Section 是对既有 Event 的组织（先事件、后分节）——节不是从零创作的入口，而是把图上已有事件圈选归组的人工地标。因此**建章分节不经 plot-design**：章级结构规划由用户直接触发 `chapter-structurer`（或用 dashboard 剧情 tab 的人工编排直写通道「＋新节/组章」）。plot-design 只接收**已存在**的 section id，推进其产物链；章未建、节未分、结构重排均不是本 agent 的调度对象。
 
-创作链（节级）= **各节小说段（chapter-novelist：提纲已内化——结构推理在思维链完成，产 小说.md 纯文件产物，零图写入）→ 各节定稿段（台词.ink，dialoguer 从小说提炼，写 Section.status=10 定稿待审）→ 人工定稿审（dashboard 批准 10→11 / 驳回 10→-1，plot-design 在 10 态停等）→ 各节拆分+选绘+配音段 → 各节音频环境段（sfx 点状实录 / bed 音床声景）→ 各节逐句音频审（配音+环境音行）→ 立绘（按需）**，到该节就绪为止。
+创作链（节级）= **各节小说段（chapter-novelist：提纲已内化——结构推理在思维链完成，产 小说.md 纯文件产物，零图写入）→ 各节定稿段（台词.ink，dialoguer 从小说提炼，写 Section.status=10 定稿待审）——小说→定稿同轮连续推进、中间零停等（小说无人工审环节，人工把关点唯一 = 定稿审）→ 人工定稿审（dashboard 批准 10→11 / 驳回 10→-1，plot-design 在 10 态停等）→ 各节拆分+选绘+配音段 → 各节音频环境段（sfx 点状实录 / bed 音床声景）→ 各节逐句音频审（配音+环境音行）→ 立绘（按需）**，到该节就绪为止。
 - **节级链（最薄图）**（各节独立推进、独立重做；`Section（编排+定稿态） -[:produces {order}]-> LineAudio(×N 逐句行)`，节级产物节点已删）：每节独立走 `chapter-novelist`（**节级小说段，提纲已内化**——节的提纲即图数据本身（Event/Info/Choice + 机位素材集），原 chapter-outliner 已废弃、设计简报已废止；结构推理（场景段切分/分支核验/节拍规划）在 novelist 思维链完成不落提纲文件；按 `Section→includes` 物化成员圈定素材 + 丰满度自检；产 小说.md 纯文件产物（节目录约定路径；正文 `### <scene_block_id> …` 场景段标题承载拓扑契约，id = 所写机位 scene_id；头部取材指纹 fingerprint.py）；**零图写入**（唯一例外 = stale 重写时显式作废定稿链）；对账新实体走建议 JSON 通道 source='chapter-novelist'）→ `chapter-dialoguer`（**从小说提炼台词**：产 `台词.ink` 人读定稿，唯一图写入 `SET sec.script_path + sec.status=10`（定稿产出**待审**——人工批准 10→11 后才可拆分，驳回 10→-1 重做；填充模式写回同置 10）；场景段照搬小说 `###` 标题、分支以图 Choice 为准；入场用同源 fingerprint.py check 自检，stale 则停止回退 novelist）→ **人工定稿审（dashboard 批准 10→11；plot-design 遇 10 态停等汇报，不推进该节）** → `section-voice-publisher`（**第一步拆分进图**：script_splitter.py 对齐 台词.ink ↔ 已有行 → 逐句 LineAudio 节点；第二步挑行 + 产选绘候选池 portrait_binder candidates；第三步 LLM 逐句判 emotion/clone_mode/tts_text/**选立绘 stand**；第四步 apply 建边——`LineAudio-[:uses]->stand`（sync=false）每句一条 + 新变体缺口兜底建（expands_to；不建 depicts/ref_style——边已废止）；第五步 TTS 克隆 + bind-graph 写行节点 status=10）→ `ambient-sfx-designer`（音频环境行（op=transition 点状 sfx 与 op=bed_start 音床）：点状走 Freesound CC0 实录、声景走 AudioFly 生成，产 wav 写 ambient_track + status=10）→ 逐句音频审（行 status 10→11）。
 - **小说段文件契约**（对「调度只看 status」铁律的**唯一显式例外**）：小说.md 的「已产」判据 = 文件存在（节目录约定路径推导），「新鲜」判据 = 取材指纹自检（dialoguer 1b-2 兜底，plot-design 不自跑 fingerprint）；**存在 ≠ 完成**，禁止把文件存在当跳过依据——最终由 dialoguer 的 stale 自检把关。**素材变动链路**：Event/Info 属性变更（叙事出边全 sync=false，图级联不触达小说）→ 下次推进该节时 dialoguer 自检报 stale → plot-design 调 `chapter-novelist <sec_id>` 重写覆盖（novelist 显式 `SET sec.status=-1` + 全部行 -1，行级恢复走重拆机制）→ 续推 dialoguer 重新提炼。**存量直连**：无小说.md 且 sec.script_path 已有历史值的旧流程节（chapter00/01 现存节），dialoguer 读该历史文件照旧创作，不补小说；被作废打回（sec.status=-1）的节按新流程重走 novelist。
 - **台词模型**：台词.ink（ink 方言）是人读/人改的唯一定稿格式（机器可解析）；图行是结构化真相——行身份 = 节点雪花 id（voice key = hexid(行id)，插入/删除行不漂移；母带唯一权威 = 行属性 master_path）；顺序 = produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。
@@ -43,33 +43,45 @@ Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section（定稿态载体�
 
 ### 2. 查询当前状态
 
-通过 `python .claude/scripts/cypher_exec.py -c "<cypher>" --json`（只读查询）以目标 Section 为锚点查询（含行聚合、该节 say 行 uses 引用的立绘（**推进范围**）、includes→Event→refines→SubEvent→appears_as 立绘（**仅提示**））：
+通过 `python .claude/scripts/cypher_exec.py -c "<cypher>" --json`（只读查询）以目标 Section 为锚点**三条查询**（① 节级行聚合 ② 事件-机位-立绘明细 ③ say 行缺选绘），LLM 侧合并判读（含行聚合、该节 say 行 uses 引用的立绘（**推进范围**）、includes→Event→refines→SubEvent→appears_as 立绘（**仅提示**）；聚合形态双后端兼容——WITH 物化 + 列表推导计数，见 cypher_exec.py 硬约束 11）：
 
 ```cypher
+// ① 节级行聚合（自由节无所属章 → ch_* 为 null 照常返回）
 MATCH (sec:Section {id:'<sec_id>'})
-MATCH (ch:Chapter)-[:has_section]->(sec)
+OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
 OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
 OPTIONAL MATCH (l)-[:uses]->(ustand:StandingIllustration)
+WITH sec, ch,
+     collect(DISTINCT l {.id, .op, .status}) AS lines,
+     collect(DISTINCT ustand {.id, .variant_label, .status}) AS ustands
+RETURN sec.id AS sec_id, sec.section_no AS sec_no, sec.title AS sec_title,
+       sec.script_path AS script_path, sec.status AS sc_status,
+       ch.id AS ch_id, ch.title AS ch_title,
+       size([x IN lines WHERE x IS NOT NULL]) AS line_count,
+       size([x IN lines WHERE x IS NOT NULL AND x.status = 11]) AS line_done,
+       size([x IN lines WHERE x IS NOT NULL AND x.op = 'say']) AS say_count,
+       size([x IN lines WHERE x IS NOT NULL AND x.op = 'say' AND x.status = 11]) AS say_done,
+       size([x IN lines WHERE x IS NOT NULL AND (x.op = 'transition' OR x.op = 'bed_start')]) AS amb_count,
+       size([x IN lines WHERE x IS NOT NULL AND (x.op = 'transition' OR x.op = 'bed_start') AND x.status = 11]) AS amb_done,
+       size([x IN ustands WHERE x IS NOT NULL AND x.status = 11]) AS used_done,
+       [x IN ustands WHERE x IS NOT NULL AND x.status <> 11 | x.id + '/' + coalesce(x.variant_label, '') + ':' + toString(x.status)] AS used_pending;
+
+// ② 事件-机位-立绘明细（includes→refines→SubEvent 链；appears_as 枚举仅提示）
+MATCH (sec:Section {id:'<sec_id>'})
 OPTIONAL MATCH (sec)-[:includes]->(e2:Event)
 OPTIONAL MATCH (e2)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
 OPTIONAL MATCH (e2)-[:refines]->(:SubEvent)-[:appears_as]->(illus:IllusDesign)
 OPTIONAL MATCH (illus)-[:expands_to]->(stand:StandingIllustration)
-RETURN ch.id AS ch_id, ch.title AS ch_title,
-       sec.id AS sec_id, sec.section_no AS sec_no, sec.title AS sec_title,
-       sec.script_path AS script_path, sec.status AS sc_status,
-       count(DISTINCT l.id) AS line_count,
-       count(DISTINCT CASE WHEN l.status = 11 THEN l.id END) AS line_done,
-       count(DISTINCT CASE WHEN l.op = 'say' THEN l.id END) AS say_count,
-       count(DISTINCT CASE WHEN l.op = 'say' AND l.status = 11 THEN l.id END) AS say_done,
-       count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] THEN l.id END) AS amb_count,
-       count(DISTINCT CASE WHEN l.op IN ['transition','bed_start'] AND l.status = 11 THEN l.id END) AS amb_done,
-       count(DISTINCT CASE WHEN l.op = 'say' AND NOT (l)-[:uses]->(:StandingIllustration) THEN l.id END) AS say_no_stand,
-       count(DISTINCT CASE WHEN ustand.status = 11 THEN ustand.id END) AS used_done,
-       collect(DISTINCT CASE WHEN ustand.id IS NOT NULL AND ustand.status <> 11 THEN ustand.id + '/' + coalesce(ustand.variant_label, '') + ':' + toString(ustand.status) END) AS used_pending,
-       e2.id AS event_id, s.id AS scene_id, s.name AS scene_name,
+RETURN e2.id AS event_id, e2.time AS event_time, s.id AS scene_id, s.name AS scene_name,
        illus.id AS illus_id, illus.status AS illus_status,
        stand.id AS stand_id, stand.variant_label AS variant, stand.status AS stand_status
-ORDER BY e2.time, variant
+ORDER BY event_time, variant;
+
+// ③ say 行缺选绘专项（无 uses 边的 say 行）
+MATCH (sec:Section {id:'<sec_id>'})
+OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
+WITH sec, collect(DISTINCT CASE WHEN l.op = 'say' AND NOT (l)-[:uses]->(:StandingIllustration) THEN l.id END) AS ids
+RETURN size([x IN ids WHERE x IS NOT NULL]) AS say_no_stand, [x IN ids WHERE x IS NOT NULL] AS say_no_stand_ids
 ```
 
 派生规则：`line_count=0` = 无行（未拆分）。聚合按 op 拆分（防路由死循环）：配音看 `say_*`（`say_done<say_count` = 存在未配音行）、环境音看 `amb_*`（`amb_count>0 ∧ amb_done<amb_count` = 环境音待产/待审）；`say_no_stand` = 该节 say 行**缺选绘数**（无 uses 边）——行未全 11 时无需关心（配音轮选绘会顺带建边），`sec.status=11 ∧ 行全 11 ∧ say_no_stand>0` 时**仅汇报缺口**（如需补选 = 整句置 0 重配音，成本决策交用户，**不自动触发**）；「节全部行就绪」= `line_count>0 ∧ line_done=line_count`（含 narrate 等非音频行——拆分即 11，天然满足）。**小说探测**（纯文件产物，不在图上）：小说路径 = 节目录约定 `小说.md`（Bash `test -f` 只读探测）；存在性 + `sc_status` 决定小说段动作（见决策），**新鲜度不在编排层判**（指纹自检是 dialoguer 1b-2 的职责）。
@@ -81,7 +93,7 @@ ORDER BY e2.time, variant
 - 用 `OPTIONAL MATCH` 保证首次推进（produces/includes/uses 边尚未建立）也能返回 Section 本身；行同理——**sec.status=0（无行）= 该节小说/定稿未做**，**sec.status=10 = 定稿已产待人工审（本 agent 停等，不推进）**，**sec.status=11 且 say_count=0 = 该节定稿已批、待拆分配音**，不是异常。
 - 限定边类型的变长路径回溯立绘所属角色（复用美术边类型集 `has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to`（ref_style 已删）），既能明确范围，又能阻止遍历越界到叙事 Event / 其他角色。
 
-**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/剧情.md](00_init/Schema/剧情.md) 与 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md)。`has_section` 是 `Chapter→Section`；`produces` 是 `Section→LineAudio`（1:N 带 order）；`includes` 是 `Section→Event`（order=事件 time 序;节内 Scene 经 `Event→anchored_at` 推导）；`appears_as` 是 `Event→IllusDesign`（形象版本写边时物化;变体经 `IllusDesign-[:expands_to]->StandingIllustration` 枚举）；`uses` 是 `LineAudio→StandingIllustration`（选绘行级引用，sync=false 固定）；`StandingIllustration` 是 `expands_to`/`uses` 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报「节点未创建」。
+**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/剧情.md](00_init/Schema/剧情.md) 与 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md)。`has_section` 是 `Chapter→Section`；`produces` 是 `Section→LineAudio`（1:N 带 order）；`includes` 是 `Section→Event`（order=事件 time 序;节内 Scene 经 `Event→refines→SubEvent→anchored_at` 推导）；`appears_as` 是 `SubEvent→IllusDesign`（Event 经 `refines→SubEvent` 到达，直挂为违规；形象版本写边时物化;变体经 `IllusDesign-[:expands_to]->StandingIllustration` 枚举）；`uses` 是 `LineAudio→StandingIllustration`（选绘行级引用，sync=false 固定）；`StandingIllustration` 是 `expands_to`/`uses` 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报「节点未创建」。
 
 ### 3. 决策与调度
 
@@ -90,7 +102,7 @@ ORDER BY e2.time, variant
 **只处理目标节**（查询见第 2 步），不枚举其他节、不建章分节、不发布：
 
 - **前置**：无章级门控（章无 status）——目标节有所属章即可推（组章即结构就绪）；自由节（无所属章）可推小说/定稿（`section-voice-publisher` 需 chapter_stem，配音前须组章）。
-- **小说**（节目录无 小说.md 且非存量直连）→ `Skill chapter-novelist <sec_id>`（提纲内化：结构推理思维链 + 丰满度自检 + 产 小说.md，零图写入；返回「素材不足」按现状汇报缺口退出）；无 小说.md 且 `script_path` 已有历史值 → **存量直连**（旧流程节，跳过小说段）；有 小说.md → 直接进定稿判定（stale 自检是 dialoguer 的活；dialoguer 返回 stale 报告 → `Skill chapter-novelist <sec_id>` 重写（作废定稿链 sec.status=-1 + 全部行 -1）→ 回到定稿判定续推）。
+- **小说**（节目录无 小说.md 且非存量直连）→ `Skill chapter-novelist <sec_id>`（提纲内化：结构推理思维链 + 丰满度自检 + 产 小说.md，零图写入；返回「素材不足」按现状汇报缺口退出）；无 小说.md 且 `script_path` 已有历史值 → **存量直连**（旧流程节，跳过小说段）；有 小说.md → 直接进定稿判定（stale 自检是 dialoguer 的活；dialoguer 返回 stale 报告 → `Skill chapter-novelist <sec_id>` 重写（作废定稿链 sec.status=-1 + 全部行 -1）→ 回到定稿判定续推）。**novelist 正常返回后同轮立即调 dialoguer 续推定稿，不停等人工过目小说、不询问「是否继续」**——小说无人工审环节，首次推进一口气到 台词.ink 置 10（定稿待审）才停。
 - **定稿**（有 小说.md 或存量直连，且（`script_path` 为空 ∨ `sc_status = -1`））→ `Skill chapter-dialoguer <sec_id>`（小说模式从小说提炼、存量直连模式读历史文件；产台词.ink → `SET sec.script_path + sec.status=10` 定稿待审；返回 stale 报告按上条回退 novelist）。`sc_status = 10` → **定稿待人工审，本节停**（汇报「定稿待审，请到 dashboard 审批中心/看板批准（10→11）或驳回（10→-1）」，不推进拆分/配音/环境音/立绘）。`script_path` 已有值且 `sc_status = 11` → 定稿已批，dialoguer 会拒绝覆盖，直接看拆分配音判定。
 - **拆分+选绘+配音**（`sc_status = 11` 且（`say_count=0` ∨ `say_done < say_count`））→ `Skill section-voice-publisher <sec_id>`（拆分进图 + 挑行选绘 + TTS → 待审行 status=10），随后继续本节后续判定（环境音/立绘）。
 - **环境音**（`sc_status = 11` 且 `amb_count > 0` 且 `amb_done < amb_count`）→ `Skill ambient-sfx-designer <sec_id>`（产出待产 ambient 行 → status=10 待审），随后继续本节后续判定（立绘）。
@@ -99,7 +111,7 @@ ORDER BY e2.time, variant
 - **推进本节立绘**（`sc_status=11` 定稿已批后通用动作，**独立于音频门控**——立绘不依赖配音，不应被逐句音频审阻塞）：推进范围 = **本节 say 行 `LineAudio-[:uses]->` 可达的 StandingIllustration**（第 2 步查询的 `used_pending` 已带回 id/变体/status 清单；选绘 apply 建边保证缺口新变体自带 uses 边、天然在范围内），对每个 `stand.status≠11` 先查上游 IllusDesign（一次查询全部）：
   - **上游 `IllusDesign=11`** 的收集为逗号分隔 id 列表，**一次** `Skill char-stand-designer <id1,id2,...>` 委派（传 ≥2 个 id 时 skill 走批量模式并发出图——OfoxAI 单张 30s~10min，串行会堵死编排链；传 1 个即单变体）→ 各自 10 待审；
   - **`IllusDesign≠11`（或不存在）** → 报警「立绘上游 IllusDesign 未就绪，请先单独跑 `char-design`」，**剔除出列表**（不跨链调 char-design），不阻塞其余就绪变体。
-  - **appears_as 枚举仅作提示，不推进**：`Section-includes->Event-appears_as->IllusDesign-expands_to->stand` 枚举出的立绘若未被本节任何 say 行 uses 引用（Scene 是多节共享节点，这类立绘的消费方是其他节的台词行），**仅在汇报中列缺口，严禁出图**——单节聚焦不做后续节的事情（那是后续节自身聚焦的活）。
+  - **appears_as 枚举仅作提示，不推进**：`Section-includes->Event-refines->SubEvent-appears_as->IllusDesign-expands_to->stand` 枚举出的立绘若未被本节任何 say 行 uses 引用（Scene 是多节共享节点，这类立绘的消费方是其他节的台词行），**仅在汇报中列缺口，严禁出图**——单节聚焦不做后续节的事情（那是后续节自身聚焦的活）。
 - **不调 `chapter-publisher`**（发布由用户直接触发，不在 plot-design 职责内）。
 
 **严禁**：枚举其他节、做后续节的事情（含推进仅被后续节台词引用的立绘）、建章分节（章级结构由用户直触 `chapter-structurer` 或 dashboard 人工编排直写）、调 `chapter-publisher`。立绘只推**本节 say 行 uses 边可达**的（appears_as 枚举中未被本节引用的仅提示不推进），不跨链调 `char-design` / 角色美术链 skill。铁律（只看 status 不看产物、`-1` 必须重生成覆盖、不读旧小说/旧剧本/旧图）同样适用。汇报只交代目标节（节标题 / 产物链 `sc status`（`10` = 定稿待人工审，停等）+ 行聚合 `say_count/say_done/amb_count/amb_done` / 本节 uses 立绘各 `stand.status` + appears_as 提示缺口 + 本轮是否处理 + 原因），不报其他节。
@@ -131,9 +143,9 @@ ORDER BY e2.time, variant
 - **LineAudio（逐句台词行）**：say 行 `0` 待配音/被驳回 → `10` 配完待审 → `11` 已通过（行级审批，completion=11）。`10` 由 section-voice-publisher 的 bind-graph 直写；行级驳回归 `0`（重配，不改台词）。非 say 行（narrate/scene/label/ending）拆分即 `11`。「节完成」= 全部行 11（派生）。
 - **IllusDesign**（立绘上游，plot-design **只读不写**）：由 `char-design` 推进到 `11`（人工触发）。plot-design 推进某立绘前须先确认其上游 IllusDesign=11，否则报警跳过。
 
-**依赖顺序**（节级链）：`chapter-novelist`（提纲内化：结构推理思维链 + 丰满度自检 + 产 小说.md，零图写入）→ `chapter-dialoguer`（从小说提炼台词.ink，`SET sec.script_path + sec.status=10` 定稿待审）→ **人工定稿审（dashboard 批准 10→11；plot-design 停等）** → `section-voice-publisher`（拆分进图 → 逐句 LineAudio → 选绘建 uses 边/变体缺口 → 配音 → 待审行 10）→ 逐句音频审（行 10→11）→ 推进本节 uses 立绘（`char-stand-designer`；上游 IllusDesign≠11 则报警跳过，不跨链）→ 该节就绪，汇报退出（章级发布 `chapter-publisher` 由用户直接触发：从图投影全章行 →`99_game/` 单一章 JSON，行节点 voice_key 投影为 say.voice、uses 边投影为 say.portrait 整键）
+**依赖顺序**（节级链）：`chapter-novelist`（提纲内化：结构推理思维链 + 丰满度自检 + 产 小说.md，零图写入）→ `chapter-dialoguer`（从小说提炼台词.ink，`SET sec.script_path + sec.status=10` 定稿待审；前两步**同轮连推零停等**）→ **人工定稿审（dashboard 批准 10→11；plot-design 停等）** → `section-voice-publisher`（拆分进图 → 逐句 LineAudio → 选绘建 uses 边/变体缺口 → 配音 → 待审行 10）→ 逐句音频审（行 10→11）→ 推进本节 uses 立绘（`char-stand-designer`；上游 IllusDesign≠11 则报警跳过，不跨链）→ 该节就绪，汇报退出（章级发布 `chapter-publisher` 由用户直接触发：从图投影全章行 →`99_game/` 单一章 JSON，行节点 voice_key 投影为 say.voice、uses 边投影为 say.portrait 整键）
 
-**门控**：未组章的自由节不拆分配音（母带目录依赖所属章）；小说模式节（有小说.md）dialoguer 必经指纹自检；sec.status ≠ `11`（`0` 未定稿 / `10` 定稿待人工审 / `-1` 作废态）不拆分不配音、不推该节立绘（`-1` 先重走 novelist→dialoguer，`10` 停等 dashboard 批准）；**发布不在 plot-design 职责内**——推进到该节产物就绪（sec.status=11 ∧ 行全 11 ∧ 本节 uses 立绘全 11）即汇报退出，`chapter-publisher` 由用户直接触发。
+**门控**：未组章的自由节不拆分配音（母带目录依赖所属章）；**小说段完成后零停等——同轮连推 dialoguer 直至 台词.ink 置 10**（小说无人工审环节，编排不得在小说→定稿之间插入停等或询问）；小说模式节（有小说.md）dialoguer 必经指纹自检；sec.status ≠ `11`（`0` 未定稿 / `10` 定稿待人工审 / `-1` 作废态）不拆分不配音、不推该节立绘（`-1` 先重走 novelist→dialoguer，`10` 停等 dashboard 批准）；**发布不在 plot-design 职责内**——推进到该节产物就绪（sec.status=11 ∧ 行全 11 ∧ 本节 uses 立绘全 11）即汇报退出，`chapter-publisher` 由用户直接触发。
 
 **节点由 skill 创建**：agent 不直接创建任何图节点或边。Section 节点（含 `status=0`）+ `Section-includes->Event` 边由 `chapter-structurer` 或 dashboard 人工编排直写建立（均在 plot-design 之外，用户触发）；`Section.script_path` + 定稿态（`10` 产出直写、`-1` 恢复到 `10`）由 `chapter-dialoguer` SET 写入（不建节点）；`LineAudio` 逐句行节点 + `Section-[:produces{order}]->行` 边由 `section-voice-publisher` 第一步拆分（script_splitter.py）幂等建，`uses` 边 + 立绘缺口节点（`StandingIllustration status=0` + `expands_to`，description 含变体氛围）由其选绘 apply 步骤（portrait_binder.py）兜底建；缺口立绘的推进由 plot-design 直调 `char-stand-designer`；IllusDesign 上游由 `char-design` 推进（人工触发，plot-design 不跨链）。`chapter-novelist` 零图写入（小说.md 为纯文件；唯一图操作 = stale 重写时显式作废定稿链）。
 

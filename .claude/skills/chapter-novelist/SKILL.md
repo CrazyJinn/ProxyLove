@@ -34,11 +34,14 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (sec:Section {id:'<input>'})
 OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
+WITH sec, ch
 OPTIONAL MATCH (sec)-[:includes]->(:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
-RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
-       sec.status AS sec_status, sec.script_path AS script_path,
-       ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
-       collect(DISTINCT s.id) AS scene_ids, collect(DISTINCT s.name) AS scene_names
+WITH sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
+     sec.status AS sec_status, sec.script_path AS script_path,
+     ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
+     collect(DISTINCT s.id) AS scene_ids, collect(DISTINCT s.name) AS scene_names
+RETURN id, section_no, title, summary, sec_status, script_path,
+       chapter_no, ch_title, ch_status, scene_ids, scene_names
 LIMIT 1
 ```
 
@@ -103,7 +106,13 @@ python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" check --novel "<小说.md �
 2. **三件事钉人物 + 强场景锚**：每个主要出场角色钉「想要什么 / 怕什么 / 有什么不肯告诉别人的伤」→ 写入 `## 人物速写`（dialoguer 提炼台词的依据）；场景段序 = 强场景锚，**不可动**。
 3. **节拍对齐**：按 2a 思维链节拍逐段展开——一场景段一节正文，覆盖全部节拍；**不增删场景、不改分支拓扑**（选择项归属图未定时按「纯角色内心」缺省并标注待定）。
 4. **落稿**：只写图素材与节拍已背书的区间；**称谓规则**（穿越/换宿主题材）：内心独白与叙述用本名，说出口的台词用宿主名，叙述句身体动作与心理活动拆开归属；**禁裸 Day 计数**（叙述层用场景指称，如「那天在桥上」）；对白按 LanguageStyle（词汇/节奏/口头禅/情绪模式）。
-5. **自检（就地修，不过关不进段 3）**：**去 AI 味工序**（重工序已从 ink 定稿层前移到本层）——按 [references/小说去AI味工序.md](references/小说去AI味工序.md) 执行：叙述层四病灶（价值拔高/narrator 腔/破折号过密/翻译腔）+ 对白层八反模式逐段过，再走 Pass 1 保真回读（拓扑复查——场景段数/顺序/分支与 2a 推理及图 Choice 一致；称谓与 Day 计数复查；声音一致）+ Pass 2 残留味回读（含原惯性签名轻检三样，已并入该文档）。修不掉的病灶记录进汇报不阻塞落盘。
+   - **落稿笔法规范（演出优先——小说不是汇报，写时遵守非写后补）**：
+     1. **演出 > 概述**：体验不命名——禁「翻旧账环节」「电话有自己的流程」式流程标签/批注句，节奏与氛围由对话和动作自己演；本段最重的事件至少一处临场演出，禁全程战报式压缩（可「一局详演+余局压缩」式配比）。
+     2. **素材留白**：Info 取用 ≠ 正文显性交付——每场景段显性引用 ≤1~2 条，优先做暗线（物件在场不点破/一笔带过）；禁「他想起……」式同手法连用回收多条素材（打钩感 = 引用文献感）。
+     3. **感官密度**：每场景段至少 1~2 处非视觉感官（温度/触感/气味/声音质感）；人物身体状态写进动作，不写成判断句。
+     4. **节奏节制**：一句成段只留给节拍重音（转折/落笔/收束），每场景段 ≤3~5 处，其余并入段落——碎切过密是排版技巧不是叙事。
+     5. **对话人味**：术语型角色（职业身份台词密度高者）全篇至少 1~2 处「裂缝」——冷面下的细（多余的半句/顺手的动作/便签式小心思）；生活碎屑优于功能完整。
+5. **自检（就地修，不过关不进段 3）**：**去 AI 味工序**（重工序已从 ink 定稿层前移到本层）——按 [references/小说去AI味工序.md](references/小说去AI味工序.md) 执行：叙述层四病灶（价值拔高/narrator 腔/破折号过密/翻译腔）+ 对白层八反模式逐段过，再走 Pass 1 保真回读（拓扑复查——场景段数/顺序/分支与 2a 推理及图 Choice 一致；称谓与 Day 计数复查；声音一致）+ Pass 2 残留味回读（含原惯性签名轻检三样 + **落稿笔法规范五条回检**，已并入该文档）。修不掉的病灶记录进汇报不阻塞落盘。
 6. **标记实际取用素材**（段 3 gen 的输入）：指纹只记**正文实际取用**的素材，不是圈定全部——未使用的 Info 日后修订不得误 stale 本节。创作完成后从圈定清单列出实际用到的素材 id（Event 通常全用；Info 按正文真实引用挑），供段 3 `gen --ids` 使用。
 
 #### 小说.md 结构（固定骨架；`###` 场景段标题 = 拓扑契约，dialoguer 照搬）

@@ -31,8 +31,10 @@ allowed-tools: Read, Bash, Write, Edit
 // 角色 + 外貌 + 已有着装
 MATCH (ch:Character {id: '<char_id>'})
 OPTIONAL MATCH (ch)-[:has_appearance]->(app:AppearanceStyle)
+WITH ch, app
 OPTIONAL MATCH (ch)-[:has_costume]->(cos:CostumeStyle)
-RETURN ch, app, collect(cos) AS costumes;
+WITH ch, app, collect(cos) AS costumes
+RETURN ch, app, costumes;
 
 // 事件 + 空间 + 已有着装绑定
 MATCH (ch:Character {id: '<char_id>'})-[r:involved]->(e:Event)

@@ -40,7 +40,7 @@ MATCH (ch)-[:has_costume]->(cos:CostumeStyle)
 OPTIONAL MATCH (ds)-[:produces]->(illus:IllusDesign)<-[:outfit_for]-(cos)
 RETURN ch.name AS char_name,
        ap.height_cm AS height_cm,
-       ds.id AS ds_id, ds.status AS ds_status, ds.image_path AS ds_image, ds.slug AS ds_slug,
+       ds.id AS ds_id, ds.status AS ds_status, ds.image_path AS ds_image,
        cos.id AS cos_id, cos.name AS cos_name, cos.status AS cos_status,
        illus.id AS illus_id, illus.status AS illus_status, illus.adaptation_notes AS notes
 ```

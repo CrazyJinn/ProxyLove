@@ -45,7 +45,7 @@ OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
 RETURN ch.name AS char_name, ch.id AS char_id,
        voice.id AS voice_id, voice.emotion_patterns AS emotion_patterns,
        illus.id AS illus_id, illus.image_path AS illus_image, illus.status AS illus_status,
-       cos.name AS cos_name, ds.slug AS ds_slug,
+       cos.name AS cos_name,
        stand.id AS stand_id, stand.variant_label AS variant_label, stand.status AS status,
        stand.eye AS eye, stand.brow AS brow, stand.mouth AS mouth,
        stand.head_angle AS head_angle, stand.hand AS hand, stand.foot AS foot,

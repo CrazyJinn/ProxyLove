@@ -45,15 +45,18 @@ MATCH (l:Location)-[:part_of]->(sp:Spot) WHERE sp.name ENDS WITH '-<输入>' RET
 **1b. Location + 事件 + 既有 Spot/Scene 覆盖**（三个决策查询）：
 
 ```cypher
-// ① Location 总览：事件量 + 既有 Spot 及 Scene 覆盖
+// ①a Location 总览：事件量
 MATCH (l:Location {id: '<loc_id>'})
 OPTIONAL MATCH (e:Event)-[:occurs_at]->(l)
-OPTIONAL MATCH (l)-[:part_of]->(sp:Spot)
+WITH l, count(DISTINCT e) AS evt_cnt
+RETURN l.name AS loc_name, l.description AS loc_desc, evt_cnt;
+
+// ①b 既有 Spot 及 Scene 覆盖（每行一个 spot；无 Spot 的 Location 返回空）
+MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
 OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
-RETURN l.name AS loc_name, l.description AS loc_desc,
-       count(DISTINCT e) AS evt_cnt,
-       collect(DISTINCT {id: sp.id, name: sp.name, kind: sp.kind, dsl_path: sp.dsl_path,
-                scenes: [(sp)-[:realizes]->(x:Scene) | x.name]}) AS spots;
+WITH sp.id AS spot_id, sp.name AS spot_name, sp.kind AS kind, sp.dsl_path AS dsl_path,
+     collect(DISTINCT s.name) AS scenes
+RETURN spot_id, spot_name, kind, dsl_path, scenes;
 
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）
 MATCH (e:Event)-[:occurs_at]->(l:Location {id: '<loc_id>'})
@@ -64,8 +67,9 @@ ORDER BY e.time;
 // ③ 既有 zone Spot 归组分布（「既有 spot 够用性」的量化依据）
 MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
 OPTIONAL MATCH (e:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(sp)
-RETURN sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, sp.dsl_path AS dsl_path,
-       count(e) AS grouped_cnt, collect(e.title)[..5] AS sample
+WITH sp.id AS spot_id, sp.name AS spot, sp.kind AS kind, sp.dsl_path AS dsl_path,
+     collect(DISTINCT e.title) AS titles
+RETURN spot_id, spot, kind, dsl_path, size(titles) AS grouped_cnt, titles[..5] AS sample
 ORDER BY grouped_cnt DESC;
 ```
 
@@ -149,7 +153,7 @@ MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location�
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
 MATCH (sub:SubEvent)-[old:anchored_at]->(:Scene)<-[:realizes]
 WHERE (:Event {id: '<event_id>'})-[:refines]->(sub)-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
-MATCH (e:Event {id: '<event_id>'}), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene
+MATCH (e:Event {id: '<event_id>'})-[:refines]->(sub:SubEvent), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene；sub 本语句内绑定（变量不跨 ; 语句）
 MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.sync = false;
 ```
 

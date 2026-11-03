@@ -104,13 +104,13 @@ def _effective_ds(section_id: str, who: str, warnings: list):
         rows = _run_cypher(
             _base + "WHERE ds.active_from IS NULL OR ds.active_from <= " + str(pos) + " "
             "WITH coalesce(ds.active_from, -1) AS af, ds ORDER BY af DESC, ds.id ASC "
-            "WITH af, collect({id: ds.id, slug: ds.slug, notes: ds.delta_notes}) AS cands "
+            "WITH af, collect({id: ds.id, notes: ds.delta_notes}) AS cands "
             "ORDER BY af DESC LIMIT 1 RETURN cands"
         )
         if not rows:  # 病态兜底：全部版本 active_from 在未来 → 取最早版
             rows = _run_cypher(
                 _base + "WITH coalesce(ds.active_from, -1) AS af, ds ORDER BY af ASC, ds.id ASC "
-                "WITH af, collect({id: ds.id, slug: ds.slug, notes: ds.delta_notes}) AS cands "
+                "WITH af, collect({id: ds.id, notes: ds.delta_notes}) AS cands "
                 "ORDER BY af ASC LIMIT 1 RETURN cands"
             )
             if rows:

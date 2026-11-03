@@ -32,15 +32,16 @@ allowed-tools: Read, Bash, Write, Edit
 通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询上游 Location/Scene + 已有图层：
 
 ```cypher
-MATCH (s:Scene {id: '<scene_id>'})<-[:realizes]-(sp:Spot)-[:part_of]->(l:Location)
+MATCH (l:Location)-[:part_of]->(sp:Spot)-[:realizes]->(s:Scene {id: '<scene_id>'})
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
+WITH l, sp, s, collect(sl) AS layers
 RETURN l.id AS loc_id, sp.id AS spot_id,
        l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
        sp.dsl_path AS dsl_path,
        s.id AS scene_id, s.name AS scene_name,
        s.scene_type AS scene_type, s.status AS scene_status,
        s.atmosphere AS atmosphere, s.deco AS deco, s.time_of_day AS time_of_day,
-       collect(sl) AS layers;
+       layers;
 ```
 
 > Spot 的 name/kind/description 是空间语义来源（构图与陈设的空间依据；模式 A 时随 Scene 字段一并交给 scene-prompt-assembler）。

@@ -217,7 +217,7 @@ MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:i
 MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e);
 // Info（限产 ≤2，link 挂锚点——锚点可为 Event 或 Character）
 CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>';
-MATCH (a {id:'<anchor_id>'}), (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
+MATCH (a) WHERE (a:Event OR a:Character) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
 ```
 
 - 多语句 `;`+换行分隔，逐句以 `;` 结尾；**先建节点（含占位）再挂边**。

@@ -82,6 +82,9 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
 9. **`--multi` 只按 `;` 分割语句**：仅换行分隔的多条 `MATCH...SET` 会被拼接为单条查询（变量复用使后续 MATCH 退化为过滤条件），**每批只有首条生效且退出码为 0——静默丢失**。批量写图语句必须 `;` 分隔，且写后必须读回验证。
 10. **Cypher map 字面量键用裸标识符**（本版 Neo4j 不接受双引号字符串键）：`SET n += {name: 'x'}` 而非 `{"name": ...}`。
+11. **双后端（Memgraph/Neo4j）聚合兼容**：多段 `OPTIONAL MATCH` 后**禁止直接 `RETURN` 聚合**（collect/count/sum 跨段引用 → Memgraph `Unbound variable` 崩，Neo4j 正常）。每段后紧跟 `WITH <锚>, collect(...) AS ...` 物化再进下一段；聚合后 `ORDER BY` 只用 RETURN 别名（`ORDER BY time`，禁 `ORDER BY e.time`）；collect 物化后计数/过滤用列表推导并显式滤 null 项（`x IS NOT NULL`）。段数 ≥3 或混合行粒度时优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，见 suggest_lint.py R5）
+12. **禁 pattern comprehension** `[(a)-[:r]->(b) | expr]`（Neo4j 独有，Memgraph 不支持）——改 `OPTIONAL MATCH` + `WITH ... collect(...)`，或拆查询。
+13. **谓词/CASE 内避免 `IN` 字面量列表**（Memgraph 实测 IN+负数列表 parse 崩；字符串字面量列表未实测不赌）：常量多值判断用 `=` + `OR`；动态 id 集合的 IN 可保留（服务器 Memgraph 验证清单项）。计数用 collect 物化 + `size([x IN l WHERE ...])`。
 
 ## Event 图拓扑铁律（图结构契约，写边/建节点前必读）
 

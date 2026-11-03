@@ -11,8 +11,10 @@
   failures  契约违规清单（每事件缺 occurs_at / 缺 involved，含修复指引）
   batch     单轮上限 3：命中 >3 时取时间最早 3 个，余者列入 next_round
   assets    演出资源现状（§2 探索步的 facts）：
-    chars    每 involved Character 的立绘链：DesignSheet → IllusDesign ←outfit_for← CostumeStyle
+    chars    每 involved Character 的立绘链：Character→AppearanceStyle→DesignSheet→IllusDesign←outfit_for← CostumeStyle
     scenes   每 occurs_at Location 的空间链：Spot →realizes→ Scene
+
+聚合查询一律段段 WITH 物化（双后端 Memgraph/Neo4j 兼容，见 cypher_exec.py 硬约束 11）。
 
 FAIL 语义：范围内任一事件缺 occurs_at Location 或缺 involved Character →
 stager 报错停止（不代建叙事基础实体），本脚本直接输出可操作错误
@@ -48,6 +50,34 @@ def q(v: str) -> str:
     return "'" + str(v).replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
+SELFTEST_PROBE = (
+    "MATCH (e:Event) WITH e LIMIT 1 "
+    "OPTIONAL MATCH (e)-[:occurs_at]->(l:Location) "
+    "WITH e, collect(DISTINCT l.id) AS loc_ids "
+    "RETURN e.id AS id, loc_ids")
+
+
+def selftest() -> int:
+    """最小探针：图库连接 + 聚合物化形态（双后端 Memgraph/Neo4j 兼容）可用性。"""
+    try:
+        run_cypher(SELFTEST_PROBE)
+    except RuntimeError as exc:
+        text = str(exc)
+        if "Unbound variable" in text:
+            hint = "后端不接受「WITH 物化聚合」形态（聚合缺陷传导）——核对 cypher_exec.py 硬约束 11"
+        elif "Auth" in text or "Unauthorized" in text or "credential" in text:
+            hint = "认证失败——检查 settings.json 的 neo4j_password 或 NEO4J_PASSWORD 环境变量"
+        elif ("ServiceUnavailable" in text or "Failed to establish" in text
+              or "Connection" in text):
+            hint = "连不上图库——确认服务运行（NEO4J_URI / bolt://localhost:7687）"
+        else:
+            hint = "未知错误，完整信息如下"
+        print(f"selftest FAIL：{hint}\n{text}")
+        return 2
+    print("selftest OK：连接 + WITH 物化聚合形态可用（双后端）")
+    return 0
+
+
 def build_scope_clause(ids, titles, window) -> str:
     """组合 WHERE 子句（内联值；id 精确、title 精确、时间窗 [起, 止次日)）。"""
     conds = []
@@ -66,10 +96,11 @@ def preflight(ids, titles, window) -> dict:
     scope = run_cypher(
         "MATCH (e:Event) WHERE " + build_scope_clause(ids, titles, window) + " "
         "OPTIONAL MATCH (e)-[:occurs_at]->(l:Location) "
+        "WITH e, collect(DISTINCT {id: l.id, name: l.name}) AS locations "
         "OPTIONAL MATCH (c:Character)-[:involved]->(e) "
-        "RETURN e.id AS id, e.title AS title, e.time AS time, "
-        "collect(DISTINCT {id: l.id, name: l.name}) AS locations, "
-        "collect(DISTINCT {id: c.id, name: c.name}) AS chars ORDER BY e.time")
+        "WITH e, locations, collect(DISTINCT {id: c.id, name: c.name}) AS chars "
+        "RETURN e.id AS id, e.title AS title, e.time AS time, locations, chars "
+        "ORDER BY time")
     if not scope:
         return {"verdict": "EMPTY", "scope": [], "failures": [{
             "error": "范围内无事件——检查 id/title 拼写或时间窗（含 selector 是否全空）"}],
@@ -105,7 +136,8 @@ def preflight(ids, titles, window) -> dict:
         loc_ids.update(l["id"] for l in ev["locations"])
     chars = run_cypher(
         "MATCH (c:Character) WHERE c.id IN " + json.dumps(sorted(char_ids)) + " "
-        "OPTIONAL MATCH (c)-[:has_appearance]->(ds:DesignSheet) "
+        "OPTIONAL MATCH (c)-[:has_appearance]->(a:AppearanceStyle) "
+        "OPTIONAL MATCH (a)-[:produces]->(ds:DesignSheet) "
         "OPTIONAL MATCH (ds)-[:produces]->(i:IllusDesign) "
         "OPTIONAL MATCH (cs:CostumeStyle)-[:outfit_for]->(i) "
         "RETURN c.id AS char_id, c.name AS char, c.status AS char_status, "
@@ -131,7 +163,12 @@ def main() -> int:
     ap.add_argument("--titles", default="", help="event title 列表（逗号分隔）")
     ap.add_argument("--window", default="", help="时间窗 起,止（止为开区间次日）")
     ap.add_argument("--json", action="store_true", help="纯 JSON 输出（默认人读格式）")
+    ap.add_argument("--selftest", action="store_true",
+                    help="最小探针自检（连接 + 双后端聚合形态），与 selector 互斥")
     args = ap.parse_args()
+
+    if args.selftest:
+        return selftest()
 
     ids = [x for x in args.ids.split(",") if x]
     titles = [x for x in args.titles.split(",") if x]
@@ -139,7 +176,11 @@ def main() -> int:
     if window and len(window) != 2:
         raise SystemExit("--window 需要 起,止 两个日期")
 
-    r = preflight(ids, titles, window)
+    try:
+        r = preflight(ids, titles, window)
+    except RuntimeError as exc:
+        print(f"preflight 执行失败（人话分诊见下；可先跑 --selftest 定位）：\n{exc}")
+        return 2
     if args.json:
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 1 if r["verdict"] == "FAIL" else 0

@@ -118,8 +118,8 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 
 **探索**（facts 由 §1 preflight `assets` 段带出）：
 
-- 立绘链现状（每 involved Character）：DesignSheet → IllusDesign ←outfit_for←
-  CostumeStyle——着装继承与占位判断的依据；
+- 立绘链现状（每 involved Character）：Character →AppearanceStyle→ DesignSheet → IllusDesign
+  ←outfit_for← CostumeStyle（Schema 正源四段链）——着装继承与占位判断的依据；
 - 空间链现状（每 occurs_at Location）：Spot →realizes→ Scene——机位选用与
   占位判断的依据。信息不足时按需补查（查询形态见 preflight.py 源码）。
 

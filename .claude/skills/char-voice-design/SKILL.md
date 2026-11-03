@@ -35,14 +35,16 @@ allowed-tools: Read, Bash, Write, Edit
 MATCH (c:Character {id: '<char_id>'})
 OPTIONAL MATCH (c)-[:has_voice_style]->(ls:LanguageStyle)
 OPTIONAL MATCH (c)-[:has_voice_design]->(vd:VoiceDesign)
+WITH c, ls, vd
 OPTIONAL MATCH (c)-[:link]->(info:Info)
+WITH c, ls, vd, collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos
 OPTIONAL MATCH (c)-[iv:involved]->(evt:Event)
+WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time }) AS events,
+     collect(DISTINCT iv.role) AS event_roles
 OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:leads_to]-(evtInfo:Info)
-RETURN c, ls, vd,
-       collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos,
-       collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos,
-       collect(DISTINCT evt { .title, .description, .type, .time }) AS events,
-       collect(DISTINCT iv.role) AS event_roles;
+WITH c, ls, vd, infos, events, event_roles,
+     collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos
+RETURN c, ls, vd, infos, events, event_roles, event_infos;
 ```
 
 同场角色（查其已有 VoiceDesign 的 instruct，避免撞声）：
