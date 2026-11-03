@@ -2,16 +2,16 @@
 name: event-stager
 description: |
   事件细化落地层——输入一个/多个 Event（id / title / 时间窗），四步推进：
-  ①前置核验+确定性缺口修复（缺 involved / 缺 occurs_at：实体在图只缺边 → 补边，
-  实体不在图 → 报错列出，不代建）；②探索演出资源（char 立绘链 /
-  location scene 链）并拆解 SubEvent（对照微演出模式库，按演出价值判据）；
+  ①前置核验（发现确定性缺口：实体在图只缺边 → 转 S4 缺口修复建议，实体不在图
+  → 报错列出，不代建）；②探索演出资源（char 立绘链 /
+  location scene 链）并拆解 SubEvent（戏剧节拍分析→动作与状态变化分析→
+  演出价值判断→模式库校验——模式只做查遗漏，不做生成依据）；
   ③占位物化——为每个 sub 构建 IllusDesign←appears_as←SubEvent→anchored_at→Scene
   链条，缺口建占位节点（status=0）：Spot/Scene/CostumeStyle/IllusDesign 均可建
   （叙事侧拍定哪个房间哪套衣服）；④逐 event 询问确认 + 产出建议 JSON（人工经
   dashboard 写回）。多轮交互一次一问、每问附推荐；单轮至多 3 个 event。在用户说
   「细化」「stager」「这批事件细化一下」或给出事件范围要求推进机位层时使用。
-  不建 Event/Info/Choice/Location/Character；范围内事件缺叙事基础实体（缺
-  occurs_at / 缺 involved）时报错列出，不代建。
+  不建 Event/Info/Choice/Location/Character（缺叙事基础实体一律报错，见 §1 入口核验）。
 argument-hint: <event id列表 | 事件title列表 | 时间窗>
 arguments:
   - events
@@ -35,10 +35,6 @@ allowed-tools: Read, Bash, Write
 > [references/多语句cypher与MERGE绑定语义.md](references/多语句cypher与MERGE绑定语义.md)），
 > 落盘后必须 `$SUGGEST_LINT` 全 PASS；**禁止夹带自造的
 > 校验节点**（必然孤儿）；执行校验由用户回报后只读回查完成。
->
-> **入口核验**：范围内事件缺 occurs_at Location / 缺 involved Character → **报错停止**
-> （逐事件列出缺失项），不代建叙事基础实体——Event/Info/Choice/Location/Character
-> 均不在本 skill 创建域。
 
 ## 前置
 
@@ -59,14 +55,14 @@ OUTPUT_DIR="02_剧情数据"
      挂 realizes 到既有 Spot；Spot 也不存在时建 Spot 占位）；
   3. `appears_as` 边（SubEvent→IllusDesign——优先继承父/兄弟 sub 着装；着装套不
      存在时建 CostumeStyle 占位、形象版本不存在时建 IllusDesign 占位）；
-  4. 确定性缺口修复类：缺 involved/occurs_at 补边（仅当实体在图、只缺边）；实体
-     不在图 → 报错列出，不代建；
-  5. 演出型 Info 升格（Info→sub.description，Info 删除——保留/删除由用户拍板）。
+  4. 确定性缺口修复类（S4_gap_fix，§1 发现 → §4 拍板 → dashboard 写回）：
+     缺 involved/occurs_at 补边（仅当实体在图、只缺边；实体不在图走 §1 入口
+     核验报错，不代建）；
 - **不建**：Event / Info / Choice / Location / Character。不产任何真资产（图片/
   room.yml 不在本层）。
-- **sub description 不引用占位字段**：只写演出内容（机位动作/参与人/情绪基调/
-  邻接衔接），机位信息一律由 anchored_at 边承载——占位 Scene 后续改名/改字段
-  不造成 description 漂移（§方案 Q4 拍板）。
+- **sub description 不引用占位字段**：只写演出内容（参与角色/动作/情绪基调/
+  同事件内前后 sub 衔接，按 §2 内容规范），机位信息一律由 anchored_at 边承载
+  ——占位 Scene 后续改名/改字段不造成 description 漂移（§方案 Q4 拍板）。
 - **一题一答且一 Event 一题**：缺口修复逐条问；sub+占位方案按 Event 聚合成一题
   整体拍板。facts 自己查，decisions 才问用户。
 
@@ -91,7 +87,10 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 工作流（四步）
 
-### 1. 前置核验 + 确定性缺口修复
+> S4 缺口修复走「§1 **发现** → §4 拍板 → dashboard 写回」闭环，第 1 步只发现
+> 不修复（全程零直接图写入）。
+
+### 1. 前置核验（发现确定性缺口）
 
 跑：
 
@@ -103,10 +102,13 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 
 - **范围解析**：命中事件清单（id/title/time/occurs_at/involved），复述 N 个
   事件 + 时间跨度再进下一步；
-- **入口核验**：`verdict=FAIL`（缺 occurs_at / 缺 involved）→ **报错停止**，
-  脚本 `failures` 已逐事件列出缺失项；本 skill
-  不代建叙事基础实体。title/description 提及实体未建档同理（LLM 读文判断，
-  实体是否在图对照 `assets` 段核查）；
+- **入口核验（权威表述，全 skill 唯一）**：`verdict=FAIL`（缺 occurs_at Location /
+  缺 involved Character）→ **先分诊**（preflight 的 FAIL 不区分下述两种，需自查）：
+  缺的实体**在图、只缺边** → 按创建域第 4 条转 §4 的 `S4_gap_fix` 补边建议，
+  流程继续；实体**不在图** → **报错停止**，脚本 `failures` 已逐事件列出缺失项，
+  **不代建叙事基础实体**——Event/Info/Choice/Location/Character 均不在本 skill
+  创建域，缺口回 event-ideator 层补。title/description 提及实体未建档同理
+  （LLM 读文判断，实体是否在图对照 `assets` 段核查）；
 - **批次切分**：单轮上限 3 个 event（批量约束），超出时脚本 `batch` 段已切好
   （本轮时间最早 3 个，余者列入汇报「下轮可细化」）；
 - **演出资源现状**：`assets` 段（每 involved char 立绘链 / 每 location 空间链）
@@ -121,17 +123,24 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 - 空间链现状（每 occurs_at Location）：Spot →realizes→ Scene——机位选用与
   占位判断的依据。信息不足时按需补查（查询形态见 preflight.py 源码）。
 
-**拆解流程（四步固定）**：
+**拆解流程（六步固定，模式库在末位做校验与补遗——先找演出价值，再对模式查遗漏）**：
 
-1. **事件分析**：从事件 title/description 提取微内容（谁在哪做什么、
-   情绪与关系状态、物件与信息流动）；
-2. **模式匹配**：对照 [references/微演出模式库.md](references/微演出模式库.md)
-   找适用模式，**允许多模式组合**（到场+对峙、物件交互+情绪转变）；
-   模式库是**拆解策略库不是事件分类**——Event 不归入模式，一个 Event 可匹配
-   多个模式，模式只提供拆解范式；
-3. **SubEvent 生成**：按范式生成 sub 及 anchored_at/appears_as 关系；
-4. **演出验收**：时间符合因果先后、人物连续性、演出价值（可感知的变化）、
-   不重复表达父 Event 已承载的内容。
+1. **戏剧节拍分析**：从事件 title/description 理解事件内部的戏剧发展，识别
+   值得表现的节拍（铺垫/触发/反应/释放/余韵，如告白=犹豫→拿出礼物→说出
+   心意→沉默→接受/拒绝→新相处状态）。只识别潜在演出内容，**不要求每个
+   节拍都生成 sub**；
+2. **动作与状态变化分析**：把值得表现的节拍转化为具体剧情动作——逐项过：
+   谁采取行动、行动对象、发生时间与空间、产生什么结果、是否带来可感知的
+   信息/情绪/关系/状态变化（未带来变化的动作不拆）；
+3. **独立演出价值判断**：对每个候选动作按下方拆解判据裁决拆/不拆（防过拆
+   与欠拆两个极端）；
+4. **模式库校验**：对照 [references/微演出模式库.md](references/微演出模式库.md)
+   检查拆分方案——模式提供经验与查遗漏（有没有漏拆的到场/物件交互，或
+   拆出来的其实是不拆反例），**不强制每个 sub 匹配一个模式**；命中多模式
+   不等于要生成多个 sub，可组合参考；
+5. **SubEvent 生成**：生成 sub 及 anchored_at/appears_as 关系；
+6. **演出验收**：时间符合因果先后、人物连续性、动作完整性（每个 sub 能说清
+   「谁对谁做了什么」）、不重复表达父 Event 已承载的内容。
 
 **拆解判据**（演出价值，非既有 ink——细化在前、ink 在后，禁止把后续产物当依据）：
 
@@ -141,18 +150,34 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 - **时间推导**：sub 时间由上下文推导（到场在主活动前、离开在收尾后、换区按
   位移节奏），**不虚构精确时间**——不设固定窗幅，只要求与父事件及邻接 sub
   因果先后相容，允许合理重叠（如并行发生的事）；
-- **拆分数量**：遵循实际剧情密度，不为凑数拆、也不为省事并——对峙类高密度
+- **拆分数量**：遵循实际剧情密度，防两个极端——**过拆**（普通动作、每句
+  对话都拆成 sub）与**欠拆**（多个独立戏剧阶段塞进一个 sub）；对峙类高密度
   演出优先 1 个 sub，但独立触发/反转/爆发阶段显著时可拆多段；
 - **模式参考**：十一种微演出模式（到场/离开/换区/对峙/独白/并行小事/目击/误认/
   物件交互/情绪转变/决策）各含适用判据、典型拆解形态、项目实感示例与
   **不拆反例**；拆解决策对照模式库而非现想，文末拆解自检清单在落建议 JSON
   前过一遍。
 
-**sub description**：按模式与实际情况描述（动作、参与人、情绪、站位、同事件内
-前后 sub 衔接），非必要字段不强制；**不含机位名**（机位信息只走 anchored_at 边）。
+**sub description 内容规范**（字段级，按实际情况填写、非必要不强制）：
+
+| 内容 | 要求 |
+|---|---|
+| 参与角色 + 角色动作 | **必填**（动作完整性：能说清「谁对谁做了什么」） |
+| 动作对象 | 有对象时填写 |
+| 时间 | 由上下文推导，不虚构精确时间 |
+| 情绪基调 / 人物站位 / 到离场方式 / 行动结果 | 有表现价值时填写 |
+| 前后衔接 | 存在必要衔接时填写，**仅限同事件内前后 sub** |
+
+**四不**：不重复父 Event 已表达的内容；不写机位名（机位信息只走 anchored_at
+边）；不塞具体镜头设计（近景/特写切换是剧本分镜层的事，sub 只到「机位级
+演出段」粒度）；人物状态变化不写成冗长自然语言。
 衔接**仅限同事件内前后 sub**——禁止指涉其他事件（跨事件因果/时序由 leads_to 边
 与 Event.time 承载，description 写「同日下午」「当晚」等跨事件相对时间词即违规，
 时间唯一承载是 Event.time）。
+
+**职责边界提醒**：SubEvent ─anchored_at→ Scene 是**严格 1:1**（一个 sub 一个机位）。
+sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/背景画面——人物姿势、
+表情、位置属于立绘与演出指令层，不塞进 Scene，也不在 sub 里做镜头设计。
 
 ### 3. 占位物化（缺口 → status=0 占位）
 
@@ -174,15 +199,14 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 ### 4. 逐 event 询问 + 组装建议 JSON
 
 **一 Event 一题**：每题摆出该事件完整方案（0/1/N 个 sub + 各自 anchored_at 目标
-（既有/占位标明）+ appears_as 目标（继承/占位标明）+ 时间插值 + description 要点）
-+ Info 升格项（如有），用户整体拍板（可改细节后接受）。范围内事件按时间序逐个过。
+（既有/占位标明）+ appears_as 目标（继承/占位标明）+ 时间插值 + description 要点），用户整体拍板（可改细节后
+接受）。范围内事件按时间序逐个过。
 
 全部拍板后组装建议 JSON（**顺序：占位节点 → 边**，节点先于边）：
 
 - 项结构 `{check, priority, reason, content, cypher, source:'event-stager'}`；
 - check 取值：`S1_placeholder_node`（占位 Spot/Scene/CostumeStyle/IllusDesign）、
   `S2_subevent`（SubEvent+refines+anchored_at+appears_as 一体）、
-  `S3_info_upgrade`（Info 升格：建 sub + DETACH DELETE Info）、
   `S4_gap_fix`（确定性缺口修复：involved/occurs_at 补边——仅当图上实体确实存在
   只是边缺失时才走此类，实体缺失一律报错不走此类）；
 - priority：占位 high（生产链待消化）；其余 medium；
@@ -230,20 +254,12 @@ MATCH (cs:CostumeStyle {id:'<cs_id_既有或上方占位>'}) MATCH (idn:IllusDes
 MATCH (e:Event {id:'<parent_id>'})
 MERGE (sub:SubEvent {id:'<snowflake>'})
 ON CREATE SET sub.title='<父title> · <序号或短名>', sub.time='<插值时间>',
-              sub.description='<演出内容（模板五要素，不含机位名）>'
+              sub.description='<演出内容（按 §2 内容规范：参与角色+动作必填，其余按实际，不含机位名）>'
 MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;
 MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (scn:Scene {id:'<scene_id_既有或本建议占位>'})
 MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;
 MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (il:IllusDesign {id:'<illus_id_继承既有或本建议占位>'})
 MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='<继承：同父兄弟着装 / 占位：新套装待消化>';
-// ── S3 Info 升格：sub 本体+refines 一体；anchored_at 独立；Info 删除独立收尾 ──
-MATCH (e:Event {id:'<parent_id>'})
-MERGE (sub:SubEvent {id:'<snowflake>'})
-ON CREATE SET sub.title='<Info.title>', sub.time='<e.time>', sub.description='<Info.content>'
-MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;
-MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (scn:Scene {id:'<scene_id>'})
-MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;
-MATCH (i:Info {id:'<info_id>'}) DETACH DELETE i;
 ```
 
 - 占位节点间边（part_of/realizes/outfit_for）sync=true（细化时级联下游）；sub 三边
@@ -253,7 +269,7 @@ MATCH (i:Info {id:'<info_id>'}) DETACH DELETE i;
 
 ## 参考文档
 
-- [references/微演出模式库.md](references/微演出模式库.md) — §2 拆解时读（八模式范式+不拆反例+自检清单）
+- [references/微演出模式库.md](references/微演出模式库.md) — §2 第 4 步校验时读（十一种模式范式+不拆反例+自检清单）
 - [references/占位命名规范.md](references/占位命名规范.md) — §3 占位物化时读（四类命名模式+查重自检）
 - [叙事基础.md](../../../00_init/Schema/叙事基础.md) / [场景美术.md](../../../00_init/Schema/场景美术.md) / [角色美术.md](../../../00_init/Schema/角色美术.md)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§3/§6/§8.2
