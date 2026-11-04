@@ -38,7 +38,7 @@
 | SubEvent | snowflake Base62 | 事件在机位层的演出物化（到场/换区/离开/换装）；只挂 anchored_at/appears_as 两边，无 status |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
 | Spot | snowflake Base62 | 地点内子空间（zone）；sub 归组经 anchored_at 直挂 Scene；无 status |
-| Info | snowflake Base62 | 一条有意义的认知碎片 |
+| Info | snowflake Base62 | 一条成立的事实（Event 记「发生」，Info 记「成立」；判定测试见 Schema/叙事基础.md） |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
 | AppearanceStyle | snowflake Base62 | 角色固定外貌（脸、体型、发色） |

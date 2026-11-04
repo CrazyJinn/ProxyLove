@@ -454,18 +454,6 @@ sequenceDiagram
 | suggest_round.py | 建议 JSON 轮次推导（共享计数器，全量取 max+1） | event-ideator / event-stager / chapter-novelist 共用；防文件名排序跳号 |
 | `.claude/skills/section-voice-publisher/scripts/` | 声音链脚本组（收编进 skill） | script_splitter.py（台词.ink 拆分对齐进图：parse_ink + difflib 对齐 + 单事务写图）· voice_clone_runner.py（Qwen3 全家：候选/试听/ref + 逐句配音 publish，env/.venv-qwen）· voice_bundler.py（voice key 单一源 make_voice_key + tasks-from-graph/bind-graph + publish 发布期拷运行时）· paths.py（模型路径配置，读 settings.json）；char-voice-design / chapter-publisher 跨 skill 引用 |
 
-> 纯产出层（`char-prompt-assembler` / `scene-prompt-assembler` / `infra-image-generator`）只产文件，节点字段与 status 一律由调用方生产 skill 在「保存结果」步用 MERGE 兜底写入。
-
-### 已废弃 Skill（目录已删除，git 历史可溯）
-
-| Skill（历史名） | 废弃原因 / 替代 |
-|------------|------|
-| `chapter-outliner` | 提纲已内化——节的提纲即图数据，结构推理并入 `chapter-novelist` 思维链（历史 outline.md 留存于旧节目录） |
-| `nrt-graph-builder`（`-delete`） | 初始建图期的手动/发现模式建图入口；现行流程走建议 JSON 通道（`event-ideator`）+ dashboard 写回 |
-| `nrt-narrative-extractor`（`-delete`） | 创作输入→叙事关系的人工审阅提取器；叙事数据全量入图后无使用场景（查图用 dashboard 图探查 / 锚点关系查询） |
-| `nrt-narrative-grower`（`-delete`） | 图算法体检+批量建议产出；体检归 dashboard /events/checkup，创作补全归 `event-ideator` |
-| `nrt-gap-filler` | 叙事缺口的交互式治理（图算法体检 E/C/X/V + 时间窗补桥/人物丰满创作类 H 组）——修复类缺口经 round1-10 已清零，创作类由 `event-ideator` 五模式+限产 Info 覆盖，体检发现归 dashboard；**Info 生产由 ideator 继承**（≤2/次锚点驱动） |
-
 ---
 
 ## 项目文件夹结构
