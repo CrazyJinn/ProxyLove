@@ -1,0 +1,127 @@
+# Room DSL v3 —— 星耀电竞基地·办公区(经理办公室)
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqd
+  name: 星耀电竞基地
+  description: 星耀电竞战队训练基地,含训练馆与空场馆
+room:
+  floor:
+  - 6.5
+  - 5.0
+  height: 2.9
+  wall_color: '#3a3d44'
+  floor_color: '#4a463f'
+  door:
+    side: z+
+    pos:
+    - -1.9
+    - 0
+    - 2.48
+    size:
+    - 0.95
+    - 2.05
+  windows:
+  - id: window_n
+    pos:
+    - 0.6
+    - 1.8
+    - -2.48
+    size:
+    - 2.6
+    - 1.6
+    desc: 北墙大窗,白纱帘滤进午后光
+  deco: 行政办公区静穆,深色地毯吸走脚步声,队标蓝点缀
+  floor_material: 深灰地毯
+  wall_material: 吸音板
+objects:
+- id: manager_desk
+  spot: 办公区
+  name: 经理大班台
+  type: box
+  pos:
+  - 0.6
+  - 0.36
+  - -2.05
+  size:
+  - 2.0
+  - 0.72
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5b4636'
+  desc: 北窗下深胡桃木大班台,二队合同落笔处
+  material: 原木
+- id: bookcase_w
+  spot: 办公区
+  name: 书柜
+  type: box
+  pos:
+  - -3.07
+  - 1.1
+  - 0.2
+  size:
+  - 0.36
+  - 2.2
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a4238'
+  desc: 西墙整面书柜,码着战术手册与几座旧奖杯
+  material: 原木
+- id: wall_art
+  spot: 办公区
+  name: 队标灯板画
+  type: box
+  pos:
+  - 3.22
+  - 1.6
+  - -1.2
+  size:
+  - 0.06
+  - 1.1
+  - 1.5
+  color: '#1d2b45'
+  desc: 东墙队标灯板画
+  material: 亚克力灯板
+scenes:
+- id: office_signing
+  scene_id: Rm85LQWh4T
+  scene_name: 星耀电竞基地-经理办公室
+  spot: 办公区
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 2.3
+    look_at:
+    - 0.5
+    - 1.35
+    - -2.0
+    fov: 75
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.75
+    - 0
+    color: '#f2ead8'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

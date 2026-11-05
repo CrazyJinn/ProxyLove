@@ -144,7 +144,7 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 
 ## 何时用 skill / agent
 
-- 要产出新 Event 或补全叙事基础（五模式启发：动机链/质感/间隙/后果链/因果回溯；一次一问+每问附推荐答案；产 Event+involved/occurs_at 边+Character/Location 占位+限产 Info[≤2/次]，零图写入）→ `event-ideator`（传 char 和/或 base event；产 `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json`，人工经 dashboard 建议弹窗审阅写回；写回后跑 event-stager 细化；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
+- 要产出新 Event、构建/对账故事线（StoryArc）或补全叙事基础（六模式启发：动机链/质感/间隙/后果链/因果回溯/故事线填充；一次一问+每问附推荐答案；产 Event+involved/occurs_at 边+Character/Location 占位+限产 Info[≤2/次]+StoryArc 与 comprises 边[I4 建线/扩线，I5 对账更新 description——唯一允许改既有节点属性的例外]，零图写入）→ `event-ideator`（事件启发传 char 和/或 base event，arc 故事线单独给则走建线/填充/对账支线；产 `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json`，人工经 dashboard 建议弹窗审阅写回；写回后跑 event-stager 细化；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
 - 要细化事件到机位层（SubEvent）并占位物化演出缺口 → `event-stager`（传事件 id/title 列表或时间窗；四步：前置核验[preflight.py：缺叙事基础实体报错停止] → 拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0，替代留单] → 逐 event 拍板产建议 JSON；单轮 ≤3 event）
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。

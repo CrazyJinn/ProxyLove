@@ -55,7 +55,7 @@ RETURN l.name AS loc_name, l.description AS loc_desc, evt_cnt;
 MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
 OPTIONAL MATCH (sp)-[:realizes]->(s:Scene)
 WITH sp.id AS spot_id, sp.name AS spot_name, sp.kind AS kind, sp.dsl_path AS dsl_path,
-     collect(DISTINCT s.name) AS scenes
+     collect(DISTINCT coalesce(s.name, s.id)) AS scenes
 RETURN spot_id, spot_name, kind, dsl_path, scenes;
 
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）

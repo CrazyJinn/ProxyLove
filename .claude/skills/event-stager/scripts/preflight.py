@@ -12,6 +12,7 @@
   batch     单轮上限 3：命中 >3 时取时间最早 3 个，余者列入 next_round
   assets    演出资源现状（§2 探索步的 facts）：
     chars    每 involved Character 的立绘链：Character→AppearanceStyle→DesignSheet→IllusDesign←outfit_for← CostumeStyle
+    costumes 每 involved Character 的着装（has_costume 直查，含 stager 占位 status=0——防同缺口重复建占位）
     scenes   每 occurs_at Location 的空间链：Spot →realizes→ Scene
 
 聚合查询一律段段 WITH 物化（双后端 Memgraph/Neo4j 兼容，见 cypher_exec.py 硬约束 11）。
@@ -151,10 +152,20 @@ def preflight(ids, titles, window) -> dict:
         "RETURN l.id AS loc_id, l.name AS loc, sp.id AS spot_id, sp.name AS spot, "
         "sp.status AS spot_status, sc.id AS scene_id, sc.name AS scene, "
         "sc.status AS scene_status ORDER BY loc, spot") if loc_ids else []
+    # 着装现状（has_costume 直查）：含 stager 占位（status=0，无 DesignSheet 链，
+    # 上方 chars 四段链查不到）——防同缺口重复建占位（占位与真身重名打架）
+    costumes = run_cypher(
+        "MATCH (c:Character) WHERE c.id IN " + json.dumps(sorted(char_ids)) + " "
+        "OPTIONAL MATCH (c)-[:has_costume]->(cs:CostumeStyle) "
+        "OPTIONAL MATCH (cs)-[:outfit_for]->(i:IllusDesign) "
+        "RETURN c.id AS char_id, c.name AS char, cs.id AS costume_id, "
+        "cs.name AS costume, cs.status AS costume_status, "
+        "i.id AS illus_id, i.status AS illus_status "
+        "ORDER BY char, costume") if char_ids else []
 
     return {"verdict": "FAIL" if failures else "PASS",
             "scope": scope, "failures": failures, "batch": batch,
-            "assets": {"chars": chars, "scenes": scenes}}
+            "assets": {"chars": chars, "costumes": costumes, "scenes": scenes}}
 
 
 def main() -> int:
@@ -213,6 +224,12 @@ def main() -> int:
                 note = "（占位 Character，外貌链不在本层）" if c["char_status"] == 0 \
                     else "（无外貌链——着装继承不可用，缺口走 CostumeStyle/IllusDesign 占位）"
                 print(f"  {c['char']}: {note}")
+    if a.get("costumes"):
+        print(f"\n== 着装现状（has_costume 直查，含占位——同缺口勿重复建占位） ==")
+        for cs in a["costumes"]:
+            ph = " <占位待消化>" if cs["costume_status"] == 0 else ""
+            il = f" → IllusDesign {cs['illus_id']} (status={cs['illus_status']})" if cs["illus_id"] else ""
+            print(f"  {cs['char']}: {cs['costume']}{ph}{il}")
     if a.get("scenes"):
         print(f"\n== 空间链现状 ==")
         for s in a["scenes"]:

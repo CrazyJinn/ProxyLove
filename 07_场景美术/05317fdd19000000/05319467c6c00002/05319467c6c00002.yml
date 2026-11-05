@@ -1,0 +1,178 @@
+# Room DSL v3 —— 小酒馆·吧台区(吧台卡座)
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: Rdvzb1Sjvk
+  name: 小酒馆
+  description: 室内小酒馆，安静能聊天的吧台卡座（林梦线外食喝酒场所）
+room:
+  floor:
+  - 6.0
+  - 4.6
+  height: 2.9
+  wall_color: '#4a3b32'
+  floor_color: '#5b4636'
+  door:
+    side: z+
+    pos:
+    - 1.2
+    - 0
+    - 2.28
+    size:
+    - 1.0
+    - 2.1
+  windows:
+  - id: win_east
+    pos:
+    - 2.99
+    - 1.5
+    - 0.9
+    size:
+    - 1.2
+    - 1.2
+    rot:
+    - 0
+    - 90
+    - 0
+    desc: 东墙临街窗，夜色与街灯透进来
+  deco: 暖木色调小店，吧台酒架灯带压着音量的安静卡座区
+  floor_material: 原木
+  wall_material: 木质墙板
+objects:
+- id: back_shelf
+  spot: 吧台区
+  name: 吧台酒架
+  type: plane
+  pos:
+  - 0
+  - 1.8
+  - -2.29
+  size:
+  - 3.2
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3d2e24'
+  desc: 北墙通顶格层酒架，暖光灯带勾边，格层里酒瓶林立
+  material: 原木
+- id: wall_art
+  spot: 吧台区
+  name: 酒标装饰画
+  type: plane
+  pos:
+  - 2.2
+  - 1.5
+  - -2.29
+  size:
+  - 0.9
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#2f2620'
+  desc: 北墙吧台侧手绘老酒标装饰画
+  material: 布艺
+- id: booth_sofa
+  spot: 吧台区
+  name: 卡座沙发
+  type: box
+  pos:
+  - -2.75
+  - 0.45
+  - -1.7
+  size:
+  - 0.5
+  - 0.9
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a3c3c'
+  desc: 西北角高背卡座沙发，暗红皮面磨得发亮
+  material: 皮革
+- id: booth_table
+  spot: 吧台区
+  name: 卡座茶桌
+  type: box
+  pos:
+  - -2.75
+  - 0.36
+  - -1.1
+  size:
+  - 0.5
+  - 0.72
+  - 0.7
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5b4636'
+  desc: 卡座沙发膝前小茶桌，桌沿磨白
+  material: 原木
+- id: bar_counter
+  spot: 吧台区
+  name: 吧台台体
+  type: box
+  pos:
+  - 2.7
+  - 0.55
+  - -1.7
+  size:
+  - 0.6
+  - 1.1
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b4a2f'
+  desc: 东北角实木吧台，台面横在酒架灯带下
+  material: 原木
+scenes:
+- id: bar_booth_night
+  scene_id: Re2PEUaYTr
+  scene_name: 小酒馆-吧台卡座
+  spot: 吧台区
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 2.1
+    look_at:
+    - 0
+    - 1.45
+    - -1.8
+    fov: 50
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.7
+    - 0
+    color: '#ffd9a0'
+    intensity: 2.3
+  - type: point
+    pos:
+    - 0
+    - 2.3
+    - -1.9
+    color: '#ffcf87'
+    intensity: 1.2
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#4a3b32'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

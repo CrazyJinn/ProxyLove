@@ -1,0 +1,155 @@
+# Room DSL v3 —— 星耀电竞基地·大厅(荣誉墙)
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqd
+  name: 星耀电竞基地
+  description: 星耀电竞战队训练基地,含训练馆与空场馆
+room:
+  floor:
+  - 7.0
+  - 5.0
+  height: 3.2
+  wall_color: '#33373d'
+  floor_color: '#45484e'
+  door:
+    side: z+
+    pos:
+    - 0
+    - 0
+    - 2.48
+    size:
+    - 1.8
+    - 2.4
+  windows: []
+  deco: 挑高大厅,深色石材与金属,荣誉墙灯带亮白
+  floor_material: 抛光瓷砖
+  wall_material: 吸音板
+objects:
+- id: honor_wall
+  spot: 大厅
+  name: 荣誉墙板
+  type: plane
+  pos:
+  - 0
+  - 2.2
+  - -2.49
+  size:
+  - 5.6
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#20303e'
+  desc: 北墙悬空发光荣誉墙板,一队历年金杯成排,二队一排空白铭牌
+  material: 亚克力灯板
+- id: trophy_base
+  spot: 大厅
+  name: 展示底座
+  type: box
+  pos:
+  - 0
+  - 0.325
+  - -2.3
+  size:
+  - 5.2
+  - 0.65
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#2c3138'
+  desc: 荣誉墙下深色展示底座,承托灯带
+  material: 金属
+- id: reception
+  spot: 大厅
+  name: 前台接待台
+  type: box
+  pos:
+  - 3.1
+  - 0.55
+  - -1.5
+  size:
+  - 0.8
+  - 1.1
+  - 1.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3a4148'
+  desc: 东北角前台接待台,队标蓝灯带勾边
+  material: 金属
+- id: lounge_sofa
+  spot: 大厅
+  name: 等候沙发
+  type: box
+  pos:
+  - -3.0
+  - 0.4
+  - -1.7
+  size:
+  - 0.95
+  - 0.8
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#46505c'
+  desc: 西北角双位等候沙发
+  material: 布艺
+- id: guide_board
+  spot: 大厅
+  name: 访客导视牌
+  type: box
+  pos:
+  - -3.47
+  - 1.6
+  - -1.0
+  size:
+  - 0.06
+  - 1.0
+  - 1.4
+  color: '#22303f'
+  desc: 西墙访客导视牌,标注各功能区
+  material: 亚克力
+scenes:
+- id: hall_honor
+  scene_id: Rm85LQWh4V
+  scene_name: 星耀电竞基地-荣誉墙
+  spot: 大厅
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 1.9
+    look_at:
+    - 0
+    - 1.5
+    - -2.3
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.9
+    - 0
+    color: '#eaf2ff'
+    intensity: 2.5
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#3a4150'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

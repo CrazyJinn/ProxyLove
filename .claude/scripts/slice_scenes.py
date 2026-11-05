@@ -390,7 +390,7 @@ USE_PREFIX = {  # 按 scene_type（assembler 模式 A 前缀表）
 def style_tail() -> str:
     """从 00_init/美术风格.md「提示词硬约束」节动态提取风格收尾串（唯一来源，不写死）。"""
     import re
-    art = Path(__file__).resolve().parents[1] / "00_init" / "美术风格.md"
+    art = Path(__file__).resolve().parents[2] / "00_init" / "美术风格.md"
     m = re.search(r"风格收尾串[^\n]*\n\s*`([^`]+)`", art.read_text(encoding="utf-8"))
     if not m:
         raise ValueError("美术风格.md 未找到风格收尾串（『提示词硬约束』节）")

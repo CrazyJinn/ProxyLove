@@ -18,7 +18,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择 | Character, Event, Location, Info, Choice |
+| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择、故事走哪条弧线 | Character, Event, Location, Info, Choice, StoryArc |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Spot, Scene, SceneLayer |
 | [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/定稿态/逐句台词行——节级产物节点已删，小说.md/台词.ink 为纯文件产物） | Chapter, Section, LineAudio |
@@ -40,6 +40,7 @@
 | Spot | snowflake Base62 | 地点内子空间（zone）；sub 归组经 anchored_at 直挂 Scene；无 status |
 | Info | snowflake Base62 | 一条成立的事实（Event 记「发生」，Info 记「成立」；判定测试见 Schema/叙事基础.md） |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
+| StoryArc | snowflake Base62 | 叙事弧线规划（起承转合短文 + comprises 圈成员；无 status，时间范围由成员 Event.time 承载） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
 | AppearanceStyle | snowflake Base62 | 角色固定外貌（脸、体型、发色） |
 | CostumeStyle | snowflake Base62 | 角色默认着装（衣物、配饰） |
@@ -72,6 +73,7 @@
 | leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通（先后时序由 Event.time 承载，evt_relation 已废止） |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
+| comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层，无 order——次序由 Event.time + description 承载） |
 | **角色美术** | | | | |
 | has_appearance | Character → AppearanceStyle | 1:1 | ✅ | 角色外貌 |
 | has_costume | Character → CostumeStyle | 1:N | ✅ | 角色着装 |
@@ -108,6 +110,7 @@ flowchart LR
         Location["Location"]
         Info["Info"]
         Choice["Choice"]
+        StoryArc["StoryArc（叙事弧线）"]
     end
 
     subgraph 角色数据["角色数据"]
@@ -155,6 +158,7 @@ flowchart LR
     Info -->|"leads_to ❌ N:N"| Event
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
+    StoryArc -->|"comprises ❌ N:M"| Event
     IllusDesign -->|"expands_to ✅ 1:N"| StandingIllus
     Location -->|"part_of ❌ 1:N"| Spot
     Spot -->|"realizes ❌ 1:N"| Scene

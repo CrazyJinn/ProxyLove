@@ -54,7 +54,10 @@ OUTPUT_DIR="02_剧情数据"
   2. `anchored_at` 边（SubEvent→Scene——**Scene 不存在时建 Scene 占位** status=0，
      挂 realizes 到既有 Spot；Spot 也不存在时建 Spot 占位）；
   3. `appears_as` 边（SubEvent→IllusDesign——优先继承父/兄弟 sub 着装；着装套不
-     存在时建 CostumeStyle 占位、形象版本不存在时建 IllusDesign 占位）；
+     存在时建 CostumeStyle 占位、形象版本不存在时建 IllusDesign 占位）；着装占位
+     **必须同时挂 `Character→has_costume` 归属边**（2026-11-05 约定）——归属角色
+     在拍板上下文恒明确（该着装缺口所属的 involved 角色），孤儿占位会让 dashboard
+     角色链图/叙事图全链路不可见、体检 E1 误报「缺出场形象」；
   4. 确定性缺口修复类（S4_gap_fix，§1 发现 → §4 拍板 → dashboard 写回）：
      缺 involved/occurs_at 补边（仅当实体在图、只缺边；实体不在图走 §1 入口
      核验报错，不代建）；
@@ -75,7 +78,7 @@ OUTPUT_DIR="02_剧情数据"
           SubEvent ─anchored_at→ Scene                       ← 缺则建 Scene 占位
           SubEvent ─appears_as→ IllusDesign                  ← 继承或占位
 空间链：  Location ─part_of→ Spot ─realizes→ Scene           ← Spot 缺则建占位
-着装链：  CostumeStyle ─outfit_for→ IllusDesign              ← 缺则建占位
+着装链：  Character ─has_costume→ CostumeStyle ─outfit_for→ IllusDesign ← 缺则建占位（占位即挂归属边）
 ```
 
 - SubEvent 属性仅 id/title/time/description；**无** status/type/involved/occurs_at。
@@ -111,8 +114,9 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
   （LLM 读文判断，实体是否在图对照 `assets` 段核查）；
 - **批次切分**：单轮上限 3 个 event（批量约束），超出时脚本 `batch` 段已切好
   （本轮时间最早 3 个，余者列入汇报「下轮可细化」）；
-- **演出资源现状**：`assets` 段（每 involved char 立绘链 / 每 location 空间链）
-  ——第 2 步拆解的全部 facts，不必重查。
+- **演出资源现状**：`assets` 段（每 involved char 立绘链 / 每 involved char 着装
+  直查表（`costumes`——含 status=0 占位，**同缺口勿重复建占位**）/ 每 location
+  空间链）——第 2 步拆解的全部 facts，不必重查。
 
 ### 2. 探索演出资源 + 拆解 SubEvent
 
@@ -120,6 +124,8 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 
 - 立绘链现状（每 involved Character）：Character →AppearanceStyle→ DesignSheet → IllusDesign
   ←outfit_for← CostumeStyle（Schema 正源四段链）——着装继承与占位判断的依据；
+  着装全集另见 `costumes` 段（has_costume 直查）——四段链查不到无 DesignSheet 的
+  占位着装，建占位前先对表防重；
 - 空间链现状（每 occurs_at Location）：Spot →realizes→ Scene——机位选用与
   占位判断的依据。信息不足时按需补查（查询形态见 preflight.py 源码）。
 
@@ -187,7 +193,7 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 |---|---|
 | 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,status:0,name,kind:'zone'})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错） |
 | 机位不存在 | `CREATE (sc:Scene {id,status:0,name,scene_type})` + `(sp)-[:realizes]->(sc)` |
-| 服装套不存在 | `CREATE (cs:CostumeStyle {id,status:0,name,outfit_style})` |
+| 服装套不存在 | `CREATE (cs:CostumeStyle {id,status:0,name,outfit_style})` + `(ch)-[:has_costume]->(cs)`（归属角色 = 该着装缺口所属 involved 角色，占位即挂边） |
 | 形象版本不存在 | `CREATE (idn:IllusDesign {id,status:0,adaptation_notes})` + `(cs)-[:outfit_for]->(idn)` |
 | 着装可继承 | 不占位：`appears_as` 直接挂兄弟 sub 的既有 IllusDesign |
 
@@ -244,8 +250,10 @@ MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-
 CREATE (sc:Scene {id:'<snowflake>'}) SET sc.name='<机位名>', sc.scene_type='<类型>', sc.status=0;
 // realizes 边（Spot 可为既有或上方占位）
 MATCH (sp:Spot {id:'<spot_id_既有或上方占位>'}) MATCH (sc:Scene {id:'<snowflake>'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;
-// CostumeStyle 占位——节点本体（无挂边）
+// CostumeStyle 占位——节点本体
 CREATE (cs:CostumeStyle {id:'<snowflake>'}) SET cs.name='<着装名>', cs.outfit_style='<风格>', cs.status=0;
+// has_costume 归属边（占位即挂——归属角色 = 该着装缺口所属 involved 角色，禁止孤儿占位）
+MATCH (ch:Character {id:'<char_id>'}) MATCH (cs:CostumeStyle {id:'<snowflake>'}) MERGE (ch)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;
 // IllusDesign 占位——节点本体
 CREATE (idn:IllusDesign {id:'<snowflake>'}) SET idn.adaptation_notes='<着装补充>', idn.status=0;
 // outfit_for 边（CostumeStyle 可为既有或上方占位）

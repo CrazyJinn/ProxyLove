@@ -1,29 +1,35 @@
 ---
 name: event-ideator
 description: |
-  新事件的需求提出层（叙事生产链第一环）：从人物设定出发启发新 Event 候选，与用户
-  多轮交互（一次一问、每问附可归因推荐答案）敲定后产出建议 JSON
+  新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定出发启发新 Event 候选，
+  与用户多轮交互（一次一问、每问附可归因推荐答案）敲定后产出建议 JSON
   落盘 02_剧情数据/ → 人工经 dashboard 建议弹窗审阅写回。零图写入、纯文件产物。
   产物范围：Event 节点 + involved/occurs_at 挂边 + Character/Location 占位节点（三要素
   细化时所需实体图上不存在 → 占位 status=0，待后续消化）+
   （仅用户明说因果时）leads_to + Info 节点（限产：仅锚点关系中明显缺内心戏/静态
-  注记时，≤2 个/次，link 挂锚点）。五种启发模式：char→new→base（动机链补桥，抵达既定
+  注记时，≤2 个/次，link 挂锚点）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
+  扩线；I5 对账更新 description——全 skill 唯一允许改既有节点属性的例外）。
+  六种启发模式：char→new→base（动机链补桥，抵达既定
   事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）/
-  base→new（既定事件的后果链推演）/ new→base（无角色锚的因果回溯）。入参 char 与
-  base 至少给一个。
+  base→new（既定事件的后果链推演）/ new→base（无角色锚的因果回溯）/ arc→new（故事线
+  填充：读故事线起承转合与成员事件，按所处阶段补弧线缺环）。事件启发入参 char 与
+  base 至少给一个；arc 单独给 = 建线 / 填充 / 对账支线。
+  故事线对账：产出涉及 comprises 挂边的流程结尾自动核对「description vs 实际成员」，
+  失配附 I5 更新项；用户说「对账」时手动跑（arc id/title 或 event id 反查所属线）。
   不做：拆解、机位、着装、任何演出域决策。稀疏纪律：单次至多
-  3 个 Event + 2 个 Info——多次运行逐步丰满，留白即叙事。在用户说「想事件」「启发
-  事件」「敲定事件」「新增事件」或要从零产出新叙事事件时使用。
-argument-hint: <char 名或 id | base event id或title | 两者都给>（char 与 base 至少一个）
+  3 个 Event + 2 个 Info + 2 条故事线——多次运行逐步丰满，留白即叙事。在用户说
+  「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零
+  产出新叙事事件时使用。
+argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
 arguments:
-  - char_and_base
+  - char_base_arc
 allowed-tools: Read, Bash, Write
 ---
 
 # 新事件启发与敲定（event-ideator）
 
 目标：**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——
-创作判断在本层发生，创建权就在本层：Event + 叙事基础占位）。
+创作判断在本层发生，创建权就在本层：Event + 叙事基础占位 + StoryArc 故事线〔构建与对账〕）。
 
 > **只读不写（全程）**：交互期间仅查询图。用户敲定后一次性组装建议 JSON 落盘；
 > 写库永远由人工在 dashboard（建议弹窗逐条「采纳」或 Cypher 控制台两段确认）执行。
@@ -42,6 +48,9 @@ allowed-tools: Read, Bash, Write
 >
 > **产出纪律**：每个写回的 Event，其 involved Character 与 occurs_at Location
 > **必已在图上**（既有的或本轮占位的）——缺实体一律占位兜底，不留无实体挂边的悬空事件。
+> 每个写回的 StoryArc，其 comprises 成员 Event **必已在图上且 id 为 0 步现查快照**
+> ——MATCH 落空 = 静默丢边（Cypher 不报错），成员清单必须在 reason 中逐个列
+> id+title 供人工核验。
 
 ## 前置
 
@@ -55,27 +64,33 @@ OUTPUT_DIR="02_剧情数据"
 ```
 
 - Schema：[叙事基础.md](../../../00_init/Schema/叙事基础.md)（Event/involved/occurs_at/
-  leads_to 的唯一事实来源）。
+  leads_to/StoryArc/comprises 的唯一事实来源）。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring
   （内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
-## 流程总览（五步：探索图 → 启发 → 三要素细化 → 询问 → 落盘）
+## 流程总览（五步：探索图 → 启发 → 三要素细化 → 询问 → 落盘；故事线走 §5 支线）
 
 ```
-0. explore  解析入参（char 必填 + base event 可选）→ 锚点关系查询 + 只读查图上下文
-1. ideate   五模式启发 → 候选 new event 批（多条差异化候选 + 评分对比表）
+0. explore  解析入参（char + base + arc；事件启发需 char/base ≥1，arc 单独给 → 走 §5 故事线支线）
+            → 锚点关系查询 + 只读查图上下文
+1. ideate   六模式启发 → 候选 new event 批（多条差异化候选 + 评分对比表）
 2. enrich   三要素细化：char / location / time 补全；缺失实体 → Character/Location 占位提案
 3. ask      一次一问逐事件敲定（候选评分表 → 用户挑选/修改/放弃）
 4. commit   问尽 → 组装建议 JSON 落盘 → 报审批入口与下一步
 ```
 
+支线 A 故事线构建（§5a）：读图取材 → 起草起承转合 → 勾成员 → 敲 title → commit（I4）
+支线 B 故事线对账（§5b）：读线+成员 → 比对 description vs 实际 → 失配产 I5；
+自动（触碰 comprises 的流程结尾）+ 手动（用户说「对账」）
+
 ---
 
 ## 0. explore — 解析入参 + 拉上下文
 
-- 入参（char 与 base 至少给一个，可同给）：`char`（人名或 id——启发的人物锚点，多个角色顿号分隔）；
+- 入参（事件启发：char 与 base 至少给一个，可同给）：`char`（人名或 id——启发的人物锚点，多个角色顿号分隔）；
   `base event`（id 或 title——既定目标事件；给 char 时启用动机链/间隙模式，只给 base 时
-  启用后果链/回溯模式）。
+  启用后果链/回溯模式）；`arc`（故事线 id 或 title——**故事线锚点**：单独给 = 建线/对账
+  支线〔§5〕，与 char/base 同给 = `arc→new` 填充模式）。
 - **推荐答案必须有图数据依据**（人物设定 / 邻域表 / 因果链，事件要服务弧线，不凭空造戏）
 - 只读查图（全部带 LIMIT）：
   1. **锚点关系查询**（见下，启发的主依据）；
@@ -86,6 +101,24 @@ OUTPUT_DIR="02_剧情数据"
   4. 涉分支时 Choice option label 序号表（condition 序号 = option 按 label 字典序
      1 基编号，现查不靠记忆）；
   5. 扫最近几份 `*_建议.json`——已提案未审批的事件标「待审」，不重复起草。
+  6. **故事线上下文**（arc 入参、arc→new 或对账触发时；直查 cypher，不经 `$NBHD`——
+     其边白名单不含 comprises，故事线中继不会污染双锚连通性判断，这是期望行为）：
+     ```cypher
+     -- a. 读线（id 精确或 title 关键词，二选一改写）
+     MATCH (a:StoryArc) WHERE a.id='<arc_id>' OR a.title CONTAINS '<关键词>'
+     RETURN a.id AS id, a.title AS title, a.description AS description LIMIT 10;
+     -- b. 全名录（建线前防重复建线）
+     MATCH (a:StoryArc) RETURN a.id AS id, a.title AS title LIMIT 100;
+     -- c. 成员按时间序（读缺口的主依据）
+     MATCH (a:StoryArc {id:'<arc_id>'})-[:comprises]->(e:Event)
+     RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
+     ORDER BY e.time LIMIT 200;
+     -- d. 反查所属线（对账传 event id 时）
+     MATCH (a:StoryArc)-[:comprises]->(e:Event {id:'<event_id>'})
+     RETURN a.id AS id, a.title AS title, a.description AS description LIMIT 10;
+     ```
+     **读缺口**（arc→new 主依据）：成员时间轴上相邻间隔 > 1 天的空洞 × description
+     四段对照——哪一段（起/承/转/合）写了却缺事件支撑，缺环即候选落点。
 
 **锚点关系查询（char 与 base 之间的关系——图上实捞，不是模型想象）**：
 `$NBHD --char <char_id> --base <event_id>` 双锚查**两锚在叙事基础域
@@ -110,7 +143,7 @@ OUTPUT_DIR="02_剧情数据"
 的事件/角色，其 description/relation 细节按候选需要逐个深读。每条候选的理由必须
 标注依据（图上实查 vs 由数据做的创作推断，分开表述——依据分离标注）。
 
-## 1. ideate — 五模式启发（候选批，不是逐个问）
+## 1. ideate — 六模式启发（候选批，不是逐个问）
 
 按入参组合选定模式（可组合），每模式产 2~3 条候选，合成本轮候选批（合计 ≤6 条）。**候选从 0 步锚点关系中长出来**（不连通/弱连通→补桥，中介→桥形态，时间间隙→间隙填充），每条候选标注来源依据：
 
@@ -121,12 +154,14 @@ OUTPUT_DIR="02_剧情数据"
 | `base → new → base` | base 给定且有时间邻接事件 | 两个既定事件之间发生了什么（可有关可无关）？ | 间隙填充事件 |
 | `base → new` | base 给定 | 这个既定事件之后引发了什么连锁反应？ | 后果链事件（向前推演，leads_to 正向延伸） |
 | `new → base` | base 给定 | 什么导致了这个既定事件（不限单一角色）？ | 无锚因果回溯（多角色/环境前因，补 leads_to 上游） |
+| `arc → new` | arc 给定（可与 char/base 组合） | 这条故事线当前所处阶段（起/承/转/合）还缺什么事件支撑？ | 故事线填充事件（补弧线缺环，写回时附 comprises 挂边） |
 
 **每条候选必带结构化字段**（对比表列）：
 
 - 一句话核心（这个事件是什么）
 - 情绪价值（给玩家什么感受）
-- 与 base 的关系（因果铺垫 / 后果延伸 / 反差 / 无关；无 base 时填与聚焦锚的关系）
+- 与 base 的关系（因果铺垫 / 后果延伸 / 反差 / 无关；无 base 时填与聚焦锚的关系；
+  arc 模式时填与故事线阶段的关系——补哪一段）
 - 评分（四维 1-5 + 综合，评分依据必须可归因）：
   - **人设契合**：与相关角色（char 锚 / base 事件 involved）的设定/创伤/目标一致性（对照 0 步深读）
   - **查图去重**：与既有事件的重复度（时间/地点/参与人重叠 → 低分）
@@ -189,11 +224,14 @@ Event/Character）——并入候选批一起询问，不单独立题。
 
 1. **推导轮次 N**：`$ROUND`（共享计数器，全量取 max+1；勿手写文件名扫描——
    字符串排序取最新会在日期翻篇时跳号）。
-2. **主题** = char 名（+ base event 短题）。
+2. **主题** = char 名（+ base event 短题）；故事线支线时主题 = arc title。
 3. **组装数组**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体项：`{check:'I1_placeholder_entity', priority:'medium', reason, content, cypher, source:'event-ideator'}`——每个新 Character/Location 一项；
    - 事件项：`{check:'I2_new_event', priority: 结局/转折 high 否则 medium, reason, content, cypher, source:'event-ideator'}`——每事件一项，cypher 内 id 先解析既有实体、占位实体引用占位 id。
    - Info 项：`{check:'I3_new_info', priority:'low', reason, content, cypher, source:'event-ideator'}`——每个 Info 一项。
+   - 故事线项：`{check:'I4_new_story_arc', priority:'medium', reason, content, cypher, source:'event-ideator'}`——建线一项（CREATE StoryArc + 逐成员 MERGE comprises；reason 必须逐成员列「event id + title（0 步现查快照）」）；既有线扩线挂成员复用同 check、reason 注明「扩线」、cypher 省略 CREATE 句。
+   - 对账项：`{check:'I5_story_arc_update', priority:'low', reason, content, cypher, source:'event-ideator'}`——对账失配的线一线一项（content = 重写后 description 全文；cypher = MATCH SET）。
+   - arc→new 敲定的事件：其 I2 项 cypher **末尾追加挂线语句**（见模板）——不为挂边单独立项。
    - id 用 `$SF_GEN -n 1 -q` 逐节点生成。
 4. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_ideator_建议.json`（顶层数组，UTF-8）。
 5. **语句层复查（提交门槛）**：`$SUGGEST_LINT <文件路径>`——exit 0 = 全 PASS；任何
@@ -201,6 +239,48 @@ Event/Character）——并入候选批一起询问，不单独立题。
    有同规格兜底，FAIL 形态会在采纳时被 400 拒绝）。
 6. **汇报**：文件路径 + 条数与 priority 分布 + lint 全 PASS 确认 + 放弃清单 + 占位清单
    + 审批入口话术（dashboard `/events`「📥 补全建议」逐条审阅写回）。
+
+## 5. 故事线支线 —— 构建（I4）与对账（I5）
+
+### 5a. 构建（用户说「建故事线」「拉一条线」；入参：主题口述，arc 可空）
+
+1. **读图取材**（0 步第 6 项查询）：候选成员池 = 主题关键词扫 Event
+   （title/description CONTAINS）+ 相关 Character 的 involved 事件 + 时间窗聚类；
+   同时查 StoryArc 全名录——同主题线已存在 → 建议「扩线/对账」而非新建。
+2. **起草 description（写作思路层，不是事件复述）**：按 起→承→转→合 四段组织
+   （每段 1 句、段间换行、允许不齐四段——进行中的线只有起承两段是常态）——写
+   这条线的设计意图与因果骨架（谁的欲望、如何推进、卡在哪、怎么收），具体情节
+   由成员 Event 承载，段内不复述事件细节（人物动作、数字、道具）；计划中但未
+   建图的走向可写，须与用户确认。段内不写时间戳（时刻唯一承载是 Event.time）。
+3. **勾成员**（一次一问，交互纪律沿用 §3）：摆「成员事件时间轴 + 起草四段」
+   对照表，逐段问「这段由哪些事件承载？」（推荐答案来自 1 的取材；可勾可弃
+   可补查）。
+4. **敲定 title**（≤10 字弧线名，如「陆择的救赎线」）。
+5. **四段覆盖自检 + commit**：勾定后若某段零成员——提醒用户（改 description 或
+   留段标「待补」），随后走 §4 同款落盘/lint/汇报；I4 一项，主题 = arc title。
+
+### 5b. 对账（description vs 实际成员）
+
+**触发条件**：
+
+- **自动（内嵌）**：本次产出涉及 comprises 挂边——I4 建线/扩线、或 arc→new 的
+  I2 事件挂线——commit 前对每条被触碰的 StoryArc 跑一次对账。普通 char/base
+  启发不产出挂边时不触发。
+- **手动**：用户说「对账」「检查故事线」。入参 arc id/title（单线）或 event id
+  （反查所属线，逐线对账）；无入参时列 StoryArc 名录让用户选（一次一问）。
+
+**对账步骤**：
+
+1. 重读该线 description + 当前成员全集（含本次即将新增的）；
+2. 判断两类失配：① 新成员改变四段叙事（新转折点进线 / 铺垫段该收束了）；
+   ② description 写了但成员里没有的事（描述预言了未发生/已删除的事）；
+3. 失配 → 产 `I5_story_arc_update`（content = 重写后的 description **全文**，
+   一线一项，随本次建议 JSON 落盘）；不失配 → 不产 I5，汇报注明
+   「故事线『<title>』核对无变化」。
+
+**边界**：对账只产 I5 描述更新项与 I4 扩线挂边（既有事件挂既有线，用户确认时）；
+**摘成员边（DELETE 关系）不进建议 JSON**——删除类操作由用户在 dashboard Cypher
+控制台人工执行，对账汇报里只提示「建议摘除：<event title>」。
 
 ## cypher 模板（照抄改值）
 
@@ -218,6 +298,14 @@ MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[
 // Info（限产 ≤2，link 挂锚点——锚点可为 Event 或 Character）
 CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>';
 MATCH (a) WHERE (a:Event OR a:Character) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
+// 故事线（I4 标准形：建线 + 逐成员挂边；成员 id 全部 0 步现查——MATCH 落空=静默丢边）
+CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='<起承转合短文，段间\n转义>';
+MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
+// I4 扩线形 = 仅上句 MERGE（无 CREATE）；每成员一条 MERGE。
+// 故事线对账更新（I5：全 skill 唯一改既有节点属性的例外，仅 description 一字段）
+MATCH (a:StoryArc {id:'<arc_id>'}) SET a.description='<重写后的起承转合全文>';
+// arc→new 新事件挂线（追加在该事件 I2 项 cypher 末尾）
+MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 ```
 
 - 多语句 `;`+换行分隔，逐句以 `;` 结尾；**先建节点（含占位）再挂边**。
@@ -226,20 +314,25 @@ MATCH (a) WHERE (a:Event OR a:Character) AND a.id = '<anchor_id>', (i:Info {id:'
   这个形态，不要拆成「CREATE 节点；MATCH 一端 MERGE 边」引用前句变量（变量不跨
   语句延续，见 event-stager/references/多语句cypher与MERGE绑定语义.md）。
 - involved 每人一条 MERGE；occurs_at 可多条；ending_kind/condition 仅敲定时并入首句 SET。
+- **StoryArc.description 值内换行一律写 `\n` 转义序列**（Cypher 单引号字符串支持），
+  禁用物理换行——多语句以 `;`+换行分隔，值内裸换行会破坏该约定与 lint 判定。
 - 内联值单引号转义；不用 `$param`；不加时序边（时序由 `Event.time` 字符串序承载）。
 
 ## 铁律
 
 1. **全程零写库**。落盘的是建议 JSON（文件），不是图。
 2. **创建域 = 叙事基础**：Event + involved/occurs_at/leads_to 边 + Character/Location
-   **占位** + Info（限产，见 §3）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/
-   IllusDesign（演出域全归 event-stager），不改既有节点属性。
+   **占位** + Info（限产，见 §3）+ StoryArc 节点与 comprises 边（见 §5）。不建
+   Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager），
+   不改既有节点属性——**唯一例外：StoryArc.description 的对账更新（I5，仅此一个
+   字段）**，其余任何既有节点属性（含 StoryArc.title）一律不动。
 3. **占位只建裸节点**：name/description/status=0，不建外貌链、不建空间链。
-4. **稀疏纪律**：单次至多 3 个 Event + 2 个 Info（Info 仅明显缺内心戏/静态注记时）；
-   超限候选留「下次可敲定」。
+4. **稀疏纪律**：单次至多 3 个 Event + 2 个 Info（Info 仅明显缺内心戏/静态注记时）
+   + 2 条新建 StoryArc（I5 对账项不占额度——修正不是产出）；超限候选留「下次可敲定」。
 5. **一题一答 + 每问必附可归因推荐**；候选批整体拍板是第一题（多方案对比，不逐个问）。
 6. **facts 不问用户**：邻接事件、名录、option 序号现查；只有取舍问用户。
-7. **title/description 不带时间**：时间唯一承载是 `Event.time`。
+7. **title/description 不带时间**：时间唯一承载是 `Event.time`（含
+   StoryArc.description——只写叙事次序，不写时刻）。
 8. **防重**：已提案未审批不重复起草；commit 前必过去重终检。
 9. **cypher 只含交付目标本身**，禁止夹带校验节点；执行后校验由用户回报触发只读回查。
 10. **产出纪律**：写回后的 Event 其 Character/Location 必在图上（既有或本轮占位）——

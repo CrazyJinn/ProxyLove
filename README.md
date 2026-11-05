@@ -103,7 +103,7 @@ sequenceDiagram
 
 | 环节 | 定位 | 产物通道 |
 |------|------|---------|
-| `event-ideator`（skill） | **需求提出层（发散）**——五模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯）+ 一次一问敲定，产 Event + involved/occurs_at 边 + Character/Location 占位 + 限产 Info（存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | 建议 JSON（source='event-ideator'）→ dashboard 审阅写回 |
+| `event-ideator`（skill） | **需求提出层（发散）**——六模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯 / arc→new 故事线填充）+ 一次一问敲定，产 Event + involved/occurs_at 边 + Character/Location 占位 + 限产 Info + StoryArc 故事线（构建 I4 / 对账更新 description I5；存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | 建议 JSON（source='event-ideator'）→ dashboard 审阅写回 |
 | `event-stager`（skill） | **需求细化层（收敛）**——拆 SubEvent + 演出域占位物化（Spot/Scene/CostumeStyle/IllusDesign，status=0），缺口不再文本留单而是图上占位自描述 | 建议 JSON（source='event-stager'）→ dashboard 审阅写回 |
 
 ### 时序图
@@ -120,7 +120,7 @@ sequenceDiagram
     participant PD as plot-design 编排Agent
 
     rect rgb(235, 245, 255)
-    Note over IDE,DA: ① event-ideator：五模式启发新 Event + 敲定（一次一问附推荐，零图写入）
+    Note over IDE,DA: ① event-ideator：六模式启发新 Event / 故事线构建与对账 + 敲定（一次一问附推荐，零图写入）
     U->>IDE: char（必填）+ base event（可选）
     IDE->>DB: 锚点关系查询（neighborhood.py：char×base 连通性/间接路径，或单锚一跳清单）<br/>+ 实体名录 / 待审建议防重
     Note over IDE: 推荐答案必须有图数据依据（人物设定/锚点关系，不凭空造戏）
@@ -410,7 +410,7 @@ sequenceDiagram
 
 | Skill | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|---------|-------------------|
-| event-ideator | 新事件需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 五模式启发[动机链/质感/间隙/后果链/回溯] → 三要素细化 → 一次一问敲定 → 建议 JSON 落盘；产 Event + involved/occurs_at 边 + Character/Location 占位 status=0 + 限产 Info ≤2；至多 3 Event/次） | `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json` | ✅（建议经 dashboard 审阅写回） |
+| event-ideator | 新事件与故事线需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 六模式启发[动机链/质感/间隙/后果链/回溯/故事线填充] → 三要素细化 → 一次一问敲定 → 建议 JSON 落盘；产 Event + involved/occurs_at 边 + Character/Location 占位 status=0 + 限产 Info ≤2 + StoryArc/comprises[I4 建线，I5 对账更新 description]；至多 3 Event + 2 条故事线/次） | `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json` | ✅（建议经 dashboard 审阅写回） |
 | event-stager | 事件细化落地（四步：前置核验[`scripts/preflight.py`：范围解析+入口核验+批次切分+演出资源现状] → 拆 SubEvent[对照 `references/微演出模式库.md` 八模式，按演出价值判据] → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0，命名照 `references/占位命名规范.md`] → 逐 event 拍板；单轮 ≤3 event；缺叙事基础实体报错停止不代建） | `02_剧情数据/<日期>_round<N>_<主题>_stager_建议.json` | ✅（建议经 dashboard 审阅写回） |
 
 ### 角色美术 + 声音层（Character → IllusDesign / VoiceDesign）
