@@ -1,0 +1,172 @@
+location:
+  id: QP23NrFZqj
+  name: 漫展会场
+  description: Day 16 林梦拉陆择去的漫展
+room:
+  floor:
+  - 10.0
+  - 14.0
+  height: 8.0
+  wall_color: '#cfd2d6'
+  floor_color: '#8f9296'
+  floor_material: 瓷砖
+  wall_material: 乳胶漆
+  deco: 展厅环氧地坪反着顶灯，导向地贴沿主通道延伸
+objects:
+- id: booth_l_back
+  spot: 漫展会场-展厅区
+  name: 展位背板·左后
+  type: box
+  pos:
+  - -4.5
+  - 1.3
+  - -4.0
+  size:
+  - 1.0
+  - 2.6
+  - 6.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b34a3e'
+  material: 金属
+  desc: 左侧展位背板后段，喷绘海报墙
+- id: booth_l_front
+  spot: 漫展会场-展厅区
+  name: 展位背板·左前
+  type: box
+  pos:
+  - -4.5
+  - 1.3
+  - 2.5
+  size:
+  - 1.0
+  - 2.6
+  - 4.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c05a4c'
+  material: 金属
+  desc: 左侧展位背板前段，灯箱展架
+- id: booth_r_back
+  spot: 漫展会场-展厅区
+  name: 展位背板·右后
+  type: box
+  pos:
+  - 4.5
+  - 1.3
+  - -4.0
+  size:
+  - 1.0
+  - 2.6
+  - 6.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3e6db3'
+  material: 金属
+  desc: 右侧展位背板后段，喷绘海报墙
+- id: booth_r_front
+  spot: 漫展会场-展厅区
+  name: 展位背板·右前
+  type: box
+  pos:
+  - 4.5
+  - 1.3
+  - 2.5
+  size:
+  - 1.0
+  - 2.6
+  - 4.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a7ac2'
+  material: 金属
+  desc: 右侧展位背板前段，灯箱展架
+- id: banner
+  spot: 漫展会场-展厅区
+  name: 跨道主题横幅
+  type: box
+  pos:
+  - 0
+  - 5.6
+  - -6.0
+  size:
+  - 8.0
+  - 1.0
+  - 0.12
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#e8d24a'
+  material: 布艺
+  cname: 漫展主视觉横幅
+  desc: 跨通道悬挂的主题横幅，本届主视觉
+- id: stamp_desk
+  spot: 漫展会场-展厅区
+  name: 集章台
+  type: box
+  pos:
+  - 3.6
+  - 0.5
+  - -1.0
+  size:
+  - 1.6
+  - 1.0
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a828c'
+  material: 金属
+  desc: 贴右前展位的集章台，台面印章与集章卡
+scenes:
+- id: hall_walk
+  scene_id: Re2PEUaYTv
+  scene_name: 漫展会场-展厅通道
+  spot: 漫展会场-展厅区
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 6.4
+    look_at:
+    - 0
+    - 1.6
+    - -5.0
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 6.5
+    - -1.0
+    color: '#f2f5f8'
+    intensity: 2.4
+  - type: point
+    pos:
+    - 0
+    - 6.5
+    - -6.5
+    color: '#eef1f5'
+    intensity: 2.0
+  - type: ambient
+    pos:
+    - 0
+    - 5.0
+    - 0
+    color: '#4a4f55'
+    intensity: 0.4
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

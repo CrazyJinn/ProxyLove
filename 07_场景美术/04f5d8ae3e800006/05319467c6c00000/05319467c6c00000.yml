@@ -1,0 +1,198 @@
+# Room DSL v3 —— 超市·店内(超市-店内) v2 驳回重做：卖场放大14x10 + 去雨措辞
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqg
+  name: 超市
+  description: Day 13 苏晓禾强行拉陆择去、认真挑鸡蛋青菜牛奶的超市
+room:
+  floor:
+  - 14.0
+  - 10.0
+  height: 3.4
+  wall_color: '#dcdcd4'
+  floor_color: '#b0b6ba'
+  door:
+    side: z+
+    pos:
+    - 1.6
+    - 0
+    - 4.98
+    size:
+    - 1.6
+    - 2.4
+  windows:
+  - id: win_front
+    pos:
+    - -3.2
+    - 1.8
+    - 4.99
+    size:
+    - 5.0
+    - 2.0
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 临街橱窗，清晨天光透进来，街景明亮
+  deco: 宽敞明亮的沿街超市卖场，成排白炽灯管把浅灰瓷砖照得发白，货架通道向深处延伸
+  floor_material: 瓷砖
+  wall_material: 乳胶漆
+objects:
+- id: shelf_back
+  spot: 店内
+  name: 后墙货架墙
+  type: plane
+  pos:
+  - 0
+  - 2.05
+  - -4.99
+  size:
+  - 11.0
+  - 2.1
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a9296'
+  material: 金属
+  desc: 后墙通高货架墙，层板从地面附近码到顶端，零食泡面酱料日用杂货密密排开，端头贴黄底红字促销签
+- id: gondola_left
+  spot: 店内
+  name: 通道货架岛·左
+  type: box
+  pos:
+  - -3.2
+  - 0.95
+  - -3.8
+  size:
+  - 1.0
+  - 1.9
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#97a0a4'
+  material: 金属
+  desc: 卖场中部双面货架岛，两侧层板摆满饮料罐头与膨化食品，与后墙货架墙形成通道透视
+- id: gondola_right
+  spot: 店内
+  name: 通道货架岛·右
+  type: box
+  pos:
+  - 3.2
+  - 0.95
+  - -3.8
+  size:
+  - 1.0
+  - 1.9
+  - 2.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#97a0a4'
+  material: 金属
+  desc: 卖场中部双面货架岛，两侧层板摆满调味瓶罐与纸巾日化，通道向深处延伸
+- id: cooler_back
+  spot: 店内
+  name: 立式冷柜组
+  type: box
+  pos:
+  - 6.4
+  - 1.15
+  - -4.55
+  size:
+  - 1.2
+  - 2.3
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#aebfc7'
+  material: 玻璃
+  desc: 右后角一组立式玻璃门冷柜，层架上码着牛奶酸奶与盒装鸡蛋，柜内灯管泛白光
+- id: produce_back
+  spot: 店内
+  name: 生鲜台
+  type: box
+  pos:
+  - -6.4
+  - 0.45
+  - -4.5
+  size:
+  - 1.2
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7d9b6f'
+  material: 原木
+  desc: 左后角生鲜台，斜口浅筐里码着青菜番茄黄瓜，码得新鲜饱满
+- id: checkout_front
+  spot: 店内
+  name: 收银台
+  type: box
+  pos:
+  - 5.8
+  - 0.5
+  - 4.2
+  size:
+  - 2.2
+  - 1.0
+  - 0.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9aa0a3'
+  material: 金属
+  desc: 门口收银台，台面扫码枪与小票打印机，后面一格烟柜与口香糖挂架
+scenes:
+- id: market_indoor_morning
+  scene_id: Re2PEUaYTp
+  scene_name: 超市-店内
+  spot: 店内
+  camera:
+    pos:
+    - 0
+    - 1.6
+    - 4.3
+    look_at:
+    - 0
+    - 1.3
+    - -3.0
+    fov: 66
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 3.1
+    - 0
+    color: '#f2f7f0'
+    intensity: 2.6
+  - type: point
+    pos:
+    - 0
+    - 3.0
+    - -3.5
+    color: '#eaf2ec'
+    intensity: 1.6
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.35
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

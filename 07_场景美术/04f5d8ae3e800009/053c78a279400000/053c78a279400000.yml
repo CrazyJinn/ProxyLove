@@ -1,0 +1,153 @@
+location:
+  id: QP23NrFZqj
+  name: 漫展会场
+  description: Day 16 林梦拉陆择去的漫展
+room:
+  floor:
+  - 16.0
+  - 18.0
+  height: 9.0
+  wall_color: '#2e3338'
+  floor_color: '#3c4046'
+  floor_material: 混凝土
+  wall_material: 金属
+  deco: 展馆黑暗化处理，地面临时铺黑色地胶与导向荧光条
+objects:
+- id: stage_main
+  spot: 漫展会场-舞台区
+  name: 主舞台台体
+  type: box
+  pos:
+  - 0
+  - 0.6
+  - -6.5
+  size:
+  - 12.0
+  - 1.2
+  - 5.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a4038'
+  material: 金属
+  desc: 贴后墙升高的主舞台台体，深色台面
+- id: led_screen
+  spot: 漫展会场-舞台区
+  name: 主屏LED墙
+  type: box
+  pos:
+  - 0
+  - 3.5
+  - -8.8
+  size:
+  - 11.0
+  - 4.5
+  - 0.3
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#1d3a5f'
+  material: 金属
+  cname: 应援主屏
+  desc: 舞台正后方的巨型LED屏，亮着应援色画面
+- id: speaker_l
+  spot: 漫展会场-舞台区
+  name: 线阵音箱塔·左
+  type: box
+  pos:
+  - -7.0
+  - 1.8
+  - -8.2
+  size:
+  - 1.2
+  - 3.6
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#26292e'
+  material: 金属
+  desc: 舞台左侧吊装线阵音箱
+- id: speaker_r
+  spot: 漫展会场-舞台区
+  name: 线阵音箱塔·右
+  type: box
+  pos:
+  - 7.0
+  - 1.8
+  - -8.2
+  size:
+  - 1.2
+  - 3.6
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#26292e'
+  material: 金属
+  desc: 舞台右侧吊装线阵音箱
+- id: truss_lights
+  spot: 漫展会场-舞台区
+  name: 灯光桁架
+  type: box
+  pos:
+  - 0
+  - 7.5
+  - -4.5
+  size:
+  - 15.0
+  - 0.5
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3a3f45'
+  material: 金属
+  desc: 台口上方横跨的灯光桁架，挂帕灯与追光
+scenes:
+- id: stage_audience
+  scene_id: Rs4wQwUYEb
+  scene_name: 漫展会场-主舞台
+  spot: 漫展会场-舞台区
+  camera:
+    pos:
+    - 0
+    - 1.65
+    - 6.5
+    look_at:
+    - 0
+    - 2.2
+    - -7.5
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 6.5
+    - -4.5
+    color: '#ffffff'
+    intensity: 2.6
+  - type: point
+    pos:
+    - 0
+    - 5.0
+    - -7.0
+    color: '#ffd9a0'
+    intensity: 1.8
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#3a4048'
+    intensity: 0.4
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

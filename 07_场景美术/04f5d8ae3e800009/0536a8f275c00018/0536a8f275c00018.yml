@@ -1,0 +1,209 @@
+location:
+  id: QP23NrFZqj
+  name: 漫展会场
+  description: Day 16 林梦拉陆择去的漫展
+room:
+  shell: open
+  floor:
+  - 16.0
+  - 18.0
+  height: 9.0
+  floor_color: '#9a948c'
+  floor_material: 混凝土
+  ground:
+    y: -2.5
+    color: '#a8b4be'
+    desc: 广场外城市街景与地铁口方向涌来的人流，远景虚化
+  sky:
+    color: '#bcd6ea'
+    desc: 晴朗午后天空，淡蓝少量云
+  deco: 漫展入口前广场，浅灰花砖地面，主题彩旗沿灯柱拉起
+objects:
+- id: arch
+  spot: 漫展会场-入口区
+  name: 主题拱门
+  type: box
+  pos:
+  - 0
+  - 3.2
+  - -8.5
+  size:
+  - 10.0
+  - 6.4
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c8452f'
+  material: 金属
+  cname: 漫展主题拱门
+  desc: 入口主视觉拱门，本届主题插画喷绘
+- id: gate_l
+  spot: 漫展会场-入口区
+  name: 验票闸机·左
+  type: box
+  pos:
+  - -3.2
+  - 0.55
+  - -6.2
+  size:
+  - 2.2
+  - 1.1
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5b6672'
+  material: 金属
+  desc: 左侧闸机组，扇门与指示灯
+- id: gate_c
+  spot: 漫展会场-入口区
+  name: 验票闸机·中
+  type: box
+  pos:
+  - 0
+  - 0.55
+  - -6.2
+  size:
+  - 2.2
+  - 1.1
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5b6672'
+  material: 金属
+  desc: 中部闸机组
+- id: gate_r
+  spot: 漫展会场-入口区
+  name: 验票闸机·右
+  type: box
+  pos:
+  - 3.2
+  - 0.55
+  - -6.2
+  size:
+  - 2.2
+  - 1.1
+  - 0.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5b6672'
+  material: 金属
+  desc: 右侧闸机组
+- id: fence_l_near
+  spot: 漫展会场-入口区
+  name: 排队围栏·左前
+  type: box
+  pos:
+  - -4.6
+  - 0.5
+  - 1.5
+  size:
+  - 0.08
+  - 1.0
+  - 5.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#d8d3ca'
+  material: 金属
+  desc: 左侧蛇形围栏前段，挂主题指示牌
+- id: fence_l_far
+  spot: 漫展会场-入口区
+  name: 排队围栏·左后
+  type: box
+  pos:
+  - -4.6
+  - 0.5
+  - -4.0
+  size:
+  - 0.08
+  - 1.0
+  - 5.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#cfcabf'
+  material: 金属
+  desc: 左侧蛇形围栏后段
+- id: fence_r_near
+  spot: 漫展会场-入口区
+  name: 排队围栏·右前
+  type: box
+  pos:
+  - 4.6
+  - 0.5
+  - 1.5
+  size:
+  - 0.08
+  - 1.0
+  - 5.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#d8d3ca'
+  material: 金属
+  desc: 右侧蛇形围栏前段
+- id: fence_r_far
+  spot: 漫展会场-入口区
+  name: 排队围栏·右后
+  type: box
+  pos:
+  - 4.6
+  - 0.5
+  - -4.0
+  size:
+  - 0.08
+  - 1.0
+  - 5.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#cfcabf'
+  material: 金属
+  desc: 右侧蛇形围栏后段
+scenes:
+- id: entrance_meet
+  scene_id: RkaSUg0DbF
+  scene_name: 漫展会场-入口
+  spot: 漫展会场-入口区
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 6.4
+    look_at:
+    - 0
+    - 1.5
+    - -6.5
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 2.0
+    - 6.0
+    - 1.0
+    color: '#fff2dc'
+    intensity: 2.2
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#e8ecf0'
+    intensity: 0.55
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

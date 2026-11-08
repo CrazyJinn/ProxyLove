@@ -1,0 +1,135 @@
+# Room DSL v3 —— 林梦家·卧室
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqk
+  name: 林梦家
+  description: 独栋别墅，两层空间宽敞空荡，无人居住般像酒店样板间
+room:
+  floor:
+  - 4.0
+  - 6.5
+  height: 3.0
+  wall_color: '#d5d2cc'
+  floor_color: '#84807a'
+  door:
+    side: z+
+    pos:
+    - 1.2
+    - 0
+    - 3.24
+    size:
+    - 0.95
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - 0
+    - 1.7
+    - -3.23
+    size:
+    - 2.6
+    - 2.2
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 北墙大窗,清晨日光正照在床上
+  deco: 酒店样板间质感的别墅主卧,空旷少物
+  floor_material: 浅色大板砖
+  wall_material: 乳胶漆
+objects:
+- id: bed
+  spot: 林梦家-卧室
+  name: 低床架双人床
+  type: box
+  pos:
+  - 0
+  - 0.23
+  - -2.3
+  size:
+  - 2.0
+  - 0.46
+  - 1.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b8b2a8'
+  desc: 贴北墙低床架双人床,浅灰床品,醒来正对陌生天花板
+  material: 布艺
+- id: bedside_l
+  spot: 林梦家-卧室
+  name: 床头柜(左)
+  type: box
+  pos:
+  - -1.3
+  - 0.25
+  - -2.7
+  size:
+  - 0.5
+  - 0.5
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b635b'
+  desc: 床左侧床头柜
+  material: 木饰面
+- id: bedside_r
+  spot: 林梦家-卧室
+  name: 床头柜(右)
+  type: box
+  pos:
+  - 1.3
+  - 0.25
+  - -2.7
+  size:
+  - 0.5
+  - 0.5
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6b635b'
+  desc: 床右侧床头柜
+  material: 木饰面
+scenes:
+- id: bedroom_morning
+  scene_id: RrCNuG0g2U
+  scene_name: 林梦家-卧室
+  spot: 林梦家-卧室
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 2.9
+    look_at:
+    - 0
+    - 0.45
+    - -2.6
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 1.9
+    - -2.8
+    color: '#dceafa'
+    intensity: 2.2
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#3a3f46'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

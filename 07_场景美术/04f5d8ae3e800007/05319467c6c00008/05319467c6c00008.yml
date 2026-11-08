@@ -1,0 +1,243 @@
+# 登山步道-全线 room.yml v3 (spot_id=Re2PEUaYTw, loc=QP23NrFZqh)
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: QP23NrFZqh
+  name: 登山步道
+  description: Day 15 爬山地点
+room:
+  shell: open
+  floor:
+  - 14.0
+  - 18.0
+  height: 7.0
+  floor_color: '#9c9488'
+  floor_material: 混凝土
+  ground:
+    y: -3.0
+    color: '#6f7d5e'
+    desc: 山坡林地与远处山脊轮廓，晨雾未散尽
+  sky:
+    color: '#c3d9ea'
+    desc: 晴朗上午，淡蓝少量薄云
+  deco: 半山登山步道，石阶沿坡而上，两侧杉樟林带掩映
+objects:
+- id: stair_near
+  spot: 登山步道-全线
+  name: 石阶·近段
+  type: box
+  pos:
+  - 0
+  - 0.15
+  - 2.6
+  size:
+  - 3.0
+  - 0.3
+  - 3.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a89f90'
+  material: 混凝土
+  desc: 近段石阶，宽石级微潮，边缘落着碎叶
+- id: stair_mid
+  spot: 登山步道-全线
+  name: 石阶·中段
+  type: box
+  pos:
+  - 0
+  - 0.7
+  - -1.2
+  size:
+  - 3.0
+  - 0.3
+  - 3.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a29a8b'
+  material: 混凝土
+  desc: 中段石阶，坡度渐陡，级缝里钻出蕨叶
+- id: stair_far
+  spot: 登山步道-全线
+  name: 石阶·远段
+  type: box
+  pos:
+  - 0
+  - 1.25
+  - -5.0
+  size:
+  - 3.0
+  - 0.3
+  - 3.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9d9587'
+  material: 混凝土
+  desc: 远段石阶，向上没入林荫转角
+- id: platform
+  spot: 登山步道-全线
+  name: 观景台平台
+  type: box
+  pos:
+  - 4.2
+  - 1.0
+  - -2.0
+  size:
+  - 4.6
+  - 0.25
+  - 4.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a6f52'
+  material: 原木
+  desc: 半山木质观景平台，防腐木铺面与石阶中段相接
+- id: bench
+  spot: 登山步道-全线
+  name: 观景台长凳
+  type: box
+  pos:
+  - 2.05
+  - 1.38
+  - -1.0
+  size:
+  - 0.5
+  - 0.5
+  - 1.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7d5f43'
+  material: 原木
+  desc: 平台左缘木长凳，凳面磨得发亮
+- id: rail_deck
+  spot: 登山步道-全线
+  name: 观景台护栏
+  type: box
+  pos:
+  - 4.2
+  - 1.6
+  - -3.95
+  size:
+  - 4.6
+  - 0.9
+  - 0.08
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6f5740'
+  material: 原木
+  desc: 平台外缘木护栏，面向山谷与远处城市
+- id: treebelt_left
+  spot: 登山步道-全线
+  name: 林带·左
+  type: box
+  pos:
+  - -3.4
+  - 2.6
+  - -2.0
+  size:
+  - 1.6
+  - 5.2
+  - 12.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#44583f'
+  desc: 步道左侧密林带，杉樟混交，枝叶交叠漏下斑驳树荫
+- id: treebelt_right
+  spot: 登山步道-全线
+  name: 林带·右
+  type: box
+  pos:
+  - 2.2
+  - 3.2
+  - -7.6
+  size:
+  - 1.6
+  - 5.6
+  - 5.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#3f5239'
+  desc: 步道右侧后方密林带，树影深浓
+scenes:
+- id: forest_stairs
+  scene_id: RsQjKULMe0
+  scene_name: 登山步道-林间石阶
+  spot: 登山步道-全线
+  camera:
+    pos:
+    - 0
+    - 1.9
+    - 5.4
+    look_at:
+    - 0
+    - 1.7
+    - -4.0
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 2.0
+    - 6.0
+    - 1.0
+    color: '#fff2dc'
+    intensity: 2.2
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#dfe9df'
+    intensity: 0.55
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: viewpoint_deck
+  scene_id: Re2PEUaYTx
+  scene_name: 登山步道-半山观景台
+  spot: 登山步道-全线
+  camera:
+    pos:
+    - 5.8
+    - 2.45
+    - 1.6
+    look_at:
+    - 4.9
+    - 1.35
+    - -3.4
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 5.5
+    - 5.5
+    - 0
+    color: '#fff2dc'
+    intensity: 2.3
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#e8ecf0'
+    intensity: 0.5
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

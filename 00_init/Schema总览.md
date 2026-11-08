@@ -40,7 +40,7 @@
 | Spot | snowflake Base62 | 地点内子空间（zone）；sub 归组经 anchored_at 直挂 Scene；无 status |
 | Info | snowflake Base62 | 一条成立的事实（Event 记「发生」，Info 记「成立」；判定测试见 Schema/叙事基础.md） |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
-| StoryArc | snowflake Base62 | 叙事弧线规划（起承转合短文 + comprises 圈成员；无 status，时间范围由成员 Event.time 承载） |
+| StoryArc | snowflake Base62 | 叙事弧线规划（主旨/氛围短文 + comprises 圈骨架成员——非全量入线；无 status，时间范围由成员 Event.time 承载） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
 | AppearanceStyle | snowflake Base62 | 角色固定外貌（脸、体型、发色） |
 | CostumeStyle | snowflake Base62 | 角色默认着装（衣物、配饰） |

@@ -1,0 +1,188 @@
+location:
+  id: QP23NrFZqm
+  name: 康复中心
+  description: 苏晓禾工作的地方，运动康复
+room:
+  shell: open
+  floor:
+  - 10.0
+  - 12.0
+  height: 6.0
+  floor_color: '#b9b4ac'
+  floor_material: 混凝土
+  ground:
+    y: -2.5
+    color: '#a8b0b8'
+    desc: 临街人行道与慢车道，上午车流稀少
+  sky:
+    color: '#c3d9ea'
+    desc: 晴朗上午，淡蓝少云
+  deco: 临街一层入口，无障碍坡道与门前平台正对人行道
+objects:
+- id: facade
+  spot: 门口
+  name: 临街主立面
+  type: box
+  pos:
+  - 0
+  - 3.0
+  - -5.8
+  size:
+  - 14.0
+  - 6.0
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#e2e5df'
+  material: 混凝土
+  desc: 康复中心临街主立面，米白外墙与横向窗带
+- id: door_glass
+  spot: 门口
+  name: 玻璃主门
+  type: box
+  pos:
+  - 0
+  - 1.15
+  - -5.5
+  size:
+  - 2.6
+  - 2.3
+  - 0.15
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a8c8d4'
+  material: 玻璃
+  desc: 玻璃双开主门，门腰贴机构标识与开放时间，门里透出大厅白光
+- id: sign_board
+  spot: 门口
+  name: 门楣招牌
+  type: box
+  pos:
+  - 0
+  - 2.95
+  - -5.45
+  size:
+  - 3.4
+  - 0.75
+  - 0.2
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#4a7086'
+  material: 金属
+  desc: 门楣机构招牌，蓝底白字与康复图标
+- id: ramp
+  spot: 门口
+  name: 无障碍坡道
+  type: box
+  pos:
+  - -2.4
+  - 0.15
+  - -4.5
+  size:
+  - 1.6
+  - 0.3
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c9c4bb'
+  material: 混凝土
+  desc: 无障碍坡道，双侧金属扶手接人行道
+- id: entry_apron
+  spot: 门口
+  name: 门前平台
+  type: box
+  pos:
+  - 0.9
+  - 0.09
+  - -4.7
+  size:
+  - 3.4
+  - 0.18
+  - 1.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c4beb4'
+  material: 混凝土
+  desc: 门前浅灰平台与一级台阶
+- id: planter
+  spot: 门口
+  name: 门口绿植箱
+  type: box
+  pos:
+  - 3.1
+  - 0.4
+  - -4.6
+  size:
+  - 0.9
+  - 0.8
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7f9484'
+  desc: 门口绿植箱，龟背竹与鹅卵石覆面
+- id: lamp_post
+  spot: 门口
+  name: 人行道灯柱
+  type: box
+  pos:
+  - 4.4
+  - 1.9
+  - 0.8
+  size:
+  - 0.16
+  - 3.8
+  - 0.16
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6a7480'
+  material: 金属
+  desc: 人行道灯柱，挂机构小道旗
+scenes:
+- id: entrance_arrival
+  scene_id: RkWSqCnC4X
+  scene_name: 康复中心-门口
+  spot: 门口
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 4.6
+    look_at:
+    - 0
+    - 1.35
+    - -5.2
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 3.0
+    - 5.5
+    - 2.0
+    color: '#fff1d6'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#dfe8ef'
+    intensity: 0.55
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

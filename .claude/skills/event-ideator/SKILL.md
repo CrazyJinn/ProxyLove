@@ -12,7 +12,7 @@ description: |
   六种启发模式：char→new→base（动机链补桥，抵达既定
   事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）/
   base→new（既定事件的后果链推演）/ new→base（无角色锚的因果回溯）/ arc→new（故事线
-  填充：读故事线起承转合与成员事件，按所处阶段补弧线缺环）。事件启发入参 char 与
+  填充：读故事线主旨/氛围与成员事件，按主旨表达缺口补弧线缺环）。事件启发入参 char 与
   base 至少给一个；arc 单独给 = 建线 / 填充 / 对账支线。
   故事线对账：产出涉及 comprises 挂边的流程结尾自动核对「description vs 实际成员」，
   失配附 I5 更新项；用户说「对账」时手动跑（arc id/title 或 event id 反查所属线）。
@@ -79,7 +79,7 @@ OUTPUT_DIR="02_剧情数据"
 4. commit   问尽 → 组装建议 JSON 落盘 → 报审批入口与下一步
 ```
 
-支线 A 故事线构建（§5a）：读图取材 → 起草起承转合 → 勾成员 → 敲 title → commit（I4）
+支线 A 故事线构建（§5a）：读图取材 → 起草主旨/氛围 → 勾骨架成员（非全量入线——事件不进线≠不重要） → 敲 title → commit（I4）
 支线 B 故事线对账（§5b）：读线+成员 → 比对 description vs 实际 → 失配产 I5；
 自动（触碰 comprises 的流程结尾）+ 手动（用户说「对账」）
 
@@ -118,7 +118,7 @@ OUTPUT_DIR="02_剧情数据"
      RETURN a.id AS id, a.title AS title, a.description AS description LIMIT 10;
      ```
      **读缺口**（arc→new 主依据）：成员时间轴上相邻间隔 > 1 天的空洞 × description
-     四段对照——哪一段（起/承/转/合）写了却缺事件支撑，缺环即候选落点。
+     主旨对照——主旨的哪个面向写了却缺事件支撑（含收束未至），缺环即候选落点。
 
 **锚点关系查询（char 与 base 之间的关系——图上实捞，不是模型想象）**：
 `$NBHD --char <char_id> --base <event_id>` 双锚查**两锚在叙事基础域
@@ -154,7 +154,7 @@ OUTPUT_DIR="02_剧情数据"
 | `base → new → base` | base 给定且有时间邻接事件 | 两个既定事件之间发生了什么（可有关可无关）？ | 间隙填充事件 |
 | `base → new` | base 给定 | 这个既定事件之后引发了什么连锁反应？ | 后果链事件（向前推演，leads_to 正向延伸） |
 | `new → base` | base 给定 | 什么导致了这个既定事件（不限单一角色）？ | 无锚因果回溯（多角色/环境前因，补 leads_to 上游） |
-| `arc → new` | arc 给定（可与 char/base 组合） | 这条故事线当前所处阶段（起/承/转/合）还缺什么事件支撑？ | 故事线填充事件（补弧线缺环，写回时附 comprises 挂边） |
+| `arc → new` | arc 给定（可与 char/base 组合） | 这条故事线的主旨还缺哪些事件支撑？ | 故事线填充事件（按主旨表达缺口补环，写回时附 comprises 挂边） |
 
 **每条候选必带结构化字段**（对比表列）：
 
@@ -247,17 +247,16 @@ Event/Character）——并入候选批一起询问，不单独立题。
 1. **读图取材**（0 步第 6 项查询）：候选成员池 = 主题关键词扫 Event
    （title/description CONTAINS）+ 相关 Character 的 involved 事件 + 时间窗聚类；
    同时查 StoryArc 全名录——同主题线已存在 → 建议「扩线/对账」而非新建。
-2. **起草 description（写作思路层，不是事件复述）**：按 起→承→转→合 四段组织
-   （每段 1 句、段间换行、允许不齐四段——进行中的线只有起承两段是常态）——写
-   这条线的设计意图与因果骨架（谁的欲望、如何推进、卡在哪、怎么收），具体情节
-   由成员 Event 承载，段内不复述事件细节（人物动作、数字、道具）；计划中但未
-   建图的走向可写，须与用户确认。段内不写时间戳（时刻唯一承载是 Event.time）。
-3. **勾成员**（一次一问，交互纪律沿用 §3）：摆「成员事件时间轴 + 起草四段」
-   对照表，逐段问「这段由哪些事件承载？」（推荐答案来自 1 的取材；可勾可弃
-   可补查）。
+2. **起草 description（写作思路层，不是事件复述）**：两段式——**主旨**（一两句：
+   这条线想表达什么）+ **氛围**（一段：质感与调性），「主旨：」「氛围：」引导、
+   段间换行。不复述情节结构——时序由成员 Event.time 承载；计划中但未建图的
+   走向可写，须与用户确认。段内不写时间戳（时刻唯一承载是 Event.time）。
+3. **勾骨架成员**（一次一问，交互纪律沿用 §3；**非全量入线**——事件不进线≠
+   不重要，只圈承载主旨的骨架事件）：摆「成员事件时间轴 + 主旨草案」对照表，
+   逐事件问「它承载主旨的哪个面向？」（推荐答案来自 1 的取材；可勾可弃可补查）。
 4. **敲定 title**（≤10 字弧线名，如「陆择的救赎线」）。
-5. **四段覆盖自检 + commit**：勾定后若某段零成员——提醒用户（改 description 或
-   留段标「待补」），随后走 §4 同款落盘/lint/汇报；I4 一项，主题 = arc title。
+5. **主旨覆盖自检 + commit**：勾定后若主旨某面向零成员——提醒用户（改 description
+   或留注「收束待补」），随后走 §4 同款落盘/lint/汇报；I4 一项，主题 = arc title。
 
 ### 5b. 对账（description vs 实际成员）
 
@@ -272,7 +271,7 @@ Event/Character）——并入候选批一起询问，不单独立题。
 **对账步骤**：
 
 1. 重读该线 description + 当前成员全集（含本次即将新增的）；
-2. 判断两类失配：① 新成员改变四段叙事（新转折点进线 / 铺垫段该收束了）；
+2. 判断两类失配：① 新成员改变主旨表达（新面向进线 / 原有面向该收束了）；
    ② description 写了但成员里没有的事（描述预言了未发生/已删除的事）；
 3. 失配 → 产 `I5_story_arc_update`（content = 重写后的 description **全文**，
    一线一项，随本次建议 JSON 落盘）；不失配 → 不产 I5，汇报注明
@@ -299,11 +298,11 @@ MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[
 CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>';
 MATCH (a) WHERE (a:Event OR a:Character) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
 // 故事线（I4 标准形：建线 + 逐成员挂边；成员 id 全部 0 步现查——MATCH 落空=静默丢边）
-CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='<起承转合短文，段间\n转义>';
+CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='主旨：…\n氛围：…';
 MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 // I4 扩线形 = 仅上句 MERGE（无 CREATE）；每成员一条 MERGE。
 // 故事线对账更新（I5：全 skill 唯一改既有节点属性的例外，仅 description 一字段）
-MATCH (a:StoryArc {id:'<arc_id>'}) SET a.description='<重写后的起承转合全文>';
+MATCH (a:StoryArc {id:'<arc_id>'}) SET a.description='<重写后的主旨/氛围全文>';
 // arc→new 新事件挂线（追加在该事件 I2 项 cypher 末尾）
 MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 ```
