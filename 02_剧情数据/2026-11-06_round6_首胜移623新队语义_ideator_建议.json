@@ -1,0 +1,42 @@
+[
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "沈线时序重构（用户拍板：6/19 三事件移 6/23，首胜改为沈暮雪自建战队的首场合练赛；请假留 6/19）。本项=时间移动+新队语义改写。25_剧本零指纹引用（grep 实查）；refines 边 sync=true 会级联名下 sub 置 -1（实查 sub status 均为 None，无实际损失）。原「复盘方案→首胜」leads_to 因果随新队语义失效（用户拍板），该边删除不进建议 JSON、由 dashboard 控制台人工执行。",
+    "content": "改写事件 RO5gftNez3「队伍练习赛首胜」：time→2024-06-23 19:30:00，description→新战队首场合练赛首胜，condition→choice:RINsONAOO0[2]（选沈暮雪）",
+    "cypher": "MATCH (e:Event {id:'RO5gftNez3'}) SET e.time='2024-06-23 19:30:00', e.condition='choice:RINsONAOO0[2]', e.description='二队解散后沈暮雪火速搭起自建战队，拉来原班人马；新队首场合练赛，磨合未半却打出气势，拿下练习赛首胜（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "同上时序重构：烧烤随首胜移 6/23 20:00（首胜→烧烤 leads_to 因果保留，同晚庆功时序成立）。condition=choice:RINsONAOO0[2]（选沈暮雪，字典序实查：[1]=选林梦 [2]=选沈暮雪 [3]=选苏晓禾——用户拍板三事件挂沈线条件）。",
+    "content": "改写事件 RO5gftNez2「沈暮雪请大家吃烧烤」：time→2024-06-23 20:00:00，condition→choice:RINsONAOO0[2]（选沈暮雪）",
+    "cypher": "MATCH (e:Event {id:'RO5gftNez2'}) SET e.time='2024-06-23 20:00:00', e.condition='choice:RINsONAOO0[2]';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "同上时序重构：混混闹事随烧烤散场移 6/23 22:30。condition=choice:RINsONAOO0[2]（选沈暮雪，同前两项）。",
+    "content": "改写事件 RRl7l6AeGH「混混闹事纠缠沈暮雪陈默保护受伤」：time→2024-06-23 22:30:00，condition→choice:RINsONAOO0[2]（选沈暮雪）",
+    "cypher": "MATCH (e:Event {id:'RRl7l6AeGH'}) SET e.time='2024-06-23 22:30:00', e.condition='choice:RINsONAOO0[2]';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "请假事件留在 6/19 20:30，但原 desc 锚在烧烤现场（「烧烤吃到后半场」）——烧烤已移 6/23，desc 失锚（图上实查 desc 原文）。载体改微信，保留「被打趣约会」内核；出边 请假→逛漫展(6/20) 时序仍成立，入边 邀漫展(6/17)→请假 不动。",
+    "content": "改写事件 RQBqw5y3of「陈默为漫展向沈暮雪请假被打趣约会」：description→微信请假",
+    "cypher": "MATCH (e:Event {id:'RQBqw5y3of'}) SET e.description='陈默微信上向沈暮雪提漫展那天的合练想请假；她批得很干脆，末了回一句「是不是和直播间里经常互动的那位去约会」';"
+  },
+  {
+    "check": "I5_story_arc_update",
+    "priority": "low",
+    "source": "event-ideator",
+    "reason": "沈线对账（本次产出触碰 comprises 成员语义）：①首胜三事件移 6/23 且首胜改为新战队故事，合段叙事收束方式改变（建队即首胜）；②转段 description 原文未提「想换掉垫底队友发现是关系户」——round4 伏笔已植入成员事件 desc（6/14 全败2「问题开始显化」、6/18 走位失误「垫底队友葬送好局」、6/21 解散「想换发现关系户」），四段对照失配。重写 description 全文如下。",
+    "content": "沈暮雪线 description 对账更新：转段补关系户伏笔、合段改为建队即首胜",
+    "cypher": "MATCH (a:StoryArc {id:'RpPzkWr7Mu'}) SET a.description='起：沈暮雪想组建自己的战队，却困在星耀经理的位子上无从施展。\\n承：她发现陈默的天赋，招揽他加入星耀二队，作为起点倾力经营。\\n转：二队连败，垫底队友是高层塞进来的关系户，换人无门；星耀高层失去耐心决定解散二队，抱负濒临夭折。\\n合：沈暮雪脱离星耀火速建队，拉原班人马合练，新队首战告捷。';"
+  }
+]

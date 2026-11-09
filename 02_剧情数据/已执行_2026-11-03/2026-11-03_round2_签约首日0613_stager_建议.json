@@ -1,0 +1,74 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件「陈默到星耀基地签二队合同」的签约段无可用机位——星耀电竞基地既有 Spot 仅有训练馆（二队）与门口，签约接待属办公功能分区，占位待 scene-design 消化。",
+    "content": "占位 Spot「星耀电竞基地-办公区」（zone，status=0），挂 part_of→ 星耀电竞基地。",
+    "cypher": "CREATE (sp:Spot {id:'Rm85LQWh4S'}) SET sp.name='星耀电竞基地-办公区', sp.kind='zone', sp.description='经理办公与签约接待的功能分区', sp.status=0;\nMATCH (l:Location {id:'QP23NrFZqd'}) MATCH (sp:Spot {id:'Rm85LQWh4S'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "签约落笔 sub 的机位缺口：签约定在沈暮雪的办公室进行（用户拍板），办公区下无机位，占位经理办公室待 scene-design 消化。",
+    "content": "占位 Scene「星耀电竞基地-经理办公室」（dialogue，status=0），挂 realizes← 星耀电竞基地-办公区（本建议占位）。",
+    "cypher": "CREATE (sc:Scene {id:'Rm85LQWh4T'}) SET sc.name='星耀电竞基地-经理办公室', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'Rm85LQWh4S'}) MATCH (sc:Scene {id:'Rm85LQWh4T'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件荣誉墙段的机位缺口：一队奖杯墙所在大厅分区图上不存在，占位待 scene-design 消化。",
+    "content": "占位 Spot「星耀电竞基地-大厅」（zone，status=0），挂 part_of→ 星耀电竞基地。",
+    "cypher": "CREATE (sp:Spot {id:'Rm85LQWh4U'}) SET sp.name='星耀电竞基地-大厅', sp.kind='zone', sp.description='入门大厅，奖杯荣誉墙所在分区', sp.status=0;\nMATCH (l:Location {id:'QP23NrFZqd'}) MATCH (sp:Spot {id:'Rm85LQWh4U'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "荣誉墙 sub 的机位缺口：大厅下无机位，占位奖杯墙机位待 scene-design 消化。",
+    "content": "占位 Scene「星耀电竞基地-荣誉墙」（dialogue，status=0），挂 realizes← 星耀电竞基地-大厅（本建议占位）。",
+    "cypher": "CREATE (sc:Scene {id:'Rm85LQWh4V'}) SET sc.name='星耀电竞基地-荣誉墙', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'Rm85LQWh4U'}) MATCH (sc:Scene {id:'Rm85LQWh4V'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "陈默签约场合着装缺口（用户拍板新增，普通休闲）：既有套装无签约场合着装，普通连帽衫不隆重——穷主播出门见经理的得体分寸，与「廉价休闲新装」「居家颓废着装」区分。归属上下文由签约 sub 的 appears_as 指向承载，待 char-costume-designer 消化。",
+    "content": "占位 CostumeStyle「连帽衫」+ IllusDesign 版本（outfit_for 挂靠，adaptation_notes 写连帽衫版差异），均 status=0。",
+    "cypher": "CREATE (cs:CostumeStyle {id:'Rm8r7tQUQy'}) SET cs.name='连帽衫', cs.outfit_style='休闲', cs.status=0;\nCREATE (idn:IllusDesign {id:'Rm8r7tQUQz'}) SET idn.adaptation_notes='连帽衫版：素色普通连帽衫，干净整洁不隆重——出门见人的得体分寸，与廉价休闲新装、居家颓废着装区分', idn.status=0;\nMATCH (cs:CostumeStyle {id:'Rm8r7tQUQy'}) MATCH (idn:IllusDesign {id:'Rm8r7tQUQz'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "沈暮雪签约场合着装缺口（用户拍板新增）：签约在自己办公室进行，需与既有「电竞经理职业装」区分的更正式套装，占位待 char-costume-designer 消化。",
+    "content": "占位 CostumeStyle「深灰西装套裙」+ IllusDesign 版本（outfit_for 挂靠，adaptation_notes 写签约场合差异），均 status=0。",
+    "cypher": "CREATE (cs:CostumeStyle {id:'Rm8r7tQUR0'}) SET cs.name='深灰西装套裙', cs.outfit_style='正式', cs.status=0;\nCREATE (idn:IllusDesign {id:'Rm8r7tQUR1'}) SET idn.adaptation_notes='办公室签约场合着装：深灰西装套裙，正式干练、气场内敛，与电竞经理职业装区分', idn.status=0;\nMATCH (cs:CostumeStyle {id:'Rm8r7tQUR0'}) MATCH (idn:IllusDesign {id:'Rm8r7tQUR1'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「陈念晨间来电唠叨叮嘱相亲事宜」低密度电话事件，单段演出即足：唠叨铺垫→个人问题触发→「介绍姑娘」释放钩子→敷衍挂断余韵。机位挂既有床铺区（晨间刚醒的生活质感，与近期全在电脑桌直播位的 sub 拉开画面层次）。陈念为电话对端，参照沈暮雪语音挂立绘先例挂形象。",
+    "content": "SubEvent「晨间来电」time=2024-06-13 08:30:00：姐姐从吃穿住唠到「都二十好几了」，顺口「给你留意着呢，回头给你介绍个靠谱的姑娘」；陈默敷衍两句挂断。anchored_at→ 八楼出租屋-床铺区（既有）；appears_as→ 陈默居家颓废（继承）+ 陈念探望休闲（电话对端）。",
+    "cypher": "MATCH (e:Event {id:'RlpdqBxQzw'})\nMERGE (sub:SubEvent {id:'Rm85LQWh4W'})\nON CREATE SET sub.title='陈念晨间来电唠叨叮嘱相亲事宜 · 晨间来电', sub.time='2024-06-13 08:30:00',\n              sub.description='动作：姐姐例行来电，从吃穿住一路唠到个人问题「都二十好几了」，顺口说「给你留意着呢，回头给你介绍个靠谱的姑娘」；陈默半睡半醒「嗯嗯」应付，找了个由头敷衍两句挂断，把手机扣回床头；参与：陆择（陈默身）、陈念（电话）；基调：被唠叨的无奈里带着亲情的熟稔。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'Rm85LQWh4W'}) MATCH (scn:Scene {id:'QW77oRdOwU'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'Rm85LQWh4W'}) MATCH (il:IllusDesign {id:'QmFVxZtCtc'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：居家颓废着装（在家）';\nMATCH (sub:SubEvent {id:'Rm85LQWh4W'}) MATCH (il:IllusDesign {id:'Qe4TZcpKbI'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：电话对端形象，探望休闲着装';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件「陈默到星耀基地签二队合同沈暮雪带看荣誉墙」高密度多节拍，拆 2 段（用户拍板签约独立、荣誉墙与瞥见江烈合并）。本段为签约落笔仪式段：落笔瞬间是身份转变的释放环。签约定在经理办公室，两人着装均走新占位套装（本建议 S1 项）。",
+    "content": "SubEvent「签约落笔」time=2024-06-13 15:00:00：沈暮雪推过二队合同，陈默逐页翻完落笔签下名字。anchored_at→ 星耀电竞基地-经理办公室（本建议占位）；appears_as→ 陈默连帽衫（占位）+ 沈暮雪深灰西装套裙（占位）。",
+    "cypher": "MATCH (e:Event {id:'RlpdqBxQzx'})\nMERGE (sub:SubEvent {id:'Rm85LQWh4X'})\nON CREATE SET sub.title='陈默到星耀基地签二队合同沈暮雪带看荣誉墙 · 签约落笔', sub.time='2024-06-13 15:00:00',\n              sub.description='动作：沈暮雪把二队合同推过来，陈默逐页翻完，落笔签下名字，从这一刻起是星耀二队的职业选手；参与：陆择（陈默身）、沈暮雪；基调：落笔的郑重。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'Rm85LQWh4X'}) MATCH (scn:Scene {id:'Rm85LQWh4T'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'Rm85LQWh4X'}) MATCH (il:IllusDesign {id:'Rm8r7tQUQz'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：连帽衫，新套装待消化';\nMATCH (sub:SubEvent {id:'Rm85LQWh4X'}) MATCH (il:IllusDesign {id:'Rm8r7tQUR1'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：深灰西装套裙，新套装待消化';",
+    "source": "event-stager"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "事件第二段：带看+荣誉墙核心意象（一队奖杯满墙 vs 二队空白，「你的第一笔，从这里开始写」）+ 离场途经瞥见江烈（目击模式，未接触，用户拍板合并不建一队训练室占位、江烈不挂形象，由剧本层文字承载）。带看巡游（训练室/复盘室）为背景位移并入本段不拆。与签约段同一行程，着装连续继承新占位套装。",
+    "content": "SubEvent「荣誉墙与一队掠影」time=2024-06-13 15:20:00：带看基地停在奖杯墙前交底二队定位，陈默盯着二队空白；离场路过一队训练室瞥见江烈带队训练，未接触。anchored_at→ 星耀电竞基地-荣誉墙（本建议占位）；appears_as→ 陈默连帽衫 + 沈暮雪深灰西装套裙（均占位，同事件前段连续）。",
+    "cypher": "MATCH (e:Event {id:'RlpdqBxQzx'})\nMERGE (sub:SubEvent {id:'Rm85LQWh4Y'})\nON CREATE SET sub.title='陈默到星耀基地签二队合同沈暮雪带看荣誉墙 · 荣誉墙与一队掠影', sub.time='2024-06-13 15:20:00',\n              sub.description='动作：沈暮雪带他走基地——训练室、复盘室，最后停在一面墙前：一队历年奖杯占满整墙，二队的名字一排空白；她交底二队定位「为一队输送新人、打法自成一派」，说「你的第一笔，从这里开始写」，陈默盯着那排空白看了几秒；离场途中路过一队训练室，透过门玻璃瞥见江烈在带队训练，两人未接触未交谈；参与：陆择（陈默身）、沈暮雪；基调：空白墙前的重量——目标第一次有了具体形状；衔接：承签约后带看动线。'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'Rm85LQWh4Y'}) MATCH (scn:Scene {id:'Rm85LQWh4V'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'Rm85LQWh4Y'}) MATCH (il:IllusDesign {id:'Rm8r7tQUQz'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同事件前段着装（连帽衫）';\nMATCH (sub:SubEvent {id:'Rm85LQWh4Y'}) MATCH (il:IllusDesign {id:'Rm8r7tQUR1'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同事件前段着装（西装套裙）';",
+    "source": "event-stager"
+  }
+]

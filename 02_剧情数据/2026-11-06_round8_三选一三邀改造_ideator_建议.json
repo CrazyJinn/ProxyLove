@@ -1,0 +1,122 @@
+[
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "三选一改造（用户拍板方案见 02_剧情数据/2026-11-06_三选一改造方案.md）：三选一从「三选一定情」改为「三邀三选一」，时间从 6/22 09:00 提前到 6/21 21:30（解散+沈线邀约电话之后当晚）。Choice 节点 time/description 同步改写。",
+    "content": "改写 Choice RINsONAOO0：time→2024-06-21 21:30:00，description→三份邀请摆在面前",
+    "cypher": "MATCH (c:Choice {id:'RINsONAOO0'}) SET c.time='2024-06-21 21:30:00', c.description='二队解散当晚：林梦邀他周末漫展、苏晓禾邀他周末爬山、沈暮雪邀他加入自建战队——三份邀请都摆在陈默面前，答应哪份？';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "option label 改为答应体（用户拍板）：选林梦→答应林梦去漫展、选苏晓禾→答应苏晓禾去爬山、选沈暮雪→回拨沈暮雪入队。字典序实测（Python sorted）：[1]回拨沈暮雪入队(回U+56DE) [2]答应林梦去漫展(答U+7B54) [3]答应苏晓禾去爬山——沈线由[2]变[1]，既有 condition 引用（沈线三事件）在本批第8项同步改；图上实查当前引用全集仅此三处，无其他漂移。",
+    "content": "改写三选一三条 option 边 label（目标事件不变）",
+    "cypher": "MATCH (c:Choice {id:'RINsONAOO0'})-[o:option]->(e:Event {id:'RINsONAON9'}) SET o.label='答应林梦去漫展';\nMATCH (c:Choice {id:'RINsONAOO0'})-[o:option]->(e:Event {id:'RINsONAON8'}) SET o.label='答应苏晓禾去爬山';\nMATCH (c:Choice {id:'RINsONAOO0'})-[o:option]->(e:Event {id:'RINsONAONA'}) SET o.label='回拨沈暮雪入队';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "三选一宿主事件（presents 锚）随 Choice 提前并改语义：原「三女主同日认好+21天看到留言」与新结构（三份邀请当晚摆在面前）冲突。title/desc/time 同步改写。",
+    "content": "改写宿主事件 RINsONAON7：time→2024-06-21 21:30:00，title/desc→三份邀请摆在面前",
+    "cypher": "MATCH (e:Event {id:'RINsONAON7'}) SET e.time='2024-06-21 21:30:00', e.title='三份邀请摆在陈默面前', e.description='二队解散当晚，林梦的漫展邀约、苏晓禾的爬山邀约、沈暮雪的入队邀请都还没答复；三选一宿主事件';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "林梦选项目标事件语义改写（用户拍板：选择=答应邀请，恋爱确定延后到约会里自然发生）：原「确定恋爱关系」→「答复答应去漫展」。desc 原文仅「三选一 option 目标」占位。occurs_at=八楼出租屋不动（微信答复场景，先例实查）。",
+    "content": "改写事件 RINsONAON9：title→陈默答复林梦答应去漫展（林梦支线），desc→微信答复答应",
+    "cypher": "MATCH (e:Event {id:'RINsONAON9'}) SET e.title='陈默答复林梦答应去漫展（林梦支线）', e.description='陈默微信回复林梦，答应周末陪她去漫展（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "苏晓禾选项目标事件语义改写（同上）：原「确定恋爱关系」→「答复答应去爬山」。",
+    "content": "改写事件 RINsONAON8：title→陈默答复苏晓禾答应去爬山（苏晓禾支线），desc→微信答复答应",
+    "cypher": "MATCH (e:Event {id:'RINsONAON8'}) SET e.title='陈默答复苏晓禾答应去爬山（苏晓禾支线）', e.description='陈默微信回复苏晓禾，答应周末一起去爬山（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "苏晓禾邀爬山事件 desc 含「陈默答应了」（图上实查原文）——新结构里当场答应=提前站队，与三选一互斥矛盾，必须改为悬置。",
+    "content": "改写事件 RQEfM71ctk description：删「陈默答应了」→未当场答应",
+    "cypher": "MATCH (e:Event {id:'RQEfM71ctk'}) SET e.description='「相亲」局尴尬又好笑地聊开后，苏晓禾临别主动邀陈默周末去爬山；陈默没有当场答应，说想想再回她';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "漫展邀约事件 desc 补悬置语义（原图上 desc 仅一句「林梦要陈默陪她去漫展」，与苏线「没当场答应」对齐，三邀统一悬置）。",
+    "content": "改写事件 RU4sFkF8im description：补「等答复」",
+    "cypher": "MATCH (e:Event {id:'RU4sFkF8im'}) SET e.description='林梦要陈默周末陪她去漫展，定在下周日；陈默没把话说死，说定了再回她';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "沈线组 condition 序号随 label 字典序重排同步改（[2]→[1]，字典序实测依据见第2项 reason）。三事件：首胜/烧烤/混混。",
+    "content": "改写沈线三事件 condition：choice:RINsONAOO0[2] → [1]",
+    "cypher": "MATCH (e:Event) WHERE e.id IN ['RO5gftNez3','RO5gftNez2','RRl7l6AeGH'] SET e.condition='choice:RINsONAOO0[1]';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "漫展组移动+挂条件（用户拍板）：逛漫展 6/20(周四)→6/23(周日)（漫展周末惯例），送回家随移；condition=choice:RINsONAOO0[2]（答应林梦）。25_剧本零指纹引用（grep 实查）。",
+    "content": "改写事件 RMxYXuS6IE：time→2024-06-23 13:00:00，condition→[2]",
+    "cypher": "MATCH (e:Event {id:'RMxYXuS6IE'}) SET e.time='2024-06-23 13:00:00', e.condition='choice:RINsONAOO0[2]';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "漫展组第二件：送林梦回家随逛漫展移 6/23 19:30，condition=[2]。",
+    "content": "改写事件 RQAZwH7RHV：time→2024-06-23 19:30:00，condition→[2]",
+    "cypher": "MATCH (e:Event {id:'RQAZwH7RHV'}) SET e.time='2024-06-23 19:30:00', e.condition='choice:RINsONAOO0[2]';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "山道组移动+挂条件（用户拍板）：爬山 6/21(周五)→6/22(周六)（周末爬山惯例，答复 6/22 09:00 后当天上午出发）；condition=choice:RINsONAOO0[3]（答应苏晓禾）。desc 同时删「说漏自己去了漫展」——旧结构漫展必发生，新结构漫展是林梦线专属，跨线污染。",
+    "content": "改写事件 RQD2NmjrIO：time→2024-06-22 09:30:00，condition→[3]，desc 删漫展说漏",
+    "cypher": "MATCH (e:Event {id:'RQD2NmjrIO'}) SET e.time='2024-06-22 09:30:00', e.condition='choice:RINsONAOO0[3]', e.description='答复苏晓禾后当天出发爬山；山道上陈默脚疼，苏晓禾细心关心照顾（细节待补）';"
+  },
+  {
+    "check": "I5_event_delete",
+    "priority": "high",
+    "source": "event-ideator",
+    "reason": "删除请假事件 RQBqw5y3of（用户拍板）：三选一提前到 6/21 后，6/19 请假=提前答应林梦，与「选择前不答应任何一方」矛盾。DETACH DELETE 连带两条 leads_to（邀漫展→请假、请假→逛漫展）。其 sub RlkWwdjD8h 在本批 sub 清理项一并删（DETACH 先删边，后 DETACH DELETE 本体亦无残留）。",
+    "content": "删除事件 RQBqw5y3of「陈默为漫展向沈暮雪请假被打趣约会」（连边连 sub）",
+    "cypher": "MATCH (e:Event {id:'RQBqw5y3of'}) DETACH DELETE e;"
+  },
+  {
+    "check": "I5_sub_delete",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "受影响 sub 清理（用户拍板全部删，留待 event-stager 按新结构重细化，同 round7 先例）：漫展2（time 停 6/20 漂移）、山道1（title「说漏」跨线污染）、宿主1（「三条留言」旧语义）、林/苏「回拨」2（回拨是沈线剧情，林/苏新语义=微信答复）、苏邀爬山1（desc 旧「答应了」语境）。请假 sub RlkWwdjD8h 随父事件 DETACH 已删，不重复列。须在本批最后执行。",
+    "content": "删除七 sub：漫展入口汇合/做局、送回家、山道说漏、宿主三条留言、林苏回拨×2、苏邀临别邀约",
+    "cypher": "MATCH (sub:SubEvent) WHERE sub.id IN ['RlkWwdjD8k','RlkWwdjD8l','RlkWwdjD8m','RlkWwdjD8n','Ra7IfJLJtm','Ra7IfJLJtn','Ra7IfJLJtl','RlkWwdjD8d'] DETACH DELETE sub;"
+  },
+  {
+    "check": "I5_story_arc_update",
+    "priority": "low",
+    "source": "event-ideator",
+    "reason": "林梦线对账（本批触碰其成员语义与时序）：合段「漫展同行之后确定恋爱」→ 选择语义改为答应邀约、漫展移 6/23。",
+    "content": "林梦线 description 对账更新",
+    "cypher": "MATCH (a:StoryArc {id:'RpPzkWr7Mv'}) SET a.description='起：富家千金林梦看中陈默的直播潜力，力推开播并投资——用「眼光」证明自己不靠家里。\\n承：首播爆红，她的剪辑与运营成为翻红的引擎。\\n转：热度退潮、小号刷礼物被认出，「眼光的证明」破灭，关系反而露出真心的底色。\\n合：三选一当晚陈默答复答应漫展之邀；漫展同行，两人从合作者变成恋人。';"
+  },
+  {
+    "check": "I5_story_arc_update",
+    "priority": "low",
+    "source": "event-ideator",
+    "reason": "苏晓禾线对账（同上）：合段「爬山与互相照顾中确定恋爱」时序重排（答复→次日爬山）。",
+    "content": "苏晓禾线 description 对账更新",
+    "cypher": "MATCH (a:StoryArc {id:'RpPzkWr7Mw'}) SET a.description='起：晨跑搭讪被婉拒——这条线从单方面的心动起步，走日常渗透的慢节奏。\\n承：一次次晨跑偶遇积累熟络，陈默逐步走进她的生活半径。\\n转：家人安排的相亲桌上重逢，两条轨迹原来早已相交。\\n合：三选一当晚陈默答复答应爬山之邀；山道上互相照顾中，两人确定恋爱。';"
+  }
+]

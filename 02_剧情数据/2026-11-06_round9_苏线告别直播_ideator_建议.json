@@ -1,0 +1,10 @@
+[
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "苏线 arc→new 合段填充（用户拍板「与过去告别」=陈默告别游戏生涯、主体告别直播；林梦不出场一笔带过）。语义链（图上实查）：选苏线=放弃游戏人生——沈线=继续电竞（新战队）、林线=直播（林梦投资剪辑）、苏线=普通人生活；陈默直播前史（首播6/7爆红→回落6/11→林梦切片方案6/17）三线共享，苏线下以告别收束。落点=6/21 答复(09:00)后当晚空档（实查无冲突）。occurs_at=八楼出租屋（直播设备所在地，先例实查）。involved=陈默当事人（NvCkQmFPFq 既有）。condition=choice:RINsONAOO0[3]（字典序实测 [3]=答应苏晓禾去爬山）。挂苏晓禾线 RpPzkWr7Mw 扩线。",
+    "content": "新事件：陈默停播告别直播生涯（2024-06-21 21:00，八楼出租屋；陈默 当事人；仅苏线 cond[3]）",
+    "cypher": "CREATE (e:Event {id:'RqcglHRCSm'}) SET e.title='陈默停播告别直播生涯', e.time='2024-06-21 21:00:00', e.type='状态变化', e.condition='choice:RINsONAOO0[3]', e.description='答复苏晓禾当晚，陈默开了最后一播简短告别下播，卸载直播软件、收起外设，给林梦发信息道谢道别——游戏代练和主播的这段人生翻篇（细节待补）';\nMATCH (e:Event {id:'RqcglHRCSm'}), (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RqcglHRCSm'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'RqcglHRCSm'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "check": "I5_sub_delete",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "6/23 时序重构后的 sub 清理（用户拍板：删 sub 留待 event-stager 按新语义重新细化，同 round4 先例）。四个 sub 均按旧 6/19 星耀二队语境导演：time 全部停在 6/19（父已移 6/23，时序不相容）；首胜 sub desc「连败压抑的释放」是新队语境下失效的旧故事（连败线已于 6/18 终结，6/23 首胜前史是解散+建队）。须在本批最后执行。重细化入口：event-stager（三个父事件：RO5gftNez3 首胜/RO5gftNez2 烧烤/RRl7l6AeGH 混混）。",
+    "content": "删除四 sub：首胜·首胜夜(RlkWwdjD8f)、烧烤·全队第一顿(RlkWwdjD8g)、混混·挡在前面(RlkWwdjD8i)、混混·路灯下处理伤口(RlkWwdjD8j)——留待 event-stager 按 6/23 新战队语义重细化",
+    "cypher": "MATCH (sub:SubEvent) WHERE sub.id IN ['RlkWwdjD8f','RlkWwdjD8g','RlkWwdjD8i','RlkWwdjD8j'] DETACH DELETE sub;"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "low",
+    "source": "event-ideator",
+    "reason": "补用户手工添加的陈默 involved 边缺失 role（图上实查三事件 involved 均为 陈默·None；先例：同批事件沈暮雪=当事人）。",
+    "content": "补三事件陈默 involved role=当事人（RO5gftNez3/RO5gftNez2/RRl7l6AeGH）",
+    "cypher": "MATCH (c:Character {name:'陈默'})-[r:involved]->(e:Event) WHERE e.id IN ['RO5gftNez3','RO5gftNez2','RRl7l6AeGH'] AND r.role IS NULL SET r.role='当事人';"
+  }
+]
