@@ -1,0 +1,42 @@
+[
+  {
+    "check": "I1_placeholder_entity",
+    "priority": "medium",
+    "reason": "C4 报名事件的训练场地。图上无同名 Location（CONTAINS '网吧' 零命中），占位兜底 status=0，空间链（part_of/realizes）不在创建域",
+    "content": "新建 Location：网吧（自建战队现训练据点，占位）",
+    "cypher": "CREATE (l:Location {id:'RxAkEHM6eR'}) SET l.name='网吧', l.description='自建战队日常训练的网吧，次级联赛报名提交地（细节待补）', l.status=0;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "high",
+    "reason": "沈暮雪线第二程开篇（arc→new）。图上实查：06-19 沈暮雪仍以星耀经理身份挖人（RqKtjJka6S desc『她决定脱离星耀、自建战队』），但『辞职落地』节点缺位——白手起家的代价点。查重：辞职/离职/交牌关键词全图零命中。用户拍板：只挂沈暮雪。06-24=周一（工作日）。本事件挂线（文末 comprises）",
+    "content": "新事件：沈暮雪递交辞呈交还工牌，正式离开星耀（2024-06-24 10:00，星耀电竞基地；沈暮雪 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxAkEHM6eO'}) SET e.title='沈暮雪递交辞呈交还工牌正式离开星耀', e.time='2024-06-24 10:00:00', e.type='转折', e.description='沈暮雪向星耀正式递交辞呈、交还工牌门禁，离开星耀电竞基地；自建战队从此没有退路（细节待补）';\nMATCH (e:Event {id:'RxAkEHM6eO'}), (l:Location {id:'QP23NrFZqd'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxAkEHM6eO'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxAkEHM6eO'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "沈暮雪线第二程目标钉子（arc→new）。主旨实查：『终点在职业赛场的灯光下』——图上无任何『资格赛/报名/选拔』事件（关键词零命中），职业赛场尚是 description 预言。挂 condition choice:RINsONAOO0[1]（同烧烤/首胜，三选一后续惯例）。07-01=周一（工作日流程）。训练场地经用户拍板用新占位『网吧』。本事件挂线",
+    "content": "新事件：战队线上提交次级联赛报名表（2024-07-01 09:00，网吧；沈暮雪/陈默/李想 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxAkEHM6eP'}) SET e.title='战队线上提交次级联赛报名表', e.time='2024-07-01 09:00:00', e.type='行动', e.description='战队在网吧训练间隙线上提交次级联赛报名表，全队凑在屏幕前点下提交；正式向职业赛场迈出第一步（细节待补）', e.condition='choice:RINsONAOO0[1]';\nMATCH (e:Event {id:'RxAkEHM6eP'}), (l:Location {id:'RxAkEHM6eR'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxAkEHM6eP'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RxAkEHM6eP'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'RqeKlYIPnF'}), (e:Event {id:'RxAkEHM6eP'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxAkEHM6eP'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "high",
+    "reason": "沈暮雪线人物弧摊牌（arc→new）。图上实查伏笔：Info RINsONAONt『沈暮雪顶住江烈反对挖人、另有未言明的理由——等你值得得到答案的时候，我自然会告诉你』，该钩子至今未回收。用户拍板：时间点延后至报名之后（07-05 周五 22:00，首胜+报名两关过后才开口，符合台词节奏）。地点回收两人首次面谈的街角咖啡店（关系对称）。挂 condition choice:RINsONAOO0[1]（只有选沈线的玩家看到她的内心）。摊牌理由内容待用户口述，不代写。本事件挂线",
+    "content": "新事件：咖啡店深夜谈心沈暮雪吐露建队动机（2024-07-05 22:00，街角咖啡店；沈暮雪/陈默 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxAkEHM6eQ'}) SET e.title='咖啡店深夜谈心沈暮雪吐露建队动机', e.time='2024-07-05 22:00:00', e.type='交流', e.description='咖啡店深夜谈心，沈暮雪首次开口回应当初那句「等你值得得到答案」——吐露顶住江烈反对挖他、自建战队的真正理由；理由内容待补（用户口述）', e.condition='choice:RINsONAOO0[1]';\nMATCH (e:Event {id:'RxAkEHM6eQ'}), (l:Location {id:'PHuTf3ogEr'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxAkEHM6eQ'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RxAkEHM6eQ'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxAkEHM6eQ'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I3_new_info",
+    "priority": "low",
+    "reason": "下游 novelist 写联赛线可引用的静态背景（推理链上游）。图上无联赛报名类 Info（沈暮雪 link 的 Info 全查过，无此事实）",
+    "content": "新 Info：次级联赛报名须知（报名截止/资格要求，link 挂 C4 报名事件）",
+    "cypher": "CREATE (i:Info {id:'RxAkEHM6eS'}) SET i.title='次级联赛报名须知', i.content='次级联赛报名窗口与参赛资格要求（截止时间/队伍注册条件，内容待补）';\nMATCH (e:Event {id:'RxAkEHM6eP'}), (i:Info {id:'RxAkEHM6eS'}) MERGE (e)-[r:link]->(i);",
+    "source": "event-ideator"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "check": "I1_placeholder_entity",
+    "priority": "medium",
+    "reason": "W5 同行事件场地。图上 CONTAINS '美术/展览/馆' 仅命中小酒馆（无关），无美术馆类 Location；用户拍板新建占位。占位只建裸节点 status=0，空间链不在创建域",
+    "content": "新建 Location：美术馆（沈暮雪的小资地盘，占位）",
+    "cypher": "CREATE (l:Location {id:'RxbGE30zTM'}) SET l.name='美术馆', l.description='沈暮雪常来的美术馆，她的小资地盘；备赛期唯一休息日与陈默同行（细节待补）', l.status=0;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "沈线感情升温第一拍（arc→new，用户拍板 W4）。图上实查：RRl7l6AeGH 06-22 混混闹事陈默保护受伤、desc 明写『沈暮雪送他去处理伤口』——道谢钩子开了口未回收；07-05 咖啡店谈心（RxAkEHM6eQ）刚过，本事件为谈心次日余韵。Info『外冷内细、直球高效』（RINsONAONs）支撑迟来道谢的人设。挂 condition choice:RINsONAOO0[1]（沈线专属）。本事件挂线",
+    "content": "新事件：训练间隙沈暮雪注意到陈默手上未愈的伤疤迟来道谢（2024-07-06 20:30，网吧；沈暮雪/陈默 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxbGE30zTN'}) SET e.title='训练间隙沈暮雪注意到陈默手上未愈的伤疤迟来道谢', e.time='2024-07-06 20:30:00', e.type='交流', e.description='训练间隙沈暮雪注意到陈默手上未愈的伤疤，闷了两周的道谢说出口——「那次……谢谢」（细节待补）', e.condition='choice:RINsONAOO0[1]';\nMATCH (e:Event {id:'RxbGE30zTN'}), (l:Location {id:'RxAkEHM6eR'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxbGE30zTN'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RxbGE30zTN'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxbGE30zTN'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "high",
+    "reason": "沈线感情升温第二拍（arc→new，用户以 W3 换弃 W2）。图上实查：06-19 建队电话至 07-05 沈暮雪事件密度高强度连轴（辞职/报名/带训全压她一人），病倒是代价的自然落点；关系反转——06-22 他为她受伤、这次换他照顾她，照顾的反向偿付。挂 condition choice:RINsONAOO0[1]。本事件挂线",
+    "content": "新事件：连日操劳沈暮雪训练中病倒陈默照顾（2024-07-10 19:30，网吧；沈暮雪/陈默 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxbGE30zTO'}) SET e.title='连日操劳沈暮雪训练中病倒陈默照顾', e.time='2024-07-10 19:30:00', e.type='状态变化', e.description='连日操劳沈暮雪训练中病倒，陈默送药照顾；一贯强势的经理第一次在人前示弱（细节待补）', e.condition='choice:RINsONAOO0[1]';\nMATCH (e:Event {id:'RxbGE30zTO'}), (l:Location {id:'RxAkEHM6eR'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxbGE30zTO'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RxbGE30zTO'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxbGE30zTO'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "沈线感情升温第三拍（arc→new，用户拍板 W5+地点改美术馆占位）。图上实查：Character desc『御姐，小资』——美术馆是她的人设地盘；两人首次在战队之外独处（此前全图沈陈共同事件均在训练/比赛/事故场景）。挂 condition choice:RINsONAOO0[1]。本事件挂线",
+    "content": "新事件：备赛期唯一休息日沈暮雪约陈默同逛美术馆（2024-07-13 15:00，美术馆〔新占位〕；沈暮雪/陈默 当事人）",
+    "cypher": "CREATE (e:Event {id:'RxbGE30zTP'}) SET e.title='备赛期唯一休息日沈暮雪约陈默同逛美术馆', e.time='2024-07-13 15:00:00', e.type='交流', e.description='备赛期唯一休息日，沈暮雪约陈默同逛美术馆——她的小资地盘，两人第一次在战队之外相处（细节待补）', e.condition='choice:RINsONAOO0[1]';\nMATCH (e:Event {id:'RxbGE30zTP'}), (l:Location {id:'RxbGE30zTM'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RxbGE30zTP'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'RxbGE30zTP'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='当事人', r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mu'}), (e:Event {id:'RxbGE30zTP'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I5_story_arc_update",
+    "priority": "low",
+    "reason": "故事线对账（自动，round15 感情升温三事件挂线触发）。原 description 氛围段纯竞技质感（深夜汗水/火药味/烟火气），本轮伤疤道谢/病倒照顾/美术馆同行三事件使感情面向进线——氛围段补写感情线质感。主旨段零改动。用户可在 dashboard 选择不采纳（保留原 description）",
+    "content": "沈暮雪线 description 对账更新（仅氛围段补感情线质感一句）",
+    "cypher": "MATCH (a:StoryArc {id:'RpPzkWr7Mu'}) SET a.description='主旨：一个无处施展的经理人与一个被打落谷底的天才，在体制的废墟上白手起家。这条线最终要回答：凭本事吃饭，能不能赢过凭关系吃饭——图上的试训、连败、被踢、首胜只是第一程，终点在职业赛场的灯光下。\\n氛围：训练室的深夜与汗水、连败的沉默、复盘室的火药味、烧烤摊的烟火气；网吧深夜的迟来道谢、病倒时的守候、美术馆的下午——冷面之下的暖意，在备赛的日子里悄然升温；再往后，是更大的场馆和更亮的灯。';",
+    "source": "event-ideator"
+  }
+]
