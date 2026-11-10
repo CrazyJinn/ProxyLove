@@ -85,12 +85,13 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 11. **双后端（Memgraph/Neo4j）聚合兼容**：多段 `OPTIONAL MATCH` 后**禁止直接 `RETURN` 聚合**（collect/count/sum 跨段引用 → Memgraph `Unbound variable` 崩，Neo4j 正常）。每段后紧跟 `WITH <锚>, collect(...) AS ...` 物化再进下一段；聚合后 `ORDER BY` 只用 RETURN 别名（`ORDER BY time`，禁 `ORDER BY e.time`）；collect 物化后计数/过滤用列表推导并显式滤 null 项（`x IS NOT NULL`）。段数 ≥3 或混合行粒度时优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，见 suggest_lint.py R5）
 12. **禁 pattern comprehension** `[(a)-[:r]->(b) | expr]`（Neo4j 独有，Memgraph 不支持）——改 `OPTIONAL MATCH` + `WITH ... collect(...)`，或拆查询。
 13. **谓词/CASE 内避免 `IN` 字面量列表**（Memgraph 实测 IN+负数列表 parse 崩；字符串字面量列表未实测不赌）：常量多值判断用 `=` + `OR`；动态 id 集合的 IN 可保留（服务器 Memgraph 验证清单项）。计数用 collect 物化 + `size([x IN l WHERE ...])`。
+14. **属性值禁备忘/解释性文字**：不写日期注记（「2026-11-10 修改」）、编号引用推导（「I31+I39→…」）、归属标注（「（归属林梦）」）——属性只存当下有效值，变更历史不落图。占位文字（如「内容待补」）允许。
 
 ## Event 图拓扑铁律（图结构契约，写边/建节点前必读）
 
 - **Event 定位一律 `occurs_at → Location`**（一跳；N:N——跨地点事件多挂）；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）。
 - 节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`。
-- **Event 间禁建 `evt_relation`**（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（(Event|Info)→(Event|Info) 四向）。
+- **Event 间禁建 `evt_relation`**（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Info 无出边**：事实成立挂 `(Event|Character|Location) ─establishes→ Info`（原 link 边已废止归一），读者侧揭示时刻挂 `Event ─reveals→ Info`——事件与信息之间不走因果边。
 - Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
 - **占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
 

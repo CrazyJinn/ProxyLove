@@ -59,7 +59,7 @@
 
 ## 全局边速查
 
-> **时间字段全局约定**：时间类字段（Event.time、link.time、relation/at 起止、Choice.time）统一 `yyyy-MM-dd HH:mm:ss` 字符串，自 [游戏概览.md](游戏概览.md)「时间锚点」推算；字符串序即时间序，计算用 `datetime()` 现场转换。
+> **时间字段全局约定**：时间类字段（Event.time、relation/at 起止、Choice.time）统一 `yyyy-MM-dd HH:mm:ss` 字符串，自 [游戏概览.md](游戏概览.md)「时间锚点」推算；字符串序即时间序，计算用 `datetime()` 现场转换。
 
 | 边 | 从 → 到 | 基数 | sync | 说明 |
 |----|---------|------|------|------|
@@ -69,8 +69,9 @@
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
-| link | Character/Event/Location → Info | N:N | ❌ | 信息关联（仅 3 大实体；因果归 leads_to） |
-| leads_to | (Event\|Info) → (Event\|Info) | N:N | ❌ | 导致——叙事层唯一因果边，四向全通（先后时序由 Event.time 承载，evt_relation 已废止） |
+| establishes | (Event\|Character\|Location) → Info | N:N | ❌ | **事实成立**（成立轴）——事件性成立（递交辞呈→沈暮雪辞职）/ 设定性成立（陆择→陆择是海王）；原 link 边已废止归一 |
+| reveals | Event → Info | N:N | ❌ | **读者侧揭示**（揭示轴）——读者通过该事件知晓该 Info（信息释放时刻锚点） |
+| leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.time 承载，evt_relation 已废止；事件↔信息归 establishes/reveals） |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
 | comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层，无 order——次序由 Event.time + description 承载） |
@@ -154,8 +155,10 @@ flowchart LR
     SubEvent -.->|"anchored_at ❌ N:N"| Scene
     SubEvent -->|"appears_as ❌ N:N"| IllusDesign
     Event -->|"leads_to ❌ N:N"| Event
-    Event -->|"leads_to ❌ N:N"| Info
-    Info -->|"leads_to ❌ N:N"| Event
+    Event -->|"establishes ❌ N:N"| Info
+    Event -->|"reveals ❌ N:N"| Info
+    Character -->|"establishes ❌ N:N"| Info
+    Location -->|"establishes ❌ N:N"| Info
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
     StoryArc -->|"comprises ❌ N:M"| Event

@@ -1,0 +1,146 @@
+# Room DSL v3 —— 网吧·训练区
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: RxAkEHM6eR
+  name: 网吧
+  description: 自建战队日常训练的网吧，次级联赛报名提交地
+room:
+  floor:
+  - 7.0
+  - 5.0
+  height: 3.0
+  wall_color: '#565b63'
+  floor_color: '#3d4046'
+  door:
+    side: z+
+    pos:
+    - 2.0
+    - 0.0
+    - 2.48
+    size:
+    - 1.6
+    - 2.1
+  deco: 网吧靠里的战队训练区，遮光帘半拉的暗厅，视线越过空椅望向整排亮屏的训练桌
+  floor_material: 瓷砖
+  wall_material: 乳胶漆
+objects:
+- id: train_desk_row
+  spot: 训练区
+  name: 训练长桌
+  type: box
+  pos:
+  - 0.0
+  - 0.375
+  - -2.15
+  size:
+  - 6.2
+  - 0.75
+  - 0.7
+  color: '#3a3d42'
+  material: 金属
+  desc: 整排连体训练桌，桌面分格五联机位，桌下走线槽扎着线缆
+- id: monitor_wall
+  spot: 训练区
+  name: 五联显示器排
+  type: box
+  pos:
+  - 0.0
+  - 1.05
+  - -2.46
+  size:
+  - 6.0
+  - 0.55
+  - 0.08
+  color: '#1a1d24'
+  material: 玻璃
+  desc: 固定支架上的五联显示器，屏幕亮着训练赛界面与数据面板
+- id: partition_screen
+  spot: 训练区
+  name: 隔断屏风
+  type: box
+  pos:
+  - 3.47
+  - 0.9
+  - 0.0
+  size:
+  - 0.06
+  - 1.8
+  - 4.4
+  color: '#4f5560'
+  material: 布艺
+  desc: 一米八高灰蓝隔断屏风，把战队训练区与网吧散客区隔开
+- id: storage_cabinet
+  spot: 训练区
+  name: 储物柜
+  type: box
+  pos:
+  - -3.2
+  - 0.9
+  - -1.2
+  size:
+  - 0.6
+  - 1.8
+  - 1.4
+  color: '#6b7280'
+  material: 金属
+  desc: 贴墙玻璃门储物柜，队服外套与备用外设分层摆放
+- id: tactic_board
+  spot: 训练区
+  name: 战术白板
+  type: box
+  pos:
+  - -3.48
+  - 1.75
+  - 0.8
+  size:
+  - 0.04
+  - 1.1
+  - 1.8
+  color: '#e8e8e6'
+  material: 金属
+  desc: 白板上贴着赛程表与手写战术要点
+scenes:
+- id: wangba_train_day
+  scene_id: RxoSkCPyin
+  scene_name: 网吧-训练区
+  spot: 训练区
+  camera:
+    pos:
+    - 0.0
+    - 1.55
+    - 2.4
+    look_at:
+    - 0.0
+    - 1.2
+    - -1.8
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0.0
+    - 2.8
+    - 0.0
+    color: '#9fc3e8'
+    intensity: 1.1
+  - type: point
+    pos:
+    - 0.0
+    - 1.4
+    - -2.0
+    color: '#7fb0d8'
+    intensity: 0.9
+  - type: ambient
+    pos:
+    - 0.0
+    - 2.0
+    - 0.0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

@@ -1,0 +1,58 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "美术馆 Location 无任何 Spot（空间缺口）；门厅承载 sub1 碰头 / sub4 离场两段机位，命名按「<Location名>-<区域名>」规范且图上无重名",
+    "content": "占位 Spot「美术馆-门厅」（zone），挂 Location 美术馆 part_of",
+    "cypher": "CREATE (sp:Spot {id:'RxmKnebFy4'}) SET sp.name='美术馆-门厅', sp.kind='zone', sp.description='美术馆入口门厅，售票寄存与进出缓冲区', sp.status=0;\nMATCH (l:Location {id:'RxbGE30zTM'}) MATCH (sp:Spot {id:'RxmKnebFy4'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "展厅承载 sub2 同游 / sub3 画前坦露两段机位（同机位复用，EA3 同角色着装一致）；观展主线空间与门厅分区对应后续 room DSL 建模",
+    "content": "占位 Spot「美术馆-展厅」（zone），挂 Location 美术馆 part_of",
+    "cypher": "CREATE (sp:Spot {id:'RxmKnebFy5'}) SET sp.name='美术馆-展厅', sp.kind='zone', sp.description='美术馆常设展厅，观展主线空间', sp.status=0;\nMATCH (l:Location {id:'RxbGE30zTM'}) MATCH (sp:Spot {id:'RxmKnebFy5'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "机位缺口（Scene 不存在则建占位）；sub1/sub4 共用本机位，首尾呼应且省背景资产",
+    "content": "占位 Scene「美术馆-门厅」（dialogue），挂 Spot 美术馆-门厅 realizes",
+    "cypher": "CREATE (sc:Scene {id:'RxmKnebFy6'}) SET sc.name='美术馆-门厅', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'RxmKnebFy4'}) MATCH (sc:Scene {id:'RxmKnebFy6'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "机位缺口；sub2/sub3 共用本机位（同展厅空间，同机位同角色着装一致）",
+    "content": "占位 Scene「美术馆-展厅」（dialogue），挂 Spot 美术馆-展厅 realizes",
+    "cypher": "CREATE (sc:Scene {id:'RxmKnebFy7'}) SET sc.name='美术馆-展厅', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'RxmKnebFy5'}) MATCH (sc:Scene {id:'RxmKnebFy7'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "到场节拍：第一次战队之外/非工作身份相见，身份转换信息独立可演（应邀赴约型到场）；着装全继承用户拍板——沈暮雪西餐厅正式约会装（郑重赴约）+ 陈默日常户外休闲装",
+    "content": "sub1 碰头（14:55，美术馆-门厅）：候场→互相打量→招呼领入",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTP'})\nMERGE (sub:SubEvent {id:'RxmKnebFy8'})\nON CREATE SET sub.title='备赛期唯一休息日沈暮雪约陈默同逛美术馆 · 碰头', sub.time='2024-07-13 14:55:00', sub.description='沈暮雪先至门厅候场，陈默便装到场两人互相打量；沈暮雪主动招呼陈默，领他入馆'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RxmKnebFy8'}) MATCH (scn:Scene {id:'RxmKnebFy6'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RxmKnebFy8'}) MATCH (il:IllusDesign {id:'O0Du9LWYz2'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：沈暮雪 西餐厅正式约会装';\nMATCH (sub:SubEvent {id:'RxmKnebFy8'}) MATCH (il2:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap2:appears_as]->(il2) ON CREATE SET ap2.sync=false, ap2.detail='继承：陈默 日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "主活动节拍：她主导导览他应和、电竞视角接话的反差喜剧交错点；她的私人世界首次向他打开（关系/信息变化）",
+    "content": "sub2 同游（15:05，美术馆-展厅）：导览→电竞视角接话→失笑升温",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTP'})\nMERGE (sub:SubEvent {id:'RxmKnebFy9'})\nON CREATE SET sub.title='备赛期唯一休息日沈暮雪约陈默同逛美术馆 · 同游', sub.time='2024-07-13 15:05:00', sub.description='沈暮雪主导导览逐厅讲解，陈默跟随应和；陈默以电竞视角接话引沈暮雪失笑，她讲得更起劲'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RxmKnebFy9'}) MATCH (scn:Scene {id:'RxmKnebFy7'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RxmKnebFy9'}) MATCH (il:IllusDesign {id:'O0Du9LWYz2'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：沈暮雪 西餐厅正式约会装';\nMATCH (sub:SubEvent {id:'RxmKnebFy9'}) MATCH (il2:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap2:appears_as]->(il2) ON CREATE SET ap2.sync=false, ap2.detail='继承：陈默 日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "释放节拍（情绪转变模式）：导览轻快→驻足沉静的转折瞬间，她袒露常来此地的原因、他接住——呼应 07-10 病倒示弱后的关系跨越，是本事件戏眼",
+    "content": "sub3 画前坦露（15:45，美术馆-展厅复用）：驻足转折→袒露→回应并肩",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTP'})\nMERGE (sub:SubEvent {id:'RxmKnebFyA'})\nON CREATE SET sub.title='备赛期唯一休息日沈暮雪约陈默同逛美术馆 · 画前坦露', sub.time='2024-07-13 15:45:00', sub.description='沈暮雪在一幅画前驻足放缓脚步，向陈默说起常来此地的原因；陈默安静听完认真回应，两人并肩看画'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RxmKnebFyA'}) MATCH (scn:Scene {id:'RxmKnebFy7'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RxmKnebFyA'}) MATCH (il:IllusDesign {id:'O0Du9LWYz2'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：沈暮雪 西餐厅正式约会装';\nMATCH (sub:SubEvent {id:'RxmKnebFyA'}) MATCH (il2:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap2:appears_as]->(il2) ON CREATE SET ap2.sync=false, ap2.detail='继承：陈默 日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "余韵节拍（离开模式）：关系新状态的确认——她主动回顾致谢收束、道别各自离开；父事件 title/description 未含离场动作，不触发不拆反例",
+    "content": "sub4 离场（16:30，美术馆-门厅复用）：出馆→回顾致谢→道别",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTP'})\nMERGE (sub:SubEvent {id:'RxmKnebFyB'})\nON CREATE SET sub.title='备赛期唯一休息日沈暮雪约陈默同逛美术馆 · 离场', sub.time='2024-07-13 16:30:00', sub.description='两人出馆缓步，沈暮雪主动回顾今日观展并向陈默致谢；陈默应答，两人道别各自离开'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'RxmKnebFyB'}) MATCH (scn:Scene {id:'RxmKnebFy6'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'RxmKnebFyB'}) MATCH (il:IllusDesign {id:'O0Du9LWYz2'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：沈暮雪 西餐厅正式约会装';\nMATCH (sub:SubEvent {id:'RxmKnebFyB'}) MATCH (il2:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap2:appears_as]->(il2) ON CREATE SET ap2.sync=false, ap2.detail='继承：陈默 日常户外休闲装';"
+  }
+]

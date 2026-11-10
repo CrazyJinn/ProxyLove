@@ -446,7 +446,7 @@ CORRECT_TEMPLATE = (
 # event-ideator 形态：逗号多 MATCH、无标签 MATCH 端点
 CORRECT_IDEATOR = (
     "MATCH (e:Event {id:'E4'}), (l:Location {id:'L4'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\n"
-    "MATCH (a:Event {id:'E4'}), (i:Info {id:'INFO2'}) MERGE (a)-[r2:link]->(i) ON CREATE SET r2.sync=true;\n"
+    "MATCH (a:Event {id:'E4'}), (i:Info {id:'INFO2'}) MERGE (a)-[r2:establishes]->(i) ON CREATE SET r2.sync=true;\n"
     "MATCH (n {id:'E4'}) SET n.description='补充一句';\n"
 )
 

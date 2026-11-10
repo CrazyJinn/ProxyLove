@@ -7,7 +7,7 @@ description: |
   产物范围：Event 节点 + involved/occurs_at 挂边 + Character/Location 占位节点（三要素
   细化时所需实体图上不存在 → 占位 status=0，待后续消化）+
   （仅用户明说因果时）leads_to + Info 节点（限产：仅锚点关系中明显缺内心戏/静态
-  注记时，≤2 个/次，link 挂锚点）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
+  注记时，≤2 个/次，establishes 挂成立源 + 可选 reveals 挂读者揭示场合）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
   扩线；I5 对账更新 description——全 skill 唯一允许改既有节点属性的例外）。
   六种启发模式：char→new→base（动机链补桥，抵达既定
   事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）/
@@ -203,8 +203,10 @@ status=0）；外貌链（AppearanceStyle→…）不在创建域，不建。
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
 **Info 提案（可选，≤2/次）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对
-某事的隐认知、伏笔注记、背景事实）时，提议 1~2 个 Info（`link` 挂锚点
-Event/Character）——并入候选批一起询问，不单独立题。
+某事的隐认知、伏笔注记、背景事实）时，提议 1~2 个 Info——并入候选批一起询问，不单独立题。
+挂靠按两轴模型：**事实成立**挂 `establishes`（事件性成立锚 Event、必答「事实由哪个事件
+成立」；设定性成立锚 Character/Location）；能指明**读者侧揭示场合**的事件加 `reveals`。
+title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填。
 
 **交互纪律**：
 
@@ -294,9 +296,10 @@ MATCH (e:Event {id:'<event_id>'}), (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occ
 MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='<role>', r.sync=false;
 // 仅用户明说因果时（方向 = 因 → 果）：
 MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e);
-// Info（限产 ≤2，link 挂锚点——锚点可为 Event 或 Character）
-CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>';
-MATCH (a) WHERE (a:Event OR a:Character) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:link]->(i);
+// Info（限产 ≤2，establishes 挂成立源——锚点可为 Event / Character / Location；reveals 可选挂读者揭示场合）
+CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>', i.knowledge_level=<1|2|3>;
+MATCH (a) WHERE (a:Event OR a:Character OR a:Location) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:establishes]->(i);
+MATCH (e:Event {id:'<揭示事件id>'}), (i:Info {id:'<info_id>'}) MERGE (e)-[r2:reveals]->(i);
 // 故事线（I4 标准形：建线 + 逐成员挂边；成员 id 全部 0 步现查——MATCH 落空=静默丢边）
 CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='主旨：…\n氛围：…';
 MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;

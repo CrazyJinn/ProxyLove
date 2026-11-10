@@ -16,6 +16,9 @@
   check 自检小说.md 头部清单 vs 当前素材:退出码 0=新鲜 / 1=stale(stdout 报告明细):
         python fingerprint.py check --novel 小说.md --in materials.json
         stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)
+  consumed 扫描 root 下全部小说.md 指纹头部的 info 行,输出「info id → 消费它的小说路径列表」
+        JSON 映射(供 novelist 圈定后查重:Info 消费限次)。--ids 只查给定子集:
+        python fingerprint.py consumed [--root 25_剧本] [--ids id1,id2,…]
 """
 
 from __future__ import annotations
@@ -114,17 +117,45 @@ def cmd_check(rows: list[dict], novel_path: str) -> int:
     return 1
 
 
+def cmd_consumed(root: str, ids: set[str] | None) -> int:
+    """扫描 root 下全部 小说.md 指纹头部,汇总 info id → 消费路径列表。"""
+    import glob
+    import os
+
+    novels = sorted(glob.glob(os.path.join(root, "**", "小说.md"), recursive=True))
+    mapping: dict[str, list[str]] = {}
+    for path in novels:
+        try:
+            rows = _header_rows(open(path, encoding="utf-8").read())
+        except SystemExit:
+            continue  # 无指纹块的旧流程小说(如 ch00 存档)跳过
+        for kind, sid, _fp in rows:
+            if kind != "info":
+                continue
+            mapping.setdefault(sid, []).append(path.replace("\\", "/"))
+    if ids is not None:
+        mapping = {k: v for k, v in mapping.items() if k in ids}
+    print(json.dumps(mapping, ensure_ascii=False, indent=2))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("gen", "check"):
+    for name in ("gen", "check", "consumed"):
         p = sub.add_parser(name)
         p.add_argument("--in", dest="infile", help="素材 JSON 文件;缺省读 stdin")
         if name == "check":
             p.add_argument("--novel", required=True, help="小说.md 路径")
-        else:
+        elif name == "gen":
             p.add_argument("--ids", help="逗号分隔的素材 id 列表——只圈实际取用的子集(指纹=使用的,非圈定全部)")
+        else:  # consumed
+            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md)")
+            p.add_argument("--ids", help="逗号分隔的 info id 列表——只查给定子集")
     args = ap.parse_args()
+    if args.cmd == "consumed":
+        ids = set(s.strip() for s in args.ids.split(",")) if args.ids else None
+        return cmd_consumed(args.root, ids)
     text = open(args.infile, encoding="utf-8").read() if args.infile else sys.stdin.read()
     rows = _materials(text)
     if args.cmd == "gen":

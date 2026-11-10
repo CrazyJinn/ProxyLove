@@ -1,0 +1,160 @@
+# Room DSL v3 —— 美术馆·展厅
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: RxbGE30zTM
+  name: 美术馆
+  description: 沈暮雪常来的美术馆，她的小资地盘；备赛期唯一休息日与陈默同行
+room:
+  floor:
+  - 14.0
+  - 10.0
+  height: 4.5
+  wall_color: '#eae8e2'
+  floor_color: '#b7b2a8'
+  door:
+    side: z+
+    pos:
+    - 0.0
+    - 0.0
+    - 4.98
+    size:
+    - 2.0
+    - 2.6
+  deco: 常设展厅，展墙与挂画沿三面墙铺开，射灯静光打在画布上，观众低声缓步
+  floor_material: 瓷砖
+  wall_material: 乳胶漆
+objects:
+- id: painting_main
+  spot: 展厅
+  name: 主画墙大画
+  type: plane
+  pos:
+  - 0.0
+  - 2.2
+  - -4.99
+  size:
+  - 3.2
+  - 2.2
+  color: '#7d8a96'
+  material: 布艺
+  desc: 后墙正中大幅常设油画，沈暮雪常驻足的那幅，画框下贴着小说明牌
+- id: painting_wall_left
+  spot: 展厅
+  name: 侧墙挂画组·左
+  type: box
+  pos:
+  - -6.95
+  - 2.0
+  - -1.0
+  size:
+  - 0.1
+  - 1.8
+  - 4.0
+  color: '#93867a'
+  material: 布艺
+  desc: 西墙连排三幅中小幅油画，间隔均匀，各配一盏轨道射灯
+- id: painting_wall_right
+  spot: 展厅
+  name: 侧墙挂画组·右
+  type: box
+  pos:
+  - 6.95
+  - 2.0
+  - -1.0
+  size:
+  - 0.1
+  - 1.8
+  - 4.0
+  color: '#93867a'
+  material: 布艺
+  desc: 东墙连排三幅中小幅油画，与西墙对称挂法
+- id: partition_wall
+  spot: 展厅
+  name: 自由展墙
+  type: box
+  pos:
+  - 4.8
+  - 1.5
+  - -0.5
+  size:
+  - 0.3
+  - 3.0
+  - 5.0
+  color: '#e3e0d8'
+  material: 金属
+  desc: 偏东侧的独立展墙，双面各挂两幅画，把展厅分出一条侧向动线
+- id: bench_mid
+  spot: 展厅
+  name: 观展长凳
+  type: box
+  pos:
+  - -3.5
+  - 0.225
+  - -2.5
+  size:
+  - 1.8
+  - 0.45
+  - 0.6
+  color: '#8f7a5e'
+  material: 原木
+  desc: 主画墙前偏左的实木观展凳，供观众坐下慢看
+- id: pedestal_corner
+  spot: 展厅
+  name: 雕塑基座
+  type: cylinder
+  pos:
+  - 5.8
+  - 0.6
+  - -4.0
+  size:
+  - 0.8
+  - 1.2
+  - 0.8
+  color: '#d8d4cb'
+  material: 混凝土
+  desc: 右后角圆形基座上的小型石膏雕塑，罩着警示细线
+scenes:
+- id: museum_hall_afternoon
+  scene_id: RxmKnebFy7
+  scene_name: 美术馆-展厅
+  spot: 展厅
+  camera:
+    pos:
+    - 0.0
+    - 1.55
+    - 3.8
+    look_at:
+    - 0.0
+    - 1.4
+    - -3.5
+    fov: 66
+  lights:
+  - type: point
+    pos:
+    - 0.0
+    - 3.9
+    - -3.5
+    color: '#f5f3ea'
+    intensity: 2.6
+  - type: point
+    pos:
+    - 0.0
+    - 4.0
+    - 1.5
+    color: '#eef0ea'
+    intensity: 1.6
+  - type: ambient
+    pos:
+    - 0.0
+    - 2.2
+    - 0.0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

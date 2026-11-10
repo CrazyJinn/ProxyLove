@@ -1,7 +1,7 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色/Event 一跳 link 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Info/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + involved 角色 establishes 的 Info + 本节 Event reveals 的 Info；时间由成员事件推导）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Info 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Info）。
   前驱：无（章无 status 取消结构审；节创建即 0 待定稿，定稿审在下游 dialoguer 产出置 10 后由人工批准；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
@@ -57,7 +57,7 @@ LIMIT 1
 
 - 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-stager 补 sub+anchored_at，含 Scene 占位物化] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 限本节 involved 角色 / Event 一跳 link 防过宽）。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Info 两源防过宽：本节 involved 角色 `establishes` 的人设事实 + 本节 Event `reveals` 的读者侧揭示信息——**Event-establishes 出边的 Info 不圈定**（产生事件所在节直接演出事件本身，Info 是事实投影无增量））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
@@ -66,11 +66,16 @@ RETURN 'event' AS kind, e.id AS id, e.title AS title, e.time AS time, e.type AS 
        null AS content, null AS knowledge_level
 UNION
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)
-MATCH (src)-[:link]->(i:Info)
-WHERE (src:Character AND (src)-[:involved]->(e2)) OR src = e2
-RETURN 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
+MATCH (src:Character)-[:establishes]->(i:Info)
+WHERE (src)-[:involved]->(e2)
+RETURN DISTINCT 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
        null AS description, null AS ending_kind, null AS condition,
        i.content AS content, i.knowledge_level AS knowledge_level
+UNION
+MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)-[:reveals]->(i2:Info)
+RETURN DISTINCT 'info' AS kind, i2.id AS id, i2.title AS title, null AS time, null AS type,
+       null AS description, null AS ending_kind, null AS condition,
+       i2.content AS content, i2.knowledge_level AS knowledge_level
 ```
 
 演出段素材（父事件细化出的 SubEvent 是机位级演出事实，写场景段时按 sub 对号）：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent) OPTIONAL MATCH (sub)-[:anchored_at]->(sc:Scene) RETURN sub.id AS sub_id, sub.title AS title, sub.time AS time, sub.description AS description, sc.name AS scene`——sub.description 承载演出内容（升格自 Info 的台词/动作），空缺 = 待 event-stager 拆解，可作素材不足信号。
@@ -85,6 +90,16 @@ RETURN 'info' AS kind, i.id AS id, i.title AS title, null AS time, null AS type,
 Bash 落盘复用（段 3 的 gen 还要用同一份）：`python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<上句>" --json > .tmp/novelist/<sec_id>_materials.json`（UNION 是单语句，`--json` 输出数组即素材 JSON）。
 
 再查创作上下文（不进指纹）：出场角色 + LanguageStyle（与 chapter-dialoguer 1b 同款查询，对白语感权威源——**人 × 事交集：Event 是情节，LanguageStyle 是语感，小说写的对白必须按图上人设**）。
+
+#### 1b'. Info 消费查重（圈定 Info 非空时）
+
+Info 消费有限次——同一 Info 的指纹不应散落多节（揭示时刻天然唯一）。圈定素材含 info 行时：
+
+```bash
+python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" consumed --ids <圈定 info id 逗号列表>
+```
+
+输出映射中出现的 Info（已被其他节消费）由本 skill 裁量：**默认丢弃**（静默剔除出取材清单，不询问）；**确需再次使用**时自行决定复用，并在保存结果步的汇总中给出理由（哪节已消费、本节为何需要复用）。不设人工停点。
 
 #### 1c. 丰满度自检（素材门控，不足拒绝产出）
 
@@ -175,7 +190,7 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
    - **落盘后跑** `python .claude/scripts/suggest_lint.py <文件路径>`，FAIL（exit 1）
      就地改写、覆盖重写并重跑至全 PASS（exit 0）再汇报（dashboard 执行侧有同规格
      兜底，FAIL 形态会在采纳时被 400 拒绝）
-   - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/link/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）。稀疏纪律：单次至多 3 Event + 2 Info，无新增不落盘只汇报。
+   - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/establishes/reveals/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）；新 Info 的 title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），必须挂 establishes 成立源、可加 reveals 揭示场合。稀疏纪律：单次至多 3 Event + 2 Info，无新增不落盘只汇报。
 5. **汇总**：小说路径 + 取材条数（event/info 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
 
 ## 参考文档
