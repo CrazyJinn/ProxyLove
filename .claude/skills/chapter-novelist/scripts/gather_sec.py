@@ -25,7 +25,8 @@ with d.session() as s:
         WITH DISTINCT info WHERE info IS NOT NULL
         RETURN info.id AS id, info.title AS ti""", s=SEC).data():
         out['info'].append(r)
-    chars = s.run("""MATCH (sec:Section {id:$s})-[:includes]->(e:Event)<-[:involved]-(c:Character)
+    chars = s.run("""MATCH (sec:Section {id:$s})-[:includes]->(e:Event)<-[:involved]-(host:Character)
+        MATCH (c:Character) WHERE c = host OR (c)-[:relation {type:'控制'}]->(host)
         WITH DISTINCT c RETURN c.name AS n, c.description AS de, c.character_tags AS tg""", s=SEC).data()
     out['chars'] = chars
 p = f".tmp/novelist/{SEC}_materials.json"

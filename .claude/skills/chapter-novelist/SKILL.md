@@ -57,7 +57,7 @@ LIMIT 1
 
 - 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-stager 补 sub+anchored_at，含 Scene 占位物化] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Hook/Lore 按 label 分流两源防过宽：**Hook** 走本节成员事件细化出的 SubEvent `reveals` 的读者侧揭示（圈定即揭示主场，一次性显性交付）；**Lore** 走本节 involved 角色 `has_info` 的固有设定（无揭示时刻，暴露节奏归遗忘曲线，见 1b'）——**Event-establishes 出边的 Hook 不圈定**（产生事件所在节直接演出事件本身，Hook 是事实投影无增量）；**`Event/Lore 端 reveals 均违规`**（Schema 已废止 Event 级、禁 Lore 目标；圈定查询天然不会带出））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Hook/Lore 按 label 分流两源防过宽：**Hook** 走本节成员事件细化出的 SubEvent `reveals` 的读者侧揭示（圈定即揭示主场，一次性显性交付）；**Lore** 走本节 involved 角色 `has_info` 的固有设定（含 `relation{type:控制}` 的控制者人格——受控角色的戏折射控制者特质，换魂/操控类题材通用；无揭示时刻，暴露节奏归遗忘曲线，见 1b'）——**Event-establishes 出边的 Hook 不圈定**（产生事件所在节直接演出事件本身，Hook 是事实投影无增量）；**`Event/Lore 端 reveals 均违规`**（Schema 已废止 Event 级、禁 Lore 目标；圈定查询天然不会带出））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
@@ -73,6 +73,7 @@ UNION
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)
 MATCH (src:Character)-[:has_info]->(l:Lore)
 WHERE (src)-[:involved]->(e2)
+   OR (src)-[:relation {type:'控制'}]->(:Character)-[:involved]->(e2)
 RETURN DISTINCT 'lore' AS kind, l.id AS id, l.title AS title, null AS time, null AS type,
        null AS description, null AS ending_kind, null AS condition,
        l.content AS content, l.knowledge_level AS knowledge_level
@@ -81,7 +82,7 @@ RETURN DISTINCT 'lore' AS kind, l.id AS id, l.title AS title, null AS time, null
 演出段素材（父事件细化出的 SubEvent 是机位级演出事实，写场景段时按 sub 对号）：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent) OPTIONAL MATCH (sub)-[:anchored_at]->(sc:Scene) RETURN sub.id AS sub_id, sub.title AS title, sub.time AS time, sub.description AS description, sc.name AS scene`——sub.description 承载演出内容（升格自 Hook/Lore 的台词/动作），空缺 = 待 event-stager 拆解，可作素材不足信号。
 
 **素材消化契约**（叙事引擎的解读权基础）：
-- sub.description / Event.description / Hook.content / Lore.content = **事实清单**（发生了什么/谁在场/关键物件/机位/基调），是**素材不是台本**。
+- sub.description / Event.description = **事实清单**（发生了什么/谁在场/关键物件/机位/基调），是**素材不是台本**。Hook/Lore 的 **title 即事实**；content 可空（无增量时的缺省态），有值仅为补充证据——痕迹级呈现由写作现场设计，不从 content 誊写。
 - **硬契约·事实不可蒸发，落点 = 痕迹而非陈述**：核心事实必须改变正文里某个可指认的具体物（一个动作选择/一句台词措辞/一个感知细节/一件物件），才算落点。判别法（自检用）：删掉承载句，段落只损失信息不损失动力 → 裸装安置句，回炉改折射。数字与专名可全隐（欠款 8600 可以只活在「把凉可乐往边上挪了挪」的手紧里），**事实的后果在场即可**。全篇找不到任何痕迹 = 蒸发，违硬契约——防的是两个极端：裸装（复述）与全暗线化（丢失）。
 - **软素材**（novelist 可重写/可丢弃/可换呈现方式）：description 里的**台词原文、金句、比喻、情绪注解、道具与环境细节**——照抄即誊写；台词层由下游 dialoguer 从小说正文重新提炼，丢弃 description 台词无下游连锁。**注意 sub 契约（2026-11-09 定稿：节拍级）**：sub description = 2~4 个分句的节拍链（谁+做了什么+互动方向），不含台词/道具/环境/氛围；sub 提供的是「该演哪几个节拍、谁主导」，**具体怎么演完全由 novelist 即兴设计、自担物理合理性**；存量 sub 仍可能带微剧本级细节（含物理瑕疵），消化时按软素材条款有权丢弃，不必为其物理合理性兜底。
 - **视角转换**：图素材一律完成时的上帝视角（「发生了 X」），正文一律进行时的限知体验（X 正在如何被看见/听见/做到/被误会）。复述感 = 完成时态总结句密度超标（「他知道/他认得/XX接了两个月/不久前……现在……」），识别与改法见去AI味工序「素材复述腔」。
@@ -89,7 +90,7 @@ RETURN DISTINCT 'lore' AS kind, l.id AS id, l.title AS title, null AS time, null
 
 Bash 落盘复用（段 3 的 gen 还要用同一份）：`python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<上句>" --json > .tmp/novelist/<sec_id>_materials.json`（UNION 是单语句，`--json` 输出数组即素材 JSON）。
 
-再查创作上下文（不进指纹）：出场角色 + LanguageStyle（与 chapter-dialoguer 1b 同款查询，对白语感权威源——**人 × 事交集：Event 是情节，LanguageStyle 是语感，小说写的对白必须按图上人设**）。
+再查创作上下文（不进指纹）：出场角色 + LanguageStyle（与 chapter-dialoguer 1b 同款查询——已含控制跳：灵魂的 LS 随宿主入场，**内心独白语感用控制者 LS**；对白语感权威源——**人 × 事交集：Event 是情节，LanguageStyle 是语感，小说写的对白必须按图上人设**）。
 
 #### 1b'. Lore 新鲜度裁量（圈定 lore 行非空时）
 

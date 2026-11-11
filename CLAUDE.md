@@ -109,6 +109,10 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 
 `settings.json`（项目根，已在 `.gitignore`）持有 `neo4j_password`、`ofox_api_key`，以及 R2 部署凭证 `cloudflare_account_id` / `cloudflare_access_key_id` / `cloudflare_secret` / `cloudflare_bucket`（桶 `proxy-love`，token 限单桶无 ListBuckets 权限；[deploy_r2.py](99_game/tools/deploy_r2.py) 读，env `R2_*` 优先）。密码优先级：`--password` 参数 > `NEO4J_PASSWORD` 环境变量 > 向上搜索到的 `settings.json`。OfoxAI key 由 [infra-image-generator](.claude/skills/infra-image-generator/scripts/ofoxai_api.py) 从同一 `settings.json` 读。**治理后台凭证在 dailian-dashboard 仓库根的 `settings.json` 管理（env `NEO4J_*` 优先，模板见其 settings.example.json）——`neo4j_password` 与本项目根仍是两份，Neo4j 改密两处都要改**。
 
+## 临时文件（.tmp/，已 gitignore）
+
+一切**临时要执行的文件**——一次性 .py 脚本、批量 .cypher 文件（`cypher_exec.py -f` 用）、任务/中间 JSON、候选下载、skill 工作区——一律放仓库根 `.tmp/` 下，禁止散落项目根或其他生产目录污染 git status。skills 已有约定子目录（`.tmp/novelist/`、`.tmp/ambient/` 等）与命名前缀（`.tmp/voice-tasks-<stem>-sec<MM>.json` 这类），沿用既有模式。临时文件用后即删（skill 收尾步约定），不留跨轮残留；需要长期保留的产物不进 `.tmp/`，写不进 git 的东西也不要指望它长期存在。
+
 ## ID 约定（id 锚定，2026-10-31 全量迁移）
 
 节点 ID 用雪花算法 Base62 编码（如 `Nv93TkkkgC`），全局唯一、**无前缀**；节点 name/title 是纯显示名，**不锚定任何目录/文件名/运行时键**（改名零漂移）。两种形态按用途严格区分：

@@ -64,9 +64,11 @@ LIMIT 1
 
 ```cypher
 // 出场角色 + 语言习惯（创作对话的核心依据）——图关系遍历，不按名字列表猜：
-// 本节 includes 的事件 ← 参与的角色
+// 本节 includes 的事件 ← 参与的角色；控制对端（灵魂）随宿主入场——
+// 台词轨用宿主 LS、内心轨用控制者 LS（称谓规则的语言侧对应）
 MATCH (sec:Section {id:'<input>'})-[:includes]->(e:Event)
-MATCH (e)<-[:involved]-(char:Character)
+MATCH (e)<-[:involved]-(host:Character)
+MATCH (char:Character) WHERE char = host OR (char)-[:relation {type:'控制'}]->(host)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
 RETURN DISTINCT char.name AS name, char.description AS description, char.character_tags AS tags,
        voice.vocabulary AS vocabulary, voice.rhythm AS rhythm,
