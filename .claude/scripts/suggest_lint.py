@@ -434,19 +434,19 @@ CORRECT_TEMPLATE = (
     "CREATE (sp:Spot {id:'SP3'}) SET sp.name='小酒馆-吧台区', sp.kind='zone', sp.status=0;\n"
     "// part_of 边\n"
     "MATCH (l:Location {id:'L3'}) MATCH (sp:Spot {id:'SP3'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\n"
-    "// S3 Info 升格\n"
+    "// S3 Hook 揭示\n"
     "MATCH (e:Event {id:'E3'})\n"
     "MERGE (sub:SubEvent {id:'SUB3'})\n"
     "ON CREATE SET sub.title='内心独白', sub.time='09:00', sub.description='忐忑'\n"
     "MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\n"
     "MATCH (sub:SubEvent {id:'SUB3'}) MATCH (scn:Scene {id:'SCN3'})\n"
     "MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\n"
-    "MATCH (i:Info {id:'INFO1'}) DETACH DELETE i;\n"
+    "MATCH (e2:Event {id:'E5'}) MATCH (f:Hook {id:'FACT1'}) MERGE (e2)-[rv:reveals]->(f);\n"
 )
 # event-ideator 形态：逗号多 MATCH、无标签 MATCH 端点
 CORRECT_IDEATOR = (
     "MATCH (e:Event {id:'E4'}), (l:Location {id:'L4'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\n"
-    "MATCH (a:Event {id:'E4'}), (i:Info {id:'INFO2'}) MERGE (a)-[r2:establishes]->(i) ON CREATE SET r2.sync=true;\n"
+    "MATCH (a:Event {id:'E4'}), (f:Hook {id:'FACT2'}) MERGE (a)-[r2:establishes]->(f) ON CREATE SET r2.sync=true;\n"
     "MATCH (n {id:'E4'}) SET n.description='补充一句';\n"
 )
 
@@ -459,7 +459,7 @@ SELFTEST_CASES = [
     ("ideator_forms_pass", CORRECT_IDEATOR, []),
     ("bare_merge_node_fail", "MERGE (n {id:'X1'}) SET n.name='x';\n", [RULE_R4]),
     ("match_set_pass", "MATCH (n {id:'X2'}) SET n.name='x';\n", []),
-    ("with_clause_fail", "MATCH (n:Event {id:'X3'}) WITH n MERGE (m:Info {id:'X4'});\n", [RULE_R5]),
+    ("with_clause_fail", "MATCH (n:Event {id:'X3'}) WITH n MERGE (m:Hook {id:'X4'});\n", [RULE_R5]),
     ("semicolon_same_line_fail", "CREATE (a:X {id:'1'}); CREATE (b:Y {id:'2'});\n", [RULE_R3B]),
     ("semicolon_in_string_fail", "CREATE (a:X {id:'3'}) SET a.d='半角;分号';\n", [RULE_R3A]),
 ]

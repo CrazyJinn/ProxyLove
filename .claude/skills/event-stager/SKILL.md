@@ -11,7 +11,7 @@ description: |
   （叙事侧拍定哪个房间哪套衣服）；④逐 event 询问确认 + 产出建议 JSON（人工经
   dashboard 写回）。多轮交互一次一问、每问附推荐；单轮至多 3 个 event。在用户说
   「细化」「stager」「这批事件细化一下」或给出事件范围要求推进机位层时使用。
-  不建 Event/Info/Choice/Location/Character（缺叙事基础实体一律报错，见 §1 入口核验）。
+  不建 Event/Hook/Lore/Choice/Location/Character（缺叙事基础实体一律报错，见 §1 入口核验）。
 argument-hint: <event id列表 | 事件title列表 | 时间窗>
 arguments:
   - events
@@ -61,7 +61,7 @@ OUTPUT_DIR="02_剧情数据"
   4. 确定性缺口修复类（S4_gap_fix，§1 发现 → §4 拍板 → dashboard 写回）：
      缺 involved/occurs_at 补边（仅当实体在图、只缺边；实体不在图走 §1 入口
      核验报错，不代建）；
-- **不建**：Event / Info / Choice / Location / Character。不产任何真资产（图片/
+- **不建**：Event / Hook / Lore / Choice / Location / Character。不产任何真资产（图片/
   room.yml 不在本层）。
 - **sub description 不引用占位字段**：只写演出内容（动作/情绪基调/
   同事件内前后 sub 衔接，按 §2 内容规范），机位信息一律由 anchored_at 边承载
@@ -109,7 +109,7 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
   缺 involved Character）→ **先分诊**（preflight 的 FAIL 不区分下述两种，需自查）：
   缺的实体**在图、只缺边** → 按创建域第 4 条转 §4 的 `S4_gap_fix` 补边建议，
   流程继续；实体**不在图** → **报错停止**，脚本 `failures` 已逐事件列出缺失项，
-  **不代建叙事基础实体**——Event/Info/Choice/Location/Character 均不在本 skill
+  **不代建叙事基础实体**——Event/Hook/Lore/Choice/Location/Character 均不在本 skill
   创建域，缺口回 event-ideator 层补。title/description 提及实体未建档同理
   （LLM 读文判断，实体是否在图对照 `assets` 段核查）；
 - **批次切分**：单轮上限 3 个 event（批量约束），超出时脚本 `batch` 段已切好
@@ -231,6 +231,10 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 - 项结构 `{check, priority, reason, content, cypher, source:'event-stager'}`；
 - check 取值：`S1_placeholder_node`（占位 Spot/Scene/CostumeStyle/IllusDesign）、
   `S2_subevent`（SubEvent+refines+anchored_at+appears_as 一体）、
+  `S3_fact_reveal`（**读者侧揭示场合拍板**：`SubEvent ─reveals→ Hook`——拆 sub 时逐 sub
+  判断：该场戏是否使读者知晓某既有 Hook（该 Hook 尚无 reveals 或本次有叙事增量），
+  揭示边挂 sub（演出发生在机位层，揭示时刻同层）；**源为 Event 或目标为 Lore 均违规**；
+  sub 被 sync 级联重细化时边随删，重拆重拍）、
   `S4_gap_fix`（确定性缺口修复：involved/occurs_at 补边——仅当图上实体确实存在
   只是边缺失时才走此类，实体缺失一律报错不走此类）；
 - priority：占位 high（生产链待消化）；其余 medium；

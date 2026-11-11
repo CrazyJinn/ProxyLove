@@ -2,7 +2,7 @@
 name: char-voice-design
 description: |
   推进 VoiceDesign 图节点（角色基线音色设计）**多候选流程**：查询状态 → 生成 instruct + 统一长句 ref_text → 先合成 3 个候选 ref（voice_clone_runner design-candidates）+ 每候选 3 个情绪试听（voice_clone_runner audition，Qwen3 Base Voice Clone，均 env/.venv-qwen）落盘验证 → 后写图（MERGE 兜底建节点+has_voice_design 边，写内容+ref_audio_path+candidates_path+status=10 候选待选；路径=14_声音设计/<char_id>/，hexid 目录）。
-  依据 Character 基础属性 + LanguageStyle + Info/Event，按声线三要素（音色基底/演绎方式/情绪域）生成**简明**自然语言 instruct（1-2 句、≤60 字，措辞遵循 Qwen VoiceDesign 官方原则：简洁/具体/客观，禁比喻修辞），并做同场角色频谱避让。同一 instruct × 3 次随机采样出候选（人工在 dashboard 审批中心试听 ref+情绪试听后「采用」其一，固化为 <char_id>/ref.wav，status 保持 10 走二审）。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
+  依据 Character 基础属性 + LanguageStyle + Lore/Event，按声线三要素（音色基底/演绎方式/情绪域）生成**简明**自然语言 instruct（1-2 句、≤60 字，措辞遵循 Qwen VoiceDesign 官方原则：简洁/具体/客观，禁比喻修辞），并做同场角色频谱避让。同一 instruct × 3 次随机采样出候选（人工在 dashboard 审批中心试听 ref+情绪试听后「采用」其一，固化为 <char_id>/ref.wav，status 保持 10 走二审）。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
 argument-hint: <char_id>
 arguments:
   - char_id
@@ -29,19 +29,19 @@ allowed-tools: Read, Bash, Write, Edit
 
 ### 1. 查询目标节点状态 + 生成素材
 
-通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询角色 + LanguageStyle + 已有 VoiceDesign + 叙事素材（Info/Event）+ **同场角色**（频谱避让用）：
+通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询角色 + LanguageStyle + 已有 VoiceDesign + 叙事素材（Lore/Event）+ **同场角色**（频谱避让用）：
 
 ```cypher
 MATCH (c:Character {id: '<char_id>'})
 OPTIONAL MATCH (c)-[:has_voice_style]->(ls:LanguageStyle)
 OPTIONAL MATCH (c)-[:has_voice_design]->(vd:VoiceDesign)
 WITH c, ls, vd
-OPTIONAL MATCH (c)-[:establishes]->(info:Info)
+OPTIONAL MATCH (c)-[:has_info]->(info:Lore)
 WITH c, ls, vd, collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos
 OPTIONAL MATCH (c)-[iv:involved]->(evt:Event)
 WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time }) AS events,
      collect(DISTINCT iv.role) AS event_roles
-OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:establishes|reveals]->(evtInfo:Info)
+OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:reveals]->(evtInfo:Hook)
 WITH c, ls, vd, infos, events, event_roles,
      collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos
 RETURN c, ls, vd, infos, events, event_roles, event_infos;

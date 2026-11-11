@@ -18,7 +18,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择、故事走哪条弧线 | Character, Event, Location, Info, Choice, StoryArc |
+| [叙事基础.md](Schema/叙事基础.md) | 角色是谁、做了什么、在哪里、知道什么、在哪选择、故事走哪条弧线 | Character, Event, Location, Hook, Lore, Choice, StoryArc |
 | [角色美术.md](Schema/角色美术.md) | 角色如何从文字变成画面 | AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 场景如何从地点变成画面 | Spot, Scene, SceneLayer |
 | [剧情.md](Schema/剧情.md) | 剧本章节编排（章→节→场景；结构/定稿态/逐句台词行——节级产物节点已删，小说.md/台词.ink 为纯文件产物） | Chapter, Section, LineAudio |
@@ -35,10 +35,11 @@
 |------|---------|-----------|
 | Character | snowflake Base62 | 有名字的人物 |
 | Event | snowflake Base62 | 某时某刻发生的某件事 |
-| SubEvent | snowflake Base62 | 事件在机位层的演出物化（到场/换区/离开/换装）；只挂 anchored_at/appears_as 两边，无 status |
+| SubEvent | snowflake Base62 | 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as/reveals 三边，无 status |
 | Location | snowflake Base62 | 具体地点/游戏场景 |
 | Spot | snowflake Base62 | 地点内子空间（zone）；sub 归组经 anchored_at 直挂 Scene；无 status |
-| Info | snowflake Base62 | 一条成立的事实（Event 记「发生」，Info 记「成立」；判定测试见 Schema/叙事基础.md） |
+| Hook | snowflake Base62 | 一条事件性事实（Event 记「发生」，Hook 记「埋设」；由 Event establishes 成立、Event reveals 揭示；判定测试见 Schema/叙事基础.md） |
+| Lore | snowflake Base62 | 一条固有设定（角色/地点的固有事实；has_info 宿主挂靠，无揭示时刻，暴露节奏归写作层遗忘曲线；原 Info 2026-11-11 拆分） |
 | Choice | snowflake Base62 | 玩家选择分叉点（galgame 选项） |
 | StoryArc | snowflake Base62 | 叙事弧线规划（主旨/氛围短文 + comprises 圈骨架成员——非全量入线；无 status，时间范围由成员 Event.time 承载） |
 | LanguageStyle | snowflake Base62 | 角色说话方式、语气、口头禅 |
@@ -69,8 +70,9 @@
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | at | Character → Location | N:N | ❌ | 人物—场景 |
-| establishes | (Event\|Character\|Location) → Info | N:N | ❌ | **事实成立**（成立轴）——事件性成立（递交辞呈→沈暮雪辞职）/ 设定性成立（陆择→陆择是海王）；原 link 边已废止归一 |
-| reveals | Event → Info | N:N | ❌ | **读者侧揭示**（揭示轴）——读者通过该事件知晓该 Info（信息释放时刻锚点） |
+| establishes | Event → Hook | N:N | ❌ | **事实成立**（成立轴）——Hook 因源事件成立（递交辞呈→沈暮雪辞职）；event-ideator 产；原 link 边已废止（Char/Loc 固有事实 2026-11-11 起走 has_info→Lore） |
+| has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
+| reveals | SubEvent → Hook | N:N | ❌ | **读者侧揭示**（揭示轴）——读者通过该场戏知晓该 Hook（信息释放时刻锚点，2026-11-11 自 Event 下沉）；event-stager 拆 sub 时逐 sub 拍；目标为 Lore / 源为 Event 均违规 |
 | leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.time 承载，evt_relation 已废止；事件↔信息归 establishes/reveals） |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
@@ -109,7 +111,8 @@ flowchart LR
         Event["Event"]
         SubEvent["SubEvent（演出物化）"]
         Location["Location"]
-        Info["Info"]
+        Hook["Hook"]
+        Lore["Lore"]
         Choice["Choice"]
         StoryArc["StoryArc（叙事弧线）"]
     end
@@ -155,10 +158,10 @@ flowchart LR
     SubEvent -.->|"anchored_at ❌ N:N"| Scene
     SubEvent -->|"appears_as ❌ N:N"| IllusDesign
     Event -->|"leads_to ❌ N:N"| Event
-    Event -->|"establishes ❌ N:N"| Info
-    Event -->|"reveals ❌ N:N"| Info
-    Character -->|"establishes ❌ N:N"| Info
-    Location -->|"establishes ❌ N:N"| Info
+    Event -->|"establishes ❌ N:N"| Hook
+    SubEvent -->|"reveals ❌ N:N"| Hook
+    Character -->|"has_info ❌ N:N"| Lore
+    Location -->|"has_info ❌ N:N"| Lore
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
     StoryArc -->|"comprises ❌ N:M"| Event

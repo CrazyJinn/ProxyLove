@@ -1,0 +1,106 @@
+[
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch00/sec01）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：陆择死于车祸（挂 NvCkQmFPFo，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJM'}) SET l.title='陆择死于车祸', l.content='赶飞机途中被闯红灯的摩托车撞死', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFo'}) MATCH (l:Lore {id:'RyxYEAmyJM'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec02、sec04）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：陆择的特长是恋爱话术（挂 NvCkQmFPFo，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJN'}) SET l.title='陆择的特长是恋爱话术', l.content='搭讪、挑衣眼光、调情话术纯熟；自认最擅长恋爱', l.knowledge_level=2;\nMATCH (h:Character {id:'NvCkQmFPFo'}) MATCH (l:Lore {id:'RyxYEAmyJN'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec01、sec02、sec03）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：陈默生前状态崩坏（挂 NvCkQmFPFq，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJO'}) SET l.title='陈默生前状态崩坏', l.content='生活失控：冰箱空、外卖盒堆墙角、熬夜打单饭热三遍不吃；自言「之前的我不太想活」', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFq'}) MATCH (l:Lore {id:'RyxYEAmyJO'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec02）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：陈默是代练（挂 NvCkQmFPFq，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJQ'}) SET l.title='陈默是代练', l.content='单价几十到几百、平台抽两成；超时赔三倍踢群；手感是几千个夜晚熬出来的肌肉记忆', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFq'}) MATCH (l:Lore {id:'RyxYEAmyJQ'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec01）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：陈默童年忍耐挨罚不哭（挂 NvCkQmFPFq，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJS'}) SET l.title='陈默童年忍耐挨罚不哭', l.content='被父亲罚站屋外，站到腿麻也不哭；委屈自己憋着', l.knowledge_level=2;\nMATCH (h:Character {id:'NvCkQmFPFq'}) MATCH (l:Lore {id:'RyxYEAmyJS'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec05、sec06）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：林梦有流量嗅觉（挂 NvCkQmFPFt，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJT'}) SET l.title='林梦有流量嗅觉', l.content='剪对局切片上头条、催开播、自任房管', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFt'}) MATCH (l:Lore {id:'RyxYEAmyJT'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec03）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：林梦是陈默的老客户（挂 NvCkQmFPFt，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJU'}) SET l.title='林梦是陈默的老客户', l.content='首单两个月前；要求不动她的号、只带她自己玩', l.knowledge_level=2;\nMATCH (h:Character {id:'NvCkQmFPFt'}) MATCH (l:Lore {id:'RyxYEAmyJU'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec08）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：苏晓禾是刚毕业的护理师（挂 NvCkQmFPFs，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJV'}) SET l.title='苏晓禾是刚毕业的护理师', l.content='康复中心护理师；不在重症区、无夜班、作息规律晨跑', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFs'}) MATCH (l:Lore {id:'RyxYEAmyJV'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec08）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：星耀二队是临时编制（挂 NvCkQmFPFu，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJW'}) SET l.title='星耀二队是临时编制', l.content='基地未装先线上训练；两个月不出成绩即散伙；合同后签、先按代练价试用', l.knowledge_level=1;\nMATCH (h:Character {id:'NvCkQmFPFu'}) MATCH (l:Lore {id:'RyxYEAmyJW'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec06、sec08）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：沈暮雪措辞节俭（挂 NvCkQmFPFu，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJX'}) SET l.title='沈暮雪措辞节俭', l.content='道歉与邀约同用「考虑不周」；长话短说、条款直给', l.knowledge_level=2;\nMATCH (h:Character {id:'NvCkQmFPFu'}) MATCH (l:Lore {id:'RyxYEAmyJX'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch00/sec02）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：审判庭换了主审（挂 NvCkQmFPFp，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJY'}) SET l.title='审判庭换了主审', l.content='尺度从宽变严；流程匆忙，边翻羊皮纸边宣判', l.knowledge_level=2;\nMATCH (h:Character {id:'NvCkQmFPFp'}) MATCH (l:Lore {id:'RyxYEAmyJY'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec05）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：八楼出租屋月租一千八按季付（挂 QP23NrFZqb，kl1）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJZ'}) SET l.title='八楼出租屋月租一千八按季付', l.content='一间房：一张床、一台电脑', l.knowledge_level=1;\nMATCH (h:Location {id:'QP23NrFZqb'}) MATCH (l:Lore {id:'RyxYEAmyJZ'}) MERGE (h)-[r:has_info]->(l);"
+  },
+  {
+    "check": "I1_new_lore",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "ink 反推（ch01/sec07）：对既有正文演出痕迹的固化建档，非新增设定",
+    "content": "新建 Lore：星耀基地是一队规格的独栋楼（挂 QP23NrFZqd，kl2）",
+    "cypher": "CREATE (l:Lore {id:'RyxYEAmyJb'}) SET l.title='星耀基地是一队规格的独栋楼', l.content='玻璃幕墙、楼顶发光大字', l.knowledge_level=2;\nMATCH (h:Location {id:'QP23NrFZqd'}) MATCH (l:Lore {id:'RyxYEAmyJb'}) MERGE (h)-[r:has_info]->(l);"
+  }
+]

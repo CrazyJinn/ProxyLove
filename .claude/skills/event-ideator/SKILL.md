@@ -6,7 +6,7 @@ description: |
   落盘 02_剧情数据/ → 人工经 dashboard 建议弹窗审阅写回。零图写入、纯文件产物。
   产物范围：Event 节点 + involved/occurs_at 挂边 + Character/Location 占位节点（三要素
   细化时所需实体图上不存在 → 占位 status=0，待后续消化）+
-  （仅用户明说因果时）leads_to + Info 节点（限产：仅锚点关系中明显缺内心戏/静态
+  （仅用户明说因果时）leads_to + Hook 节点（限产：仅锚点关系中明显缺内心戏/静态
   注记时，≤2 个/次，establishes 挂成立源 + 可选 reveals 挂读者揭示场合）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
   扩线；I5 对账更新 description——全 skill 唯一允许改既有节点属性的例外）。
   六种启发模式：char→new→base（动机链补桥，抵达既定
@@ -17,7 +17,7 @@ description: |
   故事线对账：产出涉及 comprises 挂边的流程结尾自动核对「description vs 实际成员」，
   失配附 I5 更新项；用户说「对账」时手动跑（arc id/title 或 event id 反查所属线）。
   不做：拆解、机位、着装、任何演出域决策。稀疏纪律：单次至多
-  3 个 Event + 2 个 Info + 2 条故事线——多次运行逐步丰满，留白即叙事。在用户说
+  3 个 Event + 2 个 Hook + 2 条故事线——多次运行逐步丰满，留白即叙事。在用户说
   「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零
   产出新叙事事件时使用。
 argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
@@ -202,11 +202,12 @@ status=0）；外貌链（AppearanceStyle→…）不在创建域，不建。
 | 9 | 因果（**仅用户明说才建** leads_to） | 时间窗因果候选 |
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
-**Info 提案（可选，≤2/次）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对
-某事的隐认知、伏笔注记、背景事实）时，提议 1~2 个 Info——并入候选批一起询问，不单独立题。
-挂靠按两轴模型：**事实成立**挂 `establishes`（事件性成立锚 Event、必答「事实由哪个事件
-成立」；设定性成立锚 Character/Location）；能指明**读者侧揭示场合**的事件加 `reveals`。
-title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填。
+**Hook 提案（可选，≤2/次）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对
+某事的隐认知、伏笔注记、背景事实）时，提议 1~2 个 Hook——并入候选批一起询问，不单独立题。
+挂靠：**事实成立**挂 `Event ─establishes→ Hook`（必答「事实由哪个事件成立」，锚只能是
+Event）；**读者侧揭示场合** `reveals` 由 event-stager 演出域拍板（ideator 不建 reveals）。
+title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填
+（亦为下游 novelist freshness 半衰期档位）。固有设定（Lore）不走本通道——构图期人工拍板。
 
 **交互纪律**：
 
@@ -230,7 +231,7 @@ title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文�
 3. **组装数组**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体项：`{check:'I1_placeholder_entity', priority:'medium', reason, content, cypher, source:'event-ideator'}`——每个新 Character/Location 一项；
    - 事件项：`{check:'I2_new_event', priority: 结局/转折 high 否则 medium, reason, content, cypher, source:'event-ideator'}`——每事件一项，cypher 内 id 先解析既有实体、占位实体引用占位 id。
-   - Info 项：`{check:'I3_new_info', priority:'low', reason, content, cypher, source:'event-ideator'}`——每个 Info 一项。
+   - Hook 项：`{check:'I3_new_info', priority:'low', reason, content, cypher, source:'event-ideator'}`——每个 Hook 一项。
    - 故事线项：`{check:'I4_new_story_arc', priority:'medium', reason, content, cypher, source:'event-ideator'}`——建线一项（CREATE StoryArc + 逐成员 MERGE comprises；reason 必须逐成员列「event id + title（0 步现查快照）」）；既有线扩线挂成员复用同 check、reason 注明「扩线」、cypher 省略 CREATE 句。
    - 对账项：`{check:'I5_story_arc_update', priority:'low', reason, content, cypher, source:'event-ideator'}`——对账失配的线一线一项（content = 重写后 description 全文；cypher = MATCH SET）。
    - arc→new 敲定的事件：其 I2 项 cypher **末尾追加挂线语句**（见模板）——不为挂边单独立项。
@@ -296,10 +297,10 @@ MATCH (e:Event {id:'<event_id>'}), (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occ
 MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='<role>', r.sync=false;
 // 仅用户明说因果时（方向 = 因 → 果）：
 MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e);
-// Info（限产 ≤2，establishes 挂成立源——锚点可为 Event / Character / Location；reveals 可选挂读者揭示场合）
-CREATE (i:Info {id:'<snowflake>'}) SET i.title='<标题>', i.content='<内容>', i.knowledge_level=<1|2|3>;
-MATCH (a) WHERE (a:Event OR a:Character OR a:Location) AND a.id = '<anchor_id>', (i:Info {id:'<info_id>'}) MERGE (a)-[r:establishes]->(i);
-MATCH (e:Event {id:'<揭示事件id>'}), (i:Info {id:'<info_id>'}) MERGE (e)-[r2:reveals]->(i);
+// Hook（限产 ≤2，Event ─establishes→ Hook 成立源——锚点只能是 Event；reveals 可选挂读者揭示场合，由 event-stager 演出域拍板）
+CREATE (f:Hook {id:'<snowflake>'}) SET f.title='<标题>', f.content='<内容>', f.knowledge_level=<1|2|3>;
+MATCH (a:Event {id:'<anchor_id>'}), (f:Hook {id:'<fact_id>'}) MERGE (a)-[r:establishes]->(f);
+// （Lore 不由本 skill 建——固有设定是构图期人工拍板，走 has_info→Lore，dashboard/人工通道）
 // 故事线（I4 标准形：建线 + 逐成员挂边；成员 id 全部 0 步现查——MATCH 落空=静默丢边）
 CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='主旨：…\n氛围：…';
 MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
@@ -324,12 +325,12 @@ MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:com
 
 1. **全程零写库**。落盘的是建议 JSON（文件），不是图。
 2. **创建域 = 叙事基础**：Event + involved/occurs_at/leads_to 边 + Character/Location
-   **占位** + Info（限产，见 §3）+ StoryArc 节点与 comprises 边（见 §5）。不建
+   **占位** + Hook（限产，见 §3）+ StoryArc 节点与 comprises 边（见 §5）。不建
    Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager），
    不改既有节点属性——**唯一例外：StoryArc.description 的对账更新（I5，仅此一个
    字段）**，其余任何既有节点属性（含 StoryArc.title）一律不动。
 3. **占位只建裸节点**：name/description/status=0，不建外貌链、不建空间链。
-4. **稀疏纪律**：单次至多 3 个 Event + 2 个 Info（Info 仅明显缺内心戏/静态注记时）
+4. **稀疏纪律**：单次至多 3 个 Event + 2 个 Hook（Hook 仅明显缺内心戏/静态注记时）
    + 2 条新建 StoryArc（I5 对账项不占额度——修正不是产出）；超限候选留「下次可敲定」。
 5. **一题一答 + 每问必附可归因推荐**；候选批整体拍板是第一题（多方案对比，不逐个问）。
 6. **facts 不问用户**：邻接事件、名录、option 序号现查；只有取舍问用户。

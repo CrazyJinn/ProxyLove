@@ -1,4 +1,4 @@
-# 通用素材圈定脚本：按 section_id 圈 Event+sub+scene+语感+Info（Info 供剔除标注）
+# 通用素材圈定脚本：按 section_id 圈 Event+sub+scene+语感+Hook/Lore（供剔除标注）
 import sys, json, subprocess
 from neo4j import GraphDatabase
 SEC = sys.argv[1]
@@ -17,11 +17,11 @@ with d.session() as s:
             RETURN sub.id AS sid, sub.title AS st, sub.time AS stime, sub.description AS sde, sc.id AS scid, sc.name AS scn, sc.time_of_day AS tod ORDER BY stime""", i=r['id']).data()
         out['events'].append({**r, 'subs': subs})
     for r in s.run("""MATCH (sec:Section {id:$s})-[:includes]->(e:Event)
-        MATCH (e)-[:presents]->(info:Info) RETURN info.id AS id, info.title AS ti, info.content AS c""", s=SEC).data() if False else []:
+        MATCH (e)-[:reveals]->(info:Hook) RETURN info.id AS id, info.title AS ti, info.content AS c""", s=SEC).data() if False else []:
         pass
-    # Info：节内事件指向的 Info（若有关联）
+    # Hook：节内事件揭示的 Hook（若有 reveals 关联）
     for r in s.run("""MATCH (sec:Section {id:$s})-[:includes]->(e:Event)
-        OPTIONAL MATCH (e)-[:presents|leads_to*0..1]->(info:Info)
+        OPTIONAL MATCH (e)-[:reveals]->(info:Hook)
         WITH DISTINCT info WHERE info IS NOT NULL
         RETURN info.id AS id, info.title AS ti""", s=SEC).data():
         out['info'].append(r)

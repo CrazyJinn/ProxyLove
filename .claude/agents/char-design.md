@@ -85,7 +85,7 @@ ORDER BY type, status
 - `-1` 作废重做（skill 看到 `-1` 必须重新生成并覆盖旧产物，禁止因文件已存在而跳过）
 - AppearanceStyle / LanguageStyle：`0` 待设计 → `1` 已完成（无审批）
 - CostumeStyle：`0` 待设计 → `1` 已完成（无审批）
-- VoiceDesign：`0` 待设计 → `1` instruct 完成 → `10` 候选固化（生产完成**即待审，无 submit 步**；由 `candidates_path` 分两态：非空=候选待选——3 候选 ref（24k）+ 每候选 3 情绪试听（Qwen3 Base clone）已落盘 `14_声音设计/<char_id>/candidates/`，dashboard 审批中心逐候选试听「采用」（固化为 `<char_id>/ref.wav` + 删 candidates_path，status 仍 10）；空=单 ref 待审——通过 11 / 驳回 0）→ `11` 批准（char-voice-design 先合成候选与试听全部落盘成功才写图，读 LanguageStyle/Info/Event 生成 instruct + 统一长句 ref_text）。`2` 为历史兼容值（旧流程生产态），本 skill 一律不写
+- VoiceDesign：`0` 待设计 → `1` instruct 完成 → `10` 候选固化（生产完成**即待审，无 submit 步**；由 `candidates_path` 分两态：非空=候选待选——3 候选 ref（24k）+ 每候选 3 情绪试听（Qwen3 Base clone）已落盘 `14_声音设计/<char_id>/candidates/`，dashboard 审批中心逐候选试听「采用」（固化为 `<char_id>/ref.wav` + 删 candidates_path，status 仍 10）；空=单 ref 待审——通过 11 / 驳回 0）→ `11` 批准（char-voice-design 先合成候选与试听全部落盘成功才写图，读 LanguageStyle/Lore/Event 生成 instruct + 统一长句 ref_text）。`2` 为历史兼容值（旧流程生产态），本 skill 一律不写
 - 生产节点（DesignSheet / IllusDesign）：`0` 待生成 → `10` 待审 → `11` 批准。skill 单轮直推：图片完成即写 `10`（`1`/`2` 为历史可选中间态，仅由 dashboard 手动路径使用，skill 不再写）。
 - 生产态 `0/1/2`，审批专属 `10`/`11`；驳回归 `0`
 

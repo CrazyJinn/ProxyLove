@@ -9,7 +9,7 @@
 双锚（主模式）查两锚在叙事基础域的连通性，不做全量邻域扫描：
   直接关系   两锚间的直接边（含 properties，如 involved.role）
   间接路径   ≤4 跳路径（边限 involved/occurs_at/at/relation/leads_to，
-             节点限 Character/Event/Location——Info/Choice/演出域实体不参与），
+             节点限 Character/Event/Location——Hook/Lore/Choice/演出域实体不参与），
              按跳数排序取前 10
   不连通     两锚无路径——启发空隙（新事件即桥），如实输出
 
@@ -30,7 +30,7 @@ SKILL_DIR = Path(__file__).resolve().parents[1]          # .../skills/event-idea
 ROOT = SKILL_DIR.parents[2]                               # 项目根
 CYPHER_EXEC = ROOT / ".claude" / "scripts" / "cypher_exec.py"
 
-# 三实体之间流转的叙事基础边（Schema/叙事基础.md 出边表归纳；Info/Choice 中转由节点过滤排除）
+# 三实体之间流转的叙事基础边（Schema/叙事基础.md 出边表归纳；Hook/Lore/Choice 中转由节点过滤排除）
 EDGE_TYPES = "involved|occurs_at|at|relation|leads_to"
 MAX_HOPS = 4
 
