@@ -43,7 +43,7 @@ MATCH (ch)-[:has_voice_style]->(voice:LanguageStyle)
 OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
 OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
 RETURN ch.name AS char_name, ch.id AS char_id,
-       voice.id AS voice_id, voice.emotion_patterns AS emotion_patterns,
+       voice.id AS voice_id, voice.speech_style AS speech_style,
        illus.id AS illus_id, illus.image_path AS illus_image, illus.status AS illus_status,
        cos.name AS cos_name,
        stand.id AS stand_id, stand.variant_label AS variant_label, stand.status AS status,
@@ -70,7 +70,7 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 ```json
 {
   "stand": { "description":"<stand.description——变体氛围，出图的首要依据>", "tags": {"variant_label":"...","eye":"...","brow":"...","mouth":"...","head_angle":"...","hand":"...","foot":"..."} },
-  "voice": { "emotion_patterns":"...", "description":"..." },
+  "voice": { "speech_style":"..." },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<stand_id>" },
   "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md"

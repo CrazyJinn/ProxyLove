@@ -30,7 +30,7 @@
 6. **背景**：不透明纯色背景（白色，无渐变、无纹理、无场景元素）
 
 ## 补充特征
-<!-- 数据来源：AppearanceStyle（tags + appearance/visual_tone/first_impression/height_cm/ethnicity）。不引用 Character.color_direction（见顶部定规） -->
+<!-- 数据来源：AppearanceStyle（tags + appearance/height_cm/ethnicity）+ Character.vibe（气质神态）。配色/调性类不另设字段（见顶部定规） -->
 以下补充特征与参考照片不一致时，**一律以补充特征为准**：
 
 1. **体型与身形比例** ← body_type + shape_language + age_impression + appearance/height_cm：[身高（height_cm 数值优先，缺失取 appearance 文本描述，均无不写） / 体型 / 肩线 / 年龄感]
@@ -38,7 +38,7 @@
 3. **发型** ← hair：[发色 / 长度 / 发型 / 质感 / 碎发细节]
 4. **基础衣物**：穿着深色基础衣物（黑色长袖压缩上衣与深色全长压缩裤），赤足光脚，双足裸露，仅作体型参照，不涉及服装设计细节
 5. **特殊标记** ← marks：[疤痕 / 纹身 / 胎记 / 身体异征]
-6. **气质神态** ← visual_tone + first_impression + appearance（气质观感部分）：[视觉气质 / 第一印象 / 综合观感]
+6. **气质神态** ← Character.vibe + appearance（气质观感部分）：[人物调性 / 综合观感]
 7. **姿态**：静态站姿，双手自然垂于身侧，无交叠、叉腰、持物等动作
 ```
 

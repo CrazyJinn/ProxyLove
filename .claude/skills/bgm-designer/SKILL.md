@@ -56,13 +56,13 @@ MERGE (s)-[r:has_bgm]->(b) SET r.sync = false;
 
 ```cypher
 MATCH (s:Scene)-[:has_bgm]->(b:BgmTrack {id:'<bgm_id>'})
-RETURN s.name AS scene_name, s.atmosphere AS atmosphere, s.time_of_day AS time_of_day,
+RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
        s.description AS description;
 ```
 
 ### 2. 完成任务（生成音乐描述文字）
 
-依据：Scene 的 atmosphere/time_of_day/description（BGM 是场景资产，需求源于 Scene 本身）。
+依据：Scene 的 vibe/time_of_day/deco（BGM 是场景资产，需求源于 Scene 本身）。
 
 产出**一段给外部生成工具的音乐描述 prompt**（中文，80–150 字），覆盖：
 - **情绪基调**：该场景要传递的核心情绪（如「晨间慵懒、轻佻暧昧」）

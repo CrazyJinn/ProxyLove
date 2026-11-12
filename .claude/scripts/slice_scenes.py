@@ -4,10 +4,10 @@
 用法：
   python slice_scenes.py <room.yml> --check
       几何/结构校验（scene-designer 写 room.yml 后的质量门）。
-  python slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type dialogue] [--tod <图 Scene.time_of_day>] [--deco <图 Scene.deco>] [--atmosphere <图 Scene.atmosphere>] [--aspect 1.5]
+  python slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type dialogue] [--tod <图 Scene.time_of_day>] [--deco <图 Scene.deco>] [--vibe <图 Scene.vibe>] [--atmosphere <兼容别名>] [--aspect 1.5]
       出图 prompt 现场生成直写 prompt.md（scene-layer-designer 模式 E 出图链）：
       用途前缀 + 导语（固定文案）+ scene2d 投影正文 + 收尾串（动态读 00_init/美术风格.md）。
-      tod/deco/atmosphere 从图 Scene 节点查得传入（yaml 只留几何；不传则用 scene 条目残留值）。
+      tod/deco/vibe 从图 Scene 节点查得传入（yaml 只留几何；不传则用 scene 条目残留值）。
   python slice_scenes.py <room.yml> --stdout --scene <scene_id>
       打印 scene2d 布局 YAML（含 # 头注释）——/room3d 复制通道、人眼检视。
 
@@ -374,7 +374,7 @@ MODE_E_LEAD = (
     "以下 YAML 描述一张游戏场景背景图的画幅布局：坐标百分比，原点=画幅左上角，x 向右、y 向下"
     "（图像像素坐标系）；objects 的 bbox [x,y,w,h] 为物件包围盒左上角位置与宽高，列表由远及近（遮挡序）；"
     "room_regions 为房间/环境结构的画面区域；lights 为光源位置与颜色"
-    "（out_of_frame 表示光源在画外但光照有效）；time_of_day 为时段；deco 与 atmosphere 为氛围与细节描述；"
+    "（out_of_frame 表示光源在画外但光照有效）；time_of_day 为时段；deco 与 vibe 为氛围与细节描述；"
     "物件与地面/墙面可含 material 材质词，材质质感以该词为准。"
     "请严格按此布局生成图片：物件位置/大小/颜色以 YAML 为准，场景无角色。"
 )
@@ -399,10 +399,10 @@ def style_tail() -> str:
 
 def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
                   tod: str | None = None, deco: str | None = None,
-                  atmosphere: str | None = None) -> tuple[dict, str]:
+                  vibe: str | None = None, atmosphere: str | None = None) -> tuple[dict, str]:
     """单 scene 投影（单实现）：→ (scene2d dict, YAML 文本[含 # 头注释——人读])。
 
-    tod/deco/atmosphere 为图 Scene 节点的文字字段（调用方查图传入；yaml 只留几何）；
+    tod/deco/vibe 为图 Scene 节点的文字字段（调用方查图传入；yaml 只留几何）；
     None 时回退 scene 条目残留值（兼容）。
     prompt 用正文请走 body_of()（去 # 注释行）。
     """
@@ -472,7 +472,7 @@ def project_scene(data: dict, scn: dict, aspect: float, room_name: str,
         "lights": lights2d,
         "objects": items,
         "deco": deco if deco is not None else scn.get("deco", ""),
-        "atmosphere": atmosphere if atmosphere is not None else scn.get("atmosphere", ""),
+        "vibe": vibe if vibe is not None else (atmosphere if atmosphere is not None else scn.get("vibe", scn.get("atmosphere", ""))),
         "time_of_day": tod if tod is not None else scn.get("time_of_day", ""),
     }
     hdr = (
@@ -502,16 +502,16 @@ def _load_scene(room_path: Path, scene_id: str) -> tuple[dict, dict]:
 
 def emit_prompt(room_path: Path, scene_id: str, out_path: Path | None, aspect: float = 1.5,
                 scene_type: str | None = None, tod: str | None = None,
-                deco: str | None = None, atmosphere: str | None = None) -> str:
+                deco: str | None = None, vibe: str | None = None, atmosphere: str | None = None) -> str:
     """出图 prompt 现场生成：用途前缀 + 导语 + scene2d 投影正文 + 收尾串。
 
     out_path 给定则写盘并打印 PROMPT_PATH；始终返回 prompt 全文（dashboard 内存调用不落盘）。
-    scene_type/tod/deco/atmosphere 为图 Scene 节点字段（调用方查图传入）；scene_type 优先级：
-    参数 > scene 条目 > dialogue。tod/deco/atmosphere 为 None 时回退 scene 条目残留（兼容）。
+    scene_type/tod/deco/vibe 为图 Scene 节点字段（调用方查图传入）；scene_type 优先级：
+    参数 > scene 条目 > dialogue。tod/deco/vibe 为 None 时回退 scene 条目残留（--atmosphere 为兼容别名）。
     """
     data, scn = _load_scene(room_path, scene_id)
     _, yaml_text = project_scene(data, scn, aspect, room_path.name,
-                                  tod=tod, deco=deco, atmosphere=atmosphere)
+                                  tod=tod, deco=deco, vibe=vibe if vibe is not None else atmosphere)
     st = scene_type or scn.get("scene_type") or "dialogue"
     tp = " ".join(scn.get("text_passthrough") or []).strip()  # v3 预留：物件文字放行（如招牌/屏幕）
     if tp:
@@ -554,7 +554,7 @@ if __name__ == "__main__":
         if not scene or not out:
             sys.exit("--emit-prompt 需要 --scene <scene_id> 与 --out <prompt.md 路径>")
         emit_prompt(rp, scene, Path(out), ap, _val("--scene-type"),
-                    tod=_val("--tod"), deco=_val("--deco"), atmosphere=_val("--atmosphere"))
+                    tod=_val("--tod"), deco=_val("--deco"), vibe=_val("--vibe"), atmosphere=_val("--atmosphere"))
     elif "--stdout" in sys.argv:
         scene = _val("--scene") or ""
         if not scene:

@@ -38,9 +38,9 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
 | 性别 | `Character.gender` | — |
 | 年龄 | `Character.birth_year`（用故事基准年算岁数） | — |
 | 音色（音色基底） | `Character.vibe`（设计氛围） + `Lore`（职业/身份事实） | `Event`（`type=转折/状态变化` 的经历影响沧桑感） |
-| 气质（演绎方式） | `Character.vibe` + `LanguageStyle.description` | `Lore`（优先 `knowledge_level=2,3` 深层身份/创伤，塑气质底色） |
-| 语速 | `LanguageStyle.rhythm`（短促急迫→快 / 长句思考型→慢） | `Character.vibe` 的气质调性（沉静→慢 / 跳脱→快） |
-| 尾音 | `LanguageStyle.habits`（口头禅/犹豫模式） | `LanguageStyle.emotion_patterns` |
+| 气质（演绎方式） | `Character.vibe` + `LanguageStyle.speech_style` | `Lore`（优先 `knowledge_level=2,3` 深层身份/创伤，塑气质底色） |
+| 语速 | `LanguageStyle.speech_style`（节奏描述部分） | `Character.vibe` 的气质调性（沉静→慢 / 跳脱→快） |
+| 尾音 | `LanguageStyle.speech_style`（口头禅/犹豫模式部分） | `LanguageStyle.speech_style`（情绪部分） |
 
 ## 写作要点
 

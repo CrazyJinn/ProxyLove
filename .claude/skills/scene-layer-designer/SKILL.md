@@ -40,7 +40,7 @@ RETURN l.id AS loc_id, sp.id AS spot_id,
        sp.dsl_path AS dsl_path,
        s.id AS scene_id, s.name AS scene_name,
        s.scene_type AS scene_type, s.status AS scene_status,
-       s.atmosphere AS atmosphere, s.deco AS deco, s.time_of_day AS time_of_day,
+       s.vibe AS vibe, s.deco AS deco, s.time_of_day AS time_of_day,
        layers;
 ```
 
@@ -80,10 +80,10 @@ RETURN l.id AS loc_id, sp.id AS spot_id,
 python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_id> \
   --out "07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(scene_id)>/background/prompt.md" \
   --scene-type <scene_type> --tod <图 Scene.time_of_day> \
-  --deco <图 Scene.deco> --atmosphere <图 Scene.atmosphere>
+  --deco <图 Scene.deco> --vibe <图 Scene.vibe>
 ```
 
-脚本读 room.yml → 按 scene_id 定位机位 → 视锥剔除 + 2D 投影 → 拼装（用途前缀 + 导语 + 布局正文 + 图上 time_of_day/deco/atmosphere + 风格收尾串动态读美术风格.md）→ 写 `--out`，输出 `PROMPT_PATH`。**time_of_day/deco/atmosphere 从步骤 1 查得的 Scene 节点字段传入**（yaml 只留几何）；校验失败则中止不产 prompt。此模式下构图/光影/配色不进 prompt（真源在 room.yml 几何投影 + lights 数值；weather/composition/lighting/color_direction 字段已废止）。
+脚本读 room.yml → 按 scene_id 定位机位 → 视锥剔除 + 2D 投影 → 拼装（用途前缀 + 导语 + 布局正文 + 图上 time_of_day/deco/vibe + 风格收尾串动态读美术风格.md）→ 写 `--out`，输出 `PROMPT_PATH`。**time_of_day/deco/vibe 从步骤 1 查得的 Scene 节点字段传入**（yaml 只留几何）；校验失败则中止不产 prompt。此模式下构图/光影/配色不进 prompt（真源在 room.yml 几何投影 + lights 数值；weather/composition/lighting/color_direction 字段已废止）。
 
 **模式 A（dsl_path 为空——spot 未建模，存量回退面）**：使用 Skill 工具调用 `scene-prompt-assembler`，参数 `background '<data_json>'`（自由文本组装）：
 
@@ -92,7 +92,7 @@ python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_i
   "scene": {
     "id": "<scene_id>",
     "scene_type": "<scene_type>", "name": "<scene_name>",
-    "time_of_day": "...", "atmosphere": "...",
+    "time_of_day": "...", "vibe": "...",
     "deco": "...", "description": "..."
   },
   "location": {"name": "<loc_name>"},

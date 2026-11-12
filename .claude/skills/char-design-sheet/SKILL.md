@@ -65,7 +65,7 @@ RETURN ch.name AS char_name,
 
 ```json
 {
-  "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "appearance":"...","visual_tone":"...","first_impression":"...", "height_cm": "可选 int" },
+  "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "appearance":"...", "height_cm": "可选 int" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "base": { "image": "06_角色美术/<char_id>/参考图.<ext>", "summary": "真人参考照片（单张）" },
   "node": { "id":"<DESIGN_ID>" },

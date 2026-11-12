@@ -53,8 +53,6 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 | 维度 | 属性 | 示例 | 说明 |
 |------|------|------|------|
 | 外貌描述 | appearance | `170cm，清冷疏离的气质` | 自由文本（气质 + 身高） |
-| 视觉气质 | visual_tone | `冷峻、神秘` | 自由文本 |
-| 第一印象 | first_impression | `不易接近的高岭之花` | 自由文本 |
 | 形状语言 | shape_language | 三角型 / 方型 / 倒三角 / 细长型 / 圆形 / 不对称 | 单选 |
 | 年龄感 | age_impression | 少女 / 青年 / 成熟 / 御姐 / 正太 / 少年 | 单选 |
 | 体态 | body_type | 曼妙 / 修长 / 健壮 / 娇小 / 丰腴 / 少年感 / 匀称 | 单选 |
@@ -65,7 +63,7 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 | 唇形 | lip_shape | 薄唇 / 饱满 / 厚唇 / 微笑唇 | 单选 |
 | 特殊标记 | marks | 无 / 疤痕 / 纹身 / 胎记 / 泪痣 | 可多选 |
 
-**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 visual_tone / first_impression / appearance。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。
+**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 Character.vibe / appearance。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。
 例：✅「琥珀色上挑眼」 ❌「琥珀色上挑眼，眼神凌厉逼人」
 
 **身高抽取（height_cm）**：从刚生成的 `appearance` 文本里识别形如 `NNNcm` / `约NNNcm` 的三位身高，取整数填入 `height_cm`（供下游 IllusDesign 推算立绘显示缩放，见 char-illus-designer）。若 appearance 未给明确身高，填 `null`。
@@ -74,11 +72,7 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 
 | 内容 | 属性 |
 |------|------|
-| 词汇风格 | vocabulary |
-| 句子节奏 | rhythm |
-| 语言习惯 | habits |
-| 情绪模式（5 种情境） | emotion_patterns |
-| 概要（1-2 句，含身份/绝不会说的话/标准台词） | description |
+| 说话风格 | speech_style（底色一句+五境分述，生成规范见 Schema/角色美术.md） |
 
 ### 3. 保存结果（MERGE 兜底 + 写内容 + status）
 
@@ -92,7 +86,7 @@ MATCH (ch:Character {id: '<char_id>'}), (app:AppearanceStyle {id: '<APP_ID>'})
 MERGE (ch)-[r:has_appearance]->(app) SET r.sync = true;
 MATCH (app:AppearanceStyle {id: '<APP_ID>'})
 SET app.name = '<角色名外貌特征>',
-    app.appearance = '...', app.visual_tone = '...', app.first_impression = '...',
+    app.appearance = '...',
     app.shape_language = '...', app.age_impression = '...', app.body_type = '...',
     app.skin_tone = '...', app.ethnicity = '...', app.hair = '...', app.eye = '...',
     app.lip_shape = '...', app.marks = '...',

@@ -83,7 +83,7 @@ OUTPUT_DIR="02_剧情数据"
 
 - SubEvent 属性仅 id/title/time/description；**无** status/type/involved/occurs_at。
 - 占位节点属性：id + status=0 + 最小必要字段（Spot: name/kind；Scene: name/
-  scene_type；CostumeStyle: name/outfit_style；IllusDesign: status + adaptation_notes
+  scene_type；CostumeStyle: name/outfit_style/notes（着装补充说明）；IllusDesign: status
   可空）——完整字段下限待消化实践反馈后固化，当前给名称即可被消化。
 - **Event 直挂 anchored_at/appears_as 为违规**（EA5 体检兜查）。
 - 删父 Event 连带删其全部 sub（dashboard event_crud 已实现级联）。
@@ -212,7 +212,7 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 | 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,status:0,name,kind:'zone'})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错） |
 | 机位不存在 | `CREATE (sc:Scene {id,status:0,name,scene_type})` + `(sp)-[:realizes]->(sc)` |
 | 服装套不存在 | `CREATE (cs:CostumeStyle {id,status:0,name,outfit_style})` + `(ch)-[:has_costume]->(cs)`（归属角色 = 该着装缺口所属 involved 角色，占位即挂边） |
-| 形象版本不存在 | `CREATE (idn:IllusDesign {id,status:0,adaptation_notes})` + `(cs)-[:outfit_for]->(idn)` |
+| 形象版本不存在 | `CREATE (idn:IllusDesign {id,status:0})` + `(cs)-[:outfit_for]->(idn)`；着装补充写 `cs.notes` |
 | 着装可继承 | 不占位：`appears_as` 直接挂兄弟 sub 的既有 IllusDesign |
 
 **着装优先级**：兄弟 sub 继承 > CostumeStyle 占位 > IllusDesign 占位（继承优先，
@@ -265,7 +265,7 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 ```
 // ── 占位节点：节点本体与挂边各自独立语句，挂边两端点各自 MATCH 绑定 ──
 // Spot 占位（空间缺口）——节点本体
-CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;
+CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;  // status=0 仅占位标记；scene-designer 建 Scene（消化）后 REMOVE 归空
 // part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
 MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
 // Scene 占位（机位缺口）——节点本体
@@ -277,7 +277,7 @@ CREATE (cs:CostumeStyle {id:'<snowflake>'}) SET cs.name='<着装名>', cs.outfit
 // has_costume 归属边（占位即挂——归属角色 = 该着装缺口所属 involved 角色，禁止孤儿占位）
 MATCH (ch:Character {id:'<char_id>'}) MATCH (cs:CostumeStyle {id:'<snowflake>'}) MERGE (ch)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;
 // IllusDesign 占位——节点本体
-CREATE (idn:IllusDesign {id:'<snowflake>'}) SET idn.adaptation_notes='<着装补充>', idn.status=0;
+CREATE (idn:IllusDesign {id:'<snowflake>'}) SET idn.status=0;
 // outfit_for 边（CostumeStyle 可为既有或上方占位）
 MATCH (cs:CostumeStyle {id:'<cs_id_既有或上方占位>'}) MATCH (idn:IllusDesign {id:'<snowflake>'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;
 // ── S2 SubEvent：本体+refines 一体语句；anchored_at / appears_as 各自独立语句 ──

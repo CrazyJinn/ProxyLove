@@ -116,17 +116,17 @@ MERGE (l:Location {name: '<Location名>'})
 | 名称 | name | `咖啡店-点餐台` | `[Location名]-[区域]`（可与 zone Spot 同名）；时段/版本后缀（-更新设备后/-夜晚）只出现在 Scene 名 |
 | 场景类型 | scene_type | dialogue / functional / combat / ui | 按事件性质：纯对话→dialogue，功能交互→functional，战斗→combat，界面→ui |
 | 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time（`yyyy-MM-dd HH:mm:ss`，小时即时段依据）和描述推导（出图经 --tod 进模式 E prompt；运行时契约） |
-| 氛围 | atmosphere | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话（含天气，如「雨幕笼罩的路口」） |
+| 氛围 | vibe | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话（含天气）——场景恒定调性，剧情语境与人物持物不写 |
 | 陈设细节 | deco | `桌上一台旧显示器亮着，麦克风支在杂乱桌面，外卖盒沿桌沿堆叠` | 自由文本：该机位画面里的陈设/小物描述（可移动小物与杂物堆**不建几何**，全写此处） |
 | 概要 | description | `咖啡店的点餐区域` | 1-2 句 |
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
-2. atmosphere 一句话承担整体氛围与天气表达；deco 承担机位画面内可移动小物与杂物堆。
+2. vibe 一句话承担整体氛围与天气表达；deco 承担机位画面内可移动小物与杂物堆（剧情一次性物件与角色持物不写）。
 
 **2d. 维护 Room DSL（room.yml —— 3D 布局真源）**
 
-> **room.yml 是空间事实的唯一真源，图是投影**。结构模板与硬约束、坐标系、路径命名、校验规则、立绘安全区阈值、数值基线、外景分支、atmosphere/deco 例句——统一见 [references/room-yml-v3.md](references/room-yml-v3.md)（**写 yaml 前必读**，规则出处标注到 slice_scenes.py / check_framing.py 行号）。
+> **room.yml 是空间事实的唯一真源，图是投影**。结构模板与硬约束、坐标系、路径命名、校验规则、立绘安全区阈值、数值基线、外景分支、vibe/deco 例句——统一见 [references/room-yml-v3.md](references/room-yml-v3.md)（**写 yaml 前必读**，规则出处标注到 slice_scenes.py / check_framing.py 行号）。
 
 - **读/产路径**：`07_场景美术/<location_id>/<spot_id>/<spot_id>.yml`（hexid 目录段；文件名=Spot 节点 id 的 hexid——name 改名零漂移，详见 references §3）。**挂靠单元 = Spot（建模单元，通常即物理房间）**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间）时才产新文件。
 - **复用（文件已存在）**：只追加 scenes[] 条目（新 Scene=新机位），objects 除非有新事件证据不动。
@@ -136,7 +136,7 @@ MERGE (l:Location {name: '<Location名>'})
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线；模板见 references §7）。
 - 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**大件贴墙布置，房间正中不放挡视线大件**（中岛/中央桌类至多一件且须偏侧贴边；安全区阈值见 references §5）。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
-- **文字归图**：deco/atmosphere/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
+- **文字归图**：deco/vibe/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
 
 **2e. 校验（写后质量门，两门都必跑）**：写/改 room.yml 后必跑 ① `python .claude/scripts/slice_scenes.py <room.yml> --check`（几何/结构校验）② `python "${CLAUDE_SKILL_DIR}/scripts/check_framing.py" <room.yml>`（立绘安全区），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py（公用脚本，归 .claude/scripts/）由 scene-layer-designer 出图前调用（消费侧重切）。
 
@@ -167,7 +167,7 @@ MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...',
-    s.atmosphere = '...', s.deco = '...',
+    s.vibe = '...', s.deco = '...',
     s.status = 1;
 // 构图/光影/配色无字段（真源=room.yml 几何 + 美术风格.md；weather/composition/lighting/color_direction 已废止清理）。
 // Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）

@@ -71,9 +71,7 @@ MATCH (e)<-[:involved]-(host:Character)
 MATCH (char:Character) WHERE char = host OR (char)-[:relation {type:'控制'}]->(host)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
 RETURN DISTINCT char.name AS name, char.vibe AS vibe,
-       voice.vocabulary AS vocabulary, voice.rhythm AS rhythm,
-       voice.habits AS habits, voice.emotion_patterns AS emotion_patterns,
-       voice.description AS voice_desc
+       voice.speech_style AS speech_style
 LIMIT 20
 ```
 
@@ -105,7 +103,7 @@ python "${CLAUDE_SKILL_DIR}/../chapter-novelist/scripts/fingerprint.py" check --
 - **拓扑契约权威 = 小说 `### <scene_block_id> <场景名> <时段>` 场景段标题**（场景块 id/顺序唯一来源，照搬为 ink `=== <id> // <名>（<时段>）`，不改写不自创）；**分支事实权威 = 图 Choice/option**——小说结构与图分支冲突时报 **FAIL**（回退 chapter-novelist），不静默对齐。
 - **钉子句沿用**：小说中的关键锚点句（人物速写/正文中的定调句）原样进台词，读者跨层要认得同一根钉子。
 - **立场守恒**：事实、事件顺序、情感极性、节拍位置零变化——只做**体裁转换**（散文 → say + 旁白），不改剧情、不加私货反转。
-- **对白重塑**：小说对白按角色 LanguageStyle 重塑后进 say 行（小说口语 ≠ 台词定稿）；叙述散文浓缩进旁白行（旁白克制，galgame 旁白行远少于散文段落）。
+- **对白重塑**：小说对白按角色 LanguageStyle.speech_style（情绪为轴）重塑后进 say 行（小说口语 ≠ 台词定稿）；叙述散文浓缩进旁白行（旁白克制，galgame 旁白行远少于散文段落）。
 - **去 AI 味重工序在本层做**（novelist 只做了惯性签名轻检）：台词层的库存句换角色性格推出的话、留白要有锚点——详见格式规范与方言规范。
 
 #### 台词.ink 格式规范（正式定稿格式，标准合法 ink 方言 v3，机器可解析）

@@ -42,7 +42,7 @@ RETURN ch.name AS char_name,
        ap.height_cm AS height_cm,
        ds.id AS ds_id, ds.status AS ds_status, ds.image_path AS ds_image,
        cos.id AS cos_id, cos.name AS cos_name, cos.status AS cos_status,
-       illus.id AS illus_id, illus.status AS illus_status, illus.adaptation_notes AS notes
+       illus.id AS illus_id, illus.status AS illus_status, cs.notes AS notes
 ```
 
 - **前驱校验**：`ds_status = 11`（DesignSheet 已批准）且 `cos_status = 1`（CostumeStyle 已完成，无审批），否则停止并提示先推进上游。
@@ -60,7 +60,7 @@ RETURN ch.name AS char_name,
 ```json
 {
   "costume": { "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."} },
-  "illus": { "adaptation_notes": "<根据着装补充需求填写，如'左臂夹持文件夹'；无则空>" },
+  "costume": { "notes": "<着装补充说明（鞋履发饰/氛围姿态锚点）；无则空>" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<ILLUS_ID>" },
   "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"
@@ -91,7 +91,7 @@ MERGE (cos)-[r:outfit_for]->(illus) SET r.sync = true;
 MATCH (illus:IllusDesign {id: '<ILLUS_ID>'})
 SET illus.prompt_path = '<PROMPT_PATH>',
     illus.image_path  = '<IMAGE_PATH>',
-    illus.adaptation_notes = '<notes>',        // 若有补充
+    cs.notes = '<notes>',        // 若有着装补充（写 CostumeStyle，随套不随版本）
     illus.display_scale = <scale 或 null>,     // = round(height_cm/200, 4)；height_cm 缺失则 null
     illus.status = 10;                         // 图片完成即待审（直写，不经 submit）
 ```

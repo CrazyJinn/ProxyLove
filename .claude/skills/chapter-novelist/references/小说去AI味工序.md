@@ -10,7 +10,7 @@
 ## 第一原则：反模式服从角色声音
 
 小说是多角色、各有人设声音的——表面上「像 AI 腔」的说法，若命中该角色
-LanguageStyle（vocabulary/habits/emotion_patterns），是角色的声音，不是机械。
+LanguageStyle（speech_style），是角色的声音，不是机械。
 
 - 网瘾角色说「绝绝子」→ 声音，保留。
 - 工程师角色用「根因 / 收口」→ 声音，保留。

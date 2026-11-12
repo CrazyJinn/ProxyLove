@@ -53,7 +53,7 @@ LIMIT 1
 // 时间窗入参 <起>~<止>（yyyy-MM-dd）：窗内事件 → occurs_at → Location → Spot → realizes → Scene
 MATCH (e:Event)-[:occurs_at]->(loc:Location)-[:part_of]->(sp:Spot)-[:realizes]->(s:Scene)
 WHERE e.time >= '<起>' AND e.time < '<止次日>'
-RETURN DISTINCT s.name AS name, s.scene_type AS scene_type, s.atmosphere AS atmosphere,
+RETURN DISTINCT s.name AS name, s.scene_type AS scene_type, s.vibe AS vibe,
        s.time_of_day AS time_of_day, s.status AS status,
        loc.name AS loc, count(e) AS evt_count, min(e.time) AS first_evt
 ORDER BY first_evt LIMIT 50
