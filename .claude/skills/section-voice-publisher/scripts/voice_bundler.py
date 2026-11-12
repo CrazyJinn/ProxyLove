@@ -195,7 +195,7 @@ def fetch_section(section_id: str) -> dict:
     lines = _run_cypher(
         "MATCH (sec:Section {id:'" + section_id + "'})-[p:produces]->(l:LineAudio) "
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.text AS text, "
-        "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
+        "l.status AS status, l.voice_key AS voice_key, "
         "l.text_sha1 AS text_sha1, l.scene_block_id AS scene_block_id, "
         "l.master_path AS master_path, "
         "l.clone_mode AS clone_mode, p.order AS ord "

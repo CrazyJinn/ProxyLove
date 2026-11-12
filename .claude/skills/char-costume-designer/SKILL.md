@@ -37,12 +37,12 @@ WITH ch, app, collect(cos) AS costumes
 RETURN ch, app, costumes;
 
 // 事件 + 空间 + 已有着装绑定
-MATCH (ch:Character {id: '<char_id>'})-[r:involved]->(e:Event)
+MATCH (ch:Character {id: '<char_id>'})-[:involved]->(e:Event)
 OPTIONAL MATCH (e)-[:occurs_at]->(l:Location)
 OPTIONAL MATCH (e)-[:refines]->(sub:SubEvent)
 OPTIONAL MATCH (sub)-[:anchored_at]->(scn:Scene)
 OPTIONAL MATCH (sub)-[:appears_as]->(il:IllusDesign)
-RETURN e.id AS event_id, e.title AS event_title, r.role AS role, r.detail AS detail,
+RETURN e.id AS event_id, e.title AS event_title,
        l.id AS loc_id, l.name AS loc_name,
        scn.id AS scene_id, scn.name AS scene_name, scn.time_of_day AS scene_tod,
        il.id AS illus_id
@@ -53,7 +53,7 @@ ORDER BY e.id;
 
 对每个**sub 缺 `appears_as` 边的 Event**（含无 sub 的事件——先提示跑 event-stager 细化）分析着装需求；event-stager 产出的 CostumeStyle/IllusDesign 占位（status=0）也经本 skill 消化（补全字段并推进生产，见入口「消化占位」注记）：
 
-1. 提取事件上下文：事件 detail（角色行为）、Location 环境、角色身份（character_tags）。
+1. 提取事件上下文：事件 detail（角色行为）、Location 环境、角色身份（经 has_info→Lore 职业事实）。
 2. 判断是否可复用已有 CostumeStyle：
    - 例如：已有"职场御姐着装"，事件发生在"星耀电竞办公室" → 可复用
    - 例如：已有"职场御姐着装"，事件发生在"咖啡店约会" → 需要新着装
@@ -71,7 +71,7 @@ ORDER BY e.id;
    > 「示例」列仅为参考方向、非封闭枚举——按角色与事件情境选择最贴切的取值，允许示例外选择（如鞋类可选乐福鞋、玛莉珍鞋、切尔西靴等）；「单选 / 可多选」仅约束数量，不限定取值范围。
 
    **内容生成规则**：
-   1. 可参考 [00_init/游戏概览.md](../../../00_init/游戏概览.md) 的世界观与核心规则（风格不违背世界观）；角色配色参考 Character 的 `color_direction`，**但不强求一致**。
+   1. 可参考 [00_init/游戏概览.md](../../../00_init/游戏概览.md) 的世界观与核心规则（风格不违背世界观）；角色配色与气质参考 `Character.vibe`（气质调性+配色方向一体），**但不强求一致**。
    2. 服装款式/颜色统一记录在 `garment`，多件用 `;` 分隔；每件含必选（材质+颜色+类型）与可选（领型/滚边/层次/剪裁/质感氛围等，不宜过多）。
    3. 配饰放入 `accessory_type`，具体样式用自定义标签值补充。
 

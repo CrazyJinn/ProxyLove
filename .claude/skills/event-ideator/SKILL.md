@@ -122,7 +122,7 @@ OUTPUT_DIR="02_剧情数据"
 
 **锚点关系查询（char 与 base 之间的关系——图上实捞，不是模型想象）**：
 `$NBHD --char <char_id> --base <event_id>` 双锚查**两锚在叙事基础域
-（Character/Event/Location）的连通性**——直接关系（含 involved.role）+ 间接
+（Character/Event/Location）的连通性**——直接关系 + 间接
 路径（≤4 跳，边限 involved/occurs_at/at/relation/leads_to，按真实方向画箭头）
 + 不连通判定；不滚邻域雪球（不把锚点周围的所有 char/location 全捞出来）。
 单锚退化为一跳清单：`--char` → 近期 10 事件 + at 常驻地 + relation 关系人；
@@ -179,7 +179,7 @@ OUTPUT_DIR="02_剧情数据"
 |---|---|---|
 | **time** | 邻接事件时刻插位（'yyyy-MM-dd HH:mm:ss' 必填） | 邻接事件供插位候选 |
 | **location** | 只推既有 Location：①文本地名匹配 ②char 历史足迹 ③at 边 | 图上无 → **Location 占位提案**（名称+一句话定位，status=0） |
-| **char**（involved+role） | 只推既有 Character：同 Location 历史参与者→at 边居民→同日活动者 | 图上无（新配角）→ **Character 占位提案**（姓名+一句话人设，status=0） |
+| **char**（involved） | 只推既有 Character：同 Location 历史参与者→at 边居民→同日活动者 | 图上无（新配角）→ **Character 占位提案**（姓名+一句话人设，status=0） |
 
 占位提案一并进建议 JSON（cypher 见模板）——**占位只建裸节点**（name/description/
 status=0）；外貌链（AppearanceStyle→…）不在创建域，不建。
@@ -195,7 +195,7 @@ status=0）；外貌链（AppearanceStyle→…）不在创建域，不建。
 | 2 | title + 一句话概述 + type（行动/交流/转折/状态变化） | 候选字段 |
 | 3 | **time 锚点** | 时间窗邻接查询 |
 | 4 | **occurs_at**（含占位提案确认） | 只读查图 / 占位 |
-| 5 | **involved + role**（逐人敲定枚举值：当事人/目击者/受害者/施害者/参与者；含占位确认） | 只读查图 / 占位 |
+| 5 | **involved**（逐人确认参与；含占位确认） | 只读查图 / 占位 |
 | 6 | description 要点（钉子细节 1-3 句） | 口述 |
 | 7 | ending_kind（**仅结局事件才问**，BE/TE/HE/NE） | — |
 | 8 | condition（**仅分支相关才问**） | Choice 查询 |
@@ -290,11 +290,11 @@ title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文�
 // 占位 Location（裸节点）
 CREATE (l:Location {id:'<snowflake>'}) SET l.name='<名称>', l.description='<一句话定位>', l.status=0;
 // 占位 Character（裸节点，外貌链不在创建域）
-CREATE (c:Character {id:'<snowflake>'}) SET c.name='<姓名>', c.description='<一句话人设>', c.status=0;
+CREATE (c:Character {id:'<snowflake>'}) SET c.name='<姓名>', c.vibe='<一句话氛围人设>', c.status=0;
 // 新事件（occurs_at/involved 引用既有或占位 id）
 CREATE (e:Event {id:'<snowflake>'}) SET e.title='<title>', e.time='<yyyy-MM-dd HH:mm:ss>', e.type='<type>', e.description='<desc>';
 MATCH (e:Event {id:'<event_id>'}), (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;
-MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.role='<role>', r.sync=false;
+MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;
 // 仅用户明说因果时（方向 = 因 → 果）：
 MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e);
 // Hook（限产 ≤2，Event ─establishes→ Hook 成立源——锚点只能是 Event；reveals 可选挂读者揭示场合，由 event-stager 演出域拍板）

@@ -7,7 +7,7 @@
     python neighborhood.py --base <event_id>                    # 单锚 event：一跳清单
 
 双锚（主模式）查两锚在叙事基础域的连通性，不做全量邻域扫描：
-  直接关系   两锚间的直接边（含 properties，如 involved.role）
+  直接关系   两锚间的直接边（含 properties）
   间接路径   ≤4 跳路径（边限 involved/occurs_at/at/relation/leads_to，
              节点限 Character/Event/Location——Hook/Lore/Choice/演出域实体不参与），
              按跳数排序取前 10
@@ -15,7 +15,7 @@
 
 单锚退化为一跳清单（不滚雪球）：
   char 锚    近期 involved 事件 10 条（时间倒序）+ at 常驻地 + relation 关系人
-  event 锚   involved 参与人（含 role）+ occurs_at 地点 + leads_to 因果邻居
+  event 锚   involved 参与人 + occurs_at 地点 + leads_to 因果邻居
 
 锚点查无 → 报错退出（先做名称→id 解析），不静默降级不猜。
 """
@@ -95,7 +95,7 @@ def single_char(char_id: str) -> dict:
 def single_event(event_id: str) -> dict:
     chars = run_cypher(
         f"MATCH (c:Character)-[iv:involved]->(e:Event {{id:{q(event_id)}}}) "
-        f"RETURN c.name AS name, iv.role AS role")
+        f"RETURN c.name AS name")
     locs = run_cypher(
         f"MATCH (e:Event {{id:{q(event_id)}}})-[:occurs_at]->(l:Location) "
         f"RETURN l.name AS name")
@@ -173,7 +173,7 @@ def main() -> int:
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=1)); return 0
     print(f"锚点: {a['name']}(Event) 一跳清单")
-    who = "、".join(f"{x['name']}·{x['role'] or '?'}" for x in result["chars"]) or "<缺 involved>"
+    who = "、".join(x["name"] for x in result["chars"]) or "<缺 involved>"
     print(f"参与人: {who}")
     print(f"地点: " + ("、".join(x["name"] for x in result["locations"]) or "<缺 occurs_at>"))
     if result["leads_to"]:

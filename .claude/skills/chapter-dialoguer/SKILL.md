@@ -70,7 +70,7 @@ MATCH (sec:Section {id:'<input>'})-[:includes]->(e:Event)
 MATCH (e)<-[:involved]-(host:Character)
 MATCH (char:Character) WHERE char = host OR (char)-[:relation {type:'控制'}]->(host)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
-RETURN DISTINCT char.name AS name, char.description AS description, char.character_tags AS tags,
+RETURN DISTINCT char.name AS name, char.vibe AS vibe,
        voice.vocabulary AS vocabulary, voice.rhythm AS rhythm,
        voice.habits AS habits, voice.emotion_patterns AS emotion_patterns,
        voice.description AS voice_desc

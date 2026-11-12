@@ -38,13 +38,12 @@ OPTIONAL MATCH (c)-[:has_voice_design]->(vd:VoiceDesign)
 WITH c, ls, vd
 OPTIONAL MATCH (c)-[:has_info]->(info:Lore)
 WITH c, ls, vd, collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos
-OPTIONAL MATCH (c)-[iv:involved]->(evt:Event)
-WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time }) AS events,
-     collect(DISTINCT iv.role) AS event_roles
+OPTIONAL MATCH (c)-[:involved]->(evt:Event)
+WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time }) AS events
 OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:reveals]->(evtInfo:Hook)
-WITH c, ls, vd, infos, events, event_roles,
+WITH c, ls, vd, infos, events,
      collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos
-RETURN c, ls, vd, infos, events, event_roles, event_infos;
+RETURN c, ls, vd, c.vibe AS vibe, infos, events, event_infos;
 ```
 
 同场角色（查其已有 VoiceDesign 的 instruct，避免撞声）：

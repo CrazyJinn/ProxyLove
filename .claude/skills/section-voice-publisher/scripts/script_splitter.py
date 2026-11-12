@@ -468,9 +468,10 @@ def _sig(r: dict) -> tuple:
 
 
 def _row_name(m: dict) -> str:
-    """行正文即 name（choice 行给选项摘要，dashboard 显示友好）。hide 不入图无 name。"""
-    if m.get("op") == "choice":
-        return "选择：" + "/".join(o.get("label", "") for o in m.get("options") or [])
+    """【已废弃 2026-11-12】name 字段随 M3 合并删除——行正文唯一载体 = text。
+    choice 行摘要（「选择：a/b」）随 name 一并退役：对齐签名用 options（_sig），
+    显示层（dashboard line_rows）读 text，choice 行 text 留空即空——选项明细在
+    options JSON。保留本函数占位防旧分支误用，恒返回 text。"""
     return m.get("text") or ""
 
 
@@ -636,10 +637,11 @@ def _set_props(m: dict) -> str:
     点状音效 / bed_start 音床起）=0 待产；其余非音频行（纯 narrate/label/ending/
     bed_end/choice）=11。pos 恒 null——舞台调度（say 立绘位）不落图，合成期由
     merge_sections_to_chapter 从 ink 座位算法现算（null 顺带自愈存量脏值）；
-    ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；
+    ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；l.name 恒写 null
+    （M3 合并：name≡text 双写已废，自愈存量 name 后随迁移 REMOVE）；
     options 仅 choice 行有值，其余恒 null（全量 SET 自愈脏值）。"""
     return ", ".join([
-        f"l.name={_q(_row_name(m))}",
+        f"l.name=null",
         f"l.op={_q(m['op'])}",
         f"l.who={_q(m.get('who'))}",
         "l.pos=null",
@@ -760,7 +762,7 @@ def split(section_id: str, dry_run: bool = False) -> dict:
         "RETURN l.id AS id, l.op AS op, l.who AS who, l.pos AS pos, "
         "l.text AS text, l.kind AS kind, l.bed AS bed, l.scene_block_id AS scene_block_id, "
         "l.ambient_text AS ambient_text, l.options AS options, "
-        "l.status AS status, l.attempts AS attempts, l.voice_key AS voice_key, "
+        "l.status AS status, l.voice_key AS voice_key, "
         "l.ambient_track AS ambient_track, l.master_path AS master_path, "
         "l.text_sha1 AS text_sha1, p.order AS ord "
         "ORDER BY p.order"

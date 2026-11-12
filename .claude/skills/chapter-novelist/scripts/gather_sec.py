@@ -27,7 +27,7 @@ with d.session() as s:
         out['info'].append(r)
     chars = s.run("""MATCH (sec:Section {id:$s})-[:includes]->(e:Event)<-[:involved]-(host:Character)
         MATCH (c:Character) WHERE c = host OR (c)-[:relation {type:'控制'}]->(host)
-        WITH DISTINCT c RETURN c.name AS n, c.description AS de, c.character_tags AS tg""", s=SEC).data()
+        WITH DISTINCT c RETURN c.name AS n, c.vibe AS de""", s=SEC).data()
     out['chars'] = chars
 p = f".tmp/novelist/{SEC}_materials.json"
 json.dump(out, open(p, 'w'), ensure_ascii=False, indent=1)
