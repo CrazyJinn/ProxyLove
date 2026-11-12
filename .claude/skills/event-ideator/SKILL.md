@@ -7,7 +7,7 @@ description: |
   产物范围：Event 节点 + involved/occurs_at 挂边 + Character/Location 占位节点（三要素
   细化时所需实体图上不存在 → 占位 status=0，待后续消化）+
   （仅用户明说因果时）leads_to + Hook 节点（限产：仅锚点关系中明显缺内心戏/静态
-  注记时，≤2 个/次，establishes 挂成立源 + 可选 reveals 挂读者揭示场合）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
+  注记时，≤2 个/次，establishes 挂成立源；揭示场合 reveals 归 event-stager 演出域拍板）+ StoryArc 故事线节点与 comprises 挂边（I4 建线/
   扩线；I5 对账更新 description——全 skill 唯一允许改既有节点属性的例外）。
   六种启发模式：char→new→base（动机链补桥，抵达既定
   事件）/ char→new（人物质感填充）/ base→new→base（两既定事件间间隙填充，可无关）/
@@ -63,8 +63,9 @@ SUGGEST_LINT="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_lint.py"  # 建�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema：[叙事基础.md](../../../00_init/Schema/叙事基础.md)（Event/involved/occurs_at/
-  leads_to/StoryArc/comprises 的唯一事实来源）。
+- Schema：[剧情.md](../../../00_init/Schema/剧情.md)（Event/involved/occurs_at/establishes/
+  leads_to/Hook/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见
+  [角色美术.md](../../../00_init/Schema/角色美术.md) / [场景美术.md](../../../00_init/Schema/场景美术.md)。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring
   （内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
@@ -94,7 +95,7 @@ OUTPUT_DIR="02_剧情数据"
 - **推荐答案必须有图数据依据**（人物设定 / 邻域表 / 因果链，事件要服务弧线，不凭空造戏）
 - 只读查图（全部带 LIMIT）：
   1. **锚点关系查询**（见下，启发的主依据）；
-  2. **char 深读**（锚含 char 时）：人物设定（description/tags/relation）+
+  2. **char 深读**（锚含 char 时）：人物设定（vibe/relation）+
      LanguageStyle——人物弧线的第一依据（其历史事件已在邻域表中）；
   3. Character / Location 名录——名称→id 解析表（**id 内联进 cypher，不在 cypher 里
      做名称匹配**：重名/改名会静默错挂）；同时用于识别「提及但未建档」→ 占位候选；
@@ -126,7 +127,7 @@ OUTPUT_DIR="02_剧情数据"
 路径（≤4 跳，边限 involved/occurs_at/at/relation/leads_to，按真实方向画箭头）
 + 不连通判定；不滚邻域雪球（不把锚点周围的所有 char/location 全捞出来）。
 单锚退化为一跳清单：`--char` → 近期 10 事件 + at 常驻地 + relation 关系人；
-`--base` → 参与人（·role）+ 地点 + leads_to 因果邻居。锚点查无时脚本直接报错
+`--base` → 参与人 + 地点 + leads_to 因果邻居。锚点查无时脚本直接报错
 退出（先做名称→id 解析），不静默降级不猜。
 
 **读图口径（看查询结果直判，启发从数据长出来，不凭空造）**：
@@ -296,10 +297,10 @@ CREATE (e:Event {id:'<snowflake>'}) SET e.title='<title>', e.time='<yyyy-MM-dd H
 MATCH (e:Event {id:'<event_id>'}), (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;
 MATCH (c:Character {id:'<char_id>'}), (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;
 // 仅用户明说因果时（方向 = 因 → 果）：
-MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e);
-// Hook（限产 ≤2，Event ─establishes→ Hook 成立源——锚点只能是 Event；reveals 可选挂读者揭示场合，由 event-stager 演出域拍板）
+MATCH (a:Event {id:'<既有事件id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e) ON CREATE SET r.sync=false;
+// Hook（限产 ≤2，Event ─establishes→ Hook 成立源——锚点只能是 Event；揭示场合归 event-stager 拍板）
 CREATE (f:Hook {id:'<snowflake>'}) SET f.title='<标题>', f.content='<内容>', f.knowledge_level=<1|2|3>;
-MATCH (a:Event {id:'<anchor_id>'}), (f:Hook {id:'<fact_id>'}) MERGE (a)-[r:establishes]->(f);
+MATCH (a:Event {id:'<anchor_id>'}), (f:Hook {id:'<fact_id>'}) MERGE (a)-[r:establishes]->(f) ON CREATE SET r.sync=false;
 // （Lore 不由本 skill 建——固有设定是构图期人工拍板，走 has_info→Lore，dashboard/人工通道）
 // 故事线（I4 标准形：建线 + 逐成员挂边；成员 id 全部 0 步现查——MATCH 落空=静默丢边）
 CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='主旨：…\n氛围：…';
@@ -329,7 +330,8 @@ MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:com
    Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager），
    不改既有节点属性——**唯一例外：StoryArc.description 的对账更新（I5，仅此一个
    字段）**，其余任何既有节点属性（含 StoryArc.title）一律不动。
-3. **占位只建裸节点**：name/description/status=0，不建外貌链、不建空间链。
+3. **占位只建裸节点**：Character: name/vibe、Location: name/description（均
+   status=0），不建外貌链、不建空间链。
 4. **稀疏纪律**：单次至多 3 个 Event + 2 个 Hook（Hook 仅明显缺内心戏/静态注记时）
    + 2 条新建 StoryArc（I5 对账项不占额度——修正不是产出）；超限候选留「下次可敲定」。
 5. **一题一答 + 每问必附可归因推荐**；候选批整体拍板是第一题（多方案对比，不逐个问）。
@@ -343,5 +345,6 @@ MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:com
 
 ## 参考文档
 
-- [叙事基础.md Schema](../../../00_init/Schema/叙事基础.md)
+- [剧情.md Schema](../../../00_init/Schema/剧情.md)（Event/Hook/Lore/StoryArc/comprises）
+- Character/Location 节点定义见 [角色美术.md](../../../00_init/Schema/角色美术.md) / [场景美术.md](../../../00_init/Schema/场景美术.md)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§2/§8.1

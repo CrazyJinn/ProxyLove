@@ -42,12 +42,12 @@ RETURN ch.name AS char_name,
        ap.height_cm AS height_cm,
        ds.id AS ds_id, ds.status AS ds_status, ds.image_path AS ds_image,
        cos.id AS cos_id, cos.name AS cos_name, cos.status AS cos_status,
-       illus.id AS illus_id, illus.status AS illus_status, cs.notes AS notes
+       illus.id AS illus_id, illus.status AS illus_status, cos.notes AS notes
 ```
 
 - **前驱校验**：`ds_status = 11`（DesignSheet 已批准）且 `cos_status = 1`（CostumeStyle 已完成，无审批），否则停止并提示先推进上游。
 - **目标节点判定**（每组）：若 `illus_id` 为空 → 生成新 snowflake id 作为 `ILLUS_ID`，本次将新建；若存在 → `ILLUS_ID = illus_id`，按 status 决定推进起点。
-- 记录 `ds_image`（图生图参考图——**该版本设计图**，短发等形象特征随参考图自动进入）、`cos_name` 与 `ds_slug`（产物路径用）。
+- 记录 `ds_image`（图生图参考图——**该版本设计图**，短发等形象特征随参考图自动进入）与 `cos_name`（产物路径各段用第 1 步查回的 hexid）。
 
 ### 2. 完成任务
 
@@ -59,8 +59,8 @@ RETURN ch.name AS char_name,
 
 ```json
 {
-  "costume": { "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."} },
-  "costume": { "notes": "<着装补充说明（鞋履发饰/氛围姿态锚点）；无则空>" },
+  "costume": { "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."},
+               "notes": "<着装补充说明（鞋履发饰/氛围姿态锚点）；无则空>" },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<ILLUS_ID>" },
   "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"
@@ -91,9 +91,11 @@ MERGE (cos)-[r:outfit_for]->(illus) SET r.sync = true;
 MATCH (illus:IllusDesign {id: '<ILLUS_ID>'})
 SET illus.prompt_path = '<PROMPT_PATH>',
     illus.image_path  = '<IMAGE_PATH>',
-    cs.notes = '<notes>',        // 若有着装补充（写 CostumeStyle，随套不随版本）
     illus.display_scale = <scale 或 null>,     // = round(height_cm/200, 4)；height_cm 缺失则 null
     illus.status = 10;                         // 图片完成即待审（直写，不经 submit）
+// 有着装补充时（写 CostumeStyle，随套不随版本）：
+MATCH (cs:CostumeStyle {id: '<cos_id>'})
+SET cs.notes = '<notes>';
 ```
 
 **status 写入**：固定 `10`（待审，等待 dashboard 审批）。

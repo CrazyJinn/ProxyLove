@@ -25,7 +25,7 @@ allowed-tools: Read, Bash, Write
 
 ## 流程（三段式：查状态 → 完成任务 → 保存结果）
 
-> 本 skill 是 Chapter 结构段 status 的写入点 + Section 节点的创建点。不调子 skill、不产任何文件。
+> 本 skill 是 Chapter 结构写入点 + Section 节点的创建点。不调子 skill、不产任何文件。
 
 ### 1. 查询目标节点状态
 
@@ -75,12 +75,11 @@ ORDER BY first_evt LIMIT 50
 
 ### 3. 保存结果（MERGE 兜底 + 建 Section + 写 status）
 
-`--multi` 单事务，节点先于边；`status=-1` 重做时先删旧 Section 及其逐句行产物链（LineAudio）再重建：
+`--multi` 单事务，节点先于边；重做时先删旧 Section 及其逐句行产物链（LineAudio）再重建：
 
 ```cypher
-// 0.（仅 status=-1 重做时）清旧 has_section 边 + 删旧 Section 的产物链 + DETACH DELETE 旧 Section
+// 0.（重做时）删旧 Section 的产物链 + DETACH DELETE 旧 Section（连带清 has_section 边）
 //    （分节可能变，旧产物全部作废；DETACH DELETE 只删 Section 本身，产物链须显式先删）
-MATCH (ch:Chapter {id:'<chapter_id>'})-[r:has_section]->() DELETE r;
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(sec:Section)
 OPTIONAL MATCH (sec)-[:produces*1]->(p)
 DETACH DELETE p;

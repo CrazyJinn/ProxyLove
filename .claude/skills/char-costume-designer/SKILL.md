@@ -62,11 +62,12 @@ ORDER BY e.id;
 
    | 维度 | 属性 | 示例 | 说明 |
    |------|------|------|------|
-   | 名称 | name | `沈暮雪-休闲约会着装` | 自由文本（角色名 + 着装场景描述） |
+   | 名称 | name | `休闲约会着装` | 自由文本（纯着装名，不带角色名前缀） |
    | 着装风格 | outfit_style | 休闲 / 正式 / 运动 / 性感 / 可爱 / 学院 / 街头 / 古风 / 慵懒 | 可多选 |
    | 服装 | garment | `棉质白衬衫;黑色丝袜` | 自由合成（材质+颜色+类型，可加领型/层次等）；多件用 `;` 分隔 |
    | 鞋类 | footwear | 运动鞋 / 皮鞋 / 靴 / 帆布鞋 / 凉鞋 / 高跟鞋 / 赤足 | 单选 |
    | 配饰类型 | accessory_type | 耳饰 / 项链 / 手表 / 眼镜 / 戒指 / 发饰 / 手持物 | 可多选 |
+   | 着装补充 | notes | `高跟鞋，佩戴眼镜与项链；姿态干练挺拔` | 鞋履发饰、氛围姿态锚点等自由文本细节层（与 garment 互补） |
 
    > 「示例」列仅为参考方向、非封闭枚举——按角色与事件情境选择最贴切的取值，允许示例外选择（如鞋类可选乐福鞋、玛莉珍鞋、切尔西靴等）；「单选 / 可多选」仅约束数量，不限定取值范围。
 
@@ -88,18 +89,20 @@ MERGE (sub)-[r:appears_as]->(il) ON CREATE SET r.detail = '<着装语境>', r.sy
 
 该着装在生效版本下尚无 IllusDesign 时**不挂空**——留 E1 体检标红，汇报提示 `char-illus-designer` 补（传 design_sheet 聚焦版本）。复用无需审批，直接生效。
 
-#### 新建 CostumeStyle 的事件组（MERGE 节点+边+内容，status=1 已完成）
+#### 新建或消化占位 CostumeStyle 的事件组（MERGE 节点+边+内容，status=1 已完成）
+
+**目标节点判定**：段 1 查回的 `costumes` 中该角色已有 `status=0` 占位（event-stager 建的缺口，name 即缺口决策载体）且本次着装与之对应 → **消化占位**（`<cos_id>` = 占位 id，沿用其挂边，不另建新节点）；确无对应占位 → 新建（`<cos_id>` = 新 snowflake id）。
 
 ```cypher
-MERGE (cos:CostumeStyle {id: '<snowflake_id>'})
+MERGE (cos:CostumeStyle {id: '<cos_id=占位id或新snowflake>'})
   ON CREATE SET cos.status = 1;
-MATCH (ch:Character {id: '<char_id>'}), (cos:CostumeStyle {id: '<snowflake_id>'})
+MATCH (ch:Character {id: '<char_id>'}), (cos:CostumeStyle {id: '<cos_id>'})
 MERGE (ch)-[r:has_costume]->(cos) SET r.sync = true;
 MATCH (e:Event) WHERE e.id IN ['<event_id_1>', '<event_id_2>', ...]
 // 出场形象直挂（同上:appears_as→生效版 IllusDesign;此处省略,逐事件按上方模板执行)
 // MERGE (sub)-[r:appears_as]->(il) ON CREATE SET r.sync = false;
-MATCH (cos:CostumeStyle {id: '<snowflake_id>'})
-SET cos.name = '<角色名-着装描述>',
+MATCH (cos:CostumeStyle {id: '<cos_id>'})
+SET cos.name = '<纯着装名>',
     cos.outfit_style = '...', cos.garment = '...', cos.footwear = '...', cos.accessory_type = '...',
     cos.status = 1;
 ```

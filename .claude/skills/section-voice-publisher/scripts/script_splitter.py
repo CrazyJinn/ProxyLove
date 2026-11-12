@@ -53,7 +53,7 @@ ROOT = _find_repo_root(Path(__file__).resolve())     # 项目根
 CYPHER_EXEC = ROOT / ".claude" / "scripts" / "cypher_exec.py"
 sys.path.insert(0, str(ROOT / ".claude" / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # 同目录：voice_bundler
-from snowflake_base62 import SnowflakeGenerator  # noqa: E402
+from snowflake_base62 import SnowflakeGenerator, to_hexid  # noqa: E402
 from voice_bundler import voice_master_path  # noqa: E402
 
 ORDER_STEP = 1000          # 初始间距
@@ -475,13 +475,25 @@ def _row_name(m: dict) -> str:
     return m.get("text") or ""
 
 
-def _wav_exists(master_path, key: str = "") -> bool:
+def _derived_master(key: str, scene_block_id: str):
+    """按母带落盘规则派生路径（15_声音/<*>/<block_hexid>/<key>.wav，章段通配）。
+    key = hexid(行id)；返回首个命中 Path，未命中 None。"""
+    if not key or not scene_block_id:
+        return None
+    pattern = f"*/{to_hexid(str(scene_block_id))}/{key}.wav"
+    return next((ROOT / "15_声音").glob(pattern), None)
+
+
+def _wav_exists(master_path, key: str = "", scene_block_id: str = "") -> bool:
     """母带是否已生成（-1 恢复判定）。优先读图行属性 master_path（唯一权威）；
-    缺失时 legacy 旧键解析兜底（迁移前存量）。"""
+    缺失时按落盘规则派生（voice/ambient 行同规则）；最后 legacy 旧键解析兜底
+    （迁移前存量）。"""
     if master_path:
         return (ROOT / master_path).exists()
     if not key:
         return False
+    if _derived_master(key, scene_block_id) is not None:
+        return True
     try:
         return voice_master_path(ROOT, key).exists()
     except ValueError:
@@ -498,6 +510,8 @@ def _purge_line_audio_files(g: dict, report: dict) -> None:
         if not key:
             continue
         master = (ROOT / g["master_path"]) if g.get("master_path") else None
+        if master is None:
+            master = _derived_master(key, g.get("scene_block_id"))
         if master is None:
             try:
                 master = voice_master_path(ROOT, key)  # legacy 旧键兜底
@@ -637,11 +651,9 @@ def _set_props(m: dict) -> str:
     点状音效 / bed_start 音床起）=0 待产；其余非音频行（纯 narrate/label/ending/
     bed_end/choice）=11。pos 恒 null——舞台调度（say 立绘位）不落图，合成期由
     merge_sections_to_chapter 从 ink 座位算法现算（null 顺带自愈存量脏值）；
-    ambient_text 恒写 null（v3 内嵌已废止，自愈旧图残留）；l.name 恒写 null
-    （M3 合并：name≡text 双写已废，自愈存量 name 后随迁移 REMOVE）；
+    name/ambient_text 已废属性由 update 语句的 REMOVE 子句清除（不进 SET）；
     options 仅 choice 行有值，其余恒 null（全量 SET 自愈脏值）。"""
     return ", ".join([
-        f"l.name=null",
         f"l.op={_q(m['op'])}",
         f"l.who={_q(m.get('who'))}",
         "l.pos=null",
@@ -649,7 +661,6 @@ def _set_props(m: dict) -> str:
         f"l.kind={_q(m.get('kind'))}",
         f"l.bed={_q(m.get('bed'))}",
         f"l.scene_block_id={_q(m.get('scene_block_id'))}",
-        f"l.ambient_text={_q(m.get('ambient_text'))}",
         f"l.options={_q(json.dumps(m['options'], ensure_ascii=False)) if m.get('options') is not None else 'null'}",
         f"l.text_sha1={_q(text_sha1(m.get('text') or ''))}",
         f"l.status={0 if m['op'] in ('say', 'transition', 'bed_start') else 11}",
@@ -682,7 +693,8 @@ def build_actions(seq: list, plan: dict, section_id: str) -> tuple:
             report["created"].append({"id": oid, "op": m["op"], "order": order,
                                       "text": (m.get("text") or m.get("scene_block_id") or "")[:30]})
         elif action == "update":  # 台词变了（stale）：沿用 id/order，全量更新，置 0 重配
-            stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET {_set_props(m)};")
+            stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET {_set_props(m)} "
+                         f"REMOVE l.name, l.ambient_text;")
             report["updated"].append({"id": oid, "op": m["op"],
                                       "text": (m.get("text") or "")[:30]})
         else:  # keep：未变行。仅 -1 恢复与块归属补写，status 0/10/11 原样保留
@@ -703,10 +715,11 @@ def build_actions(seq: list, plan: dict, section_id: str) -> tuple:
                 track = g.get("ambient_track")
                 if m["op"] == "say":
                     ok = g.get("voice_key") and g.get("text_sha1") == text_sha1(m.get("text") or "") \
-                        and _wav_exists(g.get("master_path"), g.get("voice_key"))
+                        and _wav_exists(g.get("master_path"), g.get("voice_key"), g.get("scene_block_id"))
                     new_status = 10 if ok else 0
                 elif m["op"] in ("transition", "bed_start"):
-                    new_status = 10 if (track and _wav_exists(g.get("master_path"), track)) else 0
+                    new_status = 10 if (track and _wav_exists(g.get("master_path"), track,
+                                                             g.get("scene_block_id"))) else 0
                 else:
                     new_status = 11
                 stmts.append(f"MATCH (l:LineAudio {{id:{_q(oid)}}}) SET l.status={new_status};")

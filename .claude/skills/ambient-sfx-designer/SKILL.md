@@ -95,7 +95,7 @@ env/.venv-audiofly/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/ambient_fly.p
 ```bash
 # 校验：ls 母带文件存在且 >10KB，任一缺失停止不写图
 python .claude/scripts/cypher_exec.py --stdin --multi <<'EOF'
-MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.attempts=coalesce(l.attempts,0)+1, l.status=10;
+MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.master_path='<master_path>', l.status=10;
 EOF
 ```
 
@@ -103,7 +103,7 @@ EOF
 
 ```bash
 python .claude/scripts/cypher_exec.py --stdin --multi <<'EOF'
-MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.prompt='<英文prompt>', l.attempts=coalesce(l.attempts,0)+1, l.status=10;
+MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.master_path='<master_path>', l.prompt='<英文prompt>', l.status=10;
 EOF
 ```
 

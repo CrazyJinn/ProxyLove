@@ -57,7 +57,7 @@ MERGE (s)-[r:has_bgm]->(b) SET r.sync = false;
 ```cypher
 MATCH (s:Scene)-[:has_bgm]->(b:BgmTrack {id:'<bgm_id>'})
 RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
-       s.description AS description;
+       s.deco AS deco;
 ```
 
 ### 2. 完成任务（生成音乐描述文字）
@@ -78,6 +78,7 @@ RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
 MATCH (b:BgmTrack {id:'<bgm_id>'})
 SET b.description = '<音乐定位描述，1-2 句>',
     b.prompt = '<段 2 产出的生成用文字>',
+    b.audio_path = '13_BGM/<bgm_id>/<bgm_id>.wav',   // hexid 段；归档目标路径预置（与 wav 实际落点一致）
     b.mode = 'play',        // 可选，缺省 play
     b.loop = true,          // 可选，缺省 true
     b.status = 1;           // 文字描述已产出（等用户手动生成 wav）
@@ -93,7 +94,7 @@ SET b.description = '<音乐定位描述，1-2 句>',
 ls '13_BGM/<bgm_id>/<bgm_id>.wav'
 ```
 
-文件存在 → `SET b:BgmTrack {id:'<bgm_id>'} SET b.status = 2`（audio_path 首写图时已按 hexid 预置），并同步刷新 `13_BGM/<bgm_id>/<bgm_id>.md` 的 status 行与音频归档状态（md 缺失则按段 3a-2 模板补写）；
+文件存在 → `MATCH (b:BgmTrack {id:'<bgm_id>'}) SET b.status = 2`（audio_path 已在写图步预置），并同步刷新 `13_BGM/<bgm_id>/<bgm_id>.md` 的 status 行与音频归档状态（md 缺失则按段 3a-2 模板补写）；
 不存在 → 提醒用户归档路径与文件名（`13_BGM/<bgm_id>/<bgm_id>.wav`，hexid 段即 BgmTrack.id 的 hexid 形态——显示名不必进文件名）。
 
 ## 汇报

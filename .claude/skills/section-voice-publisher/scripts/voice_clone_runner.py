@@ -211,7 +211,7 @@ def audition(manifest_path: str, device="cuda:0") -> dict:
     return {"produced": produced, "failed": failed}
 
 
-def publish(tasks: dict, profiles: dict, out_dir, keys=None, device="cuda:0") -> dict:
+def publish(tasks: dict, profiles: dict, keys=None, device="cuda:0") -> dict:
     """按角色批量 Qwen3 Base Voice Clone（逐句母带落 task.master_path 唯一权威位置）。
 
     tasks: {char: [{key, text, tts_text?, clone_mode?, emotion, ...}]}（voice_bundler
@@ -326,7 +326,6 @@ def main():
         help="按角色批量 Qwen3 Base Voice Clone（逐句母带 → task.master_path，消费 tasks.json + profiles.json）")
     p_pub.add_argument("tasks", help="voice_bundler.py tasks-from-graph 产出的 tasks.json（skill 已填 emotion/tts_text/clone_mode）")
     p_pub.add_argument("--profiles", required=True, help="{char: VoiceDesign dict} JSON（需 ref_audio_path + ref_text）")
-    p_pub.add_argument("--out-dir", default="15_声音", help="母带根目录（写 <out-dir>/<chapter_stem>/<scene_block_id>/<key>.wav，路径段从 key 解析；运行时副本由 chapter-publisher 发布时收录）")
     p_pub.add_argument("--keys", default=None, help="只生成指定 key（逗号分隔，单句/批量重生成用；缺省=全部）")
     p_pub.add_argument("--device", default="cuda:0")
     p_pub.set_defaults(_mode="publish")
@@ -348,7 +347,7 @@ def main():
         tasks = json.loads(open(args.tasks, encoding="utf-8").read())
         profiles = json.loads(open(args.profiles, encoding="utf-8").read())
         keys = args.keys.split(",") if args.keys else None
-        result = publish(tasks, profiles, args.out_dir, keys=keys, device=args.device)
+        result = publish(tasks, profiles, keys=keys, device=args.device)
         total = sum(len(v) for v in result["produced"].values())
         print(f"[publish] produced={total} wav, skipped={result['skipped']}, failed={len(result['failed'])}")
         if result["failed"]:

@@ -42,7 +42,7 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (ch:Character {id: '<char_id>'})-[:has_appearance]->(app:AppearanceStyle)
 OPTIONAL MATCH (app)-[:produces]->(ds:DesignSheet)
-RETURN ch.name AS char_name,
+RETURN ch.name AS char_name, ch.vibe AS char_vibe,
        app.id AS app_id, app.status AS app_status, app {.*} AS app_data,
        ds.id AS ds_id, ds.status AS ds_status,
        ds.active_from AS active_from, ds.delta_notes AS delta_notes
@@ -51,7 +51,7 @@ RETURN ch.name AS char_name,
 - **前驱校验**：`app_status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
 - **常规模式目标判定**：多版本时对每个 `ds_status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
 - **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds_status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
-- 记录 `char_id`（产物路径段用，hexid）、`app_id`（保存步建 `produces` 边用）、`app_data`（外貌 tags + 自由文本 + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
+- 记录 `char_id`（产物路径段用，hexid）、`char_vibe`（人物调性，第 2 步组装 data 用）、`app_id`（保存步建 `produces` 边用）、`app_data`（外貌 tags + 自由文本 + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
 
 ### 2. 完成任务
 
@@ -66,7 +66,7 @@ RETURN ch.name AS char_name,
 ```json
 {
   "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "appearance":"...", "height_cm": "可选 int" },
-  "character": { "id":"<char_id>", "name":"<char_name>" },
+  "character": { "id":"<char_id>", "name":"<char_name>", "vibe":"<char_vibe>" },
   "base": { "image": "06_角色美术/<char_id>/参考图.<ext>", "summary": "真人参考照片（单张）" },
   "node": { "id":"<DESIGN_ID>" },
   "output_path": "06_角色美术/<char_id>/<ds_id>/prompt.md"

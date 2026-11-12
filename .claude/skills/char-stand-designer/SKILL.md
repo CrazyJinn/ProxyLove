@@ -110,12 +110,11 @@ python "${CLAUDE_SKILL_DIR}/scripts/check_transparency.py" '<IMAGE_PATH>'
 
 ```cypher
 MERGE (stand:StandingIllustration {id: '<stand_id>'})
-  ON CREATE SET stand.status = 0, stand.variant_label = '<variant_label>',
-                stand.eye = '<...>', stand.brow = '<...>', stand.mouth = '<...>',
-                stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
+SET stand.variant_label = '<variant_label>',
+    stand.eye = '<...>', stand.brow = '<...>', stand.mouth = '<...>',
+    stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
 MATCH (illus:IllusDesign {id: '<illus_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
 MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '<variant_label>';
-// ref_style 建边已删
 MATCH (stand:StandingIllustration {id: '<stand_id>'})
 SET stand.prompt_path = '<PROMPT_PATH>',
     stand.image_path  = '<IMAGE_PATH>',
@@ -154,4 +153,4 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 
 - 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) Mode C
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
-- 按需触发方：[plot-design](../../agents/plot-design.md) agent（按 depicts 引用传 stand_id）
+- 按需触发方：[plot-design](../../agents/plot-design.md) agent（按 uses 边引用传 stand_id）

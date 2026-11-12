@@ -17,7 +17,7 @@ dashboard `POST /events/suggest/apply`（app/main.py）与 Cypher 控制台同�
 
 ```cypher
 CREATE (sp:Spot {id:'X'}) SET sp.name='...';
-MATCH (l:Location {id:'L'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
+MATCH (l:Location {id:'L'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;
 ```
 
 第二条里 `sp` 是**悬空变量**——`MERGE (l)-[part_of]->(sp)` 匹配到 l 的**既有** part_of
@@ -54,7 +54,7 @@ MERGE (sub)-[a:anchored_at]->(scn:Scene {id:'已有id'})   // ← 事故写法
 // 节点本体
 CREATE (sp:Spot {id:'X'}) SET sp.name='...', sp.kind='zone', sp.status=0;
 // 边：两端点各自 MATCH 绑定，MERGE 只负责边本身
-MATCH (l:Location {id:'L'}) MATCH (sp:Spot {id:'X'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
+MATCH (l:Location {id:'L'}) MATCH (sp:Spot {id:'X'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;
 // SubEvent 本体 + 父边一体；anchored_at / appears_as 各自独立成语句
 MATCH (e:Event {id:'E'}) MERGE (sub:SubEvent {id:'S'})
 ON CREATE SET sub.title='...', sub.time='...', sub.description='...'

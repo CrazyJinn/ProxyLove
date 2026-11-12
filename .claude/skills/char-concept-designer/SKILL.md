@@ -92,9 +92,11 @@ SET app.name = '<角色名外貌特征>',
     app.lip_shape = '...', app.marks = '...',
     app.height_cm = <身高整数或 null>,   // 从 appearance 抽取三位身高（如 170）；无明确身高写 null
     app.status = 1;
+// Character 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；外貌建档即消化，REMOVE 对非占位无 status 者无害）
+MATCH (ch:Character {id: '<char_id>'}) REMOVE ch.status;
 ```
 
-LanguageStyle（怪物跳过）同理：MERGE 节点 + `has_voice_style` 边（sync=true）+ SET 五项内容 + `status = 1`。
+LanguageStyle（怪物跳过）同理：MERGE 节点 + `has_voice_style` 边（sync=true）+ SET `speech_style` + `status = 1`。
 
 **status 写入**：概念节点无审批，完成即 `status = 1`。
 

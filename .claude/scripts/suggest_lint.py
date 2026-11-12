@@ -405,7 +405,7 @@ def main(argv=None) -> int:
 # 事故形态一：Spot 占位节点 + 第二句引用前句悬空变量 sp（根因一）
 INCIDENT_FORM1 = (
     "CREATE (sp:Spot {id:'SP1'}) SET sp.name='临江公园-观景台', sp.kind='zone', sp.status=0;\n"
-    "MATCH (l:Location {id:'L1'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\n"
+    "MATCH (l:Location {id:'L1'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;\n"
 )
 # 事故形态二：S2 单语句 MERGE 边内联锚定端点 scn/il（根因二）
 INCIDENT_FORM2 = (
@@ -419,7 +419,7 @@ INCIDENT_FORM2 = (
 # 事故文档「正确写法」全文（自包含语句）
 CORRECT_STAGER = (
     "CREATE (sp:Spot {id:'SP2'}) SET sp.name='临江公园-观景台', sp.kind='zone', sp.status=0;\n"
-    "MATCH (l:Location {id:'L2'}) MATCH (sp:Spot {id:'SP2'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\n"
+    "MATCH (l:Location {id:'L2'}) MATCH (sp:Spot {id:'SP2'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;\n"
     "MATCH (e:Event {id:'E2'}) MERGE (sub:SubEvent {id:'SUB2'})\n"
     "ON CREATE SET sub.title='清晨告白 · 开场', sub.time='07:00', sub.description='寒暄'\n"
     "MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\n"
@@ -433,7 +433,7 @@ CORRECT_TEMPLATE = (
     "// Spot 占位——节点本体\n"
     "CREATE (sp:Spot {id:'SP3'}) SET sp.name='小酒馆-吧台区', sp.kind='zone', sp.status=0;\n"
     "// part_of 边\n"
-    "MATCH (l:Location {id:'L3'}) MATCH (sp:Spot {id:'SP3'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;\n"
+    "MATCH (l:Location {id:'L3'}) MATCH (sp:Spot {id:'SP3'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;\n"
     "// S3 Hook 揭示\n"
     "MATCH (e:Event {id:'E3'})\n"
     "MERGE (sub:SubEvent {id:'SUB3'})\n"
@@ -441,12 +441,12 @@ CORRECT_TEMPLATE = (
     "MERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\n"
     "MATCH (sub:SubEvent {id:'SUB3'}) MATCH (scn:Scene {id:'SCN3'})\n"
     "MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\n"
-    "MATCH (e2:Event {id:'E5'}) MATCH (f:Hook {id:'FACT1'}) MERGE (e2)-[rv:reveals]->(f);\n"
+    "MATCH (sub:SubEvent {id:'SUB3'}) MATCH (f:Hook {id:'FACT1'}) MERGE (sub)-[rv:reveals]->(f);\n"
 )
 # event-ideator 形态：逗号多 MATCH、无标签 MATCH 端点
 CORRECT_IDEATOR = (
     "MATCH (e:Event {id:'E4'}), (l:Location {id:'L4'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\n"
-    "MATCH (a:Event {id:'E4'}), (f:Hook {id:'FACT2'}) MERGE (a)-[r2:establishes]->(f) ON CREATE SET r2.sync=true;\n"
+    "MATCH (a:Event {id:'E4'}), (f:Hook {id:'FACT2'}) MERGE (a)-[r2:establishes]->(f) ON CREATE SET r2.sync=false;\n"
     "MATCH (n {id:'E4'}) SET n.description='补充一句';\n"
 )
 

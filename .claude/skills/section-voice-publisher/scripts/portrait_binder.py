@@ -84,7 +84,7 @@ def _section_pos(section_id: str):
 
 
 def _effective_ds(section_id: str, who: str, warnings: list):
-    """该 (节, 角色) 生效的 DesignSheet 版本 → {"id","slug","notes"} 或 None。
+    """该 (节, 角色) 生效的 DesignSheet 版本 → {"id","notes"} 或 None。
 
     形象版本时间线（DesignSheet 版本链，如剪发前后）：取 active_from 为空（首版）或
     ≤本节叙事位置的最新版本；并列（同 active_from）按 id 字典序取首 + warning；全部
@@ -134,22 +134,40 @@ def resolve_illus(section_id: str, scene_id: str, who: str, warnings: list) -> t
     多个终点按 id 字典序取首（决定性），记 warning；全空 → ("", "")。
     scene_id 为块 id（LineAudio.scene_block_id，id 直连无 name join）；
     为空（不命中图 Scene）时退化为「节内该角色全部 sub 的 appears_as」。
+
+    控制者穿透：who 自身在该块无 appears_as 授权、且 who 有
+    `(who)-[:relation {type:'控制', illus}]->(host)` 出边时，直接取边上的 illus——
+    穿越者内心独白镜头配穿越者本体立绘（边属性 illus = 本体造型锚，即穿越时刻的造型）。
     """
-    where = ("WHERE scn.id = " + _q(scene_id) + " ") if scene_id else ""
-    rows = _run_cypher(
-        "MATCH (sec:Section {id:" + _q(section_id) + "})-[:includes]->(e:Event) "
-        "MATCH (e)-[:refines]->(sub:SubEvent) "
-        "OPTIONAL MATCH (sub)-[:anchored_at]->(scn:Scene) " + where +
-        "OPTIONAL MATCH (c0:Character {name:" + _q(who) + "})-[:involved]->(e) "
-        "OPTIONAL MATCH (sub)-[:appears_as]->(il:IllusDesign)"
-        "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
-        "RETURN DISTINCT il.id AS illus_id"
-    )
-    if scene_id and not rows:
+    def _resolve(who_name: str) -> list:
+        anchor_hop = ("MATCH (sub)-[:anchored_at]->(:Scene {id:" + _q(scene_id) + "}) "
+                      if scene_id else "")
+        rows = _run_cypher(
+            "MATCH (sec:Section {id:" + _q(section_id) + "})-[:includes]->(e:Event) "
+            "MATCH (e)-[:refines]->(sub:SubEvent) " + anchor_hop +
+            "OPTIONAL MATCH (c0:Character {name:" + _q(who_name) + "})-[:involved]->(e) "
+            "OPTIONAL MATCH (sub)-[:appears_as]->(il:IllusDesign)"
+            "<-[:outfit_for]-(:CostumeStyle)<-[:has_costume]-(c0) "
+            "RETURN DISTINCT il.id AS illus_id"
+        )
+        return sorted({r["illus_id"] for r in rows if r.get("illus_id")})
+
+    vals = _resolve(who)
+    if not vals:
+        anchors = _run_cypher(
+            "MATCH (:Character {name:" + _q(who) + "})"
+            "-[r:relation {type:'控制'}]->() WHERE r.illus IS NOT NULL "
+            "RETURN r.illus AS illus LIMIT 2"
+        )
+        for arow in anchors:
+            warnings.append(f"{scene_id}/{who}：本块无 appears_as 授权，"
+                            f"经 relation{{type:'控制'}} 取本体造型锚 {arow['illus']}")
+            vals = [arow["illus"]]
+            break
+    if scene_id and not vals:
         warnings.append(f"{scene_id}：本节 sub 无 anchored_at 命中此 Scene"
                         f"（块 id 与图 Scene 不符，或未归组/未细化）——请核对 ink 块标记 id 是否为 scene_id"
                         f"及 event-stager/scene-designer 归组")
-    vals = sorted({r["illus_id"] for r in rows if r.get("illus_id")})
     if len(vals) > 1:
         warnings.append(f"{scene_id}/{who}：appears_as 命中多个 IllusDesign（{vals}），"
                         f"按 id 字典序取首 {vals[0]}")
@@ -187,7 +205,7 @@ def build_candidates(section_id: str) -> dict:
             entry = {"illus_id": illus_id, "illus_source": source, "stands": stands}
             eff = _effective_ds(section_id, who, warnings)   # 已缓存，取生效形象供 LLM 对齐
             if eff:
-                entry["design_sheet"] = eff                  # {"id","slug","notes"}——剪发后形象以 notes 为准
+                entry["design_sheet"] = eff                  # {"id","notes"}——剪发后形象以 notes 为准
             chars[who] = entry
         scenes[block] = {"scene_id": block or "", "chars": chars}
 

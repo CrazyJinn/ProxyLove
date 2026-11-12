@@ -3,8 +3,8 @@
 
 剧本只写逻辑名，manifest 把逻辑名映射到 Godot res:// 资源路径（章 JSON 权威 schema：99_game/data/剧本.schema.json）。
 本脚本从图查：
-  - status=11 的 StandingIllustration → portraits（键 = <char_name>.<variant_label>）
-  - 所有 Scene                        → scenes   （键 = <Scene.name>）
+  - status=11 的 StandingIllustration → portraits（键 = hexid(stand_id)）
+  - 所有 Scene                        → scenes   （键 = hexid(scene_id)）
 并图驱动收集：
   - status=11 的音频行（ambient_track）→ sfx
   - status=11 的配音行（voice_key）   → voices

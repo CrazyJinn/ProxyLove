@@ -1,7 +1,7 @@
 ---
 name: chapter-novelist
 description: |
-  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Fact/Lore/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + 本节 Event reveals 的 Hook + involved 角色 has_info 的 Lore；时间由成员事件推导）→ Lore 新鲜度裁量（遗忘曲线 R=base×2^(−Δ/h)，kl 分档半衰期，F≥70 正面可/≥30 仅侧面/<30 禁释放，scripts/fingerprint.py freshness）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹 + fact/lore 消费强度 E/S，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Fact 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Hook）。
+  推进 Section 图节点的小说段（提纲已内化：**节的提纲即图数据本身**——Event/Fact/Lore/Choice + 分支骨架；块 id=scene_id 由 1a 机位素材集现场取用；原 chapter-outliner 已废弃并入本 skill，设计简报与 Chapter.summary 已废止不入依据）：按 includes 物化成员圈定取材素材（本节 Event 直连 + 本节 Event 细化出的 SubEvent reveals 的 Hook + involved 角色 has_info 的 Lore；时间由成员事件推导）→ Lore 新鲜度裁量（遗忘曲线 R=base×2^(−Δ/h)，kl 分档半衰期，F≥70 正面可/≥30 仅侧面/<30 禁释放，scripts/fingerprint.py freshness）→ 丰满度自检（不足拒绝产出报缺口，用户跑 event-ideator 补全）→ **结构推理在思维链中完成、不落中间提纲文件**（场景段切分 / 分支节点图核验 / 节拍规划）→ 五步产节级散文 小说.md（**纯文件产物，零图写入**；正文 `### <scene_block_id> <场景名> <时段>` 场景段标题承载拓扑契约，id = 所写机位的 scene_id（图即档案）；头部**取材指纹**＝实际取用素材 id + 内容指纹 + fact/lore 消费强度 E/S，scripts/fingerprint.py）。重写场景（素材 stale / 用户明示）：覆盖旧文（禁读旧文）且显式作废定稿链（SET Section.status=-1 + 该节全部行 -1）——本 skill 唯一图写入。对账发现的新 Event/Fact 走建议 JSON 通道（source='chapter-novelist'，人工经 dashboard 审阅入库；稀疏 ≤3 Event+2 Hook）。
   前驱：无（章无 status 取消结构审；节创建即 0 待定稿，定稿审在下游 dialoguer 产出置 10 后由人工批准；自由节与已组章节均可创作，配音前须组章）。场景段结构以小说 `###` 标题为契约（下游 dialoguer 照搬），分支事实以图 Choice/option 为准。存量直连：无小说.md 且 script_path 已有值的旧流程节不补小说。在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
@@ -40,10 +40,10 @@ WITH sec, ch
 OPTIONAL MATCH (sec)-[:includes]->(:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
 WITH sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
      sec.status AS sec_status, sec.script_path AS script_path,
-     ch.chapter_no AS chapter_no, ch.title AS ch_title, ch.status AS ch_status,
+     ch.chapter_no AS chapter_no, ch.title AS ch_title,
      collect(DISTINCT s.id) AS scene_ids, collect(DISTINCT s.name) AS scene_names
 RETURN id, section_no, title, summary, sec_status, script_path,
-       chapter_no, ch_title, ch_status, scene_ids, scene_names
+       chapter_no, ch_title, scene_ids, scene_names
 LIMIT 1
 ```
 
@@ -198,7 +198,7 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
    - **落盘后跑** `python .claude/scripts/suggest_lint.py <文件路径>`，FAIL（exit 1）
      就地改写、覆盖重写并重跑至全 PASS（exit 0）再汇报（dashboard 执行侧有同规格
      兜底，FAIL 形态会在采纳时被 400 拒绝）
-   - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/establishes/reveals/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）；新 Hook 的 title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），必须挂 establishes 成立源、可加 reveals 揭示场合（**novelist 不建 Lore**——固有设定是构图期拍板，非写作期对账产物）。稀疏纪律：单次至多 3 Event + 2 Hook，无新增不落盘只汇报。
+   - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/establishes/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）；新 Hook 的 title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，novelist freshness 半衰期档位），必须挂 establishes 成立源、不建 reveals（揭示场合归 event-stager 拍板）——**novelist 不建 Lore**（固有设定是构图期拍板，非写作期对账产物）。稀疏纪律：单次至多 3 Event + 2 Hook，无新增不落盘只汇报。
 5. **汇总**：小说路径 + 取材条数（event/fact/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **Lore freshness 裁量行**（每个被消费 lore id → F 值 → 本节释放方式 E/S；fact 无需）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
 
 ## 参考文档

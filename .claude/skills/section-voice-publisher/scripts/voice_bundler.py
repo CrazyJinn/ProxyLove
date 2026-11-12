@@ -243,7 +243,7 @@ def bind_graph(tasks: dict, keys=None) -> dict:
     tasks：{char: [{key, text, node_id, master_path?, emotion?, tts_text?, clone_mode?}]}。
     keys：可选键过滤（只 bind 生成成功的句）。写：voice_key/emotion/tts_text/
     clone_mode=归一化终值（=本句实际合成模式，下轮重配的判别初值）/
-    attempts=旧+1/text_sha1=当前台词 sha1/status=10（配完待审）；
+    text_sha1=当前台词 sha1/status=10（配完待审）；
     master_path 非 null 时一并落图（母带唯一权威）。
     返回 {bound, skipped} 统计。
     """
@@ -266,7 +266,6 @@ def bind_graph(tasks: dict, keys=None) -> dict:
                 f"l.emotion={_q(it.get('emotion'))}, "
                 f"l.tts_text={_q(it.get('tts_text'))}, "
                 f"l.clone_mode={_q(normalize_clone_mode(it.get('clone_mode')))}, "
-                f"l.attempts=coalesce(l.attempts,0)+1, "
                 f"l.text_sha1={_q(_text_sha1(it.get('text') or ''))}, "
                 f"l.status=10;"
             )

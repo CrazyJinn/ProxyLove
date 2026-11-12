@@ -93,7 +93,7 @@ python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_i
     "id": "<scene_id>",
     "scene_type": "<scene_type>", "name": "<scene_name>",
     "time_of_day": "...", "vibe": "...",
-    "deco": "...", "description": "..."
+    "deco": "..."
   },
   "location": {"name": "<loc_name>"},
   "node": {"id": "<layer_id>"},

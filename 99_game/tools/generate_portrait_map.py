@@ -2,8 +2,8 @@
 """生成章节映射 chapter-map（发布时章 JSON 的 BGM 演出注入源）。
 
 查图一路：
-  bgm：本章 Section-contains->Scene-has_bgm->BgmTrack（仅 status=2 音频已归档的进 map，
-       <2 的打印警告由发布方处理）。填入 {scene: {track, mode, loop}}。
+  bgm：本章 LineAudio.scene_block_id 直连 Scene-has_bgm->BgmTrack（仅 status=2 音频已归档的
+       进 map，<2 的打印警告由发布方处理）。填入 {scene: {track, mode, loop}}。
 
 章映射只含 bgm 段；立绘整键由 merge_sections_to_chapter.py 沿
 LineAudio-[:uses]->StandingIllustration 边在投影期直接解析，不再需要 scene 级映射改写。

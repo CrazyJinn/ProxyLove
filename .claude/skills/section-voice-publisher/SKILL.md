@@ -43,7 +43,7 @@ allowed-tools: Read, Bash, Write, Edit
 // (1) Section 定稿态 + 所属 Chapter（算 stem）
 MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<section_id>'})
 RETURN sec.script_path AS script_path, sec.status AS sc_status, sec.id AS sc_id,
-       ch.chapter_no AS no, ch.title AS title, ch.status AS ch_status;
+       ch.chapter_no AS no, ch.title AS title;
 ```
 
 - `sc_status≠11` → 停止（先定稿审）。
@@ -97,7 +97,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
   -o '.tmp/portrait-candidates-<stem>-sec<MM>.json'
 ```
 
-`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）；`chars[who].design_sheet` 带生效版本 `{id, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
+`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）。**控制者穿透**：who 在本块无 appears_as 授权且存在 `(who)-[:relation {type:'控制', illus}]->(host)` 出边时，直接取边上的 `illus`（穿越者本体造型锚）——穿越者内心独白镜头配穿越者本体立绘，不要求块内授权（穿透记入 warnings）；`chars[who].design_sheet` 带生效版本 `{id, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 

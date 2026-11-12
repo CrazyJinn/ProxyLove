@@ -58,7 +58,7 @@ allowed-tools: Read, Bash, Write, Edit
     "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."},
     "appearance":"...(自由文本:综合气质/身高)", "height_cm":"(可选 int)"
   },
-  "character": {"id":"<char_id>","name":"..."},
+  "character": {"id":"<char_id>","name":"...","vibe":"...(人物调性，无则空)"},
   "base": {"image":"06_角色美术/<char_id>/参考图.<png|jpg|jpeg>","summary":"真人参考照片（单张，路径=Character.ref_image_path 属性或 hexid 目录探测）"},
   "node": {"id":"<designsheet_node_id>"},
   "output_path": "06_角色美术/<char_id>/<ds_id>/prompt.md"
@@ -92,9 +92,9 @@ allowed-tools: Read, Bash, Write, Edit
 ```json
 {
   "costume": {
-    "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."}
+    "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."},
+    "notes": "...(可选)"
   },
-  "costume": {"notes":"...(可选)"},
   "character": {"id":"<char_id>","name":"..."},
   "node": {"id":"<illusdesign_node_id>"},
   "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"

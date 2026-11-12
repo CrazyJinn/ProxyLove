@@ -118,7 +118,6 @@ MERGE (l:Location {name: '<Location名>'})
 | 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time（`yyyy-MM-dd HH:mm:ss`，小时即时段依据）和描述推导（出图经 --tod 进模式 E prompt；运行时契约） |
 | 氛围 | vibe | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话（含天气）——场景恒定调性，剧情语境与人物持物不写 |
 | 陈设细节 | deco | `桌上一台旧显示器亮着，麦克风支在杂乱桌面，外卖盒沿桌沿堆叠` | 自由文本：该机位画面里的陈设/小物描述（可移动小物与杂物堆**不建几何**，全写此处） |
-| 概要 | description | `咖啡店的点餐区域` | 1-2 句 |
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
@@ -150,9 +149,13 @@ MERGE (sp:Spot {id: '<snowflake_id>'})
   ON CREATE SET sp.name = '<Location名>-<区域>', sp.kind = 'zone', sp.description = '...';
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
 MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot
+// Location 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；空间化处理即消化，REMOVE 对无 status 者无害）
+MATCH (l:Location {id: '<loc_id>'}) REMOVE l.status;
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
-MATCH (sub:SubEvent)-[old:anchored_at]->(:Scene)<-[:realizes]
-WHERE (:Event {id: '<event_id>'})-[:refines]->(sub)-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'}) DELETE old;
+// （旧 Scene 的 Location 归属经 realizes←Spot←part_of 链判定，与 1b② 未归组查询同构）
+MATCH (e:Event {id: '<event_id>'})-[:refines]->(sub:SubEvent)
+MATCH (sub)-[old:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l0:Location {id: '<loc_id>'})
+DELETE old;
 MATCH (e:Event {id: '<event_id>'})-[:refines]->(sub:SubEvent), (scn:Scene {id: '<scene_id>'})   // 归组即拍机位：目标 = 该 zone 拍定的 Scene；sub 本语句内绑定（变量不跨 ; 语句）
 MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.sync = false;
 ```
@@ -164,6 +167,8 @@ MERGE (s:Scene {id: '<snowflake_id>'})
   ON CREATE SET s.status = 0;
 MATCH (sp:Spot {id: '<spot_id>'}), (s:Scene {id: '<snowflake_id>'})
 MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
+// Spot 占位消化归空（占位 status=0 是 event-stager 的待细化标记；realizes 出 Scene 即消化，REMOVE 对无 status 者无害）
+MATCH (sp:Spot {id: '<spot_id>'}) REMOVE sp.status;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...',
@@ -175,7 +180,7 @@ MATCH (sp:Spot {id: '<spot_id>'})
 SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_id)>.yml';
 ```
 
-> realizes 重建时先清后建（幂等模板见 00_init/Schema/场景美术.md 引用；Scene 节点不删，层链由 scene-layer-designer 管理）。
+> realizes 重建时先清后建（幂等——上方「事件归组」段删除语句同构改用 realizes 即可；Scene 节点不删，层链由 scene-layer-designer 管理）。
 
 **status 写入**：新建场景创建即 `status = 1`（已完成，无审批）。
 
@@ -185,7 +190,7 @@ SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_
 
 ## 参考文档
 
-- [场景美术 Schema](00_init/Schema/场景美术.md) — Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
+- [场景美术 Schema](00_init/Schema/场景美术.md) — Location/Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
 - [room.yml v3 速查](references/room-yml-v3.md) — 结构模板/校验规则/立绘安全区阈值/数值基线/外景模板/例句（写 yaml 前必读）
-- [叙事基础 Schema](00_init/Schema/叙事基础.md) — Event/Location 节点、occurs_at 边
+- [剧情 Schema](00_init/Schema/剧情.md) — Event 节点、occurs_at/involved 边
 - [场景美术风格](00_init/美术风格.md) — 渲染与色彩基调、提示词硬约束（风格收尾串）

@@ -40,7 +40,9 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 2. Schema 是唯一事实来源
 
-节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（叙事基础 / 角色美术 / 场景美术 / 剧情 / 声音 五个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
+节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（剧情 / 角色美术 / 场景美术 / 声音 四个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
+
+**Schema 变更须用户确认**：任何节点/边/字段的增删改（含边属性、枚举值、中文名）都是设计决策——单独列出变更项请用户裁定后再动，非必要不加字段。
 
 ### 3. 生产链 = DAG + status + sync 级联
 
@@ -92,7 +94,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 - **Event 定位一律 `occurs_at → Location`**（一跳；N:N——跨地点事件多挂）；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）。
 - 节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`。
 - **Event 间禁建 `evt_relation`**（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Hook/Lore 无出边**：事实成立挂 `Event ─establishes→ Hook`（原 link 边已废止归一），固有设定挂 `(Character|Location) ─has_info→ Lore`，读者侧揭示时刻挂 `SubEvent ─reveals→ Hook`——事件与信息之间不走因果边。
-- Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/叙事基础.md](00_init/Schema/叙事基础.md)）。
+- Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/剧情.md](00_init/Schema/剧情.md)）。
 - **占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）

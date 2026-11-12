@@ -72,7 +72,7 @@ OUTPUT_DIR="02_剧情数据"
 ## 模型（写 Cypher 前必读）
 
 ```
-人工层：  Character ─involved→ Event ←occurs_at─ Location   （入口核验的前提）
+人工层：  Character ─involved→ Event ─occurs_at→ Location   （入口核验的前提）
           Section ─includes{order}→ Event                    ← 分节/时间轴只碰 Event
 细化层：  Event ─refines{sync:true}→ SubEvent                ← 1:N，本 skill 产
           SubEvent ─anchored_at→ Scene                       ← 缺则建 Scene 占位
@@ -82,9 +82,10 @@ OUTPUT_DIR="02_剧情数据"
 ```
 
 - SubEvent 属性仅 id/title/time/description；**无** status/type/involved/occurs_at。
-- 占位节点属性：id + status=0 + 最小必要字段（Spot: name/kind；Scene: name/
-  scene_type；CostumeStyle: name/outfit_style/notes（着装补充说明）；IllusDesign: status
-  可空）——完整字段下限待消化实践反馈后固化，当前给名称即可被消化。
+- 占位节点属性：id + status=0 + 最小必要字段（Spot: name/kind/description；Scene:
+  name/scene_type；CostumeStyle: name/outfit_style；IllusDesign: 裸节点仅 id+status=0）
+  ——完整字段下限待消化实践反馈后固化，当前给名称即可被消化（着装补充说明可选写
+  `cs.notes`）。
 - **Event 直挂 anchored_at/appears_as 为违规**（EA5 体检兜查）。
 - 删父 Event 连带删其全部 sub（dashboard event_crud 已实现级联）。
 
@@ -209,7 +210,7 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 
 | 缺口 | 占位节点（cypher 要点） |
 |---|---|
-| 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,status:0,name,kind:'zone'})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错） |
+| 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,status:0,name,kind:'zone',description})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错） |
 | 机位不存在 | `CREATE (sc:Scene {id,status:0,name,scene_type})` + `(sp)-[:realizes]->(sc)` |
 | 服装套不存在 | `CREATE (cs:CostumeStyle {id,status:0,name,outfit_style})` + `(ch)-[:has_costume]->(cs)`（归属角色 = 该着装缺口所属 involved 角色，占位即挂边） |
 | 形象版本不存在 | `CREATE (idn:IllusDesign {id,status:0})` + `(cs)-[:outfit_for]->(idn)`；着装补充写 `cs.notes` |
@@ -267,11 +268,11 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 // Spot 占位（空间缺口）——节点本体
 CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;  // status=0 仅占位标记；scene-designer 建 Scene（消化）后 REMOVE 归空
 // part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
-MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=true;
+MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;
 // Scene 占位（机位缺口）——节点本体
 CREATE (sc:Scene {id:'<snowflake>'}) SET sc.name='<机位名>', sc.scene_type='<类型>', sc.status=0;
 // realizes 边（Spot 可为既有或上方占位）
-MATCH (sp:Spot {id:'<spot_id_既有或上方占位>'}) MATCH (sc:Scene {id:'<snowflake>'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=true;
+MATCH (sp:Spot {id:'<spot_id_既有或上方占位>'}) MATCH (sc:Scene {id:'<snowflake>'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=false;
 // CostumeStyle 占位——节点本体
 CREATE (cs:CostumeStyle {id:'<snowflake>'}) SET cs.name='<着装名>', cs.outfit_style='<风格>', cs.status=0;
 // has_costume 归属边（占位即挂——归属角色 = 该着装缺口所属 involved 角色，禁止孤儿占位）
@@ -290,10 +291,14 @@ MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (scn:Scene {id:'<scene_id_�
 MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;
 MATCH (sub:SubEvent {id:'<snowflake_同上>'}) MATCH (il:IllusDesign {id:'<illus_id_继承既有或本建议占位>'})
 MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='<继承：同父兄弟着装 / 占位：新套装待消化>';
+// ── S4 缺口修复：补边（实体在图只缺边时；两端点各自 MATCH 绑定）──
+MATCH (ch:Character {id:'<char_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (ch)-[r:involved]->(e) ON CREATE SET r.sync=false;
+MATCH (e:Event {id:'<event_id>'}) MATCH (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;
 ```
 
-- 占位节点间边（part_of/realizes/outfit_for）sync=true（细化时级联下游）；sub 三边
-  中 refines sync=true、anchored_at/appears_as sync=false（演出绑定不级联）。
+- 占位节点间边：outfit_for sync=true（细化时级联下游）；part_of/realizes sync=false
+  （空间从属/实现不级联，Schema 规定恒 false）；sub 三边中 refines sync=true、
+  anchored_at/appears_as sync=false（演出绑定不级联）。
 - 多语句 `;`+换行分隔、先节点后边、每个分号独占行尾；MERGE 幂等；id 用 snowflake
   逐个生成（`$SF_GEN -n 1 -q`）。
 
@@ -301,5 +306,5 @@ MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='<继�
 
 - [references/微演出模式库.md](references/微演出模式库.md) — §2 第 4 步校验时读（十一种模式范式+不拆反例+自检清单）
 - [references/占位命名规范.md](references/占位命名规范.md) — §3 占位物化时读（四类命名模式+查重自检）
-- [叙事基础.md](../../../00_init/Schema/叙事基础.md) / [场景美术.md](../../../00_init/Schema/场景美术.md) / [角色美术.md](../../../00_init/Schema/角色美术.md)
+- [剧情.md](../../../00_init/Schema/剧情.md)（Event/SubEvent/Hook/Lore）/ [场景美术.md](../../../00_init/Schema/场景美术.md) / [角色美术.md](../../../00_init/Schema/角色美术.md)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§3/§6/§8.2

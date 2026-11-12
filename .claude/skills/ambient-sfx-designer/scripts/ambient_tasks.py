@@ -2,8 +2,8 @@
 
 方言 v3 音频三型：sfx:（点状→op=transition，kind=sfx，Freesound 实录）、bed+（音床起→
 op=bed_start，kind=bed，AudioFly 声景）；旧环境音两型（独立行/内嵌）已废止（2026-09-03 迁移）。
-track 由本脚本预计算（前缀 amb-/bed- + <stem>-<block>-<node_id>，复用 voice_bundler 单源
-构造），杜绝 LLM 手拼 key；行上已有 track 沿用原键（键一经落图终身不换前缀）。
+track 由本脚本预计算（= hexid(行id)，复用 voice_bundler 单源构造），杜绝 LLM 手拼
+key；行上已有 track 沿用。
 """
 import argparse
 import json
@@ -56,7 +56,7 @@ def collect(section_id: str) -> list:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="环境音行任务生成（op=transition status=0 + 氛围 narrate → jobs JSON）")
+    ap = argparse.ArgumentParser(description="环境音行任务生成（op=transition/bed_start status=0 → jobs JSON）")
     ap.add_argument("--section", required=True)
     ap.add_argument("-o", "--out", default="-", help="输出路径（默认打印 stdout）")
     args = ap.parse_args()
