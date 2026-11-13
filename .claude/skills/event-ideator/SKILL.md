@@ -63,9 +63,9 @@ SUGGEST_LINT="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_lint.py"  # 建�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema：[剧情.md](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/establishes/
+- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/establishes/
   leads_to/Hook/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见
-  [角色美术.md](../../../00_init/Schema/角色美术/) / [场景美术.md](../../../00_init/Schema/场景美术/)。
+  [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring
   （内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
@@ -346,6 +346,6 @@ MATCH (a:StoryArc {id:'<arc_id>'}), (e:Event {id:'<event_id>'}) MERGE (a)-[r:com
 
 ## 参考文档
 
-- [剧情.md Schema](../../../00_init/Schema/剧情/)（Event/Hook/Lore/StoryArc/comprises）
-- Character/Location 节点定义见 [角色美术.md](../../../00_init/Schema/角色美术/) / [场景美术.md](../../../00_init/Schema/场景美术/)
+- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/Hook/Lore/StoryArc/comprises）
+- Character/Location 节点定义见 [Schema/角色美术/Character.md](../../../00_init/Schema/角色美术/Character.md) / [Schema/场景美术/Location.md](../../../00_init/Schema/场景美术/Location.md)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§2/§8.1

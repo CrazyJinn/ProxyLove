@@ -61,7 +61,7 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 
 ### 2. 完成任务
 
-**先读字段表**：Read [00_init/Schema/角色美术/](../../../00_init/Schema/角色美术/) 的「立绘（StandingIllustration）」节——字段全集以该表为准，不凭记忆写字段。
+**先读字段表**：Read [StandingIllustration.md](../../../00_init/Schema/角色美术/StandingIllustration.md)——字段全集以该表为准，不凭记忆写字段。
 
 推进这一个变体：
 

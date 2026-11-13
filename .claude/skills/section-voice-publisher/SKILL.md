@@ -113,7 +113,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
 
 4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.ink` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
    - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`description` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
-   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "vibe": "<该变体调性一句话：情绪强度/神态/身体张力，供出图把握——只写变体本身的调性，台词情境与剧情语境不写>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，vibe 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
+   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<简短词，字数/词性以 Schema 为准>", "vibe": "<该变体调性一句话：情绪强度/神态/身体张力——写法纪律见 [StandingIllustration.md](../../../00_init/Schema/角色美术/StandingIllustration.md)>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，vibe 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
    - **节奏原则**：同一段落情绪内保持同一 stand（不为每句强行换）；情绪转折/强反应处换变体；也不许整节只选一个变体敷衍——变体区分度是立绘表现力来源。
    - 旁白/narrate 行不选（tasks 只含 say 行）。**任何任务句不得缺 stand 字段**（3c 的 apply 会拒绝整个 tasks）。
 

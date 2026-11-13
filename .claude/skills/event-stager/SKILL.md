@@ -267,7 +267,7 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 // ── 占位节点：节点本体与挂边各自独立语句，挂边两端点各自 MATCH 绑定 ──
 // ⚠ 字段名以 Schema 为准：本模板各占位只写「最小启动集」（流水线起点 status=0 或定位字段——Character/Location/Spot 骨架无 status），
 //    其余字段由消化方（scene-designer/char-design 链）按各自 Schema 字段表补全——
-//    建议 JSON 生成时字段名不凭记忆，对照 00_init/Schema/ 对应节点节核对（表外字段一律不写）。
+//    建议 JSON 生成时字段名不凭记忆，对照 00_init/Schema/ 对应节点文件核对（表外字段一律不写）。
 // Spot 占位（空间缺口）——节点本体
 CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>';  // Spot 骨架无 status：待细化缺口由「无 realizes 出边」结构表达，scene-designer 建 Scene 即消化
 // part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
@@ -309,5 +309,5 @@ MATCH (e:Event {id:'<event_id>'}) MATCH (l:Location {id:'<loc_id>'}) MERGE (e)-[
 
 - [references/微演出模式库.md](references/微演出模式库.md) — §2 第 4 步校验时读（十一种模式范式+不拆反例+自检清单）
 - [references/占位命名规范.md](references/占位命名规范.md) — §3 占位物化时读（四类命名模式+查重自检）
-- [剧情.md](../../../00_init/Schema/剧情/)（Event/SubEvent/Hook/Lore）/ [场景美术.md](../../../00_init/Schema/场景美术/) / [角色美术.md](../../../00_init/Schema/角色美术/)
+- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/SubEvent/Hook/Lore）/ [Schema/场景美术/](../../../00_init/Schema/场景美术/) / [Schema/角色美术/](../../../00_init/Schema/角色美术/)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§3/§6/§8.2

@@ -55,7 +55,7 @@ RETURN ch.name AS char_name, ch.vibe AS char_vibe,
 
 ### 2. 完成任务
 
-**先读字段表**：Read [00_init/Schema/角色美术/](../../../00_init/Schema/角色美术/) 的「设计图（DesignSheet）」节——字段全集以该表为准，不凭记忆写字段。
+**先读字段表**：Read [DesignSheet.md](../../../00_init/Schema/角色美术/DesignSheet.md)——字段全集以该表为准，不凭记忆写字段。
 
 #### 常规模式（首版/重做——参考图图生图）
 

@@ -109,15 +109,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 **2c. 机位决策**（新建 Scene 时显式决定）：为每个新建 Scene 定 `camera {pos, look_at, fov}`（室内对话机位自门口平视略高；机位即构图——「机位后退、家具沿墙、中下部留空」由 camera 数值保证；起步数值取 [references/room-yml-v3.md](references/room-yml-v3.md) §6 基线）。调机位先在 dashboard /room3d 相机预览看效果。
 
-对需**新建**的 Scene，生成 snowflake id 并按下方字段表填写内容：
-
-| 维度 | 属性 | 示例 | 说明 |
-|------|------|------|------|
-| 名称 | name | `咖啡店-点餐台` | `[Location名]-[区域]`（可与 zone Spot 同名）；时段/版本后缀（-更新设备后/-夜晚）只出现在 Scene 名 |
-| 场景类型 | scene_type | dialogue / functional / combat / ui | 按事件性质：纯对话→dialogue，功能交互→functional，战斗→combat，界面→ui |
-| 时段 | time_of_day | 清晨/白天/黄昏/夜晚 | 从 Event.time（`yyyy-MM-dd HH:mm:ss`，小时即时段依据）和描述推导（出图经 --tod 进模式 E prompt；运行时契约） |
-| 氛围 | vibe | `空气里弥漫咖啡香，慵懒午后` | 自由文本：整体氛围一句话（含天气）——场景恒定调性，剧情语境与人物持物不写 |
-| 陈设细节 | deco | `桌上一台旧显示器亮着，麦克风支在杂乱桌面，外卖盒沿桌沿堆叠` | 自由文本：该机位画面里的陈设/小物描述（可移动小物与杂物堆**不建几何**，全写此处） |
+对需**新建**的 Scene，生成 snowflake id 并填写内容——**先 Read [Scene.md](../../../00_init/Schema/场景美术/Scene.md)**：字段全集、类型与写法以该文件字段表为准，不凭记忆写字段（时段自 Event.time 推导；vibe/deco 撰写纪律已在字段表说明列）。
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
@@ -160,7 +152,7 @@ MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.syn
 
 #### Scene 写入（MERGE 节点 + realizes 边，status=1 已完成）
 
-**字段名以 Schema 为准**：Read [00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) 的「场景（Scene）」节——SET 字段清单对照该表生成，表外字段一律不写（vibe/deco 撰写见 [Schema总览.md](../../../00_init/Schema总览.md) 属性撰写总则）。
+**字段名以 Schema 为准**：Read [Scene.md](../../../00_init/Schema/场景美术/Scene.md)——SET 字段清单对照该表生成，表外字段一律不写。
 
 ```cypher
 MERGE (s:Scene {id: '<snowflake_id>'})

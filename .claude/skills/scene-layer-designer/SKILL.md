@@ -47,14 +47,7 @@ RETURN l.id AS loc_id, sp.id AS spot_id,
 > Spot 的 name/kind/description 是空间语义来源（构图与陈设的空间依据；模式 A 时随 Scene 字段一并交给 scene-prompt-assembler）。
 
 - **前驱校验**：`scene_status >= 1`（Scene 已由 scene-designer 设计），否则停止并提示先推进场景设计。
-- **所需图层**（按 scene_type 查表，静态映射，不进图）：
-
-  | scene_type | 所需图层（layer_type） |
-  |-----------|----------------------|
-  | `dialogue` | `background` |
-  | `functional` | `background`, `floor` |
-  | `combat` | `background`, `floor`, `decor`, `mask` |
-  | `ui` | `background` |
+- **所需图层**：按 scene_type 查映射表（定义见 [场景美术/边.md](../../../00_init/Schema/场景美术/边.md)「scene_type 与所需图层」，以该表为准不复述）。
 
 - **目标节点判定**：对比所需图层与已有图层（layers）；为缺失的 layer_type 生成新 snowflake id：
   ```bash
@@ -67,6 +60,8 @@ RETURN l.id AS loc_id, sp.id AS spot_id,
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
 
 ### 2. 完成任务
+
+**先读字段表**：Read [SceneLayer.md](../../../00_init/Schema/场景美术/SceneLayer.md)——字段全集以该表为准，不凭记忆写字段。
 
 按当前 status 单轮直推到图片完成（待审 10），逐个所需图层推进（V1 仅 background）：
 

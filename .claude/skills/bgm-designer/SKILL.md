@@ -62,6 +62,8 @@ RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
 
 ### 2. 完成任务（生成音乐描述文字）
 
+**先读字段表**：Read [BgmTrack.md](../../../00_init/Schema/声音/BgmTrack.md)——字段全集与 vibe/prompt 的分工（味道 vs 配方）以该文件为准。
+
 依据：Scene 的 vibe/time_of_day/deco（BGM 是场景资产，需求源于 Scene 本身）。
 
 产出**一段给外部生成工具的音乐描述 prompt**（中文，80–150 字），覆盖：
