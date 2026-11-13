@@ -42,17 +42,10 @@ MATCH (ch:Character)-[:has_appearance]->(:AppearanceStyle)-[:produces]->(ds)
 MATCH (ch)-[:has_voice_style]->(voice:LanguageStyle)
 OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
 OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
-RETURN ch.name AS char_name, ch.id AS char_id,
-       voice.id AS voice_id, voice.speech_style AS speech_style,
-       illus.id AS illus_id, illus.image_path AS illus_image, illus.status AS illus_status,
-       cos.name AS cos_name,
-       stand.id AS stand_id, stand.variant_label AS variant_label, stand.status AS status,
-       stand.eye AS eye, stand.brow AS brow, stand.mouth AS mouth,
-       stand.head_angle AS head_angle, stand.hand AS hand, stand.foot AS foot,
-       stand.vibe AS vibe
+RETURN ch, voice, illus, cos, stand
 ```
 
-- **前驱校验**：`illus_status = 11`（IllusDesign 已批准），否则停止并提示上游未就绪（由 `plot-design` 委派 `char-design` 推进 IllusDesign 后再来）。
+- **前驱校验**：`illus.status = 11`（IllusDesign 已批准），否则停止并提示上游未就绪（由 `plot-design` 委派 `char-design` 推进 IllusDesign 后再来）。
 - **节点已存在**（由 `section-voice-publisher` 的选绘 apply 兜底建为 `status=0`，`vibe` 已含变体调性）：直接按 status 决定推进起点。`variant_label` 已在节点上；若 `eye`/`brow`/`mouth`/`head_angle`/`hand`/`foot` 标签缺失，按 `variant_label` 与 `vibe` 语义推导并在保存步补写。
 - 本 skill **只处理这一个 stand**，不枚举其他变体、不补全数量。
 
@@ -128,7 +121,7 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 
 ## 批量模式流程（≥2 个 stand_id 时替代第 2~3 步的串行子 skill 链）
 
-1. **批量查状态**：第 1 步的查询把 `id:'<stand_id>'` 换成 `stand.id IN ['<id1>','<id2>',...]`，一次取回全部（含各自 illus/voice/cos/ds 上游）。前驱校验同单变体：`illus_status≠11` 的**剔除并在汇报中报警跳过**，不阻塞其余。
+1. **批量查状态**：第 1 步的查询把 `id:'<stand_id>'` 换成 `stand.id IN ['<id1>','<id2>',...]`，一次取回全部（含各自 illus/voice/cos/ds 上游）。前驱校验同单变体：`illus.status≠11` 的**剔除并在汇报中报警跳过**，不阻塞其余。
 2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md`，Mode C 模板与画风段不变、透明措辞行原样保留）。
 3. **构造任务清单** Write 到 `.tmp/stand-batch-<stem>-sec<MM>.json`：
 

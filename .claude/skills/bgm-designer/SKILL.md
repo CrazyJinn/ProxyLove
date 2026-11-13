@@ -31,9 +31,7 @@ MATCH (b:BgmTrack)
 WHERE b.id = '<input>' OR EXISTS {
   MATCH (s:Scene {name:'<input>'})-[:has_bgm]->(b)
 }
-RETURN b.id AS id, b.name AS name, b.status AS status, b.vibe AS vibe,
-       b.prompt AS prompt, b.audio_path AS audio_path
-LIMIT 5
+RETURN b LIMIT 5
 ```
 
 - **status=0**：进入段 2 生成描述。
@@ -56,8 +54,7 @@ MERGE (s)-[r:has_bgm]->(b) SET r.sync = false;
 
 ```cypher
 MATCH (s:Scene)-[:has_bgm]->(b:BgmTrack {id:'<bgm_id>'})
-RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
-       s.deco AS deco;
+RETURN s;
 ```
 
 ### 2. 完成任务（生成音乐描述文字）

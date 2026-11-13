@@ -42,16 +42,13 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (ch:Character {id: '<char_id>'})-[:has_appearance]->(app:AppearanceStyle)
 OPTIONAL MATCH (app)-[:produces]->(ds:DesignSheet)
-RETURN ch.name AS char_name, ch.vibe AS char_vibe,
-       app.id AS app_id, app.status AS app_status, app {.*} AS app_data,
-       ds.id AS ds_id, ds.status AS ds_status,
-       ds.active_from AS active_from, ds.delta_notes AS delta_notes
+RETURN ch, app, ds
 ```
 
-- **前驱校验**：`app_status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
-- **常规模式目标判定**：多版本时对每个 `ds_status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
-- **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds_status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
-- 记录 `char_id`（产物路径段用，hexid）、`char_vibe`（人物调性，第 2 步组装 data 用）、`app_id`（保存步建 `produces` 边用）、`app_data`（外貌 tags + 自由文本 + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
+- **前驱校验**：`app.status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
+- **常规模式目标判定**：多版本时对每个 `ds.status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
+- **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds.status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
+- 记录 `ch.id`（产物路径段用，hexid）、`ch.vibe`（人物调性，第 2 步组装 data 用）、`app.id`（保存步建 `produces` 边用）、整节点 `app`（外貌 tags + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
 
 ### 2. 完成任务
 
@@ -75,7 +72,7 @@ RETURN ch.name AS char_name, ch.vibe AS char_vibe,
 }
 ```
 
-（`appearance` 数据取自第 1 步查询的 `app_data`（纯结构化 tags + height_cm，无自由文本字段）；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 ds_id 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
+（`appearance` 数据取自第 1 步查询的 `app` 节点（纯结构化 tags + height_cm，无自由文本字段）；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 ds_id 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
 
 **③ 生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base.image>`（**图生图**，第三参 = 探测到的参考图路径）：`OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/设计图.png`。dashboard 上传的参考图已完成压缩（EXIF 转正 + 长边 ≤1536 + JPEG），直接使用；手动放置的原图亦直传。
 

@@ -38,16 +38,12 @@ MATCH (ch:Character {id: '<char_id>'})
 MATCH (ch)-[:has_appearance]->(ap:AppearanceStyle)-[:produces]->(ds:DesignSheet)
 MATCH (ch)-[:has_costume]->(cos:CostumeStyle)
 OPTIONAL MATCH (ds)-[:produces]->(illus:IllusDesign)<-[:outfit_for]-(cos)
-RETURN ch.name AS char_name,
-       ap.height_cm AS height_cm,
-       ds.id AS ds_id, ds.status AS ds_status, ds.image_path AS ds_image,
-       cos.id AS cos_id, cos.name AS cos_name, cos.status AS cos_status,
-       illus.id AS illus_id, illus.status AS illus_status, cos.notes AS notes
+RETURN ch, ap, ds, cos, illus
 ```
 
-- **前驱校验**：`ds_status = 11`（DesignSheet 已批准）且 `cos_status = 1`（CostumeStyle 已完成，无审批），否则停止并提示先推进上游。
+- **前驱校验**：`ds.status = 11`（DesignSheet 已批准）且 `cos.status = 1`（CostumeStyle 已完成，无审批），否则停止并提示先推进上游。
 - **目标节点判定**（每组）：若 `illus_id` 为空 → 生成新 snowflake id 作为 `ILLUS_ID`，本次将新建；若存在 → `ILLUS_ID = illus_id`，按 status 决定推进起点。
-- 记录 `ds_image`（图生图参考图——**该版本设计图**，短发等形象特征随参考图自动进入）与 `cos_name`（产物路径各段用第 1 步查回的 hexid）。
+- 记录 `ds.image_path`（图生图参考图——**该版本设计图**，短发等形象特征随参考图自动进入）与 `cos.id`（产物路径各段用第 1 步查回的 hexid）。
 
 ### 2. 完成任务
 
