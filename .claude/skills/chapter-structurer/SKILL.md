@@ -66,7 +66,7 @@ ORDER BY first_evt LIMIT 50
 #### 2a. 选 Scene + 排序 + 分节规划
 
 据调用方给定的叙事范围，圈定本章事件清单（按 Event.time 时间序），**按叙事段落感把有序事件列表切成 K 个连续段，每段一节**——节 = 事件的有序组合。节的 Scene 序由节内事件的 `refines→SubEvent→anchored_at→Scene` 首现序推导（未细化事件提示先跑 `event-stager`；未场景化事件报缺口、提示 scene-design 消化 Scene 占位或先跑 `event-stager` 建占位）。
-- 每节定 `section_no`（章内从 0 起）、`title`（节标题）、`summary`（本节戏剧职责一句话）；节的时间坐标由成员事件时间承载（time_day 已废止，不写）。
+- 每节各字段按 [00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md)「节（Section）」字段表定（含章内序号从 0 起、戏剧职责一句话——职责分工与撰写纪律见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §2）；节的时间坐标由成员事件时间承载（time_day 已废止，不写）。
 - 分节依据是叙事段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是事件时间序的**连续切片**，不交错（节 A 含事件 t0–t5，节 B 含 t6–t10）。
 - **块 id**：块 id = 所写机位的 scene_id（Scene 节点 id），无分配动作、无章内唯一性要求（跨节拍平冲突由 chapter-publisher 发布期加节序前缀解决）。
@@ -94,7 +94,7 @@ SET ch.title = '<title>',
 //    （对 K 个节循环；每个 sec_id 用 snowflake_base62.py 新生成）
 MERGE (sec:Section {id:'<sec_id>'});
 MATCH (sec:Section {id:'<sec_id>'})
-SET sec.section_no = <MM>, sec.title = '<sec_title>', sec.summary = '<sec_summary>',   /* ← 字段名以 00_init/Schema/剧情.md「节（Section）」节字段表为准，表外不加 */
+SET sec.<字段> = '...', sec.<字段> = '...',   /* ← 按字段表逐字段 SET（序号/标题/概要等），缺一不可、表外不加；字段名以 00_init/Schema/剧情.md「节（Section）」节字段表为准 */
     sec.status = 0;    // 创建待定稿（定稿审在下游 dialoguer/dashboard）
 MATCH (ch:Chapter {id:'<chapter_id>'}), (sec:Section {id:'<sec_id>'})
 MERGE (ch)-[r:has_section]->(sec) SET r.sync = true;

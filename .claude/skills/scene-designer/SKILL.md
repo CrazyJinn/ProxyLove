@@ -121,7 +121,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
-2. vibe 一句话承担整体氛围与天气表达；deco 承担机位画面内可移动小物与杂物堆（剧情一次性物件与角色持物不写）。
+2. 调性/陈设类字段的职责分工（氛围与天气 vs 机位小物，剧情一次性物件与角色持物不写）以 [00_init/Schema/场景美术.md](../../../00_init/Schema/场景美术.md) 字段表说明为准（撰写见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §1/§4）。
 
 **2d. 维护 Room DSL（room.yml —— 3D 布局真源）**
 
@@ -135,7 +135,7 @@ MERGE (l:Location {name: '<Location名>'})
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线；模板见 references §7）。
 - 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**大件贴墙布置，房间正中不放挡视线大件**（中岛/中央桌类至多一件且须偏侧贴边；安全区阈值见 references §5）。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
-- **文字归图**：deco/vibe/time_of_day 等一切叙事文字只写图 Scene 节点（段 3 SET），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
+- **文字归图**：一切叙事文字只写图 Scene 节点（字段以段 3 Read 的 Schema 字段表为准，表外不加；room.yml 只存几何），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
 
 **2e. 校验（写后质量门，两门都必跑）**：写/改 room.yml 后必跑 ① `python .claude/scripts/slice_scenes.py <room.yml> --check`（几何/结构校验）② `python "${CLAUDE_SKILL_DIR}/scripts/check_framing.py" <room.yml>`（立绘安全区），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py（公用脚本，归 .claude/scripts/）由 scene-layer-designer 出图前调用（消费侧重切）。
 

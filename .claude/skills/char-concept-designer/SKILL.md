@@ -50,10 +50,10 @@ RETURN ch, app, voice
 
 随后按 [references/template-角色美术设定.md](references/template-角色美术设定.md) 与 [references/template-角色语言风格.md](references/template-角色语言风格.md) 生成设计内容（本节以下只列生成纪律，字段清单见 Schema）。
 
-**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 Character.vibe（气质归 Character.vibe 单一事实源）。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。撰写规范见 [00_init/Schema/属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §4 标签族。
-例：✅「琥珀色上挑眼」 ❌「琥珀色上挑眼，眼神凌厉逼人」
-
-**身高（height_cm）**：按角色设定身高直接写整数（供下游 IllusDesign 推算立绘显示缩放，见 char-illus-designer）。无明确身高写 `null`——不另设自由文本载体（气质归 Character.vibe、体型主干归 body_type/shape_language）。
+**外貌字段纪律（不点名字段，对表内一切外貌字段生效）**：
+- 只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述——此类内容归 Character.vibe 单一事实源（气质与状态类描述的归属判定见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §4）。
+- 同一特征不进两个字段：已在某字段承载的佩戴物/标记不在其他外貌字段重复（单一事实源）。
+- 身高类数值字段写整数，无明确值写 `null`，不另设自由文本载体兜底（用途：供下游 IllusDesign 推算显示缩放）。
 
 **LanguageStyle**（怪物跳过）：speech_style（底色一句+五境分述，生成规范见 Schema/角色美术.md）。
 
@@ -69,8 +69,7 @@ MATCH (ch:Character {id: '<char_id>'}), (app:AppearanceStyle {id: '<APP_ID>'})
 MERGE (ch)-[r:has_appearance]->(app) SET r.sync = true;
 MATCH (app:AppearanceStyle {id: '<APP_ID>'})
 SET app.name = '<角色名外貌特征>',
-    app.<字段1> = '...', app.<字段2> = '...',  /* ← Schema 字段表逐字段，缺一不可、表外不加 */
-    app.height_cm = <身高整数或 null>,
+    app.<字段1> = '...', app.<字段2> = '...',  /* ← Schema 字段表逐字段（含数值/空值字段按其类型写法），缺一不可、表外不加 */
     app.status = 1;
 // Character 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；外貌建档即消化，REMOVE 对非占位无 status 者无害）
 MATCH (ch:Character {id: '<char_id>'}) REMOVE ch.status;
