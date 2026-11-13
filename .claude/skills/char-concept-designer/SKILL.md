@@ -59,6 +59,8 @@ RETURN ch, app, voice
 
 ### 3. 保存结果（MERGE 兜底 + 写内容 + status）
 
+执行方式与段 1 一致：`${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py`；多语句块走 `--stdin --multi --json`（按 `;` 分割单事务顺序执行，写 cypher 规则见 [cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring）。
+
 按段 2 读到的 Schema 字段表写 SET 语句。**形态**（锚定与约定，字段清单以 Schema 为准——表中有什么字段、本节点就 SET 什么）：
 
 ```cypher
