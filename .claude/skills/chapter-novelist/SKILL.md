@@ -38,12 +38,7 @@ MATCH (sec:Section {id:'<input>'})
 OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
 WITH sec, ch
 OPTIONAL MATCH (sec)-[:includes]->(:Event)-[:refines]->(:SubEvent)-[:anchored_at]->(s:Scene)
-WITH sec.id AS id, sec.section_no AS section_no, sec.title AS title, sec.summary AS summary,
-     sec.status AS sec_status, sec.script_path AS script_path,
-     ch.chapter_no AS chapter_no, ch.title AS ch_title,
-     collect(DISTINCT s.id) AS scene_ids, collect(DISTINCT s.name) AS scene_names
-RETURN id, section_no, title, summary, sec_status, script_path,
-       chapter_no, ch_title, scene_ids, scene_names
+RETURN sec, ch, collect(DISTINCT s.id) AS scene_ids, collect(DISTINCT s.name) AS scene_names
 LIMIT 1
 ```
 
@@ -57,7 +52,7 @@ LIMIT 1
 
 - 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-stager 补 sub+anchored_at，含 Scene 占位物化] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Hook/Lore 按 label 分流两源防过宽：**Hook** 走本节成员事件细化出的 SubEvent `reveals` 的读者侧揭示（圈定即揭示主场，一次性显性交付）；**Lore** 走本节 involved 角色 `has_info` 的固有设定（含 `relation{type:控制}` 的控制者人格——受控角色的戏折射控制者特质，换魂/操控类题材通用；无揭示时刻，暴露节奏归遗忘曲线，见 1b'）——**Event-establishes 出边的 Hook 不圈定**（产生事件所在节直接演出事件本身，Hook 是事实投影无增量）；**`Event/Lore 端 reveals 均违规`**（Schema 已废止 Event 级、禁 Lore 目标；圈定查询天然不会带出））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON——**显式字段罗列 + null 对齐是机器契约**（fingerprint.py 按行形状 kind/id/title/… 解析），**不做整节点直返改写**；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持；旧模型的 `time_day` 时间窗过滤已随 contains 废止、字段本身亦已废止删除），Hook/Lore 按 label 分流两源防过宽：**Hook** 走本节成员事件细化出的 SubEvent `reveals` 的读者侧揭示（圈定即揭示主场，一次性显性交付）；**Lore** 走本节 involved 角色 `has_info` 的固有设定（含 `relation{type:控制}` 的控制者人格——受控角色的戏折射控制者特质，换魂/操控类题材通用；无揭示时刻，暴露节奏归遗忘曲线，见 1b'）——**Event-establishes 出边的 Hook 不圈定**（产生事件所在节直接演出事件本身，Hook 是事实投影无增量）；**`Event/Lore 端 reveals 均违规`**（Schema 已废止 Event 级、禁 Lore 目标；圈定查询天然不会带出））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
@@ -179,7 +174,7 @@ info  <id> <hash16> <title>
 
 1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --ids <实际取用素材列表：event 裸 id，fact/lore 带 :E/:S 强度后缀（如 id1,id2:S,id3:E）>` → 产出完整头部块（**只含取用子集**，fact/lore 行记强度——它是后续 freshness 的衰减基线；省略 `--ids` 会记圈定全量，禁止）。
 2. **Write** 小说.md（头部块置文件首 + 全文）到约定路径。首建模式到此完成（零图写入）。
-3. **重写模式才作废定稿链**（首建模式跳过；`sec_status IS NULL` 跳过）——`--multi` 单事务：
+3. **重写模式才作废定稿链**（首建模式跳过；`sec.status IS NULL` 跳过）——`--multi` 单事务：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'}) WHERE sec.status <> -1 SET sec.status = -1;
