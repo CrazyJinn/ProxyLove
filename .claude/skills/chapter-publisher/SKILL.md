@@ -1,10 +1,9 @@
 ---
 name: chapter-publisher
 description: |
-  把全章各节产物就绪（各节 Section.status=11 ∧ 该节全部台词行 LineAudio=11）的章节从图发布到运行时 `99_game/`：
-  用 generate_portrait_map.py（产出 chapter-map：bgm 段）+ merge_sections_to_chapter.py --chapter --chapter-map 把全章图行（Section-produces{order}->LineAudio 逐句行，按节序/order 投影；舞台调度 say.pos/hide 自各节 台词.ink 现算注入，不落图）合并为单一章 JSON（say.portrait 沿 `LineAudio-[:uses]->StandingIllustration` 边投影为立绘键 hexid(stand_id)——stand_id 全局唯一；缺 uses 边的 say 行打警告、portrait 空串；BGM 从图 Scene-has_bgm->BgmTrack 注入 scene-block，track=hexid(bgm_id)）拷到 99_game/data/chapters/ + status=11 的立绘/背景资源 + status=2 的 BgmTrack 音频到 99_game/assets/ + 更新 manifest（--rebuild）+ 产出章资源清单 chapter_packs.json（Web 按章分包依据）。
-  章 stem = hexid(Chapter.id)（16 位小写 hex，to_hexid——章 JSON/pck 文件名主体；chapter_packs 条目内嵌 title/chapter_no 供运行时章下拉显示排序）。
-  在全章各节定稿+逐句音频审批通过且所需立绘就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 单节推进到该节就绪即止）。
+  把全章各节产物就绪（各节 Section.status=11 ∧ 该节全部台词行 LineAudio=11）的章节从图发布到运行时 99_game/：全章图行投影合并为单一章 JSON（say.portrait 沿 uses 边、BGM 沿 has_bgm 注入）+ 拷已批资源（立绘/背景/BGM 音频）+ manifest --rebuild + 章资源清单 chapter_packs.json（Web 分包依据）。
+  章 stem 与全部运行时键 = hexid(节点 id)，name/title 改名零漂移。
+  在全章就绪、需发布到 Godot 运行时时使用；由用户直接触发（不在 plot-design 职责内，plot-design 单节推进到该节就绪即止）。
 argument-hint: <chapter_id>
 arguments:
   - chapter_id
@@ -17,7 +16,7 @@ allowed-tools: Read, Bash, Write, Edit
 **从图投影全章各节台词行合并为一个章 JSON** 落到 `99_game/data/chapters/`（Godot 只读 JSON，运行时不感知节层；行节点 id 等图字段被投影丢弃，say.voice 取自行节点 voice_key），拷贝章节涉及的立绘/背景图片/BGM 音频到 `99_game/assets/`，更新 `manifest.json`，并产出**章资源清单** `chapter_packs.json`（Web 按章分包导出依据）。
 发布是**确定性转换+拷贝**（非 LLM 创作），幂等——重复发布覆盖旧文件，无副作用。
 
-**id 锚定（2026-10-31 起）**：章 stem 与全部运行时键（立绘/场景/voices/sfx/bgm）均为节点 id 的 **hexid**（`to_hexid(id)` 16 位小写 hex，[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py) 与 Base62 互逆）——name/title 改名零漂移；显示名（章 title/场景名/角色名）由运行时经 chapter_packs meta / 图查询回显。
+**id 锚定**：章 stem 与全部运行时键（立绘/场景/voices/sfx/bgm）均为节点 id 的 **hexid**（`to_hexid(id)` 16 位小写 hex，[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py) 与 Base62 互逆）——name/title 改名零漂移；显示名（章 title/场景名/角色名）由运行时经 chapter_packs meta / 图查询回显。
 
 ## 参数
 
@@ -34,7 +33,7 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 // (1) Chapter 本体（无 status 起章无审批态）
 MATCH (ch:Chapter {id:'<chapter_id>'})
-RETURN ch.title AS title, ch.chapter_no AS no;
+RETURN ch;
 // (2) 各 Section（按 section_no）+ 定稿态 + 逐句行聚合 + 前驱校验
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(sec:Section)
 OPTIONAL MATCH (sec)-[:produces]->(l:LineAudio)
@@ -50,16 +49,16 @@ ORDER BY no;
 MATCH (s:Scene)
 WHERE s.id IN ['<各行 scene_block_id 去重集合（即 scene_id）>']
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer {layer_type:'background'})
-RETURN DISTINCT s.id AS scene_id, sl.image_path AS bg_image, sl.status AS bg_status;
+RETURN DISTINCT s, sl;
 // (3b) 全章 BGM（同上场景集 JOIN has_bgm；status=2 才拷贝/注入，<2 警告跳过；generate_bgm 已内置此逻辑）
 MATCH (s:Scene)-[:has_bgm]->(b:BgmTrack)
 WHERE s.id IN ['<同上场景 id 集>']
-RETURN DISTINCT s.id AS scene_id, b.id AS bgm_id, b.name AS track_name, b.status AS bgm_status, b.audio_path AS audio_path;
+RETURN DISTINCT s, b;
 // (4) 本章被引用立绘（LineAudio-uses->stand：选绘行级直连——拷贝清单=被引用清单，与 requires 同源；
 //     立绘键 = hexid(stand.id)，无需回溯角色/着装/变体名）
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)
       -[:produces]->(l:LineAudio)-[:uses]->(stand:StandingIllustration)
-RETURN DISTINCT stand.id AS stand_id, stand.image_path AS image_path, stand.status AS status;
+RETURN DISTINCT stand;
 // (4b) 选绘缺口计数（say 行无 uses 边——发布将打警告、portrait 空串、运行时占位图兜底）
 MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)
       -[:produces]->(l:LineAudio)
@@ -69,14 +68,14 @@ RETURN count(l) AS say_no_stand;
 
 **前驱校验**：
 - **每节必须就绪：`sc_status=11` ∧ `line_count>0 ∧ line_done=line_count`**（定稿已批 + 该节全部台词行声音已批）——章真正可发布 = 全部节产物就绪（章无 status）。任一不满足则停止并提示先在 dashboard 推进对应节（含拆分配音、逐句音频审）。
-- 被引用立绘（uses 边目标）：`status=11` 且 `image_path` 非空的才拷贝；`status≠11` 的逐个**警告**（运行时该变体走占位图），不阻断发布（让已就绪资源先上线）。`say_no_stand>0` 时**警告** N 句缺选绘（该批句运行时保持上一张/占位图）。
+- 被引用立绘（uses 边目标）：`stand.status=11` 且 `stand.image_path` 非空的才拷贝；`stand.status≠11` 的逐个**警告**（运行时该变体走占位图），不阻断发布（让已就绪资源先上线）。`say_no_stand>0` 时**警告** N 句缺选绘（该批句运行时保持上一张/占位图）。
 - background SceneLayer：同理，`status=11` 且 `image_path` 非空才拷贝。
 - BgmTrack：`status=2` 且 `audio_path` 文件存在的才拷贝/注入；`<2` 或文件缺失逐个**警告**（该场景运行时无 BGM，静默），不阻断发布。
-- 环境音行（可选附加查询）：`MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:produces]->(l:LineAudio) WHERE l.status=11 AND l.ambient_track IS NOT NULL RETURN DISTINCT l.ambient_track AS track`——本章已批环境音的 track 清单（chapter_packs 用；拷贝由下步 (e) publish 统一做）。以 ambient_track 字段存在为准、不看 op（转场音效 op=transition 与 narrate 内嵌声景 ambience 都算）。注意环境音行未全批会卡各节产物链就绪判定（行 gate），与 say 同规。
+- 环境音行（可选附加查询）：`MATCH (ch:Chapter {id:'<chapter_id>'})-[:has_section]->(:Section)-[:produces]->(l:LineAudio) WHERE l.status=11 AND l.ambient_track IS NOT NULL RETURN DISTINCT l`——本章已批环境音的行清单（track 读 `l.ambient_track`；chapter_packs 用；拷贝由下步 (e) publish 统一做）。以 ambient_track 字段存在为准、不看 op（转场音效 op=transition 与 narrate 内嵌声景 ambience 都算）。注意环境音行未全批会卡各节产物链就绪判定（行 gate），与 say 同规。
 
 ### 2. 合并拍平 + 拷贝资源到 99_game/
 
-**章 stem**：`stem = to_hexid('<chapter_id>')`（16 位小写 hex；`python .claude/scripts/snowflake_base62.py -x <id1> <id2>`）——章 JSON/`<stem>.pck` 文件名主体。旧 `chapter<NN>_<章概述>` name 派生已废（章 title 改名零漂移；显示名进 chapter_packs 条目 meta）。合并输入 = 全章图行（工具内部按 section_no 节序 + produces.order 行序投影）。
+**章 stem**：`stem = to_hexid('<chapter_id>')`（16 位小写 hex；`python .claude/scripts/snowflake_base62.py -x <id1> <id2>`）——章 JSON/`<stem>.pck` 文件名主体；章 title 改名零漂移，显示名进 chapter_packs 条目 meta。合并输入 = 全章图行（工具内部按 section_no 节序 + produces.order 行序投影）。
 
 ```bash
 # 确保目标目录存在
@@ -101,7 +100,7 @@ python 99_game/tools/validate_chapter.py '99_game/data/chapters/<stem>.json' 99_
 #   注：合并工具内置 scene-block id 章内唯一性校验（重复则报错）——若报 id 重复，说明图数据/上游产物引用了重复块 id，需回上游修正。
 
 # (b) 立绘：透明原图直通 + 头位归一化 → 99_game/assets/portraits/<hexid(stand_id)>.png
-#     立绘由生成端直出透明 PNG（提示词英文透明措辞驱动，绿幕抠图已退役）；本步不抠图，
+#     立绘由生成端直出透明 PNG（提示词英文透明措辞驱动）；本步不抠图，
 #     仅以人物高/7.5 头身为尺度、YuNet 双眼中心为锚点缩放平移，使同角色各变体头部（眼线）
 #     落在画布同一水平线（人物等高 1200，输出按前景紧凑裁剪、宽随双眼锚定）。
 #     输入无 alpha 通道会直接报错（旧绿底立绘须先重生成再发布）。原图 06_/ 不动。
@@ -179,7 +178,7 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
    python 99_game/tools/encrypt_chapter.py '99_game/data/chapters/<stem>.json' '99_game/data/chapters/<stem>.json'
    ```
    ⚠️ 加密后无法再 `validate_chapter.py`（明文），故加密必须在本 skill 流程之后。
-2. **按章分包 + Web 导出**（2026-08-30 起有完整流水线）：`python 99_game/tools/publish_web.py` 一键完成「字体子集化 → 导出 Web 主包（exclude assets/chapters/full.ttf）→ build_chapter_packs.gd 按清单产各章 `<stem>.pck` → 恢复字体」；产物上传 R2 用 `deploy_r2.py`（详见两个脚本头部注释）。分包机制：主 pck 不含任何章资源，开局/读档/跨章由 ChapterPackLoader 下载章包挂载（带进度 UI）。
+2. **按章分包 + Web 导出**：`python 99_game/tools/publish_web.py` 一键完成「字体子集化 → 导出 Web 主包（exclude assets/chapters/full.ttf）→ build_chapter_packs.gd 按清单产各章 `<stem>.pck` → 恢复字体」；产物上传 R2 用 `deploy_r2.py`（详见两个脚本头部注释）。分包机制：主 pck 不含任何章资源，开局/读档/跨章由 ChapterPackLoader 下载章包挂载（带进度 UI）。
 
 ## 与 section-voice-publisher 的边界
 
@@ -199,5 +198,5 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
 - 章资源清单更新器：[99_game/tools/chapter_packs_updater.py](../../../99_game/tools/chapter_packs_updater.py)
 - 剧本加密（Web）：[99_game/tools/encrypt_chapter.py](../../../99_game/tools/encrypt_chapter.py) ↔ 运行时 [99_game/scripts/util/ScriptCipher.gd](../../../99_game/scripts/util/ScriptCipher.gd)
 - 章包加载（运行时）：[99_game/scripts/autoload/ChapterPackLoader.gd](../../../99_game/scripts/autoload/ChapterPackLoader.gd)
-- id 锚定与 hexid：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) 头部注记 + [snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)
+- id 锚定与 hexid：[Schema总览](../../../00_init/Schema总览.md) ID 规则节 + [snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)
 - 剧情 Schema（Chapter/Section/has_section/LineAudio）：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/)

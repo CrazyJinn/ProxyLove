@@ -1,17 +1,16 @@
 ---
 name: scene-layer-designer
 description: |
-  推进 SceneLayer 图节点：查询状态 → 按 scene_type 查所需图层并组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  出图双链自动分流：源 Spot 有 dsl_path（已 3D 建模）走 slice_scenes.py --emit-prompt 现场投影（零 LLM 转抄）；为空走 scene-prompt-assembler 自由文本链（存量回退）。
-  V1 仅实现 background 层；floor/decor/mask 留 V2 TODO。单轮直推到最大门控（图片完成即待审 10）；status=-1 级联作废时必须重生成覆盖旧产物（禁止因文件存在跳过）。
-  在需要生成场景图层/背景图、推进或重做 SceneLayer 节点、或发现场景缺背景产物时使用（由 scene-design agent 编排触发，亦可用户直触）。
+  推进 SceneLayer 图节点（场景图层：提示词 + 出图 + 产物写入；V1 仅 background 层，floor/decor/mask 留 V2）。
+  出图双链自动分流：源 Spot 有 dsl_path（已 3D 建模）走 slice_scenes.py 现场投影（零 LLM 转抄）；为空走 scene-prompt-assembler 自由文本链（存量回退）。
+  在需要生成场景背景图、推进或重做 SceneLayer 节点、或发现场景缺背景产物时使用（由 scene-design agent 编排触发，亦可用户直触）。
 argument-hint: <scene_id>
 arguments:
   - scene_id
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当 SceneLayer 被 sync 级联重置为 `status=-1` 时（Scene 被编辑），即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**（重走 0→1→2）。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
+> **status=-1 = 作废重做**：当 SceneLayer 被 sync 级联重置为 `status=-1` 时（Scene 被编辑），即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
 
 # 场景图层（SceneLayer）
 
@@ -35,27 +34,21 @@ allowed-tools: Read, Bash, Write, Edit
 MATCH (l:Location)-[:part_of]->(sp:Spot)-[:realizes]->(s:Scene {id: '<scene_id>'})
 OPTIONAL MATCH (s)-[:has_layer]->(sl:SceneLayer)
 WITH l, sp, s, collect(sl) AS layers
-RETURN l.id AS loc_id, sp.id AS spot_id,
-       l.name AS loc_name, sp.name AS spot_name, sp.description AS spot_desc,
-       sp.dsl_path AS dsl_path,
-       s.id AS scene_id, s.name AS scene_name,
-       s.scene_type AS scene_type, s.status AS scene_status,
-       s.vibe AS vibe, s.deco AS deco, s.time_of_day AS time_of_day,
-       layers;
+RETURN l, sp, s, layers;
 ```
 
 > Spot 的 name/kind/description 是空间语义来源（构图与陈设的空间依据；模式 A 时随 Scene 字段一并交给 scene-prompt-assembler）。
 
-- **前驱校验**：`scene_status >= 1`（Scene 已由 scene-designer 设计），否则停止并提示先推进场景设计。
+- **前驱校验**：`s.status >= 1`（Scene 已由 scene-designer 设计），否则停止并提示先推进场景设计。
 - **所需图层**：按 scene_type 查映射表（定义见 [场景美术/边.md](../../../00_init/Schema/场景美术/边.md)「scene_type 与所需图层」，以该表为准不复述）。
 
 - **目标节点判定**：对比所需图层与已有图层（layers）；为缺失的 layer_type 生成新 snowflake id：
   ```bash
   python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n <缺几个> -q
   ```
-  已有图层按 status 决定推进起点（`-1`/`0` 需重做，`1` 已有提示词，`10` 待审不可推进，`11` 已完成）。
-- 记录 `loc_id`/`spot_id`/`scene_id`（产物路径段用，hexid 形态，批量转换 `python .claude/scripts/snowflake_base62.py -x <loc_id> <spot_id> <scene_id>`）；name 仅展示（目录不锚 name，改名零漂移）。
-- **查询必含源 Spot 的 `dsl_path`**（模式 E 触发依据：非空 = 该 spot 已 3D 建模，走模式 E；为空 = 未建模，走模式 A 旧自由文本链。Scene 节点不持有 dsl_path）。
+  已有图层按 status 决定推进起点（`-1`/`0` 需生成，`10` 待审不可推进，`11` 已完成跳过）。
+- 记录 `l.id`/`sp.id`/`s.id`（产物路径段用，hexid 形态，批量转换 `python .claude/scripts/snowflake_base62.py -x <l.id> <sp.id> <s.id>`）；name 仅展示（目录不锚 name，改名零漂移）。
+- **查询必含源 Spot 节点**（其 `sp.dsl_path` 属性为分流依据：非空 = 该 spot 已 3D 建模，走 DSL 链；为空 = 未建模，走 scene-prompt-assembler 自由文本链（存量回退）。Scene 节点不持有 dsl_path）。
 
 > **V1 限制**：当前仅实现 `background` 层。命中 `floor`/`decor`/`mask` 时记日志「TODO：V2 实现」并跳过，不生成产物、不建节点。
 
@@ -69,7 +62,7 @@ RETURN l.id AS loc_id, sp.id AS spot_id,
 
 按步骤 1 查得的**源 Spot dsl_path** 分流：
 
-**模式 E（dsl_path 非空——spot 已 3D 建模）**：直接 Bash 调 `slice_scenes.py` 现场投影生成 prompt（纯确定性计算，零 LLM 转抄，不经 assembler）：
+**DSL 链（dsl_path 非空——spot 已 3D 建模）**：直接 Bash 调 `slice_scenes.py` 现场投影生成 prompt（纯确定性计算，零 LLM 转抄，不经 assembler）：
 
 ```bash
 python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_id> \
@@ -78,7 +71,7 @@ python .claude/scripts/slice_scenes.py <dsl_path> --emit-prompt --scene <scene_i
   --deco <图 Scene.deco> --vibe <图 Scene.vibe>
 ```
 
-脚本读 room.yml → 按 scene_id 定位机位 → 视锥剔除 + 2D 投影 → 拼装（用途前缀 + 导语 + 布局正文 + 图上 time_of_day/deco/vibe + 风格收尾串动态读美术风格.md）→ 写 `--out`，输出 `PROMPT_PATH`。**time_of_day/deco/vibe 从步骤 1 查得的 Scene 节点字段传入**（yaml 只留几何）；校验失败则中止不产 prompt。此模式下构图/光影/配色不进 prompt（真源在 room.yml 几何投影 + lights 数值；weather/composition/lighting/color_direction 字段已废止）。
+脚本读 room.yml → 按 scene_id 定位机位 → 视锥剔除 + 2D 投影 → 拼装（用途前缀 + 导语 + 布局正文 + 图上 time_of_day/deco/vibe + 风格收尾串动态读美术风格.md）→ 写 `--out`，输出 `PROMPT_PATH`。**time_of_day/deco/vibe 从步骤 1 查得的 Scene 节点字段传入**（yaml 只留几何）；校验失败则中止不产 prompt。此模式下构图/光影/配色不进 prompt（真源在 room.yml 几何投影 + lights 数值）。
 
 **模式 A（dsl_path 为空——spot 未建模，存量回退面）**：使用 Skill 工具调用 `scene-prompt-assembler`，参数 `background '<data_json>'`（自由文本组装）：
 
@@ -127,6 +120,6 @@ SET sl.name = '<scene_name>-背景',   // ← SET 字段清单以 00_init/Schema
 ## 参考文档
 
 - 提示词组装：DSL 链 = `.claude/scripts/slice_scenes.py --emit-prompt`（现场投影直写 prompt.md）；自由文本链 = [scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式 A（dsl_path 为空的存量）
-- [场景美术 Schema](../../00_init/Schema/场景美术/) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
+- [场景美术 Schema](../../../00_init/Schema/场景美术/) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
-- id 锚定与 hexid：[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)（`-x` 转换）+ [Schema/场景美术/](../../00_init/Schema/场景美术/) 头部注记
+- id 锚定与 hexid：[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)（`-x` 转换）+ [Schema总览](../../../00_init/Schema总览.md) ID 规则节

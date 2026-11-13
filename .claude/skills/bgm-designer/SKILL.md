@@ -1,8 +1,8 @@
 ---
 name: bgm-designer
 description: |
-  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/vibe + status=1 并落盘同名文档 13_BGM/<bgm_id>/<bgm_id>.md（hexid 目录，LLM 直产文本随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<bgm_id>/<bgm_id>.wav。
-  音频由用户手动生成并放入预制路径（手工放入文件夹即合格，无审批）；再次触发本 skill（或 dashboard 编辑器）检测文件存在置 status=2。由 scene-design agent 编排触发（Scene → SceneLayer → BgmTrack 链），也可由用户直接触发。
+  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：依 Scene 氛围产音乐描述文字 prompt（供 Suno 类外部工具）→ 写图 vibe/prompt + status=1 并落盘同名文档 → 把文字产出与归档路径交给用户；Scene 无关联 BgmTrack 时兜底建节点。
+  音频由用户手动生成放入预制路径（放入即合格，无审批）；再次触发检测文件存在置 status=2。由 scene-design agent 编排触发，也可用户直触。
 argument-hint: <scene_name_or_bgm_id>
 arguments:
   - scene_name_or_bgm_id
@@ -37,7 +37,7 @@ RETURN b LIMIT 5
 - **status=0**：进入段 2 生成描述。
 - **status=1**（描述已产出）：检查 `audio_path` 文件是否存在（见段 3b 置 2 的逻辑）；不存在则提醒用户归档路径，退出。
 - **status=2**（音频已归档）：已就绪，汇报退出。
-- **无节点**（按 Scene 名定位且无关联 BgmTrack；按 id 定位不存在时报错退出）：**自行兜底建**——BGM 是场景资产（需求源于 Scene 本身，非剧本）。`bgm_id` 用 `snowflake_base62.py -n 1 -q` 新生成；name 依 Scene 氛围起一个短名（如「晨离」，即 manifest 键/章 JSON track 名/wav 文件名主体）：
+- **无节点**（按 Scene 名定位且无关联 BgmTrack；按 id 定位不存在时报错退出）：**自行兜底建**——BGM 是场景资产（需求源于 Scene 本身，非剧本）。`bgm_id` 用 `snowflake_base62.py -n 1 -q` 新生成；name 依 Scene 氛围起一个短名（如「晨离」，仅显示用——manifest 键/章 JSON track 名/wav 文件名主体均为 hexid(bgm_id)）：
 
 ```cypher
 // 兜底建（sync=false——BGM 独立资产不随场景编辑级联）

@@ -2,7 +2,7 @@
 
 > 字段全集以本表为准；skill 写入前 Read 本文件，不凭记忆写字段。
 
-最小粒度：一条**成立的事实**（Hook）或一条**固有设定**（Lore）。与 Event 对仗：**Event 记「发生」，Hook 记「埋设」，Lore 记「固有」**（原 Info label 2026-11-11 拆分退役）。
+最小粒度：一条**成立的事实**（Hook）或一条**固有设定**（Lore）。与 Event 对仗：**Event 记「发生」，Hook 记「埋设」，Lore 记「固有」**。
 
 - **Event = 行为、事件**——需要在故事时间轴上**被演出**、直接推进剧情的事：有参与者、发生即改变局面，可细化演出（`refines → SubEvent` 落机位）。
 - **Hook = 事件性事实**——因某事件而成立的世界状态（如「视频火了」「沈暮雪辞职」）。有揭示主场：`reveals` 锚定读者侧知晓时刻，一次性显性交付为主。
@@ -11,7 +11,7 @@
 - **挂靠（Hook/Lore 无出边，只被指向）**：
   - **Hook 成立轴**：`Event ─establishes→ Hook`（何事成立它，如 递交辞呈→「沈暮雪辞职」）。**由 event-ideator 产**。
   - **Lore 宿主**：`(Character|Location) ─has_info→ Lore`（谁/何地的固有设定，如 陆择→「陆择是海王」）。构图期人工拍板。
-  - **Hook 揭示轴**：`SubEvent ─reveals→ Hook`（读者在哪场戏知晓，如 训练馆冲突→读者知道了「江烈零容忍个人主义」）。**由 event-stager 产**（拆 sub 时逐 sub 拍揭示场合——演出域决策）；**目标为 Lore 或源为 Event 均违规**（Lore 无揭示时刻；Event 级 reveals 已废止下沉，体检项兜查）。
+  - **Hook 揭示轴**：`SubEvent ─reveals→ Hook`（读者在哪场戏知晓，如 训练馆冲突→读者知道了「江烈零容忍个人主义」）。**由 event-stager 产**（拆 sub 时逐 sub 拍揭示场合——演出域决策）；**目标为 Lore 或源为 Event 均违规**（Lore 无揭示时刻；体检项兜查）。
   - title/content 为干净的事实陈述，**禁备忘/推导文字**（日期注记、编号引用推导、归属标注）；变更历史不落图。
 
 **knowledge_level 枚举**：

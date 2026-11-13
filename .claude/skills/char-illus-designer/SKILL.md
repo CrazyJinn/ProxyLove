@@ -1,10 +1,9 @@
 ---
 name: char-illus-designer
 description: |
-  推进 IllusDesign 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  每组 (DesignSheet, CostumeStyle) 对应一个节点，单轮直推到最大门控（图片完成即待审 10）。
-  多版本设计图角色（如剪发前后）建议传 design_sheet 过滤出图范围（只推指定版本的 IllusDesign）。
-  在需要生成立绘设计图或 IllusDesign 节点需推进时使用。
+  推进 IllusDesign 图节点（着装立绘设计图：提示词组装 + 图生图 + 产物写入，每组 (DesignSheet, CostumeStyle) 一个）。
+  多版本设计图角色（如剪发前后）建议传 design_sheet 过滤出图范围（控出图成本）。
+  在需要生成立绘设计图、或 IllusDesign 节点 status∈{0,-1} 需推进时使用。
 argument-hint: <char_id> [design_sheet]
 arguments:
   - char_id
@@ -12,11 +11,11 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当 IllusDesign 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**（重走 0→1→2）。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
+> **status=-1 = 作废重做**：当 IllusDesign 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
 
 # 立绘设计图（IllusDesign）
 
-角色穿着特定着装的三视图设计图，由 DesignSheet（外貌基础）和 CostumeStyle（着装方案）共同决定。每组 (DesignSheet, CostumeStyle) 对应一个 IllusDesign——多版本设计图角色同着装会并存多版本 IllusDesign（如剪发前后各一），产物按所属设计图 slug 分目录隔离。
+角色穿着特定着装的三视图设计图，由 DesignSheet（外貌基础）和 CostumeStyle（着装方案）共同决定。每组 (DesignSheet, CostumeStyle) 对应一个 IllusDesign——多版本设计图角色同着装会并存多版本 IllusDesign（如剪发前后各一），产物按所属设计图版本（ds_id）分目录隔离。
 
 ## 参数
 
@@ -57,8 +56,7 @@ RETURN ch, ap, ds, cos, illus
 
 ```json
 {
-  "costume": { "tags": {"outfit_style":"...","garment":"...","footwear":"...","accessory_type":"..."},
-               "notes": "<着装补充说明（鞋履发饰/氛围姿态锚点）；无则空>" },
+  "costume": { "tags": {"vibe":"...","garment":"...","footwear":"...","accessory_type":"..."} },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<ILLUS_ID>" },
   "output_path": "06_角色美术/<char_id>/<ds_id>/<cos_id>/prompt.md"
@@ -75,7 +73,7 @@ RETURN ch, ap, ds, cos, illus
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
 
-**显示缩放推算（display_scale）**：立绘按身高缩放显示（1.0=占满立绘层满高）。从第 1 步查回的 `height_cm` 推算：`display_scale = round(height_cm / 200, 4)`（参考身高 200cm，与 `99_game/tools/init_portrait_scales.py` 的 `REF_HEIGHT_DEFAULT` 一致）。`height_cm` 缺失则 `display_scale = null`（立绘按满高显示）。
+**显示缩放推算（display_scale）**：立绘按身高缩放显示（1.0=占满立绘层满高）。推算公式与缺失值写法以 [IllusDesign.md](../../../00_init/Schema/角色美术/IllusDesign.md) 字段表 display_scale 说明列为准（height_cm/200 四舍五入 4 位；缺失写 null，按满高显示）。
 
 对每组一次性写入（节点不存在则兜底创建）：
 
@@ -91,14 +89,11 @@ SET illus.prompt_path = '<PROMPT_PATH>',
     illus.image_path  = '<IMAGE_PATH>',
     illus.<其余字段> = '...',  // ← 按 Schema 字段表逐字段（如 display_scale = round(height_cm/200,4)，缺失 null）；缺一不可、表外不加
     illus.status = 10;                         // 图片完成即待审（直写，不经 submit）
-// 有着装补充时（写 CostumeStyle，随套不随版本）：
-MATCH (cs:CostumeStyle {id: '<cos_id>'})
-SET cs.notes = '<notes>';
 ```
 
 **status 写入**：固定 `10`（待审，等待 dashboard 审批）。
 
 ## 参考文档
 
-- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) Mode B
+- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) 模式B（IllusDesign）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)

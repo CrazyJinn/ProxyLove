@@ -1,13 +1,8 @@
 ---
 name: ambient-sfx-designer
 description: |
-  推进单节音频环境行（LineAudio op=transition 点状音效 sfx + op=bed_start 音床起，status=0）的音频产出——「实录 foley + AudioFly 声景」双通道：
-  ① ambient_tasks.py 查待产行并预计算 track（= hexid(行id)，杜绝手拼 key；bed 行并带出行上存量 prompt 供复用）→
-  ② 类型由图行 op 决定（ambient_tasks.py 直带 kind）：sfx 点状行（短事件，1~2s 播完接下一句）走 Freesound CC0 实录检索，bed 音床行（声景 ~10s 全长原样）走 AudioFly 生成 →
-  ③ Freesound 链：匿名 curl 搜索（CC0+时长过滤）→ 取最佳 1 条候选落 .tmp/ambient/ 请用户试听 → 转码落母带 + 15_声音/sfx_raw/SOURCES.md 登记；
-  AudioFly 链：prompt 复用行上存量或现场翻写（AudioCaps 风格英文）→ ambient_fly.py jobs 单候选（env/.venv-audiofly）→ 用户试听 → finalize（bed 全长原样无淡入淡出，一次性播放；未播完时用户推进由程序 1s 淡出）→
-  ④ 先产物后写图：SET ambient_track + status=10 待审即止（bed 行并持久化 l.prompt，重产可复用）——不拷运行时副本（dashboard 逐句审批试听读母带 15_声音/；99_game/assets/sfx 只由 chapter-publisher 发布时按 status=11 收录）。
-  在单节定稿已拆分、需要产出/重做环境音时使用（由 plot-design 单节聚焦在配音步之后编排）。
+  推进单节音频环境行（LineAudio sfx 点状 / bed 音床，status=0）的音频产出，双通道：sfx 短事件走 Freesound CC0 实录检索，bed 声景走 AudioFly 生成（env/.venv-audiofly）；均单候选制、用户试听后 finalize 落母带，先产物后写图（status=10 待审，bed 行持久化 prompt 供复用）。
+  不拷运行时副本（发布归 chapter-publisher）。在单节定稿已拆分、需要产出/重做环境音时使用（由 plot-design 单节聚焦在配音步之后编排）。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -17,17 +12,16 @@ allowed-tools: Read, Bash, Write, Edit, Skill
 # 音频环境层产出（sfx 点状实录 + bed 音床声景）
 
 台词.ink 方言 v3 的音频行型（`sfx: <语义>` 点状 → op=transition；`bed+ <id> // <语义>` 音床起 → op=bed_start）
-拆分进图后均为待产行（status=0）——本 skill 把它们产出为音频资产，走行级审批（10→11）
-与其他音频行同构。旧「环境音」两型（独立行/内嵌）已废止（2026-09-03 存量迁移为 sfx/bed）。
+拆分进图后均为待产行（status=0）——本 skill 把它们产出为音频资产，走行级审批（10→11）。
 
-**双通道分工**（2026-08-28 demo 验证结论 + v3 音床规格）：
+**双通道分工**：
 
 | kind | 语义类型 | 通道 | 成品规格 | 依据 |
 |---|---|---|---|---|
 | sfx | 点状短事件（有明确起振/动作语义） | **Freesound CC0 实录** | 1~2s（峰值截取）+ 短淡出，**播完再接下一句** | 扩散模型对秒级高频单发事件糊，实录真实感碾压 |
 | bed | 持续声景（底噪/氛围语义，区间播放） | **AudioFly 生成** | ~10s **全长原样**（无淡入淡出，**一次性播放不循环**——自然播完后推进直接切句；未播完时用户推进 → **1s 程序淡出**后再切句） | AudioCaps 评测超 Stable Audio Open（FD 40.1 vs 78.24），Apache 2.0 |
 
-**track（= 母带/manifest 统一键）**：`hexid(行节点id)`（16 位小写 hex；voice/sfx 归属由图字段区分，播放行为由 op 分发——amb-/bed- 前缀已废），由 ambient_tasks.py 预计算——**LLM 不手拼 key**。母带 = 图行 `master_path` 属性（`15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，审批试听源；jobs JSON 已带）；运行时副本 `99_game/assets/sfx/<track>.wav` 由 chapter-publisher 发布时按 status=11 拷贝，本 skill 不碰 99_game。
+**track（= 母带/manifest 统一键）**：`hexid(行节点id)`（16 位小写 hex；voice/sfx 归属由图字段区分，播放行为由 op 分发），由 ambient_tasks.py 预计算——**LLM 不手拼 key**。母带 = 图行 `master_path` 属性（`15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，审批试听源；jobs JSON 已带）；运行时副本 `99_game/assets/sfx/<track>.wav` 由 chapter-publisher 发布时按 status=11 拷贝，本 skill 不碰 99_game。
 
 ## 参数
 
@@ -70,7 +64,7 @@ curl -s "https://freesound.org/people/<user>/sounds/<id>/" -H "User-Agent: Mozil
 ```
 
 - 候选下载后**停下请用户试听**（`.tmp/ambient/`）。
-**单候选制**（用户 2026-08-29 定）：每行只出 1 个候选试听，不做多选一——不满意就换检索词/换 seed 重出下一版，迭代到满意为止。
+**单候选制**：每行只出 1 个候选试听，不做多选一——不满意就换检索词/换 seed 重出下一版，迭代到满意为止。
 - 选定后：mp3 转 wav（`env/.venv-audiofly` 的 soundfile 可读 mp3）+ 裁剪（峰值截取 1~2s，可复用 `ambient_fly.py finalize --kind sfx --cut <秒>`，传 mp3 转出的临时 wav）+ 落母带路径。
 - **SOURCES.md 登记**（Steam 商售合规留存）：在 `15_声音/sfx_raw/SOURCES.md` 追加一行 `| <文件 stem> | <声音名> | <作者> | <详情页 URL> | CC0 | <成品 track> | 备注 |`（成品 track 列填本行 hexid 键——dashboard 批准后**人工**按此列清理原始素材，登记文本保留）。
 - **无损升级可选不阻塞**：先以预览版落盘写图（流水线不断）；SKILL 汇报里注明「用户可事后登录 freesound.org 下载无损原件覆盖同名母带，track 不变图不动」。

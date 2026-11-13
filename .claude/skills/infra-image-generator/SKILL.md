@@ -40,7 +40,7 @@ cat "<prompt_path>" \
 
 **`--size`**：① prompt 文本写明分辨率（如「分辨率 1024×1536」）以其为准；② 否则按产物类型——横图（背景/设计图）`1536x1024`、竖图（立绘）`1024x1536`，图生图可沿用参考图比例；③ 仍无法确定时向用户确认。脚本缺省 `1536x1024`。本项目只有 3 种合法值，**必须用 ASCII `x` 分隔，勿用中文乘号 `×`**：`1024x1024` / `1024x1536` / `1536x1024`。
 
-**透明背景（措辞 + 参数双在场）**：OfoxAI 服务端行为已变——prompt 英文透明措辞与 `--background transparent` **须同时在场**才稳定直出 RGBA（2026-09-13 生产实测：仅措辞连续 3 次返回 RGB，补传参数后连续 4 次全过；当时结论还要求 `--output-format png`，现已全局强制 png，无需显式传）。需透明的调用必须同时带：
+**透明背景（措辞 + 参数双在场）**：OfoxAI 服务端行为已变——prompt 英文透明措辞与 `--background transparent` **须同时在场**才稳定直出 RGBA（仅措辞时连续 3 次返回 RGB，补传参数后连续 4 次全过；png 已由脚本全局强制，无需显式传 `--output-format`）。需透明的调用必须同时带：
 
 - prompt 画风段固化英文措辞句：`fully transparent background with alpha channel, no background elements`
 - CLI 参数：`--background transparent`

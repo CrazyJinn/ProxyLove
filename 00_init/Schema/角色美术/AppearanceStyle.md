@@ -9,7 +9,7 @@
 - 同一特征不进两个字段：已在某字段承载的佩戴物/标记不在其他外貌字段重复（单一事实源；固定佩戴物归 marks）。
 - 数值字段（如身高）写整数，无明确值写 `null`，不另设自由文本载体兜底。
 
-> 无 `appearance` 自由文本字段——2026-11-13 废止（20 条存量仅 3 条非空且职责均有归属载体：综合气质归 Character.vibe、身高归 height_cm、体型主干归 body_type/shape_language；细粒度体型句按 vibe 提纯规范并入 Character.vibe）。
+> 无 `appearance` 自由文本字段——综合气质归 Character.vibe，身高归 height_cm，体型归 body_type/shape_language。
 
 | 字段 | 中文 | 类型 | 必填 | 说明 |
 |------|------|------|------|------|

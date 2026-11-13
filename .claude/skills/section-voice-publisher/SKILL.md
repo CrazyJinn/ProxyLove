@@ -1,14 +1,9 @@
 ---
 name: section-voice-publisher
 description: |
-  把单节已批准定稿（Section.status=11 已批 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：
-  ① 拆分对齐进图（script_splitter.py：台词.ink ↔ 已有 LineAudio 逐句行对齐——新增建节点+produces{order 中点}、修改沿用节点置 0、删除 DETACH DELETE、级联作废未变句恢复，幂等）→
-  ② 挑行（图查 say 行 status∈{0,-1}——待配/被驳回/stale/级联作废均归一于此）+ 产选绘候选池（portrait_binder candidates：每 (scene_block, who) 沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene` 的事件 `→appears_as→IllusDesign` 直读形象（版本已在写边时物化，零推理）再 `→expands_to` 列已有立绘）→
-  ③ LLM 逐句判别 emotion（12 词表）+ clone_mode（icl/xvec 演绎通道）+ 产 tts_text 配音变体（原文加省略号/叹号等语气符号）+ 选立绘 stand（按台词氛围为每句 say 行选 StandingIllustration，池中无贴切变体则提新变体）→
-  ④ apply 确定性建边（portrait_binder apply：`LineAudio-[:uses {sync:false}]->stand` 每句一条 + 新变体兜底建 StandingIllustration(status=0) + expands_to；不补建 depicts/ref_style（边已废止））→
-  ⑤ Qwen3 单 venv（env/.venv-qwen，voice_clone_runner.py）：ensure-ref 出/复用 ref → publish 按 Qwen3 Base Voice Clone 逐句克隆（输入 tts_text 变体承载情绪，clone_mode 逐句选演绎通道：icl=ref 韵律迁移缺省 / xvec=仅说话人向量文本主导演绎；emotion 仅作图标注）→
-  母带落图行 master_path 属性位置 15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav（按章节/场景块 hexid 归档） → bind-graph 写回图行节点（voice_key=hexid(行id)/master_path/emotion/tts_text/clone_mode/attempts/text_sha1/status=10 待审）。不拷运行时副本——dashboard 逐句审批试听直接读母带，99_game/assets/ 只由 chapter-publisher 发布时按 status=11 收录（立绘整键由发布期沿 uses 边投影）。
-  voice key = hexid(行节点id)（16 位小写 hex，to_hexid；节点 id 即行身份，插入/删除行不漂移；母带唯一权威 = 行属性 master_path）。在单节定稿已批、需要拆分/选绘/配音或重配被驳回/已改句时使用（由 plot-design 单节聚焦触发）。
+  把单节已批定稿（Section.status=11 的 台词.ink）拆分进图、逐句选立绘并克隆 TTS 语音：script_splitter 拆分对齐（幂等）→ LLM 逐句判 emotion/clone_mode/tts_text 变体 + 选立绘（portrait_binder 候选池与建边，缺变体兜底建缺口）→ Qwen3 Base Voice Clone 逐句克隆（env/.venv-qwen）→ 行级写回 status=10 待审。
+  母带唯一权威 = 行属性 master_path（15_声音/<ch>/<block>/<行_hexid>.wav）；不拷运行时副本（发布归 chapter-publisher）。
+  在单节定稿已批、需要拆分/选绘/配音或重配被驳回/已改句时使用（由 plot-design 单节聚焦触发）。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -31,7 +26,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 前置条件
 
-- 本节 `Section.status=11`（定稿**已批**——2026-11-01 起定稿审恢复：dialoguer 产出置 10、dashboard 批准置 11）；`-1` 作废态先重走 novelist→dialoguer；`10` 待审态等 dashboard 人工批准（不是走 chapter-dialoguer）；`0` 未定稿先走小说→定稿链。否则停止并按态提示。
+- 本节 `Section.status=11`（定稿已批：dialoguer 产出置 10、dashboard 批准置 11）；`-1` 作废态先重走 novelist→dialoguer；`10` 待审态等 dashboard 人工批准（不是走 chapter-dialoguer）；`0` 未定稿先走小说→定稿链。否则停止并按态提示。
 - 须已组章（母带目录的章段依赖章；章无 status 起组章即结构就绪）。自由节（无所属章）不可拆分配音，先在 dashboard 组章。
 - 本节出场角色的 `VoiceDesign.status=11`（声音已批）。未就绪（无 VoiceDesign 或 status≠11）角色**警告跳过**（该角色 say 行保持 status=0 待配，运行时静默不播），提示先经 `char-design` 跑 `char-voice-design` 并审批，不阻断其他角色配音。
 
@@ -42,11 +37,10 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 // (1) Section 定稿态 + 所属 Chapter（算 stem）
 MATCH (ch:Chapter)-[:has_section]->(sec:Section {id:'<section_id>'})
-RETURN sec.script_path AS script_path, sec.status AS sc_status, sec.id AS sc_id,
-       ch.chapter_no AS no, ch.title AS title;
+RETURN sec, ch;
 ```
 
-- `sc_status≠11` → 停止（先定稿审）。
+- `sec.status≠11` → 停止（先定稿审）。
 - 出场角色 = 图行 distinct `who`（首拆图无行时读 `台词.ink` 的说话行 `who` 集合），其 VoiceDesign 沿图关系查（出场角色 → 在本节场景发生的事件中 involved）：
 
 ```cypher
@@ -54,12 +48,11 @@ RETURN sec.script_path AS script_path, sec.status AS sc_status, sec.id AS sc_id,
 MATCH (sec:Section {id:'<section_id>'})-[:includes]->(e:Event)
 MATCH (e)<-[:involved]-(c:Character)
 OPTIONAL MATCH (c)-[:has_voice_design]->(v:VoiceDesign)
-RETURN DISTINCT c.name AS char, v.status AS vstatus, v.instruct AS instruct,
-       v.ref_text AS ref_text, v.ref_audio_path AS ref_audio_path;
+RETURN DISTINCT c, v;
 ```
 
-- `vstatus≠11` 的角色警告跳过（不写进 profiles）。
-- **章目录段**：`hexid(Chapter.id)`（16 位小写 hex，tasks-from-graph 已在 jobs 里带 `master_path` 全路径，无需自算——章 title 改名零漂移；旧 chapter_stem_from_meta 已废）。
+- `v.status≠11` 的角色警告跳过（不写进 profiles）。
+- **章目录段**：`hexid(Chapter.id)`（16 位小写 hex，tasks-from-graph 已在 jobs 里带 `master_path` 全路径，无需自算——章 title 改名零漂移）。
 
 ### 2. 拆分对齐进图（幂等——每次配音前必跑）
 

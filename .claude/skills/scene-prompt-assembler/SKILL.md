@@ -1,9 +1,8 @@
 ---
 name: scene-prompt-assembler
 description: |
-  从调用方传入的场景数据（Scene 字段 + Location 名）组装场景图层提示词，派生为 prompt 文件并返回其路径。
-  按 layer_type 分模式（background/floor/decor/mask）组装场景自由文本提示词（模式 A）。
-  注：DSL 链（源 Spot 有 dsl_path 时）的出图 prompt 已代码化——scene-layer-designer 直接调 slice_scenes.py --emit-prompt 现场投影直写，不经本 skill；本 skill 服务 dsl_path 为空的存量与 V2 图层。
+  从调用方传入的场景数据（Scene 字段 + Location 名）组装场景图层提示词，派生为 prompt 文件并返回其路径。按 layer_type 分模式（V1 仅 background 模式 A；floor/decor/mask 留 V2）。
+  DSL 链（源 Spot 有 dsl_path）的 prompt 已代码化（slice_scenes.py 现场投影），不经本 skill——本 skill 服务 dsl_path 为空的存量。
   纯产出层：不读写图数据库、不写 status，所有数据由调用方通过 data 参数提供。
   在需要为场景图层节点组装提示词或被其他 skill 调用时使用。
 argument-hint: <layer_type> <data_json>
@@ -21,7 +20,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 ## 核心转换：Scene 字段 → 自然语言场景描述
 
-Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色无字段——DSL 链真源为 room.yml 几何；本链为无建模存量的回退面）。组装时将各维度展开为**自然语言描述句**，按 reference 模板的 `用途→主体(空间)→环境→风格` 结构组织成完整 prompt。
+Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色无字段——DSL 链真源为 room.yml 几何；本链为无建模存量的回退面，DSL 链的 prompt 由 scene-layer-designer 直接调 `slice_scenes.py --emit-prompt` 现场投影，不经本 skill）。组装时将各维度展开为**自然语言描述句**，按 reference 模板的 `用途→主体(空间)→环境→风格` 结构组织成完整 prompt。
 
 - `vibe`（氛围一句话，含天气表达）→ 主体段氛围 + 环境段基调
 - `time_of_day`（时段标签）→ 主体段时间
@@ -32,7 +31,7 @@ Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色�
 - **用途开头**：提示词开头声明图片用途（如"游戏对话背景图"），让模型理解生成目标
 - **自然语言优先**：用连贯描述句，而非逗号关键词
 - **主体 → 环境 → 光影 → 风格**：先场景空间，再远中近景，再光影，画风放末尾
-- **场景无角色**：末尾须含「无角色」（场景图不出现角色立绘——场景背景图为不透明成品，与透明直出立绘用途互斥；已并入风格收尾串）
+- **场景无角色**：末尾须含「无角色」（场景图不出现角色立绘——场景背景图为不透明成品，与透明直出立绘用途互斥）
 - **硬约束收尾**：末尾风格词以 `00_init/美术风格.md`「提示词硬约束」节的**风格收尾串**为准——本文件与模板**不写死该串**，每次组装从源头读取并原样拼接；凭记忆写旧串即为漂移 bug
 - **图面默认无文字（定点放行）**：scene 数据（vibe/deco 等）未提及物件上的文字时，提示词风格段末尾追加「图面无描述性文字」；明确提及某物件上带文字（招牌、屏幕、海报、春联等）时定点放行——环境段正向描述该物件并写明其上文字内容（『』标出；Scene 已给按原文，未给则补简短贴合内容，2~6 字为宜），风格段末尾改为追加「除<该物件>上的文字外，图面无其他描述性文字」（条件与措辞见美术风格.md「提示词硬约束」）
 - **只提取不创作**：内容来自 data 参数（Scene 字段）和 `00_init/美术风格.md`，不臆造
@@ -69,19 +68,6 @@ Scene 的视觉维度以**自由文本 + 标签**存储（构图/光影/配色�
 2. **主体**：`location.name` + `scene.name` 点明场景空间，接 `vibe` 氛围句（含天气表达）、`time_of_day` 时间
 3. **环境**：以 `vibe`/`deco` + `Spot.description`（空间定位）展开为连贯环境描述（陈设方位随 deco 原文，不臆造布局）；dialogue 场景末尾接前缀表构图要点固定句（机位后退全景、家具沿墙、中下部留空——固定句兜底，不为 Scene 数据加戏）
 4. **风格**：末尾拼接美术风格.md「提示词硬约束」的风格收尾串（含「无角色」，动态读取不写死；风格全局统一，无 per-scene 风格标签）；随后按「图面无文字」条件式硬约束收尾——scene 数据未提及物件文字时追加「图面无描述性文字」，明确提及某物件带文字时在环境段写明其上文字内容（『』标出），此处改追加「除<该物件>上的文字外，图面无其他描述性文字」
-
-## 模式E：dsl_2d（Room DSL → 2D 布局出图）≈ 已代码化（不再经本 skill）
-
-> **模式 E 已下沉为脚本**：`python .claude/scripts/slice_scenes.py <room.yml> --emit-prompt --scene <scene_id> --out <prompt.md> [--scene-type <t>]`——scene-layer-designer 出图时直接 Bash 调用，现场从 room.yml + 机位投影生成 prompt 并直写 prompt.md（用途前缀 + 导语 + 布局正文 + 收尾串，规则同下述历史版本），**零 LLM 转抄、零中间文件**（scene2d.yml 派生文件已废止）。本 skill 仅保留模式 A 服务 dsl_path 为空的存量 Scene。
-
-<details>
-<summary>历史规则（模式 E 原 LLM 流程，已被脚本取代）</summary>
-
-- 触发：调用方在 data 中传 `dsl_path`（源 Spot 节点字段）。无 `dsl_path` 一律走模式 A。
-- 组装（程序化拼接，零 LLM 重组）：派生检查（slice 重切 → 读 scene2d.yml）→ prompt = 用途前缀 + 导语（固定文案）+ scene2d 全文 verbatim + 收尾串（美术风格.md 动态读取 + 图面无文字条件句）→ Write 落盘。
-- 边界：dsl_path 的登记（在源 Spot 节点）与投影写回（vibe 等叙事字段 MERGE 回 Scene）由调用方在「保存结果」步完成。
-
-</details>
 
 ## 模式B/C/D：floor / decor / mask 🚧 V2 TODO
 

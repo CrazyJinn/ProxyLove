@@ -74,8 +74,8 @@
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
-| leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.time 承载，evt_relation 已废止；事件↔信息归 establishes/reveals） |
-| establishes | Event → Hook | N:N | ❌ | **事实成立**（成立轴）——Hook 因源事件成立（递交辞呈→沈暮雪辞职）；event-ideator 产；原 link 边已废止（Char/Loc 固有事实 2026-11-11 起走 has_info→Lore） |
+| leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.time 承载；事件↔信息归 establishes/reveals） |
+| establishes | Event → Hook | N:N | ❌ | **事实成立**（成立轴）——Hook 因源事件成立（递交辞呈→沈暮雪辞职）；event-ideator 产；固有事实走 has_info→Lore |
 | has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
 | reveals | SubEvent → Hook | N:N | ❌ | **读者侧揭示**（揭示轴）——读者通过该场戏知晓该 Hook（信息释放时刻锚点，2026-11-11 自 Event 下沉）；event-stager 拆 sub 时逐 sub 拍；目标为 Lore / 源为 Event 均违规 |
 | **剧情——分叉与编排** | | | | |
@@ -195,7 +195,7 @@ flowchart LR
 
 > `includes`（Section→Event）承载节成员与顺序；选绘沿 `Section→includes→Event→refines→SubEvent→appears_as→IllusDesign` 直读。
 
-> **id 锚定（2026-10-31 全量迁移；25 域 11-01 改编号锚定）**：产物目录/文件名/运行时键不锚节点 name——改名零漂移。六域中 25_剧本 用**编号目录** `25_剧本/ch<NN>/sec<MM>/`（NN=chapter_no、MM=section_no 零填充，人读区保留可读性；title 改名不动，重排随编号迁移）；其余域用节点 id 的 **hexid**（`to_hexid(id)`，16 位小写 hex）。章 stem = hexid(Chapter.id)（章 JSON/`<stem>.pck` 文件名主体）。
+> **id 锚定**：产物目录/文件名/运行时键不锚节点 name——改名零漂移。六域中 25_剧本 用**编号目录** `25_剧本/ch<NN>/sec<MM>/`（NN=chapter_no、MM=section_no 零填充，人读区保留可读性；title 改名不动，重排随编号迁移）；其余域用节点 id 的 **hexid**（`to_hexid(id)`，16 位小写 hex）。章 stem = hexid(Chapter.id)（章 JSON/`<stem>.pck` 文件名主体）。
 
 galgame 运行时剧本的编排层：章（Chapter）→ 节（Section）→ 逐句台词行（LineAudio）。**节是第一公民**：节可先于章存在——**自由节**（无所属章，小说/ink 可直写），组章为事后归组（配音前必须组章——voice key 含 chapter_stem）。节级产物（小说.md / 台词.ink）为纯文件，不入图；图存结构真相（行）与最小状态（Section 定稿态）。
 
@@ -396,7 +396,7 @@ MATCH (c:Character) WHERE c.name='角色名' RETURN c.id AS id
 
 **字段判定基准**：任何 Spot/Scene 字段新增或改写前问——它属于哪个信息层？与上表既有载体的语义重叠即违背设计意图，须归位到对应载体。
 
-> **id 锚定（2026-10-31 全量迁移）**：产物目录/文件名一律用节点 id 的 **hexid**（`to_hexid(id)`，16 位小写 hex，`snowflake_base62.py`）——Location/Spot/Scene 改名零漂移，name 只作人读。目录结构：`07_场景美术/<location_id>/<spot_id>/<spot_id>.yml`（room.yml 真源）与 `07_场景美术/<location_id>/<spot_id>/<scene_id>/<layer_type>/…`（图层产物）。room.yml **内部**的 `location.name`/`objects[].spot`/`scenes[].scene_name` 等人读字段保留为非权威注记（改名不迁移，仅展示）；机位条目定位一律 `scenes[].scene_id` = Scene.id。
+> **id 锚定**：产物目录/文件名一律用节点 id 的 **hexid**（`to_hexid(id)`，16 位小写 hex，`snowflake_base62.py`）——Location/Spot/Scene 改名零漂移，name 只作人读。目录结构：`07_场景美术/<location_id>/<spot_id>/<spot_id>.yml`（room.yml 真源）与 `07_场景美术/<location_id>/<spot_id>/<scene_id>/<layer_type>/…`（图层产物）。room.yml **内部**的 `location.name`/`objects[].spot`/`scenes[].scene_name` 等人读字段保留为非权威注记（改名不迁移，仅展示）；机位条目定位一律 `scenes[].scene_id` = Scene.id。
 
 > **Event 驱动化（已实施）**：`anchored_at` 端点由 Spot 上移到 Scene（迁移规则 = 存量边沿 `Spot─realizes→Scene` 一跳重挂）；`part_of` 方向翻转为 `Location → Spot`（父→子，与全局上游→下游约定统一）。
 

@@ -1,8 +1,8 @@
 ---
 name: char-voice-design
 description: |
-  推进 VoiceDesign 图节点（角色基线音色设计）**多候选流程**：查询状态 → 生成 instruct + 统一长句 ref_text → 先合成 3 个候选 ref（voice_clone_runner design-candidates）+ 每候选 3 个情绪试听（voice_clone_runner audition，Qwen3 Base Voice Clone，均 env/.venv-qwen）落盘验证 → 后写图（MERGE 兜底建节点+has_voice_design 边，写内容+ref_audio_path+candidates_path+status=10 候选待选；路径=14_声音设计/<char_id>/，hexid 目录）。
-  依据 Character 基础属性 + LanguageStyle + Lore/Event，按声线三要素（音色基底/演绎方式/情绪域）生成**简明**自然语言 instruct（1-2 句、≤60 字，措辞遵循 Qwen VoiceDesign 官方原则：简洁/具体/客观，禁比喻修辞），并做同场角色频谱避让。同一 instruct × 3 次随机采样出候选（人工在 dashboard 审批中心试听 ref+情绪试听后「采用」其一，固化为 <char_id>/ref.wav，status 保持 10 走二审）。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
+  推进 VoiceDesign 图节点（角色基线音色设计，多候选流程）：生成 instruct + 统一 ref_text → 合成 3 候选 ref + 每候选 3 情绪试听（Qwen3 Base Voice Clone，env/.venv-qwen）→ 写图 status=10 候选待选；人工在 dashboard 试听后「采用」其一固化 ref。
+  instruct 为简明自然语言（≤60 字，简洁/具体/客观），并做同场角色频谱避让。怪物（enemy）跳过（无台词）。在需要设计角色基线音色、或 VoiceDesign status∈{-1,0} 需推进时使用。
 argument-hint: <char_id>
 arguments:
   - char_id
@@ -17,7 +17,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 推进 VoiceDesign（角色基线音色设计）图节点：生成 instruct + 统一长句 ref_text 设计描述，合成 **3 个候选 ref（同一 instruct × 3 次随机采样，24kHz）+ 每候选 3 个情绪试听（平静/高兴/愤怒，各配不同语义文本，Qwen3 Base Voice Clone）**，交 dashboard 审批中心人工采用。
 
-**status 流转**：`0` 待设计 → `1` instruct 完成（仅文本）→ `10` 候选固化（生产完成，**直接待审，无需 submit**；由 `candidates_path` 分两态：非空=**候选待选**——dashboard 逐候选试听后「采用」（固化 `<char_id>/ref.wav` + 清理临时文件夹 + 删 candidates_path，status 保持 10）；空=单 ref 待审——通过 `11` / 驳回回 `0`）→ `11` 批准。下游配音（voice-publisher / section-voice-publisher）要求 `11`。`2` 为历史兼容值（旧流程的生产完成态）：存量节点 status=2 时可在 dashboard 编辑器手动「提交审批」迁到 10，**本 skill 一律写 10、不写 2**。
+**status 流转**（枚举权威见 [VoiceDesign.md](../../../00_init/Schema/声音/VoiceDesign.md)）：`0` 待设计 → `10` 候选固化（生产完成**直接待审**；由 `candidates_path` 分两态：非空=**候选待选**——dashboard 逐候选试听后「采用」（固化 `<char_id>/ref.wav` + 清理临时文件夹 + 删 candidates_path，status 保持 10）；空=单 ref 待审——通过 `11` / 驳回回 `0`）→ `11` 批准。下游配音（section-voice-publisher）要求 `11`。`1`/`2` 为历史兼容值不再写；存量 status=2 可在 dashboard 编辑器手动「提交审批」迁 10。
 
 ## 参数
 
@@ -43,14 +43,14 @@ WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time
 OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:refines]->(:SubEvent)-[:reveals]->(evtInfo:Hook)
 WITH c, ls, vd, infos, events,
      collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos
-RETURN c, ls, vd, c.vibe AS vibe, infos, events, event_infos;
+RETURN c, ls, vd, infos, events, event_infos;
 ```
 
 同场角色（查其已有 VoiceDesign 的 instruct，避免撞声）：
 
 ```cypher
 MATCH (c:Character {id: '<char_id>'})-[:involved]->(e:Event)<-[:involved]-(other:Character)-[:has_voice_design]->(vd:VoiceDesign)
-RETURN DISTINCT other.name AS name, vd.instruct AS instruct LIMIT 5;
+RETURN DISTINCT other, vd LIMIT 5;
 ```
 
 - **目标节点判定**：
@@ -126,7 +126,7 @@ SET v.name = '<角色名>声音设计',
 
 ### 4. 汇报
 
-列出：角色名、VD_ID、新建/复用、instruct 全文、ref_text、候选数（3）与试听数（9，Qwen3 Base 引擎）、manifest 路径（candidates.json）、status=10（候选待选）。附提示：到 dashboard 审批中心（声音审）逐候选试听 ref + 3 情绪试听 →「采用」（固化为 `<角色名>_ref.wav` 并清理临时文件夹，status 仍 10）→ 二审通过→11（下游配音要求 11）/驳回→0；三个候选都不理想可驳回后重跑本 skill（候选会重新采样覆盖）。注意向用户说明：**试听与下游配音同引擎（Qwen3 Base Voice Clone）、同 ref 的 xvec 通道**（仅说话人向量克隆音色、丢 ref 韵律）——试听是「音色 + 文本自主演绎」的真实预览；但下游配音逐句选 **icl**（ref 韵律迁移，缺省通道）的句子，其韵律表现**不能**由 xvec 试听外推（需到配音期逐句审听把关）。
+列出：角色名、VD_ID、新建/复用、instruct 全文、ref_text、候选数（3）与试听数（9，Qwen3 Base 引擎）、manifest 路径（candidates.json）、status=10（候选待选）。附提示：到 dashboard 审批中心（声音审）逐候选试听 ref + 3 情绪试听 →「采用」（固化为 `<char_id>/ref.wav` 并清理临时文件夹，status 仍 10）→ 二审通过→11（下游配音要求 11）/驳回→0；三个候选都不理想可驳回后重跑本 skill（候选会重新采样覆盖）。注意向用户说明：**试听与下游配音同引擎（Qwen3 Base Voice Clone）、同 ref 的 xvec 通道**（仅说话人向量克隆音色、丢 ref 韵律）——试听是「音色 + 文本自主演绎」的真实预览；但下游配音逐句选 **icl**（ref 韵律迁移，缺省通道）的句子，其韵律表现**不能**由 xvec 试听外推（需到配音期逐句审听把关）。
 
 ## 参考文档
 

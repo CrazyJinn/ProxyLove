@@ -11,7 +11,7 @@
 | id | 编号 | string | 是 | snowflake Base62 |
 | title | 标题 | string | 是 | `陆择加入星耀电竞`。一句话可独立成立的事实句（主谓宾）；检验：能否直接当「已发生的事」陈述出来 |
 | time | 时间 | string(datetime) | 是 | `yyyy-MM-dd HH:mm:ss`（如 `2024-06-14 19:00:00`），**自时间锚点推算**（锚点见 [游戏概览.md](../游戏概览.md) 基本信息）；字符串序即时间序，计算用 `datetime(e.time)` 现场转换 |
-| description | 描述 | string | 否 | title 装不下的钉子细节 1~3 句（数字/物件/氛围摘句）；不复述 title、不写后果（后果是另一 Event + leads_to）、不写认知解读（归 Hook） |
+| description | 描述 | string | 否 | title 装不下的钉子细节 1~3 句（数字/物件/氛围摘句）；不复述 title、不写后果（后果是另一 Event + leads_to）、不写认知解读（归 Hook）。正例：`陈念进门数落着塞满冰箱、炖上排骨汤；碗底压现金三千`；反例：`原文「清晨六点半」`（摘录注记）、`ink choice「跳下去」分支；与 E5 互斥`（拓扑注记——Choice/option 边的职责）、`林梦穿居家慵懒着装`（着装越界——appears_as 边的职责） |
 | type | 类型 | enum | 否 | `行动` |
 | ending_kind | 结局类型 | enum | 否 | `BE` / `TE` / `HE` / `NE`（非结局留空） |
 | condition | 条件判断 | string | 否 | 条件表达式（语法见下方「condition 条件表达式」）；空/缺省 = 无条件，主线默认可激活 |

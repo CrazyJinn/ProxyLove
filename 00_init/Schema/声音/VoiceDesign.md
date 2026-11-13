@@ -17,7 +17,7 @@
 
 **status 枚举**：`0` 待设计 → `10` ref 固化（生产完成**即待审**）→ `11` 批准。驳回归 `0`，作废 `-1`。`1`/`2` 为历史兼容值（旧流程中间态/生产完成态，不再写）。
 
-> 无 `description` 字段——2026-11-13 废止（12/12 为 instruct 前半段的摘要复述；音色气质单一载体 = instruct，展示侧截取 instruct 即可）。
+> 无 `description` 字段——音色气质单一载体 = instruct（展示侧截取 instruct 即可）。
 
 > `status=10` 两态（status 值不变，由 `candidates_path` 区分）：非空 = **候选待选**（人工逐候选试听「采用」固化 ref，status 仍 10 走二审）；空 = 单 ref 待审。**下游配音要求 `11`**——审批门为治理逐句克隆的 GPU 消耗而设。
 > 无 `clone_prompt_path` 字段：clone prompt 由 voice_clone_runner 内存构建不落盘。

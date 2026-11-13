@@ -1,7 +1,7 @@
 ---
 name: scene-designer
 description: |
-  推进 Scene 图节点（Location 粒度入口）：定位 Location → 聚合其 occurs_at 事件 → 推理既有 zone Spot 够用性（各 Spot 机位的事件归组分布）→ 归组（证据明确命中唯一 zone 自动执行；歧义点——多 zone 命中/粒度歧义/证据不足——AskUserQuestion 多选由用户敲定后继续；Spot 只有 zone 一种 kind，default 已废止仅存量）→ 拍机位（归组即拍：优先复用该 zone 既有 Scene，时段/版本差异才新建）→ 维护 Room DSL（room.yml 3D 布局真源，Scene=机位）→ 保存结果（anchored_at 归组直挂 Scene + Scene MERGE + realizes 边 + Spot.dsl_path 登记，status=1 已完成）。
+  推进 Scene 图节点（Location 粒度入口）：occurs_at 事件归组到机位 Scene、Spot 空间细分推理（zone 够用性，歧义点 AskUserQuestion 由用户敲定）、Room DSL（room.yml 3D 布局）维护。
   在需要为某地点创建/追加场景视觉设定、推进已有 spot 流程、或为 Location 上未归组的事件做子空间细分时使用。spot 名/ID 直推兼容（经 part_of 定位所属 Location 后走全流程）。
 argument-hint: <location_id 或 Location 名（兼容 spot_id/spot 名）>
 arguments:
@@ -9,7 +9,7 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit, AskUserQuestion
 ---
 
-> **级联说明**：realizes/anchored_at 边 sync 恒 false——Location/Spot 属性变更**不再**级联作废 Scene（原 has_scene sync=true 的级联通道已随 Spot 方案移除）。Scene 自身仍是 SceneLayer 的 has_layer(sync=true) 上游：Scene 属性被编辑时 SceneLayer 照常重置。`status=-1` 的 Scene 仍须重新生成并覆盖，禁止因属性已有值而跳过。
+> **级联说明**：realizes/anchored_at 边 sync 恒 false——Location/Spot 属性变更不级联作废 Scene。Scene 自身仍是 SceneLayer 的 has_layer(sync=true) 上游：Scene 属性被编辑时 SceneLayer 照常重置。`status=-1` 的 Scene 仍须重新生成并覆盖，禁止因属性已有值而跳过。
 
 # 场景设计（Scene · Location 粒度入口）
 
@@ -96,7 +96,7 @@ MERGE (l:Location {name: '<Location名>'})
    - **候选构成**：按事件语义拟 1-3 个 zone 方案（含短名=Location 名的**整点 zone** 候选——整点建模、全 Location 一个 Spot；Other 由工具自动提供）。
    - **多选语义**（multiSelect=true）：可同时勾选多个拆 zone 方案——事件归入最贴切的 zone，其余选中 zone 建为**预留**（无归组事件 → 2b 判「暂不出图」不建 Scene，零出图成本）。
    - **提问纪律**：每题附推荐选项（首位 + Recommended）且**可归因**——理由标签 + 数据依据（如「零拆分成本」「为后续事件预留细分」），不许「我觉得」；facts 不问用户（候选 zone 方案、既有归组分布现查），只问取舍；同 Location 多事件同模式**聚合为一题**、单题列全实体；**一题一答**、依赖排序（用户选拆 zone → 追问 zone 名——name 是人读显示名，不锚定目录，无字符约束）。
-4. **按敲定结果执行**：新增 zone Spot（命名 `<Location名>-<区域>`，kind='zone'——**不再有 default kind**，整点即区域段=Location 名）建 part_of + anchored_at（→拍定机位 Scene），或归入用户选定的既有 zone。「评估过但无子空间证据」的自动兜底已废止，一律经 3 敲定。
+4. **按敲定结果执行**：新增 zone Spot（命名 `<Location名>-<区域>`，kind='zone'，整点即区域段=Location 名）建 part_of + anchored_at（→拍定机位 Scene），或归入用户选定的既有 zone。无子空间证据的归组一律经 3 敲定，不做自动兜底。
 5. **粒度铁律**：同一物理空间的叙事细分优先吸收为同 Spot 多 Scene（机位/时间窗版本），确需拆 zone Spot（≈新物理空间、新 room.yml 文件）时才新建；「新建 zone 一张图起」vs「归组到既有 zone 零成本」作为取舍依据写进提问的推荐理由与汇报。
 
 **2b. Scene 复用 / 新建**（按归组后的每个 Spot 决定）：
@@ -113,7 +113,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
-2. 调性/陈设类字段的职责分工（氛围与天气 vs 机位小物，剧情一次性物件与角色持物不写）以 [00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) 字段表说明为准（撰写见 [Schema总览.md](../../../00_init/Schema总览.md) 属性撰写总则）。
+2. 调性/陈设类字段的职责分工与撰写纪律以 [00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) 字段表说明列为准（撰写总则见 [Schema总览.md](../../../00_init/Schema总览.md)）。
 
 **2d. 维护 Room DSL（room.yml —— 3D 布局真源）**
 
@@ -127,7 +127,7 @@ MERGE (l:Location {name: '<Location名>'})
   - ③ 外景：`shell: open` + `ground/sky`，沿轴延伸物（护栏/长路）必须拆近/中/远段（整件投影退化成线；模板见 references §7）。
 - 粒度铁律：**只建不移动的固定大件**（床/桌/柜/门窗结构等，每房间 ≤8 件）；可移动小物与杂物堆（床头杂物/外卖盒/线缆）**不建几何**——其视觉表现写进图 Scene.deco；光源（lights）保留数值。**大件贴墙布置，房间正中不放挡视线大件**（中岛/中央桌类至多一件且须偏侧贴边；安全区阈值见 references §5）。**长 YAML 禁止手打全文**：Python dict 构造 + `yaml.safe_dump` 落盘。
 - **新 Scene（机位）**：`scenes[]` 追加条目（id/scene_id/scene_name/spot/camera{pos,look_at,fov}/lights/objects_delta）——**纯几何/数值，不存文字**；机位来自 2c 的决策。
-- **文字归图**：一切叙事文字只写图 Scene 节点（字段以段 3 Read 的 Schema 字段表为准，表外不加；room.yml 只存几何），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md；旧字段 weather/composition/lighting/color_direction 已全图清理废止）。
+- **文字归图**：一切叙事文字只写图 Scene 节点（字段以段 3 Read 的 Schema 字段表为准，表外不加；room.yml 只存几何），yaml 的 scene 条目不留这些键；构图/光影/配色**无字段**（真源=room.yml 几何 + 美术风格.md）。
 
 **2e. 校验（写后质量门，两门都必跑）**：写/改 room.yml 后必跑 ① `python .claude/scripts/slice_scenes.py <room.yml> --check`（几何/结构校验）② `python "${CLAUDE_SKILL_DIR}/scripts/check_framing.py" <room.yml>`（立绘安全区），报错必须修复后才进段 3。**本 skill 不重切派生**——slice_scenes.py（公用脚本，归 .claude/scripts/）由 scene-layer-designer 出图前调用（消费侧重切）。
 
@@ -164,8 +164,8 @@ SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...',
     s.vibe = '...', s.deco = '...',
     s.status = 1;
-// 构图/光影/配色无字段（真源=room.yml 几何 + 美术风格.md；weather/composition/lighting/color_direction 已废止清理）。
-// Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 assembler 模式 E）
+// 构图/光影/配色无字段（真源=room.yml 几何 + 美术风格.md）。
+// Spot 登记 dsl_path（单一真源：非空 = spot 已 3D 建模，其 realizes 的 Scene 出图走 slice_scenes.py 现场投影）
 MATCH (sp:Spot {id: '<spot_id>'})
 SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_id)>.yml';
 ```
@@ -180,7 +180,7 @@ SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_
 
 ## 参考文档
 
-- [场景美术 Schema](00_init/Schema/场景美术/) — Location/Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
+- [场景美术 Schema](../../../00_init/Schema/场景美术/) — Location/Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
 - [room.yml v3 速查](references/room-yml-v3.md) — 结构模板/校验规则/立绘安全区阈值/数值基线/外景模板/例句（写 yaml 前必读）
-- [剧情 Schema](00_init/Schema/剧情/) — Event 节点、occurs_at/involved 边
+- [剧情 Schema](../../../00_init/Schema/剧情/) — Event 节点、occurs_at/involved 边
 - [场景美术风格](00_init/美术风格.md) — 渲染与色彩基调、提示词硬约束（风格收尾串）

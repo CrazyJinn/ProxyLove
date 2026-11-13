@@ -18,7 +18,7 @@
 | prompt | 生成提示 | string | 否 | 仅 bed_start：AudioFly 英文提示；重产复用原文，不即兴改写 |
 | scene_block_id | 场景块 | string | 否 | 所有行：块归属——**=所写机位的 scene_id（Scene 节点雪花 id）**，id 直连；同机位多段共用同一 id，段序由行序承载 |
 | voice_key | 配音键 | string | 否 | **= hexid(本节点 id)**（运行时 voices 文件名主体），配音后写 |
-| ambient_track | 环境音键 | string | 否 | 仅 transition/bed_start 行：**= hexid(本节点 id)**（运行时 sfx 文件名主体；voice/sfx 归属由本字段与 voice_key 谁非空区分，amb-/bed- 前缀已废——播放行为由 op 分发） |
+| ambient_track | 环境音键 | string | 否 | 仅 transition/bed_start 行：**= hexid(本节点 id)**（运行时 sfx 文件名主体；voice/sfx 归属由本字段与 voice_key 谁非空区分，播放行为由 op 分发） |
 | master_path | 母带路径 | string | 否 | `15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`——**母带唯一权威**（dashboard 试听/发布/清理全读它；bind 时随 voice_key 一并落图） |
 | emotion | 情绪 | string | 否 | 配音期判别（12 词表）；标注用，不进合成参数 |
 | clone_mode | 克隆模式 | enum | 否 | 仅 say 行：`icl`（ref 韵律迁移，缺省）/ `xvec`（文本主导演绎） |

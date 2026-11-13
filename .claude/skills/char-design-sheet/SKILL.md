@@ -1,9 +1,9 @@
 ---
 name: char-design-sheet
 description: |
-  推进 DesignSheet 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  双模式：常规（首版/重做——以用户提供的单张真人参考照片图生图，AppearanceStyle 全量补充特征、冲突以属性为准）与**增量模式**（`<char_id> <base_ds_id> <口述改动>`——以参考版设计图为底图生图新增版本，剧情永久外貌变更如剪发用）。
-  单轮直推到最大门控（图片完成即待审 10）。在需要生成角色设计图或 DesignSheet 节点需推进时使用。
+  推进 DesignSheet 图节点（角色设计图：提示词组装 + 图生图 + 产物写入）。
+  双模式：常规（首版/重做，参考真人照片）与增量（`<char_id> <base_ds_id> <口述改动>`，剧情永久外貌变更如剪发时新增版本，不改写旧版）。
+  在需要生成角色设计图、或 DesignSheet 节点 status∈{0,-1} 需推进时使用。
 argument-hint: <char_id> [base_ds_id] [口述改动]
 arguments:
   - char_id
@@ -12,7 +12,7 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当 DesignSheet 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**（重走 0→1→2）。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
+> **status=-1 = 作废重做**：当 DesignSheet 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
 
 # 设计图（DesignSheet）
 
@@ -48,7 +48,7 @@ RETURN ch, app, ds
 - **前驱校验**：`app.status >= 1`（外貌已由 char-concept-designer 设计），否则停止并提示先推进概念设计。
 - **常规模式目标判定**：多版本时对每个 `ds.status ∈ {-1, 0}` 的版本逐个推进（`1` 已有提示词、`10` 待审不可推进、`11` 已完成跳过）；全部版本皆无且无任何 DS → 新建首版（生成新 snowflake id 作 `DESIGN_ID`）。
 - **增量模式前置校验**：`base_ds_id` 属于该角色（出现在上述结果中）∧ 参考版 `ds.status = 11` ∧ `image_path` 非空且文件存在——否则停止并报告。生成新 snowflake id 作 `DESIGN_ID`。
-- 记录 `ch.id`（产物路径段用，hexid）、`ch.vibe`（人物调性，第 2 步组装 data 用）、`app.id`（保存步建 `produces` 边用）、整节点 `app`（外貌 tags + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取 `color_direction`**——配色逻辑属造型/着装范畴，不进设计图提示词（2026-10-06 用户定规）。
+- 记录 `ch.id`（产物路径段用，hexid）、`ch.vibe`（人物调性，第 2 步组装 data 用）、`app.id`（保存步建 `produces` 边用）、整节点 `app`（外貌 tags + `height_cm`/`ethnicity`，常规模式第 2 步组装 data 用）。name 仅展示。**不取配色方向**——配色属造型/着装范畴，不进设计图提示词。
 
 ### 2. 完成任务
 
@@ -81,7 +81,6 @@ RETURN ch, app, ds
 **解析口述**（缺项停止询问，禁止猜）：
 - 变更描述：notes 正文（图生图 prompt 变更段唯一来源）
 - 生效点：形如 `ch01/sec02` → `active_from = chapter_no*1000 + section_no`（如 1002）
-- （slug 版本短名已废——目录锚 ds_id，无需口述）
 - 否定锚定 `negation`：由 LLM 据「变更描述 × AppearanceStyle 对应旧字段值」生成对旧特征的显式否定（如旧 hair「黑色凌乱短发，油腻缺乏打理」→「头发不油腻、不凌乱，无颓废未打理感」）——压制参考图惯性，**只否定被变更的维度**，不得引入新否定
 
 **组装提示词**：Skill 工具调用 `char-prompt-assembler`，参数 `DesignSheetDelta '<data_json>'`：
@@ -102,7 +101,7 @@ RETURN ch, app, ds
 
 #### 路径规则（两模式通用）
 
-- 统一路径：`06_角色美术/<char_id>/<ds_id>/prompt.md` 与 `设计图.png`（hexid 目录段——每版本独立 ds_id 目录，物理覆盖结构上不存在；slug 分支已废）。
+- 统一路径：`06_角色美术/<char_id>/<ds_id>/prompt.md` 与 `设计图.png`（hexid 目录段——每版本独立 ds_id 目录，物理覆盖结构上不存在）。
 - 路径段 id→hexid：`python .claude/scripts/snowflake_base62.py -x <id1> <id2>`（或读图上已有 prompt_path 同目录推导）。
 
 ### 3. 保存结果（MERGE 兜底 + 写产物 + 推进 status）
@@ -115,13 +114,14 @@ MERGE (ds:DesignSheet {id: '<DESIGN_ID>'})
   ON CREATE SET ds.status = 0;
 MATCH (app:AppearanceStyle {id: '<app_id>'}), (ds:DesignSheet {id: '<DESIGN_ID>'})
 MERGE (app)-[r:produces]->(ds) SET r.sync = true;
-// 写产物 + 推进 status（增量版本并写版本三字段）
+// 写产物 + 推进 status（增量版本并写 delta_notes/active_from）
 MATCH (ds:DesignSheet {id: '<DESIGN_ID>'})
 SET ds.prompt_path = '<PROMPT_PATH>',
     ds.image_path  = '<IMAGE_PATH>',
     ds.delta_notes = '<增量模式：口述变更描述；常规模式：保持原值不动>',
     ds.active_from = <增量模式：生效锚点 int；常规模式：保持原值不动>,
-    ds.status = 10;     // ← 按 Schema 字段表核对：缺一不可、表外不加                  // 图片完成即待审（直写，不经 submit）
+    // ← 按 Schema 字段表核对：缺一不可、表外不加
+    ds.status = 10;     // 图片完成即待审（直写，不经 submit）
 ```
 
 **status 写入**：固定 `10`（待审，等待 dashboard 审批）。增量版本审批重点：与参考版并排比对——脸部/五官/体型/眼镜一致、**仅口述维度变化**。

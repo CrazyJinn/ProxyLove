@@ -1,8 +1,8 @@
 ---
 name: char-concept-designer
 description: |
-  推进 AppearanceStyle / LanguageStyle 图节点：查询状态 → 生成外貌/语言设计内容 → 保存结果（MERGE 兜底建节点+边，写内容与 status）。
-  CostumeStyle 由 char-costume-designer 负责。在需要设计角色外貌方向、生成语言风格、或概念节点 status=0 需推进时使用。
+  推进 AppearanceStyle / LanguageStyle 图节点（角色外貌方向与语言风格的设计内容）。
+  CostumeStyle 由 char-costume-designer 负责。在需要设计角色外貌、生成语言风格、或概念节点 status∈{0,-1} 需推进时使用。
 argument-hint: <char_id>
 arguments:
   - char_id

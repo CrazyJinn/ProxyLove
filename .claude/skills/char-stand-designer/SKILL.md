@@ -1,15 +1,15 @@
 ---
 name: char-stand-designer
 description: |
-  推进 StandingIllustration 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  入参 stand_id（单变体）或逗号分隔 stand_id 列表（批量模式——先逐个组装 prompt，再经 stand_batch.py 线程池并发出图+校验+写图），由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 vibe 变体调性），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量（「批量」仅指同批缺口的出图并发，不是备货）。
+  推进 StandingIllustration 图节点（立绘变体：提示词组装 + 透明 PNG 图生图 + 校验 + 产物写入）。
+  入参 stand_id 单个或逗号分隔列表（批量=同批缺口出图并发）。变体缺口由 section-voice-publisher 选绘兜底建、plot-design 按 uses 引用触发；本 skill 逐个交付生成，不做角色级批量备货、不按数量补全。
 argument-hint: <stand_id[,stand_id,...]>
 arguments:
   - stand_id: 单个或逗号分隔多个立绘变体 ID；多个时走批量模式
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当 StandingIllustration 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**（重走 0→1→2）。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
+> **status=-1 = 作废重做**：当 StandingIllustration 被 sync 级联重置为 `status=-1` 时，即使 `prompt_path`/`image_path` 已存在，也**必须重新生成并覆盖**。`-1` 与 `0` 都视为"需生成"起点；`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过**。
 
 # 立绘变体（StandingIllustration）
 
@@ -18,7 +18,7 @@ allowed-tools: Read, Bash, Write, Edit
 **按需变体模式**（stand_id，单个或逗号分隔列表）：只推进指定的 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `vibe` 变体调性）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
 
 - **单变体**（1 个 id）：走下方三段式（子 skill 链：char-prompt-assembler → infra-image-generator → 校验 → 写图）。
-- **批量模式**（≥2 个 id，2026-10-06 起）：出图是 OfoxAI 纯 IO 等待（单张 30s~10min），串行会把整条编排链堵死——**prompt 组装仍由 LLM 逐个做（创作判断不可并发），出图/校验/写图交给 [scripts/stand_batch.py](scripts/stand_batch.py) 线程池并发**（默认 3 并发，单张超时 15min，透明不合格自动重试 2 次，先产物后写图铁律在每个 worker 内保持），见下方「批量模式流程」。
+- **批量模式**（≥2 个 id）：出图是 OfoxAI 纯 IO 等待（单张 30s~10min），串行会把整条编排链堵死——**prompt 组装仍由 LLM 逐个做（创作判断不可并发），出图/校验/写图交给 [scripts/stand_batch.py](scripts/stand_batch.py) 线程池并发**（默认 3 并发，单张超时 15min，透明不合格自动重试 2 次，先产物后写图铁律在每个 worker 内保持），见下方「批量模式流程」。
 
 ## 参数
 
@@ -41,7 +41,6 @@ MATCH (ds:DesignSheet)-[:produces]->(illus)
 MATCH (ch:Character)-[:has_appearance]->(:AppearanceStyle)-[:produces]->(ds)
 MATCH (ch)-[:has_voice_style]->(voice:LanguageStyle)
 OPTIONAL MATCH (illus)<-[:outfit_for]-(cos:CostumeStyle)
-OPTIONAL MATCH (illus)<-[:produces]-(ds:DesignSheet)
 RETURN ch, voice, illus, cos, stand
 ```
 
@@ -78,7 +77,7 @@ char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_id>/<ds_id>
 
 使用 Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <illus_image> --background transparent --output-format png`（图生图，以 IllusDesign 图片为参考）：
 
-> **透明参数必传**（2026-09-13 生产实测）：仅靠 prompt 英文透明措辞连续 3 次返回 RGB（服务端行为已变）；措辞 + `--background transparent --output-format png` 同时在场才稳定直出 RGBA。
+> **透明参数必传**：仅靠 prompt 英文透明措辞连续 3 次返回 RGB（服务端行为已变）；措辞 + `--background transparent --output-format png` 同时在场才稳定直出 RGBA。
 
 `OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.png`（hexid 目录段同上；文件名=本节点 id——运行时立绘键 = hexid(stand_id) 与此同源）。infra-image-generator 返回路径 `IMAGE_PATH`。生成后必须过下方「透明校验」，通过才进入保存结果步。
 
@@ -90,11 +89,11 @@ char-prompt-assembler 组装 prompt 文件到 `06_角色美术/<char_id>/<ds_id>
 python "${CLAUDE_SKILL_DIR}/scripts/check_transparency.py" '<IMAGE_PATH>'
 ```
 
-判据：**alpha=0 像素占比 > 1%**（gpt-image 系主体 alpha≈253，不能用 alpha<255 判定；2026-09-09 实验矩阵实测）。
+判据：**alpha=0 像素占比 > 1%**（gpt-image 系主体 alpha≈253，不能用 alpha<255 判定）。
 
 - **退出码 0** → 校验通过，进入「保存结果」步。
 - **退出码 1**（无 alpha 通道，或 alpha=0 占比不足——OfoxAI 偶发忽略透明措辞返回 RGB）→ **不写 image_path、不写 status**：
-  1. Read 检查 prompt 文件画风段是否含固化透明行 `fully transparent background with alpha channel, no background elements`，并确认本次调用带了 `--background transparent --output-format png`（模板漂移或漏传参数是最常见原因；2026-09-13 起措辞与参数须同时在场）；
+  1. Read 检查 prompt 文件画风段是否含固化透明行 `fully transparent background with alpha channel, no background elements`，并确认本次调用带了 `--background transparent --output-format png`（模板漂移或漏传参数是最常见原因；措辞与参数须同时在场）；
   2. 修正后重调 infra-image-generator 覆盖重生成，最多重试 2 次；
   3. 仍失败 → 停止并报告，节点保持原 status（0/-1）待人工处理。
 - **退出码 2**（文件不存在）→ 报告并停止。
@@ -122,7 +121,7 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 ## 批量模式流程（≥2 个 stand_id 时替代第 2~3 步的串行子 skill 链）
 
 1. **批量查状态**：第 1 步的查询把 `id:'<stand_id>'` 换成 `stand.id IN ['<id1>','<id2>',...]`，一次取回全部（含各自 illus/voice/cos/ds 上游）。前驱校验同单变体：`illus.status≠11` 的**剔除并在汇报中报警跳过**，不阻塞其余。
-2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md`，Mode C 模板与画风段不变、透明措辞行原样保留）。
+2. **逐个组装 prompt（LLM 创作，串行但秒级）**：对每个可推变体，按单变体流程的组装规则推导六标签、写 prompt md（Write 到各自 `06_角色美术/<char_id>/<ds_id>/<cos_id>/立绘/<stand_id>.md`，模式C 模板与画风段不变、透明措辞行原样保留）。
 3. **构造任务清单** Write 到 `.tmp/stand-batch-<stem>-sec<MM>.json`：
 
    ```json
@@ -147,6 +146,6 @@ SET stand.prompt_path = '<PROMPT_PATH>',
 
 ## 参考文档
 
-- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) Mode C
+- 提示词组装：[char-prompt-assembler](../char-prompt-assembler/SKILL.md) 模式C（StandingIllustration）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
 - 按需触发方：[plot-design](../../agents/plot-design.md) agent（按 uses 边引用传 stand_id）

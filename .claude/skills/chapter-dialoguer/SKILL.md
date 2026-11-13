@@ -1,9 +1,9 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读 novelist 的本节小说.md（小说模式：场景段结构照搬小说 `### <scene_block_id> <场景名> <时段>` 标题——它就是拓扑契约；同源 scripts/fingerprint.py check 自检取材指纹，stale 则停止回退 chapter-novelist；分支事实以图 Choice/option 为准，与小说冲突报 FAIL）→ 从小说提炼逐句对话（钉子句沿用、立场守恒，只做体裁转换）→ 产出节级 台词.ink（人读/人改的唯一定稿格式，标准合法 ink 方言 v3：场景块「=== <id> // <名>（<时段>）」ASCII knot、说话行「角色名:台词」不写[表情]、旁白行、音频三型 sfx:（点状）/ bed+ bed-（音床起止循环）、ink 原生选择/分支/结局两行式、llm: 占位行）→ 唯一图写入 `SET sec.script_path + sec.status=10`（定稿产出**待审**：人工在 dashboard 批准 10→11 后才允许拆分配音/选立绘；驳回 10→-1 重做；人工微调走 dashboard 定稿编辑器「保存并同步」，保存即 11 免审）。
-  双模式：① 常规创作（本节无定稿/被作废 -1/或 ink 不含 llm: 占位）——整篇创作；② **填充模式**（script_path 已有值且 ink 含 llm: 行）——只把 llm: 占位按上下文扩写成正式行，其余行一字不动，写回（扩写为实质内容变更，sec.status 置 10 重审；不消费小说、不走指纹自检）。含占位的定稿 split 拒绝拆分。台词.ink 规范见 references/ink方言规范.md（方言 v3）；sec.status=11（已批）即可由 section-voice-publisher 拆分进图再配音。BGM 不归本 skill（BgmTrack 由 scene-design 编排 bgm-designer 管理）。
-  **存量直连模式**：节目录无小说.md 且 sec.script_path 已有历史值的旧流程节（如 chapter00/01 现存节），读该历史文件（outline.md/骨架 ink/dayNN 蓝本）照旧创作，不要求小说。创作中发现分支无本质差异/scene 无情绪推进 → 「结构性问题报告」回退 chapter-novelist（重做小说层）；根因在图素材（事件空洞/链断裂）→ 提示跑 event-ideator，均不写 status。
+  推进 Section 图节点的定稿段：读小说.md（场景段照搬 `###` 拓扑契约 + 取材指纹自检，stale 回退 chapter-novelist；分支事实以图 Choice/option 为准）→ 从小说提炼逐句对话（钉子句沿用、立场守恒）→ 产节级 台词.ink（人读/人改的唯一定稿格式，ink 方言 v3）→ 唯一图写入 `SET sec.script_path + sec.status=10` 待审（dashboard 批准 11 后方可拆分配音）。
+  双模式：常规创作 / 填充模式（只扩写 llm: 占位，其余行一字不动）；另含存量直连模式（旧流程节读 script_path 历史文件照旧创作）。BGM 不归本 skill。
+  在需要为某节产定稿台词、或定稿含 llm: 占位需填充时使用（由 plot-design 编排触发）。
 argument-hint: <section_id>
 arguments:
   - section_id
@@ -35,9 +35,7 @@ allowed-tools: Read, Bash, Write, Edit
 ```cypher
 MATCH (sec:Section {id:'<input>'})
 OPTIONAL MATCH (ch:Chapter)-[:has_section]->(sec)
-RETURN sec.id AS id, sec.section_no AS section_no, sec.title AS title,
-       sec.script_path AS script_path, sec.status AS sc_status,
-       ch.chapter_no AS chapter_no
+RETURN sec, ch
 LIMIT 1
 ```
 
@@ -45,8 +43,8 @@ LIMIT 1
 
 `script_path` 已有值时，Read 该 台词.ink 并检查是否含 `llm:` 行：
 
-- **`sc_status = -1`** → 作废重做：整篇重新创作覆盖（见顶部注记）。
-- **`sc_status = 10`** → 定稿待人工审：停止并提示（批准 11 后由 voice-publisher 拆分；驳回 -1 后才轮到本 skill 重做——编排层不会在 10 态调本 skill，此处为防御）。
+- **`sec.status = -1`** → 作废重做：整篇重新创作覆盖（见顶部注记）。
+- **`sec.status = 10`** → 定稿待人工审：停止并提示（批准 11 后由 voice-publisher 拆分；驳回 -1 后才轮到本 skill 重做——编排层不会在 10 态调本 skill，此处为防御）。
 - **含 `llm:` 占位** → 进入**填充模式**（直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工微调」，**禁止整篇重写覆盖手改**。
 - **无占位 且 script_path 已有值** → 定稿已批（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 novelist 作废、dashboard 驳回或用户明示）。
 - **script_path 为空** → 常规创作流程。
@@ -70,8 +68,7 @@ MATCH (sec:Section {id:'<input>'})-[:includes]->(e:Event)
 MATCH (e)<-[:involved]-(host:Character)
 MATCH (char:Character) WHERE char = host OR (char)-[:relation {type:'控制'}]->(host)
 OPTIONAL MATCH (char)-[:has_voice_style]->(voice:LanguageStyle)
-RETURN DISTINCT char.name AS name, char.vibe AS vibe,
-       voice.speech_style AS speech_style
+RETURN DISTINCT char, voice
 LIMIT 20
 ```
 
@@ -139,7 +136,7 @@ bed- rain
 1. **场景块标记**：`=== <scene_block_id> // <Scene 名>（<时段>）`（knot，v3 行式）——scene_block_id 照搬小说 `###` 段标题值（块 id = scene_id（Scene 节点雪花 id，ASCII 天然合法），同机位多段共用同一 id，段序由行序承载），Scene 名/时段照搬小说段标题挂行尾注释——**注释是场景名唯一人类可读来源**（图上不再存块→名映射）。时段仅供人读（运行时时段以 Scene.time_of_day 为准，拆分进图不存）。
 2. **说话行**：`角色名:台词`——一行一句，冒号用**半角**，角色名用 Character.name 原名（「旁白」「sfx」「llm」是保留字）。**禁止写 `[表情]` 标注**（如 `[微笑]`）：本 skill 专注台词创作，演出层（立绘变体选择）与台词**彻底分离**——由 section-voice-publisher 配音判断期为每句 say 行按台词氛围选定（`LineAudio-[:uses]->StandingIllustration` 边），定稿不承载任何演出标注。**残留 `[表情]` 会在拆分时报错**（parse_ink 拒绝带方括号的说话行，报行号+原文）。pos 不进定稿（拆分时定）。
 3. **旁白行**：`旁白:叙述`——一行一句，承载环境/动作/心理等非台词叙述。
-4. **音频三型（v3，只写声音语义、不写资产名；旧「环境音」两型已废止——写了报错）**：
+4. **音频三型（v3，只写声音语义、不写资产名；三型之外的音频行型 parse_ink 一律报错）**：
    - **点状音效**（独立行）：`sfx:语义描述`——极短声音（1~2 秒）运行时**播完再接下一句**台词/旁白（如推门风铃/开门吱呀/远处闷雷）。进图 op=transition，下游 Freesound CC0 实录。
    - **音床起止对**：`bed+ <id> // 语义描述` … `bed- <id>`——区间持续声景**循环播放**（如雨声/街道底噪/电流嗡鸣）。id 限 ASCII 字母数字下划线，同场景块内配对，多床并行/嵌套合法；起止行之间的叙述即床的覆盖区间。进图 op=bed_start（语义=text，AudioFly 声景 ~10s 首尾淡入淡出）/ op=bed_end。
    **克制使用**——只标记叙事上有意义的声音（不是每段旁白都配床），与「短节克制手法」取向一致。

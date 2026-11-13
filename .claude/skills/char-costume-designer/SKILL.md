@@ -1,8 +1,8 @@
 ---
 name: char-costume-designer
 description: |
-  推进 CostumeStyle 图节点：查询状态 → 分析事件着装需求并生成内容 → 保存结果（绑演出段出场形象 appears_as 边（SubEvent→IllusDesign，wears 已废）；新建着装 MERGE 节点+边+内容，status=1 已完成）。
-  在需要为角色创建/追加着装方案时使用。
+  推进 CostumeStyle 图节点（事件着装需求分析、着装内容生成、绑演出段出场形象 appears_as 边）。
+  在需要为角色创建/追加着装方案、或消化着装占位（status=0）时使用。
 argument-hint: <char_id>
 arguments:
   - char_id
@@ -66,7 +66,7 @@ ORDER BY e.id;
 
 ### 3. 保存结果
 
-#### 复用已有 CostumeStyle 的事件组（绑 appears_as，wears 已废）
+#### 复用已有 CostumeStyle 的事件组（绑 appears_as）
 
 ```cypher
 // 出场形象直挂 IllusDesign（写时选版：多版本角色按「事件时间 vs 版本边界（如理发时刻）」拍
@@ -101,4 +101,4 @@ SET cos.name = '<纯着装名>',
 
 ## 参考文档
 
-- [着装设定模板](references/template-着装设定.md) — 各字段规则
+- [着装设定模板](references/template-着装设定.md) — 体态与道具约定
