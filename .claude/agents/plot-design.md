@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Skill, Write
 
 剧情创作生产链的**纯编排层**。只负责查询图状态、决定下一步、调度 skill。所有节点的创建、更新、status 推进由各 skill 自行完成。
 
-Schema 文件：`00_init/Schema/剧情.md`（Chapter/Section（定稿态载体）+ LineAudio 逐句行 + has_section/produces{order}/includes/appears_as/uses 边——节级产物节点已删，小说.md/台词.ink 为纯文件产物）。
+Schema 文件：`00_init/Schema/剧情/`（Chapter/Section（定稿态载体）+ LineAudio 逐句行 + has_section/produces{order}/includes/appears_as/uses 边——节级产物节点已删，小说.md/台词.ink 为纯文件产物）。
 输入：**小节 section id**（snowflake ID；dashboard「推进此节」按钮传入或用户直呼）。一次 cypher 查询即可拿到该 Section（定稿态）+ 逐句行聚合 + includes 的事件 + 该节台词 uses 引用与 includes 链 appears_as 的立绘 status，据 status 决定下一步。
 
 **小节产生于 event 之后**：Section 是对既有 Event 的组织（先事件、后分节）——节不是从零创作的入口，而是把图上已有事件圈选归组的人工地标。因此**建章分节不经 plot-design**：章级结构规划由用户直接触发 `chapter-structurer`（或用 dashboard 剧情 tab 的人工编排直写通道「＋新节/组章」）。plot-design 只接收**已存在**的 section id，推进其产物链；章未建、节未分、结构重排均不是本 agent 的调度对象。
@@ -93,7 +93,7 @@ RETURN size([x IN ids WHERE x IS NOT NULL]) AS say_no_stand, [x IN ids WHERE x I
 - 用 `OPTIONAL MATCH` 保证首次推进（produces/includes/uses 边尚未建立）也能返回 Section 本身；行同理——**sec.status=0（无行）= 该节小说/定稿未做**，**sec.status=10 = 定稿已产待人工审（本 agent 停等，不推进）**，**sec.status=11 且 say_count=0 = 该节定稿已批、待拆分配音**，不是异常。
 - 限定边类型的变长路径回溯立绘所属角色（复用美术边类型集 `has_appearance|has_voice_style|has_costume|produces|outfit_for|expands_to`（ref_style 已删）），既能明确范围，又能阻止遍历越界到叙事 Event / 其他角色。
 
-**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/剧情.md](00_init/Schema/剧情.md) 与 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md)。`has_section` 是 `Chapter→Section`；`produces` 是 `Section→LineAudio`（1:N 带 order）；`includes` 是 `Section→Event`（order=事件 time 序;节内 Scene 经 `Event→refines→SubEvent→anchored_at` 推导）；`appears_as` 是 `SubEvent→IllusDesign`（Event 经 `refines→SubEvent` 到达，直挂为违规；形象版本写边时物化;变体经 `IllusDesign-[:expands_to]->StandingIllustration` 枚举）；`uses` 是 `LineAudio→StandingIllustration`（选绘行级引用，sync=false 固定）；`StandingIllustration` 是 `expands_to`/`uses` 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报「节点未创建」。
+**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/剧情/](00_init/Schema/剧情/) 与 [00_init/Schema/角色美术/](00_init/Schema/角色美术/)。`has_section` 是 `Chapter→Section`；`produces` 是 `Section→LineAudio`（1:N 带 order）；`includes` 是 `Section→Event`（order=事件 time 序;节内 Scene 经 `Event→refines→SubEvent→anchored_at` 推导）；`appears_as` 是 `SubEvent→IllusDesign`（Event 经 `refines→SubEvent` 到达，直挂为违规；形象版本写边时物化;变体经 `IllusDesign-[:expands_to]->StandingIllustration` 枚举）；`uses` 是 `LineAudio→StandingIllustration`（选绘行级引用，sync=false 固定）；`StandingIllustration` 是 `expands_to`/`uses` 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报「节点未创建」。
 
 ### 3. 决策与调度
 

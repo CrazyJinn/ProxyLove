@@ -4,7 +4,7 @@ section-voice-publisher 配音判断期的选绘两步（3b 之前的候选、3b
   candidates  查图产候选池 JSON（每 (scene_block, who) 的可选立绘 + 兜底 IllusDesign 决策）
   apply       读 tasks JSON 的 stand 字段 → 新变体兜底建 + uses 边幂等替换
 
-设计约束（00_init/Schema/剧情.md uses 边）：
+设计约束（00_init/Schema/剧情/边.md uses 边）：
   - 选绘范围 ⊇ 配音挑行：say 且 status∈{0,-1}，另含 status=10 且无 uses 边的
     补选绘行（先配音、角色着装链后建的时序坑，链就绪后回头补选绘；配音挑行
     voice_bundler.collect_graph_tasks 仍只认 {0,-1}，两范围自此不再相同。
@@ -326,7 +326,7 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                 built_ids.add(sid)
                 stmts.append(
                     f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
-                    f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"  # 字段清单以 00_init/Schema/角色美术.md StandingIllustration 表为准
+                    f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"  # 字段清单以 00_init/Schema/角色美术/StandingIllustration.md 表为准
                 )
                 stmts.append(
                     f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}}), "

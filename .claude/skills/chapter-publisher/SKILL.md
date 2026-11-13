@@ -199,5 +199,5 @@ python 99_game/tools/chapter_packs_updater.py '<stem>' \
 - 章资源清单更新器：[99_game/tools/chapter_packs_updater.py](../../../99_game/tools/chapter_packs_updater.py)
 - 剧本加密（Web）：[99_game/tools/encrypt_chapter.py](../../../99_game/tools/encrypt_chapter.py) ↔ 运行时 [99_game/scripts/util/ScriptCipher.gd](../../../99_game/scripts/util/ScriptCipher.gd)
 - 章包加载（运行时）：[99_game/scripts/autoload/ChapterPackLoader.gd](../../../99_game/scripts/autoload/ChapterPackLoader.gd)
-- id 锚定与 hexid：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) 头部注记 + [snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)
-- 剧情 Schema（Chapter/Section/has_section/LineAudio）：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md)
+- id 锚定与 hexid：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) 头部注记 + [snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)
+- 剧情 Schema（Chapter/Section/has_section/LineAudio）：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/)

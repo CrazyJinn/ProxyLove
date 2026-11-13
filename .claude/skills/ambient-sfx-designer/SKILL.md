@@ -95,7 +95,7 @@ env/.venv-audiofly/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/ambient_fly.p
 ```bash
 # 校验：ls 母带文件存在且 >10KB，任一缺失停止不写图
 python .claude/scripts/cypher_exec.py --stdin --multi <<'EOF'
-MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.master_pat   // ← 字段名以 00_init/Schema/剧情.md「台词音频（LineAudio）」节字段表为准，表外不加h='<master_path>', l.status=10;
+MATCH (l:LineAudio {id:'<node_id>'}) SET l.ambient_track='<track>', l.master_pat   // ← 字段名以 00_init/Schema/剧情/LineAudio.md 字段表为准，表外不加h='<master_path>', l.status=10;
 EOF
 ```
 
@@ -121,7 +121,7 @@ EOF
 
 ## 参考文档
 
-- 行模型：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md)（LineAudio op=transition/bed_start/bed_end / bed / ambient_track / status）
+- 行模型：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/)（LineAudio op=transition/bed_start/bed_end / bed / ambient_track / status）
 - 键生成与母带路径：[voice_bundler.py](../section-voice-publisher/scripts/voice_bundler.py)（make_ambient_track / make_master_path）
 - AudioFly 环境（env/.venv-audiofly 重建）与能力边界：[ambient_fly.py](scripts/ambient_fly.py) 模块 docstring
 - Freesound 素材登记：[15_声音/sfx_raw/SOURCES.md](../../../15_声音/sfx_raw/SOURCES.md)

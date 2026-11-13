@@ -121,7 +121,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
-2. 调性/陈设类字段的职责分工（氛围与天气 vs 机位小物，剧情一次性物件与角色持物不写）以 [00_init/Schema/场景美术.md](../../../00_init/Schema/场景美术.md) 字段表说明为准（撰写见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §1/§4）。
+2. 调性/陈设类字段的职责分工（氛围与天气 vs 机位小物，剧情一次性物件与角色持物不写）以 [00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) 字段表说明为准（撰写见 [Schema总览.md](../../../00_init/Schema总览.md) 属性撰写总则）。
 
 **2d. 维护 Room DSL（room.yml —— 3D 布局真源）**
 
@@ -149,8 +149,6 @@ MERGE (sp:Spot {id: '<snowflake_id>'})
   ON CREATE SET sp.name = '<Location名>-<区域>', sp.kind = 'zone', sp.description = '...';
 MATCH (sp:Spot {id: '<snowflake_id>'}), (l:Location {id: '<loc_id>'})
 MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync = false;   // 方向 Location→Spot
-// Location 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；空间化处理即消化，REMOVE 对无 status 者无害）
-MATCH (l:Location {id: '<loc_id>'}) REMOVE l.status;
 // 事件归组（occurs_at→Location 恒保留不动；重指只删本 Location 范围旧 anchored_at——跨地点事件其他地点的归组不动）
 // （旧 Scene 的 Location 归属经 realizes←Spot←part_of 链判定，与 1b② 未归组查询同构）
 MATCH (e:Event {id: '<event_id>'})-[:refines]->(sub:SubEvent)
@@ -162,15 +160,13 @@ MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.syn
 
 #### Scene 写入（MERGE 节点 + realizes 边，status=1 已完成）
 
-**字段名以 Schema 为准**：Read [00_init/Schema/场景美术.md](../../../00_init/Schema/场景美术.md) 的「场景（Scene）」节——SET 字段清单对照该表生成，表外字段一律不写（vibe/deco 撰写见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §1/§4）。
+**字段名以 Schema 为准**：Read [00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) 的「场景（Scene）」节——SET 字段清单对照该表生成，表外字段一律不写（vibe/deco 撰写见 [Schema总览.md](../../../00_init/Schema总览.md) 属性撰写总则）。
 
 ```cypher
 MERGE (s:Scene {id: '<snowflake_id>'})
   ON CREATE SET s.status = 0;
 MATCH (sp:Spot {id: '<spot_id>'}), (s:Scene {id: '<snowflake_id>'})
 MERGE (sp)-[r:realizes]->(s) ON CREATE SET r.sync = false;
-// Spot 占位消化归空（占位 status=0 是 event-stager 的待细化标记；realizes 出 Scene 即消化，REMOVE 对无 status 者无害）
-MATCH (sp:Spot {id: '<spot_id>'}) REMOVE sp.status;
 MATCH (s:Scene {id: '<snowflake_id>'})
 SET s.name = '<Location名-区域>',
     s.scene_type = '...', s.time_of_day = '...',
@@ -192,7 +188,7 @@ SET sp.dsl_path = '07_场景美术/<hexid(loc_id)>/<hexid(spot_id)>/<hexid(spot_
 
 ## 参考文档
 
-- [场景美术 Schema](00_init/Schema/场景美术.md) — Location/Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
+- [场景美术 Schema](00_init/Schema/场景美术/) — Location/Spot/Scene 节点字段、anchored_at/part_of/realizes 边、scene_type 与所需图层
 - [room.yml v3 速查](references/room-yml-v3.md) — 结构模板/校验规则/立绘安全区阈值/数值基线/外景模板/例句（写 yaml 前必读）
-- [剧情 Schema](00_init/Schema/剧情.md) — Event 节点、occurs_at/involved 边
+- [剧情 Schema](00_init/Schema/剧情/) — Event 节点、occurs_at/involved 边
 - [场景美术风格](00_init/美术风格.md) — 渲染与色彩基调、提示词硬约束（风格收尾串）

@@ -11,14 +11,14 @@ tools: Read, Grep, Glob, Bash, Skill, Write
 
 角色视觉 + 声音生产链的**编排层**。**职责是分发与驱动**：查询图状态 → 决定下一步 → 用 `Skill` 工具加载对应生产 skill 并按其流程执行 → 复查 status → 汇报。char-design **不亲自用 Bash 写 cypher 写入、不亲自跑 snowflake、不凭空手写提示词内容**；但 Skill 工具是扁平的——加载 `char-design-sheet` / `char-illus-designer` 后，char-design 即在该 skill 的流程内继续执行其三段式（查状态 → 组装/生成 → 保存结果写 status），**包括按该 skill 的指示调用其声明的子 skill**（`char-prompt-assembler` / `infra-image-generator`），这是预期行为，不是越界。所有图节点的创建、更新、status 推进最终都由生产 skill 的「保存结果」步统一写入。
 
-Schema 文件：`00_init/Schema/角色美术.md`（美术）+ `00_init/Schema/声音.md`（VoiceDesign 声音设计）
+Schema 文件：`00_init/Schema/角色美术/`（美术）+ `00_init/Schema/声音/`（VoiceDesign 声音设计）
 输入：**角色名或 ID**（如"陆择"、snowflake ID）。美术子图节点类型固定，一次 cypher 查询即可拿到全部节点的 status，据 status 决定下一步。
 
 **设计图版本链（多版本形象）**：剧情永久外貌变更（如 sec02 剪发）走 DesignSheet 增量版本——输入含 `from <参考版ds_id> <口述改动>`（口述须含变更描述 + 生效点 `ch<NN>/sec<MM>`）时，委派 `char-design-sheet` 增量模式（图生图，参考版设计图为底，仅变更口述维度）；推进多版本角色的 IllusDesign 时透传 `design_sheet=<ds_id>` 控出图范围。状态查询天然容忍多版本（返回多行 DS）；**汇报按版本逐个交代**（各版本 active_from/status）。
 
 **DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（路径锚 `Character.ref_image_path` 属性 = `06_角色美术/<char_id>/参考图.jpg`，推荐经 dashboard 角色详情页上传——自动压缩、规范命名并写属性）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
 
-**占位消化模式（status=0 挂账）**：event-stager/event-ideator 经建议 JSON 创建的占位节点（CostumeStyle/IllusDesign/Character，status=0）由本 agent 消化——入口查询天然圈到（0 与 -1 同为待办）；占位节点在图上的位置（挂在哪个 CostumeStyle 下、被哪个 sub 的 appears_as 引用）自带需求上下文，按既有链路补全字段并推进生产即可。**占位 Character（无外貌链的裸节点）由本 agent 兜底创建外貌链**（AppearanceStyle 起），这是 Q2 拍板的分工：ideator 只建裸节点，链由本侧现场建。
+**占位消化模式**：event-stager/event-ideator 经建议 JSON 创建的占位节点由本 agent 消化——流水线占位（CostumeStyle/IllusDesign，status=0 待生产）入口查询天然圈到（0 与 -1 同为待办）；占位节点在图上的位置（挂在哪个 CostumeStyle 下、被哪个 sub 的 appears_as 引用）自带需求上下文，按既有链路补全字段并推进生产即可。**占位 Character（无 has_appearance 出边的裸骨架，无 status——缺口由结构表达）由本 agent 兜底创建外貌链**（AppearanceStyle 起），这是 Q2 拍板的分工：ideator 只建裸节点，链由本侧现场建。
 
 ---
 
@@ -48,7 +48,7 @@ RETURN DISTINCT labels(n)[0] AS type, n.id AS id, n.name AS name, n.status AS st
 ORDER BY type, status
 ```
 
-**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/角色美术.md](00_init/Schema/角色美术.md) 的「方向验证」表。`IllusDesign` 是 `outfit_for`(CostumeStyle→) 与 `produces`(DesignSheet→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
+**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/角色美术/](00_init/Schema/角色美术/) 的「方向验证」表。`IllusDesign` 是 `outfit_for`(CostumeStyle→) 与 `produces`(DesignSheet→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
 
 ### 3. 决策与调度
 

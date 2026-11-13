@@ -11,7 +11,7 @@ tools: Read, Grep, Glob, Bash, Skill, Write, AskUserQuestion
 
 场景美术 + BGM 生产链的**纯编排层**。只负责查询图状态、决定下一步、调度 skill。所有节点的创建、更新、删除由各 skill 自行完成。
 
-Schema 文件：`00_init/Schema/场景美术.md`（Spot/Scene/SceneLayer + anchored_at/part_of/realizes）+ `00_init/Schema/声音.md`（BgmTrack / `Scene-has_bgm->BgmTrack`）
+Schema 文件：`00_init/Schema/场景美术/`（Spot/Scene/SceneLayer + anchored_at/part_of/realizes）+ `00_init/Schema/声音/`（BgmTrack / `Scene-has_bgm->BgmTrack`）
 输入三态：**Location 名/ID**（如「咖啡店」、Location snowflake ID）→ 推进该 Location 的全链（Spot 归组 + Scene）；**spot 名/ID**（如「卧室」、「八楼出租屋-卧室」，兼容用法）→ 经 part_of 定位所属 Location 后走全流程（归组天然覆盖该 spot）；**无参** → 全图扫描待办 Location 汇报清单。一次 cypher 查询即可拿到全部节点的 status，据 status 决定要推进的 Location。
 
 > **BGM 归本链编排**（`Scene -has_bgm-> BgmTrack`，1:1，人工生成链）：BgmTrack 缺口（无节点或 status∈{-1,0}）→ 调 `bgm-designer`（自行兜底建节点 + 产音乐描述文字 → status=1）→ **用户用 Suno 类外部工具手动生成 wav 归档 `13_BGM/<bgm_id>/<bgm_id>.wav`（hexid 目录）** → 再次调 `bgm-designer`（或 dashboard 编辑器）检测文件存在 → status=2（音频已归档，completion）。无审批。plot-design 不查不调 BgmTrack（发布时 publisher 对 status<2 的警告跳过）。
@@ -64,7 +64,7 @@ RETURN l.name AS loc, l.id AS loc_id, count(e) AS ungrouped ORDER BY ungrouped D
 - **图层缺口排查**需单独一查（SceneLayer 节点不存在时主查询查不到；dialogue 型 Scene=1 即需 background 层）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.status = 1 AND s.scene_type = 'dialogue' AND NOT (s)-[:has_layer]->(:SceneLayer {layer_type:'background'}) RETURN s.id AS scene_id, s.name AS name`，命中的按其 realizes 源 spot 归组，委派 `scene-layer-designer <scene_id>`。
 - **BgmTrack 缺口排查**需单独一查（has_bgm 是边，节点不存在时查不到）：对涉及的 status=1 Scene 查 `MATCH (s:Scene) WHERE s.id IN [...] OPTIONAL MATCH (s)-[:has_bgm]->(b) RETURN s.name, b.id, b.status`，`b IS NULL` 的即缺口，由 `bgm-designer` 兜底建。
 
-**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/场景美术.md](00_init/Schema/场景美术.md) 与 [00_init/Schema/声音.md](00_init/Schema/声音.md) 的「方向验证」表。`SceneLayer` 是 `has_layer`(Scene→)、`BgmTrack` 是 `has_bgm`(Scene→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
+**写边严格按 Schema 方向（上游→下游）**，见 [00_init/Schema/场景美术/](00_init/Schema/场景美术/) 与 [00_init/Schema/声音/](00_init/Schema/声音/) 的「方向验证」表。`SceneLayer` 是 `has_layer`(Scene→)、`BgmTrack` 是 `has_bgm`(Scene→) 的**目标端**（入边），不是源——把方向写反会让 MATCH 静默返回空，进而误报"节点未创建"。
 
 ### 3. 决策与调度
 

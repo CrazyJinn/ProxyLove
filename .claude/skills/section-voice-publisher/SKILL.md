@@ -205,4 +205,4 @@ status=10 的行进 dashboard 审批中心「逐句音频审」（按节分组�
 - 挑行与绑定：[voice_bundler.py](scripts/voice_bundler.py)（make_voice_key / tasks-from-graph --nodes / bind-graph）
 - 基线音色设计：[char-voice-design](../char-voice-design/SKILL.md)（VoiceDesign 生成）
 - 合并衔接：[chapter-publisher](../chapter-publisher/SKILL.md)（voice_key 随图投影进章 JSON + 补 manifest/chapter_packs）
-- 声音 Schema：[00_init/Schema/声音.md](../../../00_init/Schema/声音.md)（含 BgmTrack）
+- 声音 Schema：[00_init/Schema/声音/](../../../00_init/Schema/声音/)（含 BgmTrack）

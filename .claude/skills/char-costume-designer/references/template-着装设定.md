@@ -1,7 +1,7 @@
 # 着装设定模板
 
 > 为角色的事件场景设计着装方案，写入 CostumeStyle 图节点。
-> Schema 定义见 `00_init/Schema/角色美术.md`。
+> Schema 定义见 `00_init/Schema/角色美术/CostumeStyle.md`。
 
 ---
 

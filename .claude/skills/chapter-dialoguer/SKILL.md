@@ -181,7 +181,7 @@ MATCH (sec:Section {id:'<sec_id>'}) SET sec.status = 10;
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})
-SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink  ← 字段名以 Schema/剧情.md「节（Section）」表为准
+SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink  ← 字段名以 Schema/剧情/Section.md 表为准
     sec.status = 10;            // 定稿产出待审（-1 作废节经此恢复到待审）
 ```
 
@@ -193,6 +193,6 @@ SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink  ← 字段
 
 ## 参考文档
 
-- 剧情 Schema：[00_init/Schema/剧情.md](../../../00_init/Schema/剧情.md) — Section（定稿态载体）/LineAudio 逐句行/produces{order}
+- 剧情 Schema：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) — Section（定稿态载体）/LineAudio 逐句行/produces{order}
 - 上游：[chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
 - 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 已批后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）

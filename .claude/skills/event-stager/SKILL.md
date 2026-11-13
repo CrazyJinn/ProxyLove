@@ -7,7 +7,7 @@ description: |
   location scene 链）并拆解 SubEvent（戏剧节拍分析→动作与状态变化分析→
   演出价值判断→模式库校验——模式只做查遗漏，不做生成依据）；
   ③占位物化——为每个 sub 构建 IllusDesign←appears_as←SubEvent→anchored_at→Scene
-  链条，缺口建占位节点（status=0）：Spot/Scene/CostumeStyle/IllusDesign 均可建
+  链条，缺口建占位节点：Spot/Scene/CostumeStyle/IllusDesign 均可建（Spot 为无 status 骨架，其余为流水线 status=0 起点）
   （叙事侧拍定哪个房间哪套衣服）；④逐 event 询问确认 + 产出建议 JSON（人工经
   dashboard 写回）。多轮交互一次一问、每问附推荐；单轮至多 3 个 event。在用户说
   「细化」「stager」「这批事件细化一下」或给出事件范围要求推进机位层时使用。
@@ -22,7 +22,7 @@ allowed-tools: Read, Bash, Write
 
 目标：把粗粒度 Event 物化成机位级演出段（SubEvent），并把演出所需实体**全部占位物化**
 （需求细化层——演出侧叙事决策在本层发生，创建权就在本层）。缺口处置一律
-「占位节点（status=0）」——占位在图上的位置自带需求上下文，可被独立消化。
+「占位节点」——占位在图上的位置自带需求上下文，可被独立消化（Spot 骨架无 status；CostumeStyle/IllusDesign 的 status=0 是流水线起点，非占位标记）。
 
 > **交互通道（铁律）**：多轮交互一次一问、每问附可归因推荐；用户逐 event 拍板后组装
 > **建议 JSON** 落盘 `02_剧情数据/<日期>_round<N>_<主题>_stager_建议.json`——必须
@@ -51,7 +51,7 @@ OUTPUT_DIR="02_剧情数据"
 
 - **创建域 = 演出域四类占位 + SubEvent**：
   1. `SubEvent` 节点 + `refines` 边（Event→SubEvent，sync=true）；
-  2. `anchored_at` 边（SubEvent→Scene——**Scene 不存在时建 Scene 占位** status=0，
+  2. `anchored_at` 边（SubEvent→Scene——**Scene 不存在时建 Scene 占位**（流水线 status=0 起点），
      挂 realizes 到既有 Spot；Spot 也不存在时建 Spot 占位）；
   3. `appears_as` 边（SubEvent→IllusDesign——优先继承父/兄弟 sub 着装；着装套不
      存在时建 CostumeStyle 占位、形象版本不存在时建 IllusDesign 占位）；着装占位
@@ -82,8 +82,8 @@ OUTPUT_DIR="02_剧情数据"
 ```
 
 - SubEvent 属性仅 id/title/time/description；**无** status/type/involved/occurs_at。
-- 占位节点属性：id + status=0 + 最小必要字段（Spot: name/kind/description；Scene:
-  name/scene_type；CostumeStyle: name/outfit_style；IllusDesign: 裸节点仅 id+status=0）
+- 占位节点属性：id + 最小必要字段（Spot: name/kind/description——**无 status 骨架**；Scene:
+  name/scene_type、CostumeStyle: name/outfit_style、IllusDesign: 裸节点——**流水线 status=0 起点**，含义是"待生产"非"占位标记"）
   ——完整字段下限待消化实践反馈后固化，当前给名称即可被消化（着装补充说明可选写
   `cs.notes`）。
 - **Event 直挂 anchored_at/appears_as 为违规**（EA5 体检兜查）。
@@ -116,7 +116,7 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
 - **批次切分**：单轮上限 3 个 event（批量约束），超出时脚本 `batch` 段已切好
   （本轮时间最早 3 个，余者列入汇报「下轮可细化」）；
 - **演出资源现状**：`assets` 段（每 involved char 立绘链 / 每 involved char 着装
-  直查表（`costumes`——含 status=0 占位，**同缺口勿重复建占位**）/ 每 location
+  直查表（`costumes`——含流水线 status=0 占位，**同缺口勿重复建占位**）/ 每 location
   空间链）——第 2 步拆解的全部 facts，不必重查。
 
 ### 2. 探索演出资源 + 拆解 SubEvent
@@ -204,13 +204,13 @@ sub 写成微剧本 = 三重绑架下游：novelist 被迫消化图上的细节�
 sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/背景画面——人物姿势、
 表情、位置属于立绘与演出指令层，不塞进 Scene，也不在 sub 里做镜头设计。
 
-### 3. 占位物化（缺口 → status=0 占位）
+### 3. 占位物化（缺口 → 占位节点）
 
 对每个 sub 的链条 `IllusDesign←appears_as←sub→anchored_at→Scene` 逐环检查，缺则占位：
 
 | 缺口 | 占位节点（cypher 要点） |
 |---|---|
-| 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,status:0,name,kind:'zone',description})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错） |
+| 空间不存在（新房间/新位置） | `CREATE (sp:Spot {id,name,kind:'zone',description})` + `(l)-[:part_of]->(sp)`（Location 必已存在，否则走入口核验报错；Spot 骨架无 status） |
 | 机位不存在 | `CREATE (sc:Scene {id,status:0,name,scene_type})` + `(sp)-[:realizes]->(sc)` |
 | 服装套不存在 | `CREATE (cs:CostumeStyle {id,status:0,name,outfit_style})` + `(ch)-[:has_costume]->(cs)`（归属角色 = 该着装缺口所属 involved 角色，占位即挂边） |
 | 形象版本不存在 | `CREATE (idn:IllusDesign {id,status:0})` + `(cs)-[:outfit_for]->(idn)`；着装补充写 `cs.notes` |
@@ -265,11 +265,11 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 
 ```
 // ── 占位节点：节点本体与挂边各自独立语句，挂边两端点各自 MATCH 绑定 ──
-// ⚠ 字段名以 Schema 为准：本模板各占位只写「最小启动集」（status=0 占位标记 + 定位字段），
+// ⚠ 字段名以 Schema 为准：本模板各占位只写「最小启动集」（流水线起点 status=0 或定位字段——Character/Location/Spot 骨架无 status），
 //    其余字段由消化方（scene-designer/char-design 链）按各自 Schema 字段表补全——
 //    建议 JSON 生成时字段名不凭记忆，对照 00_init/Schema/ 对应节点节核对（表外字段一律不写）。
 // Spot 占位（空间缺口）——节点本体
-CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;  // status=0 仅占位标记；scene-designer 建 Scene（消化）后 REMOVE 归空
+CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>';  // Spot 骨架无 status：待细化缺口由「无 realizes 出边」结构表达，scene-designer 建 Scene 即消化
 // part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
 MATCH (l:Location {id:'<loc_id>'}) MATCH (sp:Spot {id:'<snowflake>'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;
 // Scene 占位（机位缺口）——节点本体
@@ -309,5 +309,5 @@ MATCH (e:Event {id:'<event_id>'}) MATCH (l:Location {id:'<loc_id>'}) MERGE (e)-[
 
 - [references/微演出模式库.md](references/微演出模式库.md) — §2 第 4 步校验时读（十一种模式范式+不拆反例+自检清单）
 - [references/占位命名规范.md](references/占位命名规范.md) — §3 占位物化时读（四类命名模式+查重自检）
-- [剧情.md](../../../00_init/Schema/剧情.md)（Event/SubEvent/Hook/Lore）/ [场景美术.md](../../../00_init/Schema/场景美术.md) / [角色美术.md](../../../00_init/Schema/角色美术.md)
+- [剧情.md](../../../00_init/Schema/剧情/)（Event/SubEvent/Hook/Lore）/ [场景美术.md](../../../00_init/Schema/场景美术/) / [角色美术.md](../../../00_init/Schema/角色美术/)
 - 方法论溯源：工作区根《event-ideator与event-stager功能定稿方案.md》§3/§6/§8.2

@@ -15,7 +15,7 @@ section-voice-publisher 第一步「拆分进图」的唯一实现。把已确�
   align     定稿行 vs 图已有行 difflib 对齐（签名 = op+who+text）→ 保留/更新/新建/删除
   split     经 cypher_exec.py（--stdin --multi 单事务）写图 + 产出报告 JSON
 
-数据模型（00_init/Schema/剧情.md）：
+数据模型（00_init/Schema/剧情/ 各节点文件）：
   行身份 = 节点雪花 id（voice key 末段，插入/删除行不影响其他行）
   顺序   = produces 边 order：初始 (i+1)*1000；两句之间插入取 (上+下)//2 中点；
            同缝隙多行均分；中点耗尽（分配后非严格递增）→ 全节重排（order 不进

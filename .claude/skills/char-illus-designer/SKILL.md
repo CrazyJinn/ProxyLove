@@ -51,7 +51,7 @@ RETURN ch.name AS char_name,
 
 ### 2. 完成任务
 
-**先读字段表**：Read [00_init/Schema/角色美术.md](../../../00_init/Schema/角色美术.md) 的「立绘设计图（IllusDesign）」节——字段全集以该表为准，不凭记忆写字段。
+**先读字段表**：Read [00_init/Schema/角色美术/](../../../00_init/Schema/角色美术/) 的「立绘设计图（IllusDesign）」节——字段全集以该表为准，不凭记忆写字段。
 
 对每组 (ds, cos) 推进：
 

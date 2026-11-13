@@ -121,7 +121,7 @@ MATCH (s:Scene {id: '<scene_id>'}), (sl:SceneLayer {id: '<layer_id>'})
 MERGE (s)-[r:has_layer]->(sl) SET r.sync = true;
 // 写产物 + 推进 status
 MATCH (sl:SceneLayer {id: '<layer_id>'})
-SET sl.name = '<scene_name>-背景',   // ← SET 字段清单以 00_init/Schema/场景美术.md「场景图层（SceneLayer）」节字段表为准，表外不加
+SET sl.name = '<scene_name>-背景',   // ← SET 字段清单以 00_init/Schema/场景美术/SceneLayer.md 字段表为准，表外不加
     sl.prompt_path = '<PROMPT_PATH>',
     sl.image_path  = '<IMAGE_PATH>',
     sl.status = 10;                      // 图片完成即待审（直写，不经 submit）
@@ -132,6 +132,6 @@ SET sl.name = '<scene_name>-背景',   // ← SET 字段清单以 00_init/Schema
 ## 参考文档
 
 - 提示词组装：DSL 链 = `.claude/scripts/slice_scenes.py --emit-prompt`（现场投影直写 prompt.md）；自由文本链 = [scene-prompt-assembler](../scene-prompt-assembler/SKILL.md) 模式 A（dsl_path 为空的存量）
-- [场景美术 Schema](../../00_init/Schema/场景美术.md) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
+- [场景美术 Schema](../../00_init/Schema/场景美术/) — Scene/SceneLayer 字段、dsl_path 契约（挂 Spot）
 - 图片生成：[infra-image-generator](../infra-image-generator/SKILL.md)
-- id 锚定与 hexid：[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)（`-x` 转换）+ [Schema/场景美术.md](../../00_init/Schema/场景美术.md) 头部注记
+- id 锚定与 hexid：[snowflake_base62.py](../../../.claude/scripts/snowflake_base62.py)（`-x` 转换）+ [Schema/场景美术/](../../00_init/Schema/场景美术/) 头部注记

@@ -30,7 +30,7 @@ SKILL_DIR = Path(__file__).resolve().parents[1]          # .../skills/event-idea
 ROOT = SKILL_DIR.parents[2]                               # 项目根
 CYPHER_EXEC = ROOT / ".claude" / "scripts" / "cypher_exec.py"
 
-# 三实体之间流转的叙事基础边（Schema/剧情.md 出边表归纳；Hook/Lore/Choice 中转由节点过滤排除）
+# 三实体之间流转的叙事基础边（Schema/剧情/边.md 出边表归纳；Hook/Lore/Choice 中转由节点过滤排除）
 EDGE_TYPES = "involved|occurs_at|at|relation|leads_to"
 MAX_HOPS = 4
 

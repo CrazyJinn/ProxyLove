@@ -44,7 +44,7 @@ CLI 用法：
 5. 属性名严格按 Schema 英文名：如 prompt_path、image_path、status、sync。
 6. 查询加 LIMIT：避免全表扫描，如 ... RETURN n LIMIT 50。
 7. 多语句按依赖排序：先建节点、再建边；--multi 在单事务内顺序执行。
-8. status 白名单：仅 -1/0/1/2/10/11（见 00_init/Schema/角色美术.md 与治理后台
+8. status 白名单：仅 -1/0/1/2/10/11（见 00_init/Schema/（各域节点文件 status 枚举）与治理后台
    dailian-dashboard 的 app/services/status.py）。生产态 0/1/2，审批专属 10(待审)/11(批准)，作废 -1。
 9. --multi 只按 ; 分割语句：仅换行分隔的多条 MATCH...SET 会被拼接为单条查询（变量
    复用使后续 MATCH 退化为过滤条件），每批只有首条生效且退出码 0——静默丢失。
