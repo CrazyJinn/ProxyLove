@@ -65,7 +65,7 @@ RETURN ch.name AS char_name, ch.vibe AS char_vibe,
 
 ```json
 {
-  "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "appearance":"...", "height_cm": "可选 int" },
+  "appearance": { "tags": {"shape_language":"...","age_impression":"...","body_type":"...","skin_tone":"...","ethnicity":"...(可选)","hair":"...","eye":"...","lip_shape":"...","marks":"..."}, "height_cm": "可选 int" },
   "character": { "id":"<char_id>", "name":"<char_name>", "vibe":"<char_vibe>" },
   "base": { "image": "06_角色美术/<char_id>/参考图.<ext>", "summary": "真人参考照片（单张）" },
   "node": { "id":"<DESIGN_ID>" },
@@ -73,7 +73,7 @@ RETURN ch.name AS char_name, ch.vibe AS char_vibe,
 }
 ```
 
-（`appearance` 数据取自第 1 步查询的 `app_data`；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 ds_id 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
+（`appearance` 数据取自第 1 步查询的 `app_data`（纯结构化 tags + height_cm，无自由文本字段）；图里没有的可选字段（`ethnicity`/`height_cm` 等）跳过。重做多版本中某版时：`output_path` 用该版 ds_id 段——见下方路径规则；`appearance.tags` 的 `hair` 等**未随版本变更的字段仍以 AppearanceStyle 为准**，变更过的维度以该版 `delta_notes` 覆盖描述。）
 
 **③ 生成图片**：Skill 工具调用 `infra-image-generator`，参数 `<PROMPT_PATH> <OUTPUT_PATH> <base.image>`（**图生图**，第三参 = 探测到的参考图路径）：`OUTPUT_PATH = 06_角色美术/<char_id>/<ds_id>/设计图.png`。dashboard 上传的参考图已完成压缩（EXIF 转正 + 长边 ≤1536 + JPEG），直接使用；手动放置的原图亦直传。
 

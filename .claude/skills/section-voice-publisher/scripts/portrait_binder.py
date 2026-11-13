@@ -181,7 +181,7 @@ def stands_of_illus(illus_id: str) -> list:
     return _run_cypher(
         "MATCH (:IllusDesign {id:" + _q(illus_id) + "})-[:expands_to]->(st:StandingIllustration) "
         "RETURN st.id AS id, st.variant_label AS variant_label, st.status AS status, "
-        "st.description AS description ORDER BY variant_label"
+        "st.vibe AS vibe ORDER BY variant_label"
     )
 
 
@@ -293,18 +293,18 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
             if not illus_id:
                 errors.append(f"行 {node_id}：{block}/{who} 无着装 IllusDesign，无法兜底建新变体")
                 continue
-            if not (stand.get("description") or "").strip():
-                warnings.append(f"行 {node_id}：新变体 {label} 缺 description（变体氛围），出图把握降级")
+            if not (stand.get("vibe") or stand.get("description") or "").strip():
+                warnings.append(f"行 {node_id}：新变体 {label} 缺 vibe（变体调性），出图把握降级")
             cache_key = (illus_id, label)
             if cache_key not in label_cache:
                 existing = _find_existing_stand(illus_id, label)
                 label_cache[cache_key] = existing or _GEN.next_id_base62()
             planned.append({"node_id": node_id, "stand_id": label_cache[cache_key],
                             "new_variant": {"id": label_cache[cache_key], "variant_label": label,
-                                            "description": (stand.get("description") or "").strip()},
+                                            "vibe": (stand.get("vibe") or stand.get("description") or "").strip()},
                             "who": who, "scene_name": scene_name, "illus_id": illus_id})
         else:
-            errors.append(f"行 {node_id}：stand 须为 stand_id 字符串或 {{variant_label, description}} 对象")
+            errors.append(f"行 {node_id}：stand 须为 stand_id 字符串或 {{variant_label, vibe}} 对象")
 
     if errors:
         raise ValueError("tasks 校验失败（未写图，补齐后重跑）：\n  - " + "\n  - ".join(errors))
@@ -317,7 +317,7 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
     for p in planned:
         nv = p.get("new_variant")
         if nv:
-            sid, label, desc = nv["id"], nv["variant_label"], nv["description"]
+            sid, label, vibe = nv["id"], nv["variant_label"], nv["vibe"]
             existing = _find_existing_stand(p["illus_id"], label)
             if existing:
                 p["stand_id"] = existing          # 查重兜底：同 label 已有则复用
@@ -325,13 +325,13 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
             elif sid not in built_ids:
                 built_ids.add(sid)
                 stmts.append(
-                    f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
-                    f"SET st.variant_label={_q(label)}, st.description={_q(desc or None)}, st.status=0;"
+                    f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
+                    f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"
                 )
                 stmts.append(
-                    f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}), "
-                    f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
-                    f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true, e.variant_label={_q(label)};"
+                    f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}}), "
+                    f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
+                    f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true;"
                 )
                 # Character→has_voice_style 反查（char-stand-designer 前驱）
                 report["counts"]["new_variants"] += 1

@@ -40,7 +40,7 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 2. Schema 是唯一事实来源
 
-节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（剧情 / 角色美术 / 场景美术 / 声音 四个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
+节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（剧情 / 角色美术 / 场景美术 / 声音 / 属性撰写规范 五个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成；**写任何自由文本属性（vibe/description/content/prompt 等）前必须先 Read [00_init/Schema/属性撰写规范.md](00_init/Schema/属性撰写规范.md)**——结构归各模块 Schema，内容写法归该文件。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
 
 **Schema 变更须用户确认**：任何节点/边/字段的增删改（含边属性、枚举值、中文名）都是设计决策——单独列出变更项请用户裁定后再动，非必要不加字段。
 

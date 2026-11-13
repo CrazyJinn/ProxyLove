@@ -52,7 +52,6 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 
 | 维度 | 属性 | 示例 | 说明 |
 |------|------|------|------|
-| 外貌描述 | appearance | `170cm，清冷疏离的气质` | 自由文本（气质 + 身高） |
 | 形状语言 | shape_language | 三角型 / 方型 / 倒三角 / 细长型 / 圆形 / 不对称 | 单选 |
 | 年龄感 | age_impression | 少女 / 青年 / 成熟 / 御姐 / 正太 / 少年 | 单选 |
 | 体态 | body_type | 曼妙 / 修长 / 健壮 / 娇小 / 丰腴 / 少年感 / 匀称 | 单选 |
@@ -63,10 +62,10 @@ LLM 按 [references/template-角色美术设定.md](references/template-角色�
 | 唇形 | lip_shape | 薄唇 / 饱满 / 厚唇 / 微笑唇 | 单选 |
 | 特殊标记 | marks | 无 / 疤痕 / 纹身 / 胎记 / 泪痣 | 可多选 |
 
-**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 Character.vibe / appearance。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。
+**结构化字段纪律**：hair / eye / lip_shape / body_type / skin_tone / marks 等外貌字段只写**客观静态形态**（颜色、形状、长短、发质、固定标记）；禁止情绪/神态/动态/状态类描述（如「目光躲闪」「眼底含笑意」「眼神锐利」「说话时眉梢带动」）——此类只进 Character.vibe（气质归 Character.vibe 单一事实源）。固定佩戴物（眼镜等）归 marks 单一来源，不在 hair / eye 里重复。
 例：✅「琥珀色上挑眼」 ❌「琥珀色上挑眼，眼神凌厉逼人」
 
-**身高抽取（height_cm）**：从刚生成的 `appearance` 文本里识别形如 `NNNcm` / `约NNNcm` 的三位身高，取整数填入 `height_cm`（供下游 IllusDesign 推算立绘显示缩放，见 char-illus-designer）。若 appearance 未给明确身高，填 `null`。
+**身高（height_cm）**：按角色设定身高直接写整数（供下游 IllusDesign 推算立绘显示缩放，见 char-illus-designer）。无明确身高写 `null`——不另设自由文本载体（appearance 已废，气质归 Character.vibe、体型主干归 body_type/shape_language）。
 
 **LanguageStyle**（怪物跳过）：
 
@@ -86,11 +85,10 @@ MATCH (ch:Character {id: '<char_id>'}), (app:AppearanceStyle {id: '<APP_ID>'})
 MERGE (ch)-[r:has_appearance]->(app) SET r.sync = true;
 MATCH (app:AppearanceStyle {id: '<APP_ID>'})
 SET app.name = '<角色名外貌特征>',
-    app.appearance = '...',
     app.shape_language = '...', app.age_impression = '...', app.body_type = '...',
     app.skin_tone = '...', app.ethnicity = '...', app.hair = '...', app.eye = '...',
     app.lip_shape = '...', app.marks = '...',
-    app.height_cm = <身高整数或 null>,   // 从 appearance 抽取三位身高（如 170）；无明确身高写 null
+    app.height_cm = <身高整数或 null>,   // 按设定身高直接写（如 170）；无明确身高写 null
     app.status = 1;
 // Character 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；外貌建档即消化，REMOVE 对非占位无 status 者无害）
 MATCH (ch:Character {id: '<char_id>'}) REMOVE ch.status;

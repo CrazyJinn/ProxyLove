@@ -1,7 +1,7 @@
 ---
 name: bgm-designer
 description: |
-  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/description + status=1 并落盘同名文档 13_BGM/<bgm_id>/<bgm_id>.md（hexid 目录，LLM 直产文本随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<bgm_id>/<bgm_id>.wav。
+  推进 BgmTrack 图节点的描述段（人工生成链的 skill 侧半程）：查 Scene/BgmTrack 状态 →（无节点则自行兜底建 BgmTrack(status=0)+has_bgm 边）→ 依 Scene 氛围生成音乐描述文字 prompt（乐器/节奏/情绪/时长/结构，供 Suno 类外部工具）→ 写图 prompt/vibe + status=1 并落盘同名文档 13_BGM/<bgm_id>/<bgm_id>.md（hexid 目录，LLM 直产文本随写图内联交付）→ **把文字产出给用户**并明示归档路径 13_BGM/<bgm_id>/<bgm_id>.wav。
   音频由用户手动生成并放入预制路径（手工放入文件夹即合格，无审批）；再次触发本 skill（或 dashboard 编辑器）检测文件存在置 status=2。由 scene-design agent 编排触发（Scene → SceneLayer → BgmTrack 链），也可由用户直接触发。
 argument-hint: <scene_name_or_bgm_id>
 arguments:
@@ -31,7 +31,7 @@ MATCH (b:BgmTrack)
 WHERE b.id = '<input>' OR EXISTS {
   MATCH (s:Scene {name:'<input>'})-[:has_bgm]->(b)
 }
-RETURN b.id AS id, b.name AS name, b.status AS status, b.description AS description,
+RETURN b.id AS id, b.name AS name, b.status AS status, b.vibe AS vibe,
        b.prompt AS prompt, b.audio_path AS audio_path
 LIMIT 5
 ```
@@ -68,7 +68,7 @@ RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
 - **情绪基调**：该场景要传递的核心情绪（如「晨间慵懒、轻佻暧昧」）
 - **乐器与织体**：主奏/配器建议（如「电钢琴 + 轻刷镲 + 低音贝斯」）
 - **节奏与速度**：BPM 区间、律动感（如「中慢速 80-95、松散摇摆」）
-- **严禁**：人声——成品 prompt 固定以「严禁人声。」收尾；不加循环/时长/不抢戏等收尾赘述（循环友好等结构要求留在 description 一句话里即可，不进 prompt）
+- **严禁**：人声——成品 prompt 固定以「严禁人声。」收尾；不加循环/时长/不抢戏等收尾赘述（循环友好等结构要求留在 vibe 一句话里即可，不进 prompt）
 
 ### 3. 保存结果
 
@@ -76,7 +76,7 @@ RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
 
 ```cypher
 MATCH (b:BgmTrack {id:'<bgm_id>'})
-SET b.description = '<音乐定位描述，1-2 句>',
+SET b.vibe = '<音乐定位描述，1-2 句——只写音乐本身的味道（情绪/织体感），场景画面与剧情语境不写>',
     b.prompt = '<段 2 产出的生成用文字>',
     b.audio_path = '13_BGM/<bgm_id>/<bgm_id>.wav',   // hexid 段；归档目标路径预置（与 wav 实际落点一致）
     b.mode = 'play',        // 可选，缺省 play
@@ -86,7 +86,7 @@ SET b.description = '<音乐定位描述，1-2 句>',
 
 #### 3a-2. 落盘同名文档 13_BGM/<bgm_id>/<bgm_id>.md（与 wav 同目录配对）
 
-用 **Write 工具**写 `13_BGM/<bgm_id>/<bgm_id>.md`——LLM 直产文本随写图步内联交付，不额外触发。内容含：BgmTrack name/id、关联 Scene、description（音乐定位）、prompt（生成用文字全文）、mode/loop、status 与日期。图与 md 同步写；后续 description/prompt/status 变更时同步更新该文件（段 3b 置 2 时刷新 status 行与归档状态）。
+用 **Write 工具**写 `13_BGM/<bgm_id>/<bgm_id>.md`——LLM 直产文本随写图步内联交付，不额外触发。内容含：BgmTrack name/id、关联 Scene、vibe（音乐定位）、prompt（生成用文字全文）、mode/loop、status 与日期。图与 md 同步写；后续 vibe/prompt/status 变更时同步更新该文件（段 3b 置 2 时刷新 status 行与归档状态）。
 
 #### 3b. 文件检测置 2（status=1 再次触发时，或用户报告已归档时）
 

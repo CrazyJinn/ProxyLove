@@ -147,7 +147,7 @@ RETURN size([x IN ids WHERE x IS NOT NULL]) AS say_no_stand, [x IN ids WHERE x I
 
 **门控**：未组章的自由节不拆分配音（母带目录依赖所属章）；**小说段完成后零停等——同轮连推 dialoguer 直至 台词.ink 置 10**（小说无人工审环节，编排不得在小说→定稿之间插入停等或询问）；小说模式节（有小说.md）dialoguer 必经指纹自检；sec.status ≠ `11`（`0` 未定稿 / `10` 定稿待人工审 / `-1` 作废态）不拆分不配音、不推该节立绘（`-1` 先重走 novelist→dialoguer，`10` 停等 dashboard 批准）；**发布不在 plot-design 职责内**——推进到该节产物就绪（sec.status=11 ∧ 行全 11 ∧ 本节 uses 立绘全 11）即汇报退出，`chapter-publisher` 由用户直接触发。
 
-**节点由 skill 创建**：agent 不直接创建任何图节点或边。Section 节点（含 `status=0`）+ `Section-includes->Event` 边由 `chapter-structurer` 或 dashboard 人工编排直写建立（均在 plot-design 之外，用户触发）；`Section.script_path` + 定稿态（`10` 产出直写、`-1` 恢复到 `10`）由 `chapter-dialoguer` SET 写入（不建节点）；`LineAudio` 逐句行节点 + `Section-[:produces{order}]->行` 边由 `section-voice-publisher` 第一步拆分（script_splitter.py）幂等建，`uses` 边 + 立绘缺口节点（`StandingIllustration status=0` + `expands_to`，description 含变体氛围）由其选绘 apply 步骤（portrait_binder.py）兜底建；缺口立绘的推进由 plot-design 直调 `char-stand-designer`；IllusDesign 上游由 `char-design` 推进（人工触发，plot-design 不跨链）。`chapter-novelist` 零图写入（小说.md 为纯文件；唯一图操作 = stale 重写时显式作废定稿链）。
+**节点由 skill 创建**：agent 不直接创建任何图节点或边。Section 节点（含 `status=0`）+ `Section-includes->Event` 边由 `chapter-structurer` 或 dashboard 人工编排直写建立（均在 plot-design 之外，用户触发）；`Section.script_path` + 定稿态（`10` 产出直写、`-1` 恢复到 `10`）由 `chapter-dialoguer` SET 写入（不建节点）；`LineAudio` 逐句行节点 + `Section-[:produces{order}]->行` 边由 `section-voice-publisher` 第一步拆分（script_splitter.py）幂等建，`uses` 边 + 立绘缺口节点（`StandingIllustration status=0` + `expands_to`，vibe 含变体调性）由其选绘 apply 步骤（portrait_binder.py）兜底建；缺口立绘的推进由 plot-design 直调 `char-stand-designer`；IllusDesign 上游由 `char-design` 推进（人工触发，plot-design 不跨链）。`chapter-novelist` 零图写入（小说.md 为纯文件；唯一图操作 = stale 重写时显式作废定稿链）。
 
 ### 4. 审批检查
 

@@ -22,6 +22,7 @@
 | [角色美术.md](Schema/角色美术.md) | 角色域——人物是谁、如何从文字变成画面 | Character, AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [场景美术.md](Schema/场景美术.md) | 空间域——地点如何拆解成场景与图层 | Location, Spot, Scene, SceneLayer |
 | [声音.md](Schema/声音.md) | 角色如何从文字变成声音 + 场景 BGM | VoiceDesign, BgmTrack |
+| [属性撰写规范.md](Schema/属性撰写规范.md) | **内容权威**——全部自由文本/标签属性怎么写：vibe 调性族四问、事实/指令/标签/边语境四族逐属性规范、反模式速查 | （横切全部模块） |
 
 ---
 

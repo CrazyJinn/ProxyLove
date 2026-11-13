@@ -60,7 +60,7 @@ RETURN spot_id, spot_name, kind, dsl_path, scenes;
 
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）
 MATCH (e:Event)-[:occurs_at]->(l:Location {id: '<loc_id>'})
-WHERE NOT (e)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(sp0:Spot)<-[:part_of]-(l)
+WHERE NOT EXISTS { MATCH (e)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(:Spot)<-[:part_of]-(l) }
 RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.time AS time
 ORDER BY e.time;
 

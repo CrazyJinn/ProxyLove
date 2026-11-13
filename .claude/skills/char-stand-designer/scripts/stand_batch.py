@@ -62,7 +62,7 @@ SET stand.eye = '{esc(tags["eye"])}', stand.brow = '{esc(tags["brow"])}',
     stand.mouth = '{esc(tags["mouth"])}', stand.head_angle = '{esc(tags["head_angle"])}',
     stand.hand = '{esc(tags["hand"])}', stand.foot = '{esc(tags["foot"])}';""",
              f"""MATCH (illus:IllusDesign {{id: '{t["illus_id"]}'}}), (stand:StandingIllustration {{id: '{sid}'}})
-MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '{esc(t["variant_label"])}';"""]
+MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true;"""]
     # ref_style 建边已删；voice_id 字段保留兼容旧 tasks 但不再写边
     stmts.append(f"""MATCH (stand:StandingIllustration {{id: '{sid}'}})
 SET stand.prompt_path = '{esc(t["prompt_path"])}',

@@ -97,7 +97,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
   -o '.tmp/portrait-candidates-<stem>-sec<MM>.json'
 ```
 
-`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/description）。**控制者穿透**：who 在本块无 appears_as 授权且存在 `(who)-[:relation {type:'控制', illus}]->(host)` 出边时，直接取边上的 `illus`（穿越者本体造型锚）——穿越者内心独白镜头配穿越者本体立绘，不要求块内授权（穿透记入 warnings）；`chars[who].design_sheet` 带生效版本 `{id, notes}`（notes=形象改动描述，3b 新变体 description 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
+`candidates`：对待判 say 行按 (scene_block, who) 查候选立绘——沿 `Section→includes→Event→refines→SubEvent→anchored_at→Scene(块名)` 的事件 `→appears_as→IllusDesign` **直读形象**（版本判定已物化到写边时，读路径零推理、不做 active_from 过滤）再 `→expands_to` 列**已有变体**（含未出图 status<11 的，附 variant_label/status/vibe）。**控制者穿透**：who 在本块无 appears_as 授权且存在 `(who)-[:relation {type:'控制', illus}]->(host)` 出边时，直接取边上的 `illus`（穿越者本体造型锚）——穿越者内心独白镜头配穿越者本体立绘，不要求块内授权（穿透记入 warnings）；`chars[who].design_sheet` 带生效版本 `{id, notes}`（notes=形象改动描述，3b 新变体 vibe 须与其对齐）。`lines` 带每行 `current_stand`（现 uses 目标——重配句参考上轮选绘，语义同 clone_mode 初值）。报 `0 行待判` 时**跳过选绘**（3b 不判 stand、3c 跳过）。warnings 里的「无着装 IllusDesign」= 该角色着装链未建**或新形象版本的 IllusDesign 未建**（需 char-illus-designer 传 design_sheet 补），apply 无法为其建边——汇报并继续其他角色。
 
 #### 3b. LLM 逐句判别 emotion + clone_mode + 产 tts_text 变体 + 选立绘（本 skill 的核心判断步骤）
 
@@ -113,11 +113,11 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
 
 4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.ink` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
    - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`description` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
-   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "description": "<该变体氛围一句话：情绪强度/神态/身体张力，供出图把握——写氛围而非台词复述>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，description 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
+   - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<2~4 字简短词>", "vibe": "<该变体调性一句话：情绪强度/神态/身体张力，供出图把握——只写变体本身的调性，台词情境与剧情语境不写>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，vibe 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
    - **节奏原则**：同一段落情绪内保持同一 stand（不为每句强行换）；情绪转折/强反应处换变体；也不许整节只选一个变体敷衍——变体区分度是立绘表现力来源。
    - 旁白/narrate 行不选（tasks 只含 say 行）。**任何任务句不得缺 stand 字段**（3c 的 apply 会拒绝整个 tasks）。
 
-**编辑 tasks JSON**（Edit 工具改第 3a 产出的文件）给每个任务项写入 `"emotion": "<词表项>"`、`"tts_text": "<变体>"`、`"stand": "<stand_id 或 {variant_label, description}>"`，xvec 句另写 `"clone_mode": "xvec"`（icl 句可省略，bind-graph 归一化缺省 icl）。emotion 仅作图标注与 dashboard 筛选展示（Qwen Base clone 无 instruct 通道，不参与合成参数）；**情绪表达由 tts_text 变体承载，演绎通道由 clone_mode 承载，立绘选择由 uses 边承载**；缺 tts_text 回落原文。
+**编辑 tasks JSON**（Edit 工具改第 3a 产出的文件）给每个任务项写入 `"emotion": "<词表项>"`、`"tts_text": "<变体>"`、`"stand": "<stand_id 或 {variant_label, vibe}>"`，xvec 句另写 `"clone_mode": "xvec"`（icl 句可省略，bind-graph 归一化缺省 icl）。emotion 仅作图标注与 dashboard 筛选展示（Qwen Base clone 无 instruct 通道，不参与合成参数）；**情绪表达由 tts_text 变体承载，演绎通道由 clone_mode 承载，立绘选择由 uses 边承载**；缺 tts_text 回落原文。
 
 > 重生成（被驳回/stale）句也要重判重写——驳回往往因为语气不对（**选绘同理**：氛围变了 stand 也要重判）。
 
@@ -129,7 +129,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" apply \
   --tasks '.tmp/voice-tasks-<stem>-sec<MM>.json'
 ```
 
-`apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, description, status=0}` + `expands_to`）②该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
+`apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, vibe, status=0}` + `expands_to`）②该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
 
 - 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿本节 say 行 uses 边推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
 - **校验失败**（缺 stand / stand_id 不存在 / 行不属于本节）→ 报告逐条列出坏项且**未写图**，回 3b 补齐 tasks 后重跑 apply（无图副作用）。

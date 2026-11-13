@@ -105,16 +105,16 @@ OUTPUT_DIR="02_剧情数据"
   6. **故事线上下文**（arc 入参、arc→new 或对账触发时；直查 cypher，不经 `$NBHD`——
      其边白名单不含 comprises，故事线中继不会污染双锚连通性判断，这是期望行为）：
      ```cypher
-     -- a. 读线（id 精确或 title 关键词，二选一改写）
+     // a. 读线（id 精确或 title 关键词，二选一改写）
      MATCH (a:StoryArc) WHERE a.id='<arc_id>' OR a.title CONTAINS '<关键词>'
      RETURN a.id AS id, a.title AS title, a.description AS description LIMIT 10;
-     -- b. 全名录（建线前防重复建线）
+     // b. 全名录（建线前防重复建线）
      MATCH (a:StoryArc) RETURN a.id AS id, a.title AS title LIMIT 100;
-     -- c. 成员按时间序（读缺口的主依据）
+     // c. 成员按时间序（读缺口的主依据）
      MATCH (a:StoryArc {id:'<arc_id>'})-[:comprises]->(e:Event)
      RETURN e.id AS id, e.title AS title, e.time AS time, e.type AS type
      ORDER BY e.time LIMIT 200;
-     -- d. 反查所属线（对账传 event id 时）
+     // d. 反查所属线（对账传 event id 时）
      MATCH (a:StoryArc)-[:comprises]->(e:Event {id:'<event_id>'})
      RETURN a.id AS id, a.title AS title, a.description AS description LIMIT 10;
      ```

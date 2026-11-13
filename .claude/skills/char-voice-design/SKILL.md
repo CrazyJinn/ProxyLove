@@ -50,7 +50,7 @@ RETURN c, ls, vd, c.vibe AS vibe, infos, events, event_infos;
 
 ```cypher
 MATCH (c:Character {id: '<char_id>'})-[:involved]->(e:Event)<-[:involved]-(other:Character)-[:has_voice_design]->(vd:VoiceDesign)
-RETURN DISTINCT other.name AS name, vd.instruct AS instruct, vd.description AS description LIMIT 5;
+RETURN DISTINCT other.name AS name, vd.instruct AS instruct LIMIT 5;
 ```
 
 - **目标节点判定**：
@@ -71,7 +71,6 @@ RETURN DISTINCT other.name AS name, vd.instruct AS instruct, vd.description AS d
 
 - `instruct`：**1-2 句自然语言、≤60 字**（Qwen VoiceDesign 消费），覆盖音色基底 / 演绎方式 / 情绪域三要素（内含六维：年龄/性别/音色/气质/语速/尾音）。超长时删修饰词与比喻、不删维度；禁比喻修辞、同义词堆砌、行为叙事（详见模板「措辞原则」与反例）。
 - `ref_text`：**全角色统一通用长句**（不按角色定制、不内嵌语癖）：`上午我把书桌上的三份文件整理好，然后把水杯和钥匙放进背包，中午在城南餐厅吃了一顿面，下午再准时把报告直接交给负责人。`（54 字中性陈述、约 10~12 秒，覆盖翘舌/平舌/前后鼻音/复韵母；理由见模板 ref_text 节）。
-- `description`：1-2 句音色气质概要（含依据来源，便于回溯）。
 
 **2b. 合成候选与试听并验证落盘**。两步同 venv（env/.venv-qwen，两子命令分进程各自加载模型）：
 
@@ -118,7 +117,6 @@ SET v.name = '<角色名>声音设计',
     v.ref_text = '...',
     v.ref_audio_path = '14_声音设计/<char_id>/ref.wav',
     v.candidates_path = '14_声音设计/<char_id>/candidates/candidates.json',
-    v.description = '...',
     v.status = 10;
 ```
 

@@ -2,7 +2,7 @@
 name: char-stand-designer
 description: |
   推进 StandingIllustration 图节点：查询状态 → 组装提示词/生成图片 → 保存结果（MERGE 兜底建节点+边，写产物与 status）。
-  入参 stand_id（单变体）或逗号分隔 stand_id 列表（批量模式——先逐个组装 prompt，再经 stand_batch.py 线程池并发出图+校验+写图），由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 description 变体氛围），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量（「批量」仅指同批缺口的出图并发，不是备货）。
+  入参 stand_id（单变体）或逗号分隔 stand_id 列表（批量模式——先逐个组装 prompt，再经 stand_batch.py 线程池并发出图+校验+写图），由 plot-design 按本节台词 uses 引用按需触发。变体需求由 section-voice-publisher 配音判断期选绘兜底建缺口（LLM 为 say 行按台词氛围选立绘，池中无贴切变体时经 portrait_binder apply 建 status=0 缺口节点并写 vibe 变体调性），本 skill 逐个交付生成，不做角色级批量备货、不按角色优先级补全数量（「批量」仅指同批缺口的出图并发，不是备货）。
 argument-hint: <stand_id[,stand_id,...]>
 arguments:
   - stand_id: 单个或逗号分隔多个立绘变体 ID；多个时走批量模式
@@ -15,7 +15,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 从 IllusDesign 拓展出不同表情、动作的单张立绘，表情和动作参考 LanguageStyle 生成。
 
-**按需变体模式**（stand_id，单个或逗号分隔列表）：只推进指定的 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `description` 变体氛围）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
+**按需变体模式**（stand_id，单个或逗号分隔列表）：只推进指定的 StandingIllustration（通常由 `section-voice-publisher` 配音判断期选绘兜底建的 `status=0` 缺口节点，经 `plot-design` 按 uses 引用触发）。**变体需求来自剧本**——选绘 LLM 在配音判断期为 say 行按台词氛围选立绘，判定池中无贴切变体时兜底建缺口（节点带 `vibe` 变体调性）；本 skill 逐个交付生成，**不做角色级批量备货、不按角色优先级（P0/P1/P2）补全数量**，避免为未被剧情引用的变体浪费出图 API。
 
 - **单变体**（1 个 id）：走下方三段式（子 skill 链：char-prompt-assembler → infra-image-generator → 校验 → 写图）。
 - **批量模式**（≥2 个 id，2026-10-06 起）：出图是 OfoxAI 纯 IO 等待（单张 30s~10min），串行会把整条编排链堵死——**prompt 组装仍由 LLM 逐个做（创作判断不可并发），出图/校验/写图交给 [scripts/stand_batch.py](scripts/stand_batch.py) 线程池并发**（默认 3 并发，单张超时 15min，透明不合格自动重试 2 次，先产物后写图铁律在每个 worker 内保持），见下方「批量模式流程」。
@@ -49,11 +49,11 @@ RETURN ch.name AS char_name, ch.id AS char_id,
        stand.id AS stand_id, stand.variant_label AS variant_label, stand.status AS status,
        stand.eye AS eye, stand.brow AS brow, stand.mouth AS mouth,
        stand.head_angle AS head_angle, stand.hand AS hand, stand.foot AS foot,
-       stand.description AS description
+       stand.vibe AS vibe
 ```
 
 - **前驱校验**：`illus_status = 11`（IllusDesign 已批准），否则停止并提示上游未就绪（由 `plot-design` 委派 `char-design` 推进 IllusDesign 后再来）。
-- **节点已存在**（由 `section-voice-publisher` 的选绘 apply 兜底建为 `status=0`，`description` 已含变体氛围）：直接按 status 决定推进起点。`variant_label` 已在节点上；若 `eye`/`brow`/`mouth`/`head_angle`/`hand`/`foot` 标签缺失，按 `variant_label` 与 `description` 语义推导并在保存步补写。
+- **节点已存在**（由 `section-voice-publisher` 的选绘 apply 兜底建为 `status=0`，`vibe` 已含变体调性）：直接按 status 决定推进起点。`variant_label` 已在节点上；若 `eye`/`brow`/`mouth`/`head_angle`/`hand`/`foot` 标签缺失，按 `variant_label` 与 `vibe` 语义推导并在保存步补写。
 - 本 skill **只处理这一个 stand**，不枚举其他变体、不补全数量。
 
 > 查不到（stand_id 不存在 / 缺上游 `expands_to` 或角色 `has_voice_style`）→ 报告并停止。
@@ -69,7 +69,7 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 
 ```json
 {
-  "stand": { "description":"<stand.description——变体氛围，出图的首要依据>", "tags": {"variant_label":"...","eye":"...","brow":"...","mouth":"...","head_angle":"...","hand":"...","foot":"..."} },
+  "stand": { "vibe":"<stand.vibe——变体调性，出图的首要依据>", "tags": {"variant_label":"...","eye":"...","brow":"...","mouth":"...","head_angle":"...","hand":"...","foot":"..."} },
   "voice": { "speech_style":"..." },
   "character": { "id":"<char_id>", "name":"<char_name>" },
   "node": { "id":"<stand_id>" },
@@ -114,7 +114,7 @@ SET stand.variant_label = '<variant_label>',
     stand.eye = '<...>', stand.brow = '<...>', stand.mouth = '<...>',
     stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
 MATCH (illus:IllusDesign {id: '<illus_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
-MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true, r.variant_label = '<variant_label>';
+MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true;
 MATCH (stand:StandingIllustration {id: '<stand_id>'})
 SET stand.prompt_path = '<PROMPT_PATH>',
     stand.image_path  = '<IMAGE_PATH>',
