@@ -124,7 +124,7 @@ SET ds.prompt_path = '<PROMPT_PATH>',
     ds.image_path  = '<IMAGE_PATH>',
     ds.delta_notes = '<增量模式：口述变更描述；常规模式：保持原值不动>',
     ds.active_from = <增量模式：生效锚点 int；常规模式：保持原值不动>,
-    ds.status = 10;     /* ← 按 Schema 字段表核对：缺一不可、表外不加 */                  // 图片完成即待审（直写，不经 submit）
+    ds.status = 10;     // ← 按 Schema 字段表核对：缺一不可、表外不加                  // 图片完成即待审（直写，不经 submit）
 ```
 
 **status 写入**：固定 `10`（待审，等待 dashboard 审批）。增量版本审批重点：与参考版并排比对——脸部/五官/体型/眼镜一致、**仅口述维度变化**。

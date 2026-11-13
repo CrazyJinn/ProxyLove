@@ -92,7 +92,7 @@ MATCH (e:Event) WHERE e.id IN ['<event_id_1>', '<event_id_2>', ...]
 // MERGE (sub)-[r:appears_as]->(il) ON CREATE SET r.sync = false;
 MATCH (cos:CostumeStyle {id: '<cos_id>'})
 SET cos.name = '<纯着装名>',
-    cos.<字段1> = '...', cos.<字段2> = '...',  /* ← 按 Schema 字段表逐字段，缺一不可、表外不加 */
+    cos.<字段1> = '...', cos.<字段2> = '...',  // ← 按 Schema 字段表逐字段，缺一不可、表外不加
     cos.status = 1;
 ```
 

@@ -93,7 +93,7 @@ MERGE (cos)-[r:outfit_for]->(illus) SET r.sync = true;
 MATCH (illus:IllusDesign {id: '<ILLUS_ID>'})
 SET illus.prompt_path = '<PROMPT_PATH>',
     illus.image_path  = '<IMAGE_PATH>',
-    illus.<其余字段> = '...',  /* ← 按 Schema 字段表逐字段（如 display_scale = round(height_cm/200,4)，缺失 null）；缺一不可、表外不加 */
+    illus.<其余字段> = '...',  // ← 按 Schema 字段表逐字段（如 display_scale = round(height_cm/200,4)，缺失 null）；缺一不可、表外不加
     illus.status = 10;                         // 图片完成即待审（直写，不经 submit）
 // 有着装补充时（写 CostumeStyle，随套不随版本）：
 MATCH (cs:CostumeStyle {id: '<cos_id>'})

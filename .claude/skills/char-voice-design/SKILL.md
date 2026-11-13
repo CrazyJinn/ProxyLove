@@ -119,7 +119,7 @@ SET v.name = '<角色名>声音设计',
     v.ref_text = '...',
     v.ref_audio_path = '14_声音设计/<char_id>/ref.wav',
     v.candidates_path = '14_声音设计/<char_id>/candidates/candidates.json',
-    v.status = 10;   /* ← 本块与 Schema 字段表一一对应（5 字段+status 全量）；字段增减时以 Schema 为准重写 */
+    v.status = 10;   // ← 本块与 Schema 字段表一一对应（5 字段+status 全量）；字段增减时以 Schema 为准重写
 ```
 
 > `ref_audio_path` 提前写惯例正式路径（此刻文件尚不存在，无害——下游配音门是 status=11；dashboard「采用」时固化为该路径，下游 voice_clone_runner publish 以 24k 原生直接消费，无重采样副产物）。不写 `clone_prompt_path`：Qwen3 Base clone 的 prompt 在合成时内存构建、不落盘 `.pt`，该字段为遗留兼容字段（见 [声音.md](../../../00_init/Schema/声音.md) 废弃说明）。

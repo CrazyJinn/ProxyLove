@@ -69,7 +69,7 @@ MATCH (ch:Character {id: '<char_id>'}), (app:AppearanceStyle {id: '<APP_ID>'})
 MERGE (ch)-[r:has_appearance]->(app) SET r.sync = true;
 MATCH (app:AppearanceStyle {id: '<APP_ID>'})
 SET app.name = '<角色名外貌特征>',
-    app.<字段1> = '...', app.<字段2> = '...',  /* ← Schema 字段表逐字段（含数值/空值字段按其类型写法），缺一不可、表外不加 */
+    app.<字段1> = '...', app.<字段2> = '...',  // ← Schema 字段表逐字段（含数值/空值字段按其类型写法），缺一不可、表外不加
     app.status = 1;
 // Character 占位消化归空（占位 status=0 是 event-ideator 的待建档标记；外貌建档即消化，REMOVE 对非占位无 status 者无害）
 MATCH (ch:Character {id: '<char_id>'}) REMOVE ch.status;

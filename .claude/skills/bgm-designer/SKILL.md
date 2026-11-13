@@ -76,7 +76,7 @@ RETURN s.name AS scene_name, s.vibe AS vibe, s.time_of_day AS time_of_day,
 
 ```cypher
 MATCH (b:BgmTrack {id:'<bgm_id>'})
-SET b.vibe = '<音乐定位描述，1-2 句——只写音乐本身的味道（情绪/织体感），场景画面与剧情语境不写>',   /* ← 字段名以 00_init/Schema/声音.md「背景音乐（BgmTrack）」节字段表为准，表外不加 */
+SET b.vibe = '<音乐定位描述，1-2 句——只写音乐本身的味道（情绪/织体感），场景画面与剧情语境不写>',   // ← 字段名以 00_init/Schema/声音.md「背景音乐（BgmTrack）」节字段表为准，表外不加
     b.prompt = '<段 2 产出的生成用文字>',
     b.audio_path = '13_BGM/<bgm_id>/<bgm_id>.wav',   // hexid 段；归档目标路径预置（与 wav 实际落点一致）
     b.mode = 'play',        // 可选，缺省 play
