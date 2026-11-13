@@ -287,6 +287,8 @@ title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文�
 
 ## cypher 模板（照抄改值）
 
+// ⚠ 字段名以 Schema 为准（00_init/Schema/剧情.md 对应节点节）：建议 JSON 生成时逐字段对照，表外字段一律不写；本模板字段集 = 各节点建点最小集，扩充时先改 Schema 再改此处。
+
 ```
 // 占位 Location（裸节点）
 CREATE (l:Location {id:'<snowflake>'}) SET l.name='<名称>', l.description='<一句话定位>', l.status=0;

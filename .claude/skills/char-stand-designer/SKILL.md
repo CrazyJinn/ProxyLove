@@ -61,6 +61,8 @@ RETURN ch.name AS char_name, ch.id AS char_id,
 
 ### 2. 完成任务
 
+**先读字段表**：Read [00_init/Schema/角色美术.md](../../../00_init/Schema/角色美术.md) 的「立绘（StandingIllustration）」节——字段全集以该表为准，不凭记忆写字段。
+
 推进这一个变体：
 
 #### 组装提示词
@@ -113,6 +115,7 @@ MERGE (stand:StandingIllustration {id: '<stand_id>'})
 SET stand.variant_label = '<variant_label>',
     stand.eye = '<...>', stand.brow = '<...>', stand.mouth = '<...>',
     stand.head_angle = '<...>', stand.hand = '<...>', stand.foot = '<...>';
+    /* ← 本块为缺啥补啥的增量 SET（节点已由 voice-publisher 建好含 vibe）；字段名以 Schema 为准，表外不加 */
 MATCH (illus:IllusDesign {id: '<illus_id>'}), (stand:StandingIllustration {id: '<stand_id>'})
 MERGE (illus)-[r:expands_to]->(stand) SET r.sync = true;
 MATCH (stand:StandingIllustration {id: '<stand_id>'})

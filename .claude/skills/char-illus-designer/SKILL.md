@@ -51,6 +51,8 @@ RETURN ch.name AS char_name,
 
 ### 2. 完成任务
 
+**先读字段表**：Read [00_init/Schema/角色美术.md](../../../00_init/Schema/角色美术.md) 的「立绘设计图（IllusDesign）」节——字段全集以该表为准，不凭记忆写字段。
+
 对每组 (ds, cos) 推进：
 
 #### 组装提示词
@@ -91,7 +93,7 @@ MERGE (cos)-[r:outfit_for]->(illus) SET r.sync = true;
 MATCH (illus:IllusDesign {id: '<ILLUS_ID>'})
 SET illus.prompt_path = '<PROMPT_PATH>',
     illus.image_path  = '<IMAGE_PATH>',
-    illus.display_scale = <scale 或 null>,     // = round(height_cm/200, 4)；height_cm 缺失则 null
+    illus.<其余字段> = '...',  /* ← 按 Schema 字段表逐字段（如 display_scale = round(height_cm/200,4)，缺失 null）；缺一不可、表外不加 */
     illus.status = 10;                         // 图片完成即待审（直写，不经 submit）
 // 有着装补充时（写 CostumeStyle，随套不随版本）：
 MATCH (cs:CostumeStyle {id: '<cos_id>'})

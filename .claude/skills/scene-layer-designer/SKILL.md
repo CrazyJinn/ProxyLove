@@ -121,7 +121,7 @@ MATCH (s:Scene {id: '<scene_id>'}), (sl:SceneLayer {id: '<layer_id>'})
 MERGE (s)-[r:has_layer]->(sl) SET r.sync = true;
 // 写产物 + 推进 status
 MATCH (sl:SceneLayer {id: '<layer_id>'})
-SET sl.name = '<scene_name>-背景',
+SET sl.name = '<scene_name>-背景',   /* ← SET 字段清单以 00_init/Schema/场景美术.md「场景图层（SceneLayer）」节字段表为准，表外不加 */
     sl.prompt_path = '<PROMPT_PATH>',
     sl.image_path  = '<IMAGE_PATH>',
     sl.status = 10;                      // 图片完成即待审（直写，不经 submit）

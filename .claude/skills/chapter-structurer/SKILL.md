@@ -94,7 +94,7 @@ SET ch.title = '<title>',
 //    （对 K 个节循环；每个 sec_id 用 snowflake_base62.py 新生成）
 MERGE (sec:Section {id:'<sec_id>'});
 MATCH (sec:Section {id:'<sec_id>'})
-SET sec.section_no = <MM>, sec.title = '<sec_title>', sec.summary = '<sec_summary>',
+SET sec.section_no = <MM>, sec.title = '<sec_title>', sec.summary = '<sec_summary>',   /* ← 字段名以 00_init/Schema/剧情.md「节（Section）」节字段表为准，表外不加 */
     sec.status = 0;    // 创建待定稿（定稿审在下游 dialoguer/dashboard）
 MATCH (ch:Chapter {id:'<chapter_id>'}), (sec:Section {id:'<sec_id>'})
 MERGE (ch)-[r:has_section]->(sec) SET r.sync = true;

@@ -162,6 +162,8 @@ MERGE (sub)-[r:anchored_at]->(scn) ON CREATE SET r.detail = '<证据词>', r.syn
 
 #### Scene 写入（MERGE 节点 + realizes 边，status=1 已完成）
 
+**字段名以 Schema 为准**：Read [00_init/Schema/场景美术.md](../../../00_init/Schema/场景美术.md) 的「场景（Scene）」节——SET 字段清单对照该表生成，表外字段一律不写（vibe/deco 撰写见 [属性撰写规范.md](../../../00_init/Schema/属性撰写规范.md) §1/§4）。
+
 ```cypher
 MERGE (s:Scene {id: '<snowflake_id>'})
   ON CREATE SET s.status = 0;

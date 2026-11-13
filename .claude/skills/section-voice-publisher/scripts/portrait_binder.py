@@ -326,7 +326,7 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
                 built_ids.add(sid)
                 stmts.append(
                     f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
-                    f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"
+                    f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"  # 字段清单以 00_init/Schema/角色美术.md StandingIllustration 表为准
                 )
                 stmts.append(
                     f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}}), "

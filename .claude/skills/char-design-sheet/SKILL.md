@@ -55,6 +55,8 @@ RETURN ch.name AS char_name, ch.vibe AS char_vibe,
 
 ### 2. 完成任务
 
+**先读字段表**：Read [00_init/Schema/角色美术.md](../../../00_init/Schema/角色美术.md) 的「设计图（DesignSheet）」节——字段全集以该表为准，不凭记忆写字段。
+
 #### 常规模式（首版/重做——参考图图生图）
 
 按当前 status 单轮直推到图片完成（待审 10）。生成以**单张真人参考照片**为底图生图，AppearanceStyle 外貌属性全量作为补充特征写入提示词（冲突以属性为准）。
@@ -122,8 +124,7 @@ SET ds.prompt_path = '<PROMPT_PATH>',
     ds.image_path  = '<IMAGE_PATH>',
     ds.delta_notes = '<增量模式：口述变更描述；常规模式：保持原值不动>',
     ds.active_from = <增量模式：生效锚点 int；常规模式：保持原值不动>,
-
-    ds.status = 10;                      // 图片完成即待审（直写，不经 submit）
+    ds.status = 10;     /* ← 按 Schema 字段表核对：缺一不可、表外不加 */                  // 图片完成即待审（直写，不经 submit）
 ```
 
 **status 写入**：固定 `10`（待审，等待 dashboard 审批）。增量版本审批重点：与参考版并排比对——脸部/五官/体型/眼镜一致、**仅口述维度变化**。

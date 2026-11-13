@@ -181,7 +181,7 @@ MATCH (sec:Section {id:'<sec_id>'}) SET sec.status = 10;
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})
-SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink
+SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink  ← 字段名以 Schema/剧情.md「节（Section）」表为准
     sec.status = 10;            // 定稿产出待审（-1 作废节经此恢复到待审）
 ```
 

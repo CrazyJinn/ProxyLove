@@ -65,7 +65,9 @@ RETURN DISTINCT other.name AS name, vd.instruct AS instruct LIMIT 5;
 
 - 记下角色名 `c.name`（ref_audio_path 与下游 profiles JSON 的键用角色名）。
 
-### 2. 完成任务（生成设计描述 + 合成 ref_audio —— 先产出物）
+### 2. 完成任务
+
+**先读字段表**：Read [00_init/Schema/声音.md](../../../00_init/Schema/声音.md) 的「声音设计（VoiceDesign）」节——字段全集以该表为准，不凭记忆写字段。（生成设计描述 + 合成 ref_audio —— 先产出物）
 
 **2a. 生成三段内容**。读 [references/template-声音设计.md](references/template-声音设计.md)（**措辞原则（Qwen 官方：简洁/具体/客观）** + 声线三要素 + 六维素材映射 + 候选与试听节 + 反模式/范例），按 [references/声线变体库.md](references/声线变体库.md)（变体频段表 + 同场避让规则）校准，生成：
 
@@ -117,7 +119,7 @@ SET v.name = '<角色名>声音设计',
     v.ref_text = '...',
     v.ref_audio_path = '14_声音设计/<char_id>/ref.wav',
     v.candidates_path = '14_声音设计/<char_id>/candidates/candidates.json',
-    v.status = 10;
+    v.status = 10;   /* ← 本块与 Schema 字段表一一对应（5 字段+status 全量）；字段增减时以 Schema 为准重写 */
 ```
 
 > `ref_audio_path` 提前写惯例正式路径（此刻文件尚不存在，无害——下游配音门是 status=11；dashboard「采用」时固化为该路径，下游 voice_clone_runner publish 以 24k 原生直接消费，无重采样副产物）。不写 `clone_prompt_path`：Qwen3 Base clone 的 prompt 在合成时内存构建、不落盘 `.pt`，该字段为遗留兼容字段（见 [声音.md](../../../00_init/Schema/声音.md) 废弃说明）。

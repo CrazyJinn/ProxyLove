@@ -265,6 +265,9 @@ sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/
 
 ```
 // ── 占位节点：节点本体与挂边各自独立语句，挂边两端点各自 MATCH 绑定 ──
+// ⚠ 字段名以 Schema 为准：本模板各占位只写「最小启动集」（status=0 占位标记 + 定位字段），
+//    其余字段由消化方（scene-designer/char-design 链）按各自 Schema 字段表补全——
+//    建议 JSON 生成时字段名不凭记忆，对照 00_init/Schema/ 对应节点节核对（表外字段一律不写）。
 // Spot 占位（空间缺口）——节点本体
 CREATE (sp:Spot {id:'<snowflake>'}) SET sp.name='<地点名>-<区域>', sp.kind='zone', sp.description='<一句话>', sp.status=0;  // status=0 仅占位标记；scene-designer 建 Scene（消化）后 REMOVE 归空
 // part_of 边（Spot 的 <snowflake> = 上方节点语句同一 id）
