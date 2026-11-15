@@ -189,3 +189,56 @@ def test_freshness_at_accepts_sec_form(tree):
     a = _fresh(tree, [lore("L3")], "ch01/sec09")
     b = _fresh(tree, [lore("L3")], str(tree) + "/ch01/sec09/小说.md")
     assert a["L3"]["F"] == b["L3"]["F"]
+
+
+# ── gen 邻检门禁(乱序写作防护) ────────────────────────────────────────
+
+def test_gate_out_of_order_E_rejected(tree, capsys):
+    # 乱序:ch01/sec02 已写 L3(S),回头写 ch01/sec01 标 E → 下游按 prior=(sec01,E) Δ=1,h=3
+    # → F=21 blocked → 拒绝落盘(退出码 2,明细走 stderr)
+    write_novel(tree, "ch01/sec02/小说.md", [f"lore  L3 {FP16} S 设定三"])
+    rc = fp.cmd_gen([lore("L3")], {"L3": "E"}, str(tree), "ch01/sec01")
+    err = capsys.readouterr().err
+    assert rc == 2 and "L3" in err and "ch01/sec02" in err
+
+
+def test_gate_downgrade_S_passes(tree):
+    # 同场景降 S:下游 sec02(S) 按 prior=(sec01,S) Δ=1 → F=52 side 容 S → 正常产头
+    write_novel(tree, "ch01/sec02/小说.md", [f"lore  L3 {FP16} S 设定三"])
+    rc, out = capture(fp.cmd_gen, [lore("L3")], {"L3": "S"}, str(tree), "ch01/sec01")
+    assert rc == 0 and any("L3" in l and " S " in l for l in out.splitlines())
+
+
+def test_gate_no_downstream_passes(tree):
+    # 节号序中无更晚的 L3 消费(自由节的 L1 不相干) → 门禁无对象,正常产头
+    rc, out = capture(fp.cmd_gen, [lore("L3")], {"L3": "E"}, str(tree), "ch01/sec05")
+    assert rc == 0 and "L3" in out
+
+
+def test_gate_force_passes_with_trace(tree, capsys):
+    write_novel(tree, "ch01/sec02/小说.md", [f"lore  L3 {FP16} S 设定三"])
+    rc, out = capture(fp.cmd_gen, [lore("L3")], {"L3": "E"}, str(tree), "ch01/sec01", True)
+    err = capsys.readouterr().err
+    assert rc == 0 and "--force" in err and "L3" in out
+
+
+def test_gate_side_band_rejects_downstream_E(tree, capsys):
+    # 下游已写 E:本节 S → 下游按 prior=(sec00,S) Δ=2,h=3 → F=62 side,容不下下游的 E → 拒
+    write_novel(tree, "ch01/sec02/小说.md", [f"lore  L3 {FP16} E 设定三"])
+    rc = fp.cmd_gen([lore("L3")], {"L3": "S"}, str(tree), "ch01/sec00")
+    err = capsys.readouterr().err
+    assert rc == 2 and "仅容侧面" in err
+
+
+def test_gate_rewrite_self_excluded_real_downstream_checked(tree, capsys):
+    # 重写 ch00/sec00(自身已有 L1 E):自身不算下游(k > at_key 严格),真下游 ch00/sec01(L1 E)
+    # 按 prior=(sec00,E) Δ=1,h=3 → F=21 blocked → 拒——重写同样在改消费史,同受门禁
+    rc = fp.cmd_gen([lore("L1")], {"L1": "E"}, str(tree), "ch00/sec00")
+    err = capsys.readouterr().err
+    assert rc == 2 and "ch00/sec01" in err
+
+
+def test_gate_free_section_not_gated(tree):
+    # 自由节按 mtime 排序位次不稳,不门禁
+    rc, out = capture(fp.cmd_gen, [lore("L1")], {"L1": "E"}, str(tree), "自由节/sec01")
+    assert rc == 0

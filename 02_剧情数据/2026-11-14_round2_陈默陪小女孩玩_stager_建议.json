@@ -1,0 +1,42 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "事件 S3oFjfNVlh 拍板为花园场景；康复中心现有 Spot 仅训练大厅/门口/前台（preflight assets 实查），无花园。Spot.name 即 room.yml 房间名，占位期定准「康复中心-花园」。kind=zone，part_of 挂既有 Location 康复中心（QP23NrFZqm）。",
+    "content": "占位 Spot：康复中心-花园——康复中心的户外花园，朵朵户外活动与陪玩场地",
+    "source": "event-stager",
+    "cypher": "CREATE (sp:Spot {id:'S3p7v2bvfM'}) SET sp.name='康复中心-花园', sp.kind='zone', sp.description='康复中心的户外花园，患者户外活动场地';\nMATCH (l:Location {id:'QP23NrFZqm'}) MATCH (sp:Spot {id:'S3p7v2bvfM'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "花园无任何机位（spot 新建）。Scene 占位最小启动集 name/scene_type/status=0，待 scene-design 链消化；realizes 挂上方 Spot 占位 S3p7v2bvfM。",
+    "content": "占位 Scene：康复中心-花园（dialogue，status=0）",
+    "source": "event-stager",
+    "cypher": "CREATE (sc:Scene {id:'S3p7v2bvfN'}) SET sc.name='康复中心-花园', sc.scene_type='dialogue', sc.status=0;\nMATCH (sp:Spot {id:'S3p7v2bvfM'}) MATCH (sc:Scene {id:'S3p7v2bvfN'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "朵朵（S3oFjfNVlg）图上零着装（preflight costumes 直查无 CostumeStyle）。着装占位即挂 has_costume 归属边防孤儿。命名查重通过：全局无儿童/康复类着装名。",
+    "content": "占位 CostumeStyle：儿童康复训练服——软和亲肤的小患者日常",
+    "source": "event-stager",
+    "cypher": "CREATE (cs:CostumeStyle {id:'S3p7v2bvfO'}) SET cs.name='儿童康复训练服', cs.vibe='软和亲肤的小患者日常', cs.status=0;\nMATCH (ch:Character {id:'S3oFjfNVlg'}) MATCH (cs:CostumeStyle {id:'S3p7v2bvfO'}) MERGE (ch)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "朵朵无 DesignSheet 外貌链（新占位角色），形象版本走 CostumeStyle 直挂 IllusDesign 裸节点（status=0，身份由 outfit_for 挂靠表达），待 char-design 链消化。",
+    "content": "占位 IllusDesign：朵朵·儿童康复训练服 版本（裸节点 status=0）",
+    "source": "event-stager",
+    "cypher": "CREATE (idn:IllusDesign {id:'S3p7v2bvfP'}) SET idn.status=0;\nMATCH (cs:CostumeStyle {id:'S3p7v2bvfO'}) MATCH (idn:IllusDesign {id:'S3p7v2bvfP'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "单 sub 直拆：机位单一（花园全程）不拆段；朵朵「从怕生到黏人」的情绪转变在段内顺带完成无独立转折瞬间；苏晓禾静观无信息差不构成独立目击段；无到场/离开漏项。anchored_at 挂本建议 Scene 占位 S3p7v2bvfN；陈默 appears_as 继承同日探班事件着装（日常户外休闲装 QmQCxuTrGK），苏晓禾继承上班着装（康复师工作装 NyJ99Sgpft），朵朵挂本建议 IllusDesign 占位 S3p7v2bvfP。时间=父事件 time 直承。",
+    "content": "SubEvent：陈默陪康复中心的小女孩玩 · 搭积木破冰——朵朵缩在一边不敢靠近，陈默不催不哄，自己蹲下搭积木；朵朵一点点挪过来递积木，两人越搭越高，塔倒了她拍手笑着重来；苏晓禾在旁看了许久没出声",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S3oFjfNVlh'})\nMERGE (sub:SubEvent {id:'S3p7v2bvfQ'})\nON CREATE SET sub.title='陈默陪康复中心的小女孩玩 · 搭积木破冰', sub.time='2024-06-15 11:00:00',\n              sub.description='朵朵缩在一边不敢靠近，陈默不催不哄，自己蹲下搭积木；朵朵一点点挪过来递积木，两人越搭越高，塔倒了她拍手笑着重来；苏晓禾在旁看了许久没出声'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'S3p7v2bvfQ'}) MATCH (scn:Scene {id:'S3p7v2bvfN'}) MERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'S3p7v2bvfQ'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同日探班事件着装';\nMATCH (sub:SubEvent {id:'S3p7v2bvfQ'}) MATCH (il:IllusDesign {id:'NyJ99Sgpft'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：同日探班事件着装';\nMATCH (sub:SubEvent {id:'S3p7v2bvfQ'}) MATCH (il:IllusDesign {id:'S3p7v2bvfP'}) MERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：新套装待消化';"
+  }
+]

@@ -325,12 +325,12 @@ def build_actions(section_id: str, tasks: dict, warnings: list) -> tuple:
             elif sid not in built_ids:
                 built_ids.add(sid)
                 stmts.append(
-                    f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
+                    f"MERGE (st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
                     f"SET st.variant_label={_q(label)}, st.vibe={_q(vibe or None)}, st.status=0;"  # 字段清单以 00_init/Schema/角色美术/StandingIllustration.md 表为准
                 )
                 stmts.append(
-                    f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}}), "
-                    f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}}) "
+                    f"MATCH (i:IllusDesign {{" + f"id:{_q(p['illus_id'])}" + "}), "
+                    f"(st:StandingIllustration {{" + f"id:{_q(sid)}" + "}) "
                     f"MERGE (i)-[e:expands_to]->(st) SET e.sync=true;"
                 )
                 # Character→has_voice_style 反查（char-stand-designer 前驱）

@@ -173,7 +173,7 @@ info  <id> <hash16> <title>
 
 ### 3. 保存结果（指纹头部 + 落盘 + 唯一作废写入 + 对账建议）
 
-1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --ids <实际取用素材列表：event 裸 id，fact/lore 带 :E/:S 强度后缀（如 id1,id2:S,id3:E）>` → 产出完整头部块（**只含取用子集**，fact/lore 行记强度——它是后续 freshness 的衰减基线；省略 `--ids` 会记圈定全量，禁止）。
+1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --at <chNN/secMM> --ids <实际取用素材列表：event 裸 id，fact/lore 带 :E/:S 强度后缀（如 id1,id2:S,id3:E）>` → 产出完整头部块（**只含取用子集**，fact/lore 行记强度——它是后续 freshness 的衰减基线；省略 `--ids` 会记圈定全量，禁止）。gen 内置**邻检门禁**（乱序写作防护）：按 prior=(本节,标记强度) 重算节号序中下一个已写消费节的档位，下游按序重放不容其标记强度 → 退出码 2 拒绝落盘——按 stderr 建议降 S 或剔除该素材后重跑；确要保留加 `--force` 放行并在汇报中列出 force 条目。
 2. **Write** 小说.md（头部块置文件首 + 全文）到约定路径。首建模式到此完成（零图写入）。
 3. **重写模式才作废定稿链**（首建模式跳过；`sec.status IS NULL` 跳过）——`--multi` 单事务：
 

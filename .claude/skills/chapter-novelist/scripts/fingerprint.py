@@ -14,7 +14,12 @@
   gen   产完整头部块(含 <!-- --> 包裹,直接嵌入小说.md 头部);--ids 只圈**实际取用**的素材子集
         (指纹=「使用的」而非「圈定的全部」,无关素材修订不误 stale 本节)。
         --ids 条目可带强度后缀 `id:E` / `id:S`(hook/lore 行;裸 id 缺省 E,event 行忽略强度):
-        python fingerprint.py gen --in materials.json [--ids id1:E,id2:S,…]   # 或 stdin 传 JSON
+        python fingerprint.py gen --in materials.json --at chNN/secMM [--ids id1:E,id2:S,…]
+        [--root 25_剧本] [--force]   # 或 stdin 传 JSON
+        落盘硬门禁(乱序写作防护):本节取用的每条 hook/fact/lore,按 prior=(本节,标记强度)
+        重算**节号序中下一个已写消费节**的档位(most_recent_wins 使影响半径恒为 1),
+        下游按序重放不容其标记强度 → 拒绝落盘(退出码 2,明细走 stderr),降 S/剔除后重跑;
+        确要硬写加 --force(放行并 stderr 留痕)。自由节排序按 mtime,不门禁。
   check 自检小说.md 头部清单 vs 当前素材:退出码 0=新鲜 / 1=stale(stdout 报告明细):
         python fingerprint.py check --novel 小说.md --in materials.json
         stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)
@@ -98,7 +103,22 @@ def _line(kind: str, row: dict, fp: str, intensity: str | None = None) -> str:
     return f"{kind}{pad} {row['id']} {fp}{tok} {str(row.get('title') or '')}"
 
 
-def cmd_gen(rows: list[dict], ids: dict[str, str] | None) -> int:
+def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = None,
+            at: str | None = None, force: bool = False) -> int:
+    if root is not None and at is not None:
+        id_map = ids
+        if id_map is None:
+            id_map = {str(r["id"]): str(r.get("intensity") or "E").upper()
+                      for r in rows if _kind(r) in FRESHNESS_KINDS}
+        violations = _gate_next_consumption(rows, id_map, root, at)
+        if violations:
+            print(f"邻检门禁违规 {len(violations)} 条,拒绝落盘(降 S/剔除后重跑,或 --force 放行):",
+                  file=sys.stderr)
+            for v in violations:
+                print(v, file=sys.stderr)
+            if not force:
+                return 2
+            print("--force:违规放行(留痕)", file=sys.stderr)
     if ids is not None:
         want = set(ids)
         have = {str(r["id"]) for r in rows}
@@ -213,17 +233,21 @@ def _header_rows_full(novel_text: str) -> list[tuple[str, str, str, str | None]]
     return out
 
 
-def cmd_freshness(rows: list[dict], root: str, at: str) -> int:
-    import glob
-    import os
-
-    # --at 解析:chNN/secMM 或 小说.md 路径
+def _at_key_of(at: str) -> tuple:
+    """--at(chNN/secMM 或其 小说.md 路径)→ 全局节序键。"""
     at_norm = at.replace("\\", "/")
     if not at_norm.endswith("小说.md"):
         at_norm = at_norm.rstrip("/") + "/小说.md"
-    at_key = _sec_order_key(at_norm, {})
-    if at_key is None:
+    key = _sec_order_key(at_norm, {})
+    if key is None:
         raise SystemExit(f"--at 无法解析节位次(须 chNN/secMM 或其小说.md 路径): {at}")
+    return key
+
+
+def _consumption_events(root: str) -> dict[str, list[tuple[tuple, str, str]]]:
+    """扫描 root 下全部小说.md 指纹头:id → [(order_key, path, intensity)](仅 FRESHNESS_KINDS;旧头无标记按 E)。"""
+    import glob
+    import os
 
     novels = sorted(glob.glob(os.path.join(root, "**", "小说.md"), recursive=True))
     free_mtime = {}
@@ -231,8 +255,6 @@ def cmd_freshness(rows: list[dict], root: str, at: str) -> int:
         pn = p.replace("\\", "/")
         if _sec_order_key(pn, {}) is None:
             free_mtime[pn] = os.path.getmtime(pn)
-
-    # 消费事件:id → [(order_key, path, intensity)](仅 FRESHNESS_KINDS;旧头无标记按 E)
     events: dict[str, list[tuple[tuple, str, str]]] = {}
     for p in novels:
         pn = p.replace("\\", "/")
@@ -247,7 +269,60 @@ def cmd_freshness(rows: list[dict], root: str, at: str) -> int:
             if kind not in FRESHNESS_KINDS:
                 continue
             events.setdefault(sid, []).append((key, pn, inten or "E"))
+    return events
 
+
+def _delta_to(lkey: tuple, target_key: tuple) -> int:
+    """消费点 lkey → 目标节的间隔 Δ:同章节数差;跨章按章差近似;任一端自由节(章位 ∞)→ 0(不给恢复)。"""
+    if target_key[0] == 1 or lkey[0] == 1:
+        return 0
+    if target_key[1] == lkey[1]:
+        return target_key[2] - lkey[2]
+    return target_key[1] - lkey[1]
+
+
+def _decay(intensity: str, delta: int, h: int) -> tuple[float, int, str]:
+    """prior 强度 + 间隔 Δ + 半衰期 → (R, F, 档位)。"""
+    r = (1.0 if intensity == "E" else S_RESET) * (2 ** (-delta / h))
+    f = max(0, min(F_BASE, round(F_BASE * (1 - r))))
+    allow = "explicit" if f >= F_ALLOW_EXPLICIT else ("side" if f >= F_ALLOW_SIDE else "blocked")
+    return r, f, allow
+
+
+def _gate_next_consumption(rows: list[dict], ids: dict[str, str], root: str, at: str) -> list[str]:
+    """落盘硬门禁(乱序写作防护):本节取用的每条 hook/fact/lore,按 prior=(本节,标记强度)重算
+    节号序中**下一个已写消费节**的档位(most_recent_wins 使回填的影响半径恒为 1),
+    下游按序重放不容其标记强度(blocked / side 容不下 E)→ 报违规。返回明细(空=通过)。"""
+    at_key = _at_key_of(at)
+    if at_key[0] == 1:
+        return []  # 自由节按 mtime 排序,位次不稳,不门禁
+    events = _consumption_events(root)
+    by_id = {str(r["id"]): r for r in rows}
+    violations = []
+    for sid, inten in ids.items():
+        row = by_id.get(sid)
+        if row is None or _kind(row) not in FRESHNESS_KINDS:
+            continue
+        kl = row.get("knowledge_level")
+        h = H_BY_KL.get(int(kl)) if (kl is not None and str(kl).strip().lstrip("-").isdigit()) else None
+        if h is None:
+            continue  # kl 缺失/非法按无限制,同 freshness
+        nexts = sorted((k, p, i) for k, p, i in events.get(sid, []) if k > at_key)
+        if not nexts:
+            continue
+        mkey, mpath, minten = nexts[0]
+        _r, f, allow = _decay(inten, _delta_to(at_key, mkey), h)
+        if allow == "blocked" or (allow == "side" and minten == "E"):
+            want_desc = "禁释放" if allow == "blocked" else "仅容侧面 S"
+            violations.append(
+                f"  {sid} {row.get('title') or ''}:本节标 {inten} → 下一个消费 {mpath}(标 {minten})"
+                f" 按序重放 F={f} {allow}({want_desc}) — 降 S 或剔除该素材后重跑;确要硬写加 --force")
+    return violations
+
+
+def cmd_freshness(rows: list[dict], root: str, at: str) -> int:
+    at_key = _at_key_of(at)
+    events = _consumption_events(root)
     want = {str(r["id"]): r for r in rows if _kind(r) in FRESHNESS_KINDS}
     out = {}
     for sid, row in want.items():
@@ -262,19 +337,8 @@ def cmd_freshness(rows: list[dict], root: str, at: str) -> int:
                         "last": None, "delta": None, "F": F_BASE, "allow": "explicit", "note": note}
             continue
         lkey, lpath, inten = priors[-1]
-        # Δ:同章节数差;跨章按章差近似;消费点在自由节(章位 ∞)或目标为自由节 → Δ=0(不给恢复)
-        if at_key[0] == 1:
-            delta = 0
-        elif lkey[0] == 1:
-            delta = 0
-        elif at_key[1] == lkey[1]:
-            delta = at_key[2] - lkey[2]
-        else:
-            delta = at_key[1] - lkey[1]
-        base = 1.0 if inten == "E" else S_RESET
-        r = base * (2 ** (-delta / h))
-        f = max(0, min(F_BASE, round(F_BASE * (1 - r))))
-        allow = "explicit" if f >= F_ALLOW_EXPLICIT else ("side" if f >= F_ALLOW_SIDE else "blocked")
+        delta = _delta_to(lkey, at_key)
+        r, f, allow = _decay(inten, delta, h)
         out[sid] = {"kind": _kind(row), "kl": kl, "h": h, "title": row.get("title"),
                     "last": {"path": lpath, "intensity": inten}, "delta": delta,
                     "R": round(r, 4), "F": f, "allow": allow}
@@ -293,6 +357,9 @@ def main() -> int:
             p.add_argument("--novel", required=True, help="小说.md 路径")
         elif name == "gen":
             p.add_argument("--ids", help="逗号分隔素材 id,可带强度后缀 id:E/id:S(缺省 E);只圈实际取用子集")
+            p.add_argument("--at", required=True, help="本节位次:chNN/secMM 或其 小说.md 路径(邻检门禁)")
+            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md;邻检门禁)")
+            p.add_argument("--force", action="store_true", help="邻检违规仍落盘(stderr 留痕放行)")
         elif name == "consumed":
             p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md)")
             p.add_argument("--ids", help="逗号分隔的 id 列表——只查给定子集")
@@ -317,7 +384,7 @@ def main() -> int:
                     ids[sid.strip()] = inten.strip().upper()
                 else:
                     ids[part] = "E"
-        return cmd_gen(rows, ids)
+        return cmd_gen(rows, ids, args.root, args.at, args.force)
     if args.cmd == "freshness":
         return cmd_freshness(rows, args.root, args.at)
     return cmd_check(rows, args.novel)

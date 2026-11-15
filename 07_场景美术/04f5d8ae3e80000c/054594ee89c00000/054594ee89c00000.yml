@@ -1,0 +1,205 @@
+location:
+  id: QP23NrFZqm
+  name: 康复中心
+  description: 苏晓禾工作的地方，运动康复
+room:
+  shell: open
+  floor:
+  - 12.0
+  - 10.0
+  height: 6.0
+  floor_color: '#8aa36f'
+  floor_material: 草坪
+  ground:
+    y: -2.5
+    color: '#a8b0b8'
+    desc: 花园外围院区步道与绿化带，远处街区
+  sky:
+    color: '#c3d9ea'
+    desc: 晴朗上午，淡蓝少云
+  deco: 康复中心的户外花园，患者户外活动场地
+objects:
+- id: facade_back
+  spot: 花园
+  name: 康复中心主体立面
+  type: box
+  pos:
+  - 0
+  - 2.1
+  - -4.8
+  size:
+  - 12.0
+  - 4.2
+  - 0.5
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#e2e5df'
+  desc: 建筑主体米白外墙与横向窗带，花园贴其南侧展开
+  material: 混凝土
+- id: door_back
+  spot: 花园
+  name: 花园玻璃门
+  type: box
+  pos:
+  - 2.6
+  - 1.15
+  - -4.5
+  size:
+  - 2.2
+  - 2.3
+  - 0.15
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a8c8d4'
+  desc: 通往室内的玻璃双开门，带金属门框，门里透出大厅白光
+  material: 玻璃
+- id: planter_l
+  spot: 花园
+  name: 抬高花坛(左)
+  type: box
+  pos:
+  - -4.8
+  - 0.25
+  - -2.2
+  size:
+  - 1.6
+  - 0.5
+  - 1.1
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7f9484'
+  desc: 木质抬高花坛，种薰衣草与鼠尾草
+- id: planter_r
+  spot: 花园
+  name: 抬高花坛(右)
+  type: box
+  pos:
+  - 4.8
+  - 0.25
+  - -2.2
+  size:
+  - 1.6
+  - 0.5
+  - 1.1
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7f9484'
+  desc: 木质抬高花坛，种矮牵牛与迷迭香
+- id: bench_garden
+  spot: 花园
+  name: 患者长椅
+  type: box
+  pos:
+  - 2.0
+  - 0.24
+  - -3.3
+  size:
+  - 0.55
+  - 0.48
+  - 1.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9a7b52'
+  desc: 靠边原木长椅，患者户外歇脚用
+  material: 原木
+- id: pad_activity
+  spot: 花园
+  name: 塑胶活动垫
+  type: box
+  pos:
+  - 0
+  - 0.03
+  - -1.2
+  size:
+  - 3.0
+  - 0.06
+  - 2.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c07f5e'
+  desc: 赤陶色软胶活动垫，坐姿训练与游戏区
+  material: 塑胶
+- id: tree_trunk
+  spot: 花园
+  name: 乔木树干
+  type: cylinder
+  pos:
+  - -3.6
+  - 1.3
+  - -3.4
+  size:
+  - 0.34
+  - 2.6
+  - 0.34
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a5c44'
+  desc: 花园乔木，树干粗糙
+  material: 原木
+- id: tree_crown
+  spot: 花园
+  name: 乔木树冠
+  type: sphere
+  pos:
+  - -3.6
+  - 3.5
+  - -3.4
+  size:
+  - 2.6
+  - 2.2
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#6f8f5f'
+  desc: 浓绿树冠，上午阳光从叶隙落下
+scenes:
+- id: garden_play
+  scene_id: S3p7v2bvfN
+  scene_name: 康复中心-花园
+  spot: 花园
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 3.8
+    look_at:
+    - 0
+    - 1.05
+    - -1.8
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 4.0
+    - 6.0
+    - 2.5
+    color: '#fff3d8'
+    intensity: 2.5
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#dfe8ef'
+    intensity: 0.5
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

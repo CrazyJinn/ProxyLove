@@ -40,15 +40,15 @@ echo "MATCH (n) RETURN count(n) AS c" | python .claude/scripts/cypher_exec.py --
 
 ### 2. Schema 是唯一事实来源
 
-节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（剧情 / 角色美术 / 场景美术 / 声音 四个模块），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成；**写任何自由文本属性（vibe/description/content/prompt 等）时，写法纪律就在对应字段表说明列与 [Schema总览.md](00_init/Schema总览.md)「属性撰写总则」节**——结构归各模块 Schema，内容写法随字段表就地承载。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
+节点/边的英文名、字段、方向、基数、sync 属性全部定义在 [00_init/Schema/](00_init/Schema/)（四域目录：剧情 / 角色美术 / 场景美术 / 声音——**每节点一文件 + 各域 边.md**，skill 按需针对性 Read），总览见 [00_init/Schema总览.md](00_init/Schema总览.md)。**写 Cypher 前必须先 Read 对应 Schema**，按其中的英文标签/属性名生成；**写任何自由文本属性（vibe/description/content/prompt 等）时，写法纪律与正反例就在对应字段表说明列/表下契约节**（易错字段附真实正反例就地判别），跨域总则见 [Schema总览.md](00_init/Schema总览.md)「属性撰写总则」。后台展示用字段中文名硬编码在 dailian-dashboard 的 `app/services/node_fields.py`（抄自 Schema，无自动加载）——**改 Schema 字段中文名时须跨仓库手工同步该文件**。
 
 **Schema 变更须用户确认**：任何节点/边/字段的增删改（含边属性、枚举值、中文名）都是设计决策——单独列出变更项请用户裁定后再动，非必要不加字段。
 
 ### 3. 生产链 = DAG + status + sync 级联
 
-每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`，**目录树 = 图链路径的 hexid 段**：`06_角色美术/<char_id>/<ds_id>/<costume_id>/立绘/<stand_id>`——节点 name/title 改名零漂移；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级链（**最薄图**）：`Section（编排+定稿态 status/script_path） -[:produces {order}]-> LineAudio(×N 逐句台词行)`——**节级产物节点（SecOutline/SecScript）已删除**，文件是节级产物的唯一载体：小说.md（`chapter-novelist` 产，**提纲已内化**（原 chapter-outliner 废弃）：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，**零图写入**；头部取材指纹（素材 id+内容指纹），dialoguer 入场同源自检，素材变动时 novelist 重写并显式作废定稿链（sec.status=-1 + 行 -1）；对账新实体走建议 JSON）与 台词.ink（`chapter-dialoguer` 从小说提炼，唯一图写入 `SET sec.script_path + sec.status=10` 定稿产出待审——dashboard 批准 10→11 / 驳回 10→-1；dashboard **编辑保存即 11** 免审）。status 各用通用值（Section 定稿态 **0 创建→10 待审→11 已批**、-1 作废（含人工驳回）↔dialoguer 重写回 10/ LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），sync 级联——节属性变更自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice_key = **hexid(行id)**，插入/删除行不漂移；母带唯一权威 = 行属性 `master_path` = `15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，dashboard 试听/发布/清理全读它）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）；`台词.jsonl` 已停产。**同机位多段**（同 scene_block_id 切走再切回，ink `===` 同 id 块再现）合法——merge 投影为**同 id 多区间**（背景切回），跨节复用块 id 由章级拼接自动加 `secNN-` 前缀去重。两个核心机制：
+每条生产链是有向无环图（如角色美术：`Character → AppearanceStyle → DesignSheet → IllusDesign → StandingIllustration`，**目录树 = 图链路径的 hexid 段**：`06_角色美术/<char_id>/<ds_id>/<costume_id>/立绘/<stand_id>`——节点 name/title 改名零漂移；角色声音设计：`Character →has_voice_design→ VoiceDesign`，由 `char-voice-design` 产、`char-design` 管（status 10 生产完成即待审→11，无 submit 步，下游配音要求 11），下游供 `section-voice-publisher` 节级配音；剧情节级链（**最薄图**）：`Section（编排+定稿态 status/script_path） -[:produces {order}]-> LineAudio(×N 逐句台词行)`——文件是节级产物的唯一载体：小说.md（`chapter-novelist` 产，**提纲已内化**：节的提纲即图数据本身，结构推理在思维链完成不落提纲文件，正文 `### <scene_block_id>` 场景段标题承载拓扑契约，**零图写入**；头部取材指纹（素材 id+内容指纹），dialoguer 入场同源自检，素材变动时 novelist 重写并显式作废定稿链（sec.status=-1 + 行 -1）；对账新实体走建议 JSON）与 台词.ink（`chapter-dialoguer` 从小说提炼，唯一图写入 `SET sec.script_path + sec.status=10` 定稿产出待审——dashboard 批准 10→11 / 驳回 10→-1；dashboard **编辑保存即 11** 免审）。status 各用通用值（Section 定稿态 **0 创建→10 待审→11 已批**、-1 作废（含人工驳回）↔dialoguer 重写回 10/ LineAudio 逐句行：say 行 0→10→11 行级音频审、非 say 行拆分即 11），sync 级联——节属性变更自动作废全部行，重拆时 text_sha1 匹配且 wav 在的未变句恢复 10 只重配被改句）。**台词双轨分离**：`台词.ink`（ink 方言，规范见 chapter-dialoguer references/ink方言规范.md）是人读/人改的唯一定稿格式（机器可解析，script_splitter.parse_ink）；图行是结构化真相——行身份=节点雪花 id（voice_key = **hexid(行id)**，插入/删除行不漂移；母带唯一权威 = 行属性 `master_path` = `15_声音/<ch_hexid>/<block_hexid>/<行_hexid>.wav`，dashboard 试听/发布/清理全读它）、顺序=produces 边 order（大间距 ×1000，句间插入取中点）。**同机位多段**（同 scene_block_id 切走再切回，ink `===` 同 id 块再现）合法——merge 投影为**同 id 多区间**（背景切回），跨节复用块 id 由章级拼接自动加 `secNN-` 前缀去重。两个核心机制：
 
-- **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成 / `2` 图片完成 / `10` 待审 / `11` 批准。规则在 dailian-dashboard（治理后台，独立项目）`app/services/status.py` 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
+- **`status` 字段**跟踪节点状态，统一语义：`-1` 作废重做 / `0` 待处理 / `1` 已完成（数据节点；BgmTrack 中间态=描述已产出）/ `2` 归档态（BgmTrack 音频归档）/ `10` 待审 / `11` 批准。规则在 dailian-dashboard（治理后台，独立项目）`app/services/status.py` 的 `NODE_STATUS` 显式定义（**刻意不解析 .md**，.md 是散文式说明、格式不稳）。
 - **`sync` 边属性**：上游节点属性变更后，沿 `sync=true` 出边 BFS，把可达下游 `status` 重置为 **`-1`**（作废重做）；`sync=false` 阻断（如叙事边 `appears_as`、`relation`）。级联实现在 dailian-dashboard 的 `app/services/cascade.py`（dashboard 审批动作不触发级联，级联只由 Cypher 控制台/节点编辑确认卡触发）。
 
 ### 4. Web 运行时与发布（全量主包模式）
@@ -86,16 +86,16 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 10. **Cypher map 字面量键用裸标识符**（本版 Neo4j 不接受双引号字符串键）：`SET n += {name: 'x'}` 而非 `{"name": ...}`。
 11. **双后端（Memgraph/Neo4j）聚合兼容**：多段 `OPTIONAL MATCH` 后**禁止直接 `RETURN` 聚合**（collect/count/sum 跨段引用 → Memgraph `Unbound variable` 崩，Neo4j 正常）。每段后紧跟 `WITH <锚>, collect(...) AS ...` 物化再进下一段；聚合后 `ORDER BY` 只用 RETURN 别名（`ORDER BY time`，禁 `ORDER BY e.time`）；collect 物化后计数/过滤用列表推导并显式滤 null 项（`x IS NOT NULL`）。段数 ≥3 或混合行粒度时优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，见 suggest_lint.py R5）
 12. **禁 pattern comprehension** `[(a)-[:r]->(b) | expr]`（Neo4j 独有，Memgraph 不支持）——改 `OPTIONAL MATCH` + `WITH ... collect(...)`，或拆查询。
-13. **谓词/CASE 内避免 `IN` 字面量列表**（Memgraph 实测 IN+负数列表 parse 崩；字符串字面量列表未实测不赌）：常量多值判断用 `=` + `OR`；动态 id 集合的 IN 可保留（服务器 Memgraph 验证清单项）。计数用 collect 物化 + `size([x IN l WHERE ...])`。
+13. **谓词/CASE 内避免 `IN` 字面量列表**（Memgraph 对 IN+负数列表 parse 崩；字符串字面量列表未验证不赌）：常量多值判断用 `=` + `OR`；动态 id 集合的 IN 可保留（服务器 Memgraph 验证清单项）。计数用 collect 物化 + `size([x IN l WHERE ...])`。
 14. **属性值禁备忘/解释性文字**：不写日期注记（「2026-11-10 修改」）、编号引用推导（「I31+I39→…」）、归属标注（「（归属林梦）」）——属性只存当下有效值，变更历史不落图。占位文字（如「内容待补」）允许。
 
 ## Event 图拓扑铁律（图结构契约，写边/建节点前必读）
 
 - **Event 定位一律 `occurs_at → Location`**（一跳；N:N——跨地点事件多挂）；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）。
 - 节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`。
-- **Event 间禁建 `evt_relation`**（已废止，先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Hook/Lore 无出边**：事实成立挂 `Event ─establishes→ Hook`（原 link 边已废止归一），固有设定挂 `(Character|Location) ─has_info→ Lore`，读者侧揭示时刻挂 `SubEvent ─reveals→ Hook`——事件与信息之间不走因果边。
+- **Event 间禁建 `evt_relation`**（先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Hook/Lore 无出边**：事实成立挂 `Event ─establishes→ Hook`，固有设定挂 `(Character|Location) ─has_info→ Lore`，读者侧揭示时刻挂 `SubEvent ─reveals→ Hook`——事件与信息之间不走因果边。
 - Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/剧情/](00_init/Schema/剧情/)）。
-- **占位节点**（status=0：Spot/Scene/CostumeStyle/IllusDesign/Character/Location）由 event-ideator（叙事基础域）与 event-stager（演出域）经建议 JSON 创建，实现 agent 入口查询圈占位消化。
+- **占位节点**由 event-ideator（叙事基础域：Character/Location）与 event-stager（演出域：Spot/Scene/CostumeStyle/IllusDesign）经建议 JSON 创建——Character/Location/Spot 为裸节点（**无 status**，缺口由内容缺失/结构表达）；Scene/CostumeStyle/IllusDesign 为流水线 status=0 起点。实现 agent 入口查询圈占位消化（裸节点按结构判据，如占位 Character=缺 has_appearance）。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
@@ -115,7 +115,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 
 一切**临时要执行的文件**——一次性 .py 脚本、批量 .cypher 文件（`cypher_exec.py -f` 用）、任务/中间 JSON、候选下载、skill 工作区——一律放仓库根 `.tmp/` 下，禁止散落项目根或其他生产目录污染 git status。skills 已有约定子目录（`.tmp/novelist/`、`.tmp/ambient/` 等）与命名前缀（`.tmp/voice-tasks-<stem>-sec<MM>.json` 这类），沿用既有模式。临时文件用后即删（skill 收尾步约定），不留跨轮残留；需要长期保留的产物不进 `.tmp/`，写不进 git 的东西也不要指望它长期存在。
 
-## ID 约定（id 锚定，2026-10-31 全量迁移）
+## ID 约定（id 锚定）
 
 节点 ID 用雪花算法 Base62 编码（如 `Nv93TkkkgC`），全局唯一、**无前缀**；节点 name/title 是纯显示名，**不锚定任何目录/文件名/运行时键**（改名零漂移）。两种形态按用途严格区分：
 

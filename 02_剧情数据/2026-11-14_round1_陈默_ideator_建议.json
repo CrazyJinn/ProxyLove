@@ -1,0 +1,18 @@
+[
+  {
+    "check": "I1_placeholder_entity",
+    "priority": "medium",
+    "reason": "2024-06-15 探班事件（RMoHgKlbdq）之后的新事件需要一个小女孩角色；图上 Character 名录无儿童角色，占位兜底。裸节点无 status，外貌链不在 ideator 创建域。",
+    "content": "占位 Character：朵朵——术后步行训练的小女孩：怕生慢热，熟了以后黏人，笑声脆亮",
+    "source": "event-ideator",
+    "cypher": "CREATE (c:Character {id:'S3oFjfNVlg'}) SET c.name='朵朵', c.vibe='术后步行训练的小女孩：怕生慢热，熟了以后黏人，笑声脆亮';"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "用户需求：探班（RMoHgKlbdq，2024-06-15 10:00 陈默+苏晓禾@康复中心）之后陈默陪一个小女孩玩。事件功能=苏晓禾对陈默认知升级的铺垫环（06-17 相亲前），人物质感事件非结构必需（删除测试链条不塌）。occurs_at 引用既有 Location 康复中心（QP23NrFZqm）；involved 引用既有陈默（NvCkQmFPFq）、苏晓禾（NvCkQmFPFs）与占位朵朵（S3oFjfNVlg）。",
+    "content": "新 Event：陈默陪康复中心的小女孩玩——2024-06-15 11:00:00，行动；陈默蹲在康复区陪朵朵搭积木，高塔倒了她咯咯笑着重来；苏晓禾倚着门框没出声",
+    "source": "event-ideator",
+    "cypher": "CREATE (e:Event {id:'S3oFjfNVlh'}) SET e.title='陈默陪康复中心的小女孩玩', e.time='2024-06-15 11:00:00', e.type='行动', e.description='陈默蹲在康复区陪朵朵搭积木，高塔倒了她咯咯笑着重来；苏晓禾倚着门框没出声';\nMATCH (e:Event {id:'S3oFjfNVlh'}), (l:Location {id:'QP23NrFZqm'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S3oFjfNVlh'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S3oFjfNVlh'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'S3oFjfNVlg'}), (e:Event {id:'S3oFjfNVlh'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;"
+  }
+]

@@ -46,3 +46,6 @@
 | fs_571513_dingdong_notification | Soft-Notifications - Bell - Ding-Dong.mp3 | LegitCheese | https://freesound.org/people/LegitCheese/sounds/571513/ | CC0 | amb-chapter01_新皮肤-s05_fridge-R1usgtKN2O | 微信式叮咚来电提示（两声软铃，sec05 语音来电）；0.80s 全长原样+尾淡出 |
 | fs_666296_phone_chime | Phone chime.wav | ChristopherJngs | https://freesound.org/people/ChristopherJngs/sounds/666296/ | CC0 | — | sec05 首选被用户驳回（要微信式叮咚方向）；（待清） |
 | fs_437687_loud_boat_horn | Loud boat horn | SamsterBirdies | https://freesound.org/people/SamsterBirdies/sounds/437687/ | CC0 | amb-chapter01_新皮肤-s08_riverside-RK6oHlOwu4 | sec08 货船鸣笛（清晨江面长笛）；峰值截取 2.0s+尾淡出，应用户要求降音量至峰值 0.35（原 0.99） |
+| fs_842380_entrance_open1 | entrance_open1.wav | Mihacappy | https://freesound.org/people/Mihacappy/sounds/842380/ | CC0 | 054750e6ef800016 | ch02 sec01 超市进店自动门提示音；峰值截取 1.4s+尾淡出 |
+| fs_384487_phone_vibrate_surface | cell phone vibrate glass_loopable.wav | mobaudio | https://freesound.org/people/mobaudio/sounds/384487/ | CC0 | 05475bd505400017 | ch02 sec00 手机在桌面震动嗡嗡（硬质表面共振）；峰值截取 1.5s |
+| fs_704896_end_call | Old Cell End Call.wav | AlfredHitch | https://freesound.org/people/AlfredHitch/sounds/704896/ | CC0 | 05475bd505800012 | ch02 sec00 通话挂断提示音；1.0s 原样 |

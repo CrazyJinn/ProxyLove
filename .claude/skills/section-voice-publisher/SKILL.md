@@ -150,9 +150,10 @@ env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/voice_clone_runne
 ```bash
 env/.venv-qwen/Scripts/python.exe "${CLAUDE_SKILL_DIR}/scripts/voice_clone_runner.py" publish \
   '.tmp/voice-tasks-<stem>-sec<MM>.json' \
-  --profiles '.tmp/voice-profiles-<stem>-sec<MM>.json' \
-  --out-dir '15_声音'   # 母带落 task.master_path（24kHz 原生；路径唯一权威，不从 key 解析）
+  --profiles '.tmp/voice-profiles-<stem>-sec<MM>.json'
 ```
+
+母带落 task.master_path（24kHz 原生；路径唯一权威，不从 key 解析，无输出目录参数）。
 
 逐句 try/except：单句失败记入 failed 列表（退出码 1 + stderr 逐条列出）——**失败句不 bind**（保持待配下轮重挑），成功句正常。汇报必须包含 failed 清单。`clone_mode=xvec` 的句子用仅说话人向量 prompt（每角色按模式懒构建，同角色 icl/xvec 可混排，全 icl 节零额外开销）。
 
