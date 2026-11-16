@@ -1,0 +1,10 @@
+[
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户口述新增（语义拍板：女主抱怨没衣服穿拉陈默进店，生活流吐槽非仪式感）：苏晓禾抱怨没衣服穿，拉着陈默进服装店——线 description「日常渗透、生活流」直击；时间 06-28 周五 19:00 晚间购物档（苏线内实查 06-27~06-29 空白零撞；跨线互斥不查重）；occurs_at 服装店（复用既有 QmJFWWyN16，06-03 陈默置装先例，零新占位）；involved 陈默+苏晓禾；condition 苏线爬山支线惯例 choice:RINsONAOO0[3]",
+  "content": "新 Event：苏晓禾抱怨没衣服穿拉陈默逛服装店——2024-06-28 19:00，交流；服装店",
+  "cypher": "CREATE (e:Event {id:'S7BjoVv1UG'}) SET e.title='苏晓禾抱怨没衣服穿拉陈默逛服装店', e.time='2024-06-28 19:00:00', e.type='交流', e.description='苏晓禾抱怨衣柜里没衣服穿了，拉着陈默进服装店——试衣间进进出出，陈默被当成人形挂架兼审美顾问（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7BjoVv1UG'}), (l:Location {id:'QmJFWWyN16'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7BjoVv1UG'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7BjoVv1UG'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7BjoVv1UG'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ }
+]

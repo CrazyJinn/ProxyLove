@@ -1,0 +1,10 @@
+[
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户口述新增：陈默姐姐陈念打电话问两人关系进展——陈念=陈默姐姐（relation『姐弟』实查），vibe『话痨式关爱、唠叨塞钱齐飞』，06-14 相亲正是她安排（既定事实）——电话追问进展是既有人物弧的自然延伸；事件惯例：陈念来电均为晨间/深夜档（06-01 23:00 桥上、06-12 08:30 晨间，实查）；时间 06-22 周六 21:00 晚间档（用户拍板提前；苏线内 06-22 仅早市零撞）；occurs_at 八楼出租屋（陈默居所惯例）；involved 只挂陈默+陈念（用户拍板：人物不关联苏晓禾——电话是陈家姐弟私事，苏晓禾只存在于话题里）；condition 苏线惯例 choice:RINsONAOO0[3]",
+  "content": "新 Event：陈念来电问陈默和苏晓禾的进展——2024-06-22 21:00，交流；八楼出租屋",
+  "cypher": "CREATE (e:Event {id:'S7KCvulIv2'}) SET e.title='陈念来电问陈默和苏晓禾的进展', e.time='2024-06-22 21:00:00', e.type='交流', e.description='姐姐陈念电话打来问相亲那姑娘怎么样了——唠叨里全是关心，陈默嘴上敷衍心里发暖（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7KCvulIv2'}), (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7KCvulIv2'}) MERGE (c)-[r2:involved]->(e) ON CREATE SET r2.sync=false;\nMATCH (c:Character {id:'QP23NrFZrz'}), (e:Event {id:'S7KCvulIv2'}) MERGE (c)-[r3:involved]->(e) ON CREATE SET r3.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7KCvulIv2'}) MERGE (a)-[r5:comprises]->(e) ON CREATE SET r5.sync=false;"
+ }
+]

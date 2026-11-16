@@ -1,0 +1,42 @@
+[
+ {
+  "check": "I5_event_delete",
+  "priority": "high",
+  "source": "event-ideator",
+  "reason": "用户拍板消化 06-22 重复拍：练习赛首胜与 06-26 联赛开门红同为「首胜+庆功」情绪拍，且 round5 兄弟线（06-21 拉人/06-23 合宿）已夹住该窗口，首胜显多余；连删 2 个 sub（铁律：删父连带删 sub）；其 leads_to→烧烤边随 DETACH 消失；零挂节/零 Hook/零指纹（实查）",
+  "content": "删除：队伍练习赛首胜（RO5gftNez3，含 2 sub RslBusGXcl/RslBusGXcm）",
+  "cypher": "MATCH (e:Event {id:'RO5gftNez3'})-[:refines]->(s:SubEvent) DETACH DELETE s;\nMATCH (e:Event {id:'RO5gftNez3'}) DETACH DELETE e;"
+ },
+ {
+  "check": "I5_event_delete",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户拍板：宵夜被烧烤平替（同为开门红当晚庆功，烧烤现场更立体且带闹事后续钩子）；零 sub（实查）、零因果边、零挂节、零指纹",
+  "content": "删除：沈暮雪请大家吃宵夜庆祝开门红（S731rhlEpN，被烧烤平替）",
+  "cypher": "MATCH (e:Event {id:'S731rhlEpN'}) DETACH DELETE e;"
+ },
+ {
+  "check": "I4_event_rewrite",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户拍板：烧烤挪 06-26 顶替宵夜庆祝开门红；title/desc 对齐开门红语境；involved 原只挂陈默（实查）——请客者沈暮雪与新队员李想补齐（对齐报名表/开门红三人组惯例）",
+  "content": "平移+改写：烧烤（RO5gftNez2）→ 06-26 21:00，title「沈暮雪请大家吃烧烤庆祝开门红」，involved 补沈暮雪/李想",
+  "cypher": "MATCH (e:Event {id:'RO5gftNez2'}) SET e.time='2024-06-26 21:00:00', e.title='沈暮雪请大家吃烧烤庆祝开门红', e.description='首轮取胜当晚，沈暮雪请全队到路边摊吃烧烤庆祝开门红（细节待补）';\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RO5gftNez2'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'RqeKlYIPnF'}), (e:Event {id:'RO5gftNez2'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I4_event_rewrite",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户拍板：闹事随烧烤挪 06-26（烧烤散场后语境不变）；desc 原文「烧烤散场后」无需改写；involved 原只挂陈默（实查）——被纠缠者沈暮雪补挂；此事件是 06-27 道谢「手上未愈的伤疤」的锚（desc 实查），保住即道谢不断链",
+  "content": "平移：混混闹事（RRl7l6AeGH）→ 06-26 22:30，involved 补沈暮雪",
+  "cypher": "MATCH (e:Event {id:'RRl7l6AeGH'}) SET e.time='2024-06-26 22:30:00';\nMATCH (c:Character {id:'NvCkQmFPFu'}), (e:Event {id:'RRl7l6AeGH'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I4_event_rewrite",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "必要波及修复：道谢 desc「闷了两周的道谢」系按闹事旧位（06-22）所写；闹事平移 06-26 后隔天即道谢，时长失真——改写为「前晚」并保留「未愈的伤疤」（隔天未愈合理）；title「迟来」保留（冷面性格拖到次日训练间隙才说，仍成立）",
+  "content": "改写：迟来道谢（RxbGE30zTN）desc 去「闷了两周」改「前晚」",
+  "cypher": "MATCH (e:Event {id:'RxbGE30zTN'}) SET e.description='训练间隙沈暮雪注意到陈默手上未愈的伤疤，前晚的事说出口——「那晚……谢谢」（细节待补）';"
+ }
+]

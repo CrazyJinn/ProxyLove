@@ -1,0 +1,50 @@
+[
+ {
+  "check": "I1_new_location",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "用户灵感链 G2 需要游乐园地点（生日出游）：图上无游乐园 Location（名录 20 个实查全查无）；裸节点占位（Location 无 status，缺口由内容缺失表达）",
+  "content": "新 Location：游乐园",
+  "cypher": "CREATE (l:Location {id:'S7AMLCsuLV'}) SET l.name='游乐园';"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "灵感链第一拍（用户修正：苏晓禾转述）：朵朵既有事实实查——S3oFjfNVlg，06-17 陪玩事件 involved，vibe「术后步行训练的小女孩，怕生慢热熟了黏人」；06-23 周日 15:00 陈默白天档空闲（06-23 仅 23:00 合宿）；occurs_at 康复中心；condition 苏线爬山支线惯例 choice:RINsONAOO0[3]；查重：06-23 康复中心零事件",
+  "content": "新 Event：苏晓禾转述朵朵点名要陈默给她过生日——2024-06-23 15:00，交流；康复中心",
+  "cypher": "CREATE (e:Event {id:'S7AMLCsuLQ'}) SET e.title='苏晓禾转述朵朵点名要陈默给她过生日', e.time='2024-06-23 15:00:00', e.type='交流', e.description='苏晓禾向陈默转述：朵朵跟护理师们宣布，今年生日要陈默哥哥来过——怕生的小姑娘只黏他（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7AMLCsuLQ'}), (l:Location {id:'QP23NrFZqm'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7AMLCsuLQ'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7AMLCsuLQ'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7AMLCsuLQ'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "灵感链第二拍（用户修正：海边→游乐园）：06-24 周一 10:00 白天档（06-24 陈默实查仅 10:00 同层时间不同地的沈线辞呈，地点网吧不同零冲突）；occurs_at 游乐园（本轮新建占位）；condition 同惯例",
+  "content": "新 Event：陈默陪朵朵去游乐园过生日——2024-06-24 10:00，行动；游乐园",
+  "cypher": "CREATE (e:Event {id:'S7AMLCsuLR'}) SET e.title='陈默陪朵朵去游乐园过生日', e.time='2024-06-24 10:00:00', e.type='行动', e.description='朵朵的生日愿望成真：陈默和苏晓禾带她去游乐园，术后第一次玩得这么疯（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7AMLCsuLR'}), (l:Location {id:'S7AMLCsuLV'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7AMLCsuLR'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7AMLCsuLR'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'S3oFjfNVlg'}), (e:Event {id:'S7AMLCsuLR'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7AMLCsuLR'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "灵感链第三拍：苏晓禾推荐陈默去护理院当护理——苏晓禾 Lore 实查「刚毕业的护理师、专业扎实」「对照顾的人投入真感情」，推荐有专业依据；06-25 周二 16:00 白天档（06-25 陈默实查仅 09:00 报名表）；occurs_at 康复中心；condition 同惯例",
+  "content": "新 Event：苏晓禾推荐陈默去护理院当护理——2024-06-25 16:00，交流；康复中心",
+  "cypher": "CREATE (e:Event {id:'S7AMLCsuLS'}) SET e.title='苏晓禾推荐陈默去护理院当护理', e.time='2024-06-25 16:00:00', e.type='交流', e.description='看陈默照顾朵朵有一套，苏晓禾正式提议：护理院在招护理，要不要试试——被电竞拒之门外的人，或许在别处被需要（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7AMLCsuLS'}), (l:Location {id:'QP23NrFZqm'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7AMLCsuLS'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7AMLCsuLS'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7AMLCsuLS'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "灵感链第四拍（用户拍板 06-26）：自学护理备战面试——白天 10:00，避开沈线 06-26 晚间三连拍（开门红/烧烤/闹事，实查）；occurs_at 八楼出租屋（陈默居所惯例）；单人事件；condition 同惯例",
+  "content": "新 Event：陈默自学护理知识备战面试——2024-06-26 10:00，行动；八楼出租屋",
+  "cypher": "CREATE (e:Event {id:'S7AMLCsuLT'}) SET e.title='陈默自学护理知识备战面试', e.time='2024-06-26 10:00:00', e.type='行动', e.description='接下苏晓禾的提议后，陈默买了护理教材开始自学——从人体解剖到术后护理，一个被电竞淘汰的人开始新的功课（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7AMLCsuLT'}), (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7AMLCsuLT'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7AMLCsuLT'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "high",
+  "source": "event-ideator",
+  "reason": "灵感链第五拍（用户指定 06-30 落在面试）：06-30 周日 10:00 上午档（同日 15:00 沈线美术馆，不同线不同时段零冲突）；occurs_at 康复中心（苏晓禾工作地、护理岗位关联地，零新占位）；involved 陈默+苏晓禾（推荐人）；condition 同惯例",
+  "content": "新 Event：陈默护理院面试——2024-06-30 10:00，转折；康复中心",
+  "cypher": "CREATE (e:Event {id:'S7AMLCsuLU'}) SET e.title='陈默护理院面试', e.time='2024-06-30 10:00:00', e.type='转折', e.description='自学四天后陈默坐上护理院面试桌——答得生涩但真诚，苏晓禾在门外等他（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7AMLCsuLU'}), (l:Location {id:'QP23NrFZqm'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7AMLCsuLU'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7AMLCsuLU'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7AMLCsuLU'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ }
+]

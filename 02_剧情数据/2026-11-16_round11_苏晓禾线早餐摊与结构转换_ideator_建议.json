@@ -1,0 +1,26 @@
+[
+ {
+  "check": "I5_event_to_subevent",
+  "priority": "high",
+  "source": "event-ideator",
+  "reason": "用户结构拍板：独立 Event「苏晓禾转述朵朵点名要陈默给她过生日」（S7AMLCsuLQ，06-23 15:00）降维为 06-21 爬山事件（RQD2NmjrIO）的 SubEvent——爬山现有 4 sub（09:35/09:55/10:15/11:30 实查），下山收尾拍插在 11:30 登顶后；转述事件零 sub 零挂节（实查）可干净转换：删原 Event，新建 SubEvent 挂 refines + 时间兼容父事件（06-21 当日内）；06-23 的 K2 早餐摊腾出当日主拍位",
+  "content": "结构转换：「转述朵朵点名」Event → 06-21 爬山事件的收尾 SubEvent（原 Event 删除）",
+  "cypher": "MATCH (e:Event {id:'S7AMLCsuLQ'}) DETACH DELETE e;\nCREATE (s:SubEvent {id:'S7CHaR6mjQ'}) SET s.title='陈默爬山脚疼苏晓禾细心照顾 · 转述朵朵点名要陈默过生日', s.time='2024-06-21 12:30:00', s.description='下山路上苏晓禾转述：朵朵跟护理师们宣布，今年生日要陈默哥哥来过——怕生的小姑娘只黏他（细节待补）';\nMATCH (e:Event {id:'RQD2NmjrIO'}), (s:SubEvent {id:'S7CHaR6mjQ'}) MERGE (e)-[r:refines]->(s) ON CREATE SET r.sync=true;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "medium",
+  "source": "event-ideator",
+  "reason": "K2（用户拍板时间 06-23）：晨跑后苏晓禾带陈默吃本地早餐摊——线 description「被一个活在真实里的人拉回清晨」的渗透拍；晨跑系列 06-05/09/11 后断档，06-23 苏线内零事件（转述已转 sub 腾位，实查）；occurs_at 路边摊（早餐摊形态，复用既有零新占位）；involved 陈默+苏晓禾；condition 苏线惯例 choice:RINsONAOO0[3]",
+  "content": "新 Event：晨跑后苏晓禾带陈默吃本地早餐摊——2024-06-23 07:30，交流；路边摊",
+  "cypher": "CREATE (e:Event {id:'S7CHaR6mjR'}) SET e.title='晨跑后苏晓禾带陈默吃本地早餐摊', e.time='2024-06-23 07:30:00', e.type='交流', e.description='跑完步的豆浆油条：苏晓禾带陈默坐进本地早餐摊，陈默第一次体会到早起的奖励，晨跑从任务变成期待（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7CHaR6mjR'}), (l:Location {id:'QP23NrFZql'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7CHaR6mjR'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7CHaR6mjR'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7CHaR6mjR'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ },
+ {
+  "check": "I2_new_event",
+  "priority": "low",
+  "source": "event-ideator",
+  "reason": "K4（用户选定）：面试结束两人在江边吃午饭等结果——不写结果只写等待，不越「06-30 落在面试上」的界；面试 10:00 开始，午饭档 12:30 合理；occurs_at 南滨路（江边步道，复用既有零新占位）；involved 陈默+苏晓禾；condition 同惯例",
+  "content": "新 Event：面试结束两人在江边吃午饭等结果——2024-06-30 12:30，交流；南滨路",
+  "cypher": "CREATE (e:Event {id:'S7CHaR6mjS'}) SET e.title='面试结束两人在江边吃午饭等结果', e.time='2024-06-30 12:30:00', e.type='交流', e.description='答得生涩但真诚：走出面试室的陈默和苏晓禾在南滨路吃午饭等结果，他第一次发现天这么亮（细节待补）', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S7CHaR6mjS'}), (l:Location {id:'QP23NrFZqc'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S7CHaR6mjS'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S7CHaR6mjS'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S7CHaR6mjS'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+ }
+]

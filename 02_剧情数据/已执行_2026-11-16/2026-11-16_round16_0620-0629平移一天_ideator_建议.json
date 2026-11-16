@@ -1,0 +1,434 @@
+[
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-20 09:00:00 → 2024-06-19 09:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "陈默答复苏晓禾答应去爬山（苏晓禾支线）：time 2024-06-20 09:00:00→2024-06-19 09:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RINsONAON8'}) SET e.time='2024-06-19 09:00:00', e.description='陈默微信回复苏晓禾，答应一起去爬山（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-20 09:00:00 → 2024-06-19 09:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "陈默答复林梦答应去漫展（林梦支线）：time 2024-06-20 09:00:00→2024-06-19 09:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RINsONAON9'}) SET e.time='2024-06-19 09:00:00', e.description='陈默微信回复林梦，答应陪她去漫展（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-20 09:00:00 → 2024-06-19 09:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默回拨电话加入沈暮雪自建战队（沈暮雪支线）：time 2024-06-20 09:00:00→2024-06-19 09:00:00",
+    "cypher": "MATCH (e:Event {id:'RINsONAONA'}) SET e.time='2024-06-19 09:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-20 21:00:00 → 2024-06-19 21:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默停播告别直播生涯：time 2024-06-20 21:00:00→2024-06-19 21:00:00",
+    "cypher": "MATCH (e:Event {id:'RqcglHRCSm'}) SET e.time='2024-06-19 21:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-21 09:30:00 → 2024-06-20 09:30:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "陈默爬山脚疼苏晓禾细心照顾：time 2024-06-21 09:30:00→2024-06-20 09:30:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RQD2NmjrIO'}) SET e.time='2024-06-20 09:30:00', e.description='答复苏晓禾后出发爬山；山道上陈默脚疼，苏晓禾细心关心照顾（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-21 14:30:00 → 2024-06-20 14:30:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "陈默陪林梦去Tony店做头发准备漫展cos：time 2024-06-21 14:30:00→2024-06-20 14:30:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RqmiTTG8sS'}) SET e.time='2024-06-20 14:30:00', e.description='陈默陪林梦到 Tony 理发店做 cos 造型；Tony 八年手艺打理假发定型，林梦对镜比划出场（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-21 20:00:00 → 2024-06-20 20:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默亲自拉李想入队报恩举荐：time 2024-06-21 20:00:00→2024-06-20 20:00:00",
+    "cypher": "MATCH (e:Event {id:'S77fwiONPM'}) SET e.time='2024-06-20 20:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-22 07:00:00 → 2024-06-21 07:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默跟苏晓禾逛菜市场学挑菜：time 2024-06-22 07:00:00→2024-06-21 07:00:00",
+    "cypher": "MATCH (e:Event {id:'S7BDckog8P'}) SET e.time='2024-06-21 07:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-22 13:00:00 → 2024-06-21 13:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默陪林梦逛漫展：time 2024-06-22 13:00:00→2024-06-21 13:00:00",
+    "cypher": "MATCH (e:Event {id:'RMxYXuS6IE'}) SET e.time='2024-06-21 13:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-22 19:30:00 → 2024-06-21 19:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "漫展散场陈默送林梦回家：time 2024-06-22 19:30:00→2024-06-21 19:30:00",
+    "cypher": "MATCH (e:Event {id:'RQAZwH7RHV'}) SET e.time='2024-06-21 19:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-23 12:00:00 → 2024-06-22 12:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "苏晓禾带陈默吃美食街：time 2024-06-23 12:00:00→2024-06-22 12:00:00",
+    "cypher": "MATCH (e:Event {id:'S7CHaR6mjR'}) SET e.time='2024-06-22 12:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-23 13:30:00 → 2024-06-22 13:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "夏天来了苏晓禾拉着陈默去服装店试裙子：time 2024-06-23 13:30:00→2024-06-22 13:30:00",
+    "cypher": "MATCH (e:Event {id:'S7BjoVv1UG'}) SET e.time='2024-06-22 13:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-23 23:00:00 → 2024-06-22 23:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "李想搬来网吧合宿兄弟开黑夜：time 2024-06-23 23:00:00→2024-06-22 23:00:00",
+    "cypher": "MATCH (e:Event {id:'S77fwiONPN'}) SET e.time='2024-06-22 23:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-24 10:00:00 → 2024-06-23 10:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "沈暮雪递交辞呈交还工牌正式离开星耀：time 2024-06-24 10:00:00→2024-06-23 10:00:00",
+    "cypher": "MATCH (e:Event {id:'RxAkEHM6eO'}) SET e.time='2024-06-23 10:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-24 10:00:00 → 2024-06-23 10:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默陪朵朵去游乐园过生日：time 2024-06-24 10:00:00→2024-06-23 10:00:00",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLR'}) SET e.time='2024-06-23 10:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-24 16:00:00 → 2024-06-23 16:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "苏晓禾推荐陈默去护理院当护理：time 2024-06-24 16:00:00→2024-06-23 16:00:00",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLS'}) SET e.time='2024-06-23 16:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-25 09:00:00 → 2024-06-24 09:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "战队线上提交次级联赛报名表：time 2024-06-25 09:00:00→2024-06-24 09:00:00",
+    "cypher": "MATCH (e:Event {id:'RxAkEHM6eP'}) SET e.time='2024-06-24 09:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-25 10:00:00 → 2024-06-24 10:00:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "陈默自学护理知识备战面试：time 2024-06-25 10:00:00→2024-06-24 10:00:00",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLT'}) SET e.time='2024-06-24 10:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-26 19:30:00 → 2024-06-25 19:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "次级联赛首轮取胜开门红：time 2024-06-26 19:30:00→2024-06-25 19:30:00",
+    "cypher": "MATCH (e:Event {id:'S731rhlEpM'}) SET e.time='2024-06-25 19:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-26 21:00:00 → 2024-06-25 21:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "沈暮雪请大家吃烧烤庆祝开门红：time 2024-06-26 21:00:00→2024-06-25 21:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RO5gftNez2'}) SET e.time='2024-06-25 21:00:00', e.description='首轮取胜，沈暮雪请全队到路边摊吃烧烤庆祝开门红（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-26 22:30:00 → 2024-06-25 22:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "混混闹事纠缠沈暮雪陈默保护受伤：time 2024-06-26 22:30:00→2024-06-25 22:30:00",
+    "cypher": "MATCH (e:Event {id:'RRl7l6AeGH'}) SET e.time='2024-06-25 22:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-27 10:00:00 → 2024-06-26 10:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "陈默和苏晓禾一起去瑜伽馆练瑜伽：time 2024-06-27 10:00:00→2024-06-26 10:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'S7H1SfxpLd'}) SET e.time='2024-06-26 10:00:00', e.description='苏晓禾带陈默去瑜伽馆体验瑜伽——久坐电竞椅的身体第一次直面柔韧性测试，僵硬得像块木板（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-27 18:30:00 → 2024-06-26 18:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "沈暮雪趁众人吃饭给陈默送鸡汤：time 2024-06-27 18:30:00→2024-06-26 18:30:00",
+    "cypher": "MATCH (e:Event {id:'S796NCextY'}) SET e.time='2024-06-26 18:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-27 18:45:00 → 2024-06-26 18:45:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "送鸡汤被李想撞见调侃陈默：time 2024-06-27 18:45:00→2024-06-26 18:45:00",
+    "cypher": "MATCH (e:Event {id:'S796NCextZ'}) SET e.time='2024-06-26 18:45:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-27 20:30:00 → 2024-06-26 20:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "训练间隙沈暮雪注意到陈默手上未愈的伤疤迟来道谢：time 2024-06-27 20:30:00→2024-06-26 20:30:00",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTN'}) SET e.time='2024-06-26 20:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-28 22:00:00 → 2024-06-27 22:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "咖啡店深夜谈心沈暮雪吐露建队动机：time 2024-06-28 22:00:00→2024-06-27 22:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RxAkEHM6eQ'}) SET e.time='2024-06-27 22:00:00', e.description='咖啡店长谈，沈暮雪首次开口回应当初那句「等你值得得到答案」——吐露顶住江烈反对挖他、自建战队的真正理由；理由内容待补（用户口述）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-29 14:00:00 → 2024-06-28 14:00:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "赛前李想向陈默交底心结兄弟互挺：time 2024-06-29 14:00:00→2024-06-28 14:00:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'S77fwiONPO'}) SET e.time='2024-06-28 14:00:00', e.description='得知对手是星耀一队，李想赛前向陈默坦白一直觉得拖累大家；陈默回那天你站我这边，这次我们一起赢回来（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-29 19:30:00 → 2024-06-28 19:30:00（06-20~06-29 全体 -1 天，06-30 不动）",
+    "content": "次级联赛第二轮遭遇星耀一队被淘汰：time 2024-06-29 19:30:00→2024-06-28 19:30:00",
+    "cypher": "MATCH (e:Event {id:'S731rhlEpO'}) SET e.time='2024-06-28 19:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "时间线平移：2024-06-29 21:30:00 → 2024-06-28 21:30:00（06-20~06-29 全体 -1 天，06-30 不动）；同时清除 desc 时间措辞（用户口径：Event desc 零时间措辞，时间唯一承载是 Event.time）",
+    "content": "败后江烈主动认可草根战队：time 2024-06-29 21:30:00→2024-06-28 21:30:00；desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'S77fwiONPP'}) SET e.time='2024-06-28 21:30:00', e.description='憾负出局，江烈主动找到这支草根战队，承认他们配得上职业赛场——沈暮雪的前队长对白手起家者的认可（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默爬山脚疼苏晓禾细心照顾 · 起步幻想落空 的 2024-06-21 09:35:00 → 2024-06-20 09:35:00",
+    "content": "sub 平移 2024-06-21 09:35:00→2024-06-20 09:35:00",
+    "cypher": "MATCH (s:SubEvent {id:'RsQjKULMe3'}) SET s.time='2024-06-20 09:35:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默爬山脚疼苏晓禾细心照顾 · 山道脚疼逞强 的 2024-06-21 09:55:00 → 2024-06-20 09:55:00",
+    "content": "sub 平移 2024-06-21 09:55:00→2024-06-20 09:55:00",
+    "cypher": "MATCH (s:SubEvent {id:'RsQjKULMe4'}) SET s.time='2024-06-20 09:55:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默爬山脚疼苏晓禾细心照顾 · 观景台细心照顾 的 2024-06-21 10:15:00 → 2024-06-20 10:15:00",
+    "content": "sub 平移 2024-06-21 10:15:00→2024-06-20 10:15:00",
+    "cypher": "MATCH (s:SubEvent {id:'RsQjKULMe5'}) SET s.time='2024-06-20 10:15:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默爬山脚疼苏晓禾细心照顾 · 登上了山顶 的 2024-06-21 11:30:00 → 2024-06-20 11:30:00",
+    "content": "sub 平移 2024-06-21 11:30:00→2024-06-20 11:30:00",
+    "cypher": "MATCH (s:SubEvent {id:'RspiQlM31u'}) SET s.time='2024-06-20 11:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默爬山脚疼苏晓禾细心照顾 · 转述朵朵点名要陈 的 2024-06-21 12:30:00 → 2024-06-20 12:30:00",
+    "content": "sub 平移 2024-06-21 12:30:00→2024-06-20 12:30:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7CHaR6mjQ'}) SET s.time='2024-06-20 12:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默陪林梦去Tony店做头发 · Tony打趣女 的 2024-06-21 14:40:00 → 2024-06-20 14:40:00",
+    "content": "sub 平移 2024-06-21 14:40:00→2024-06-20 14:40:00",
+    "cypher": "MATCH (s:SubEvent {id:'RsQjKULMe6'}) SET s.time='2024-06-20 14:40:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默陪林梦去Tony店做头发 · 对镜比划出场 的 2024-06-21 15:10:00 → 2024-06-20 15:10:00",
+    "content": "sub 平移 2024-06-21 15:10:00→2024-06-20 15:10:00",
+    "cypher": "MATCH (s:SubEvent {id:'RsQjKULMe7'}) SET s.time='2024-06-20 15:10:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默陪林梦逛漫展 · cos亮相入场 的 2024-06-22 13:00:00 → 2024-06-21 13:00:00",
+    "content": "sub 平移 2024-06-22 13:00:00→2024-06-21 13:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'RslBusGXci'}) SET s.time='2024-06-21 13:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默陪林梦逛漫展 · 展厅扫谷 的 2024-06-22 14:00:00 → 2024-06-21 14:00:00",
+    "content": "sub 平移 2024-06-22 14:00:00→2024-06-21 14:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'RslBusGXcj'}) SET s.time='2024-06-21 14:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 陈默陪林梦逛漫展 · 主舞台高光 的 2024-06-22 16:00:00 → 2024-06-21 16:00:00",
+    "content": "sub 平移 2024-06-22 16:00:00→2024-06-21 16:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'RslBusGXck'}) SET s.time='2024-06-21 16:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 漫展散场陈默送林梦回家 · 散场拎战利品 的 2024-06-22 19:30:00 → 2024-06-21 19:30:00",
+    "content": "sub 平移 2024-06-22 19:30:00→2024-06-21 19:30:00",
+    "cypher": "MATCH (s:SubEvent {id:'RslBusGXcn'}) SET s.time='2024-06-21 19:30:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 漫展散场陈默送林梦回家 · 院门口道别 的 2024-06-22 20:10:00 → 2024-06-21 20:10:00",
+    "content": "sub 平移 2024-06-22 20:10:00→2024-06-21 20:10:00",
+    "cypher": "MATCH (s:SubEvent {id:'RslBusGXco'}) SET s.time='2024-06-21 20:10:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 苏晓禾带陈默吃美食街 · 档口边走边吃 的 2024-06-23 12:10:00 → 2024-06-22 12:10:00",
+    "content": "sub 平移 2024-06-23 12:10:00→2024-06-22 12:10:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7DBKNvoO3'}) SET s.time='2024-06-22 12:10:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 苏晓禾带陈默吃美食街 · 长桌分食 的 2024-06-23 12:40:00 → 2024-06-22 12:40:00",
+    "content": "sub 平移 2024-06-23 12:40:00→2024-06-22 12:40:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7DBKNvoO4'}) SET s.time='2024-06-22 12:40:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 夏天来了苏晓禾拉着陈默去服装店试裙子 · 进店挑 的 2024-06-23 13:40:00 → 2024-06-22 13:40:00",
+    "content": "sub 平移 2024-06-23 13:40:00→2024-06-22 13:40:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7DKJFnQXI'}) SET s.time='2024-06-22 13:40:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 夏天来了苏晓禾拉着陈默去服装店试裙子 · 试衣间 的 2024-06-23 14:00:00 → 2024-06-22 14:00:00",
+    "content": "sub 平移 2024-06-23 14:00:00→2024-06-22 14:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7DmSz8ALp'}) SET s.time='2024-06-22 14:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 夏天来了苏晓禾拉着陈默去服装店试裙子 · 季棠荐 的 2024-06-23 14:20:00 → 2024-06-22 14:20:00",
+    "content": "sub 平移 2024-06-23 14:20:00→2024-06-22 14:20:00",
+    "cypher": "MATCH (s:SubEvent {id:'S7DKJFnQXJ'}) SET s.time='2024-06-22 14:20:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 战队线上提交次级联赛报名表 · 聚屏提交 的 2024-06-25 09:00:00 → 2024-06-24 09:00:00",
+    "content": "sub 平移 2024-06-25 09:00:00→2024-06-24 09:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'RxoSkCPyio'}) SET s.time='2024-06-24 09:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "随父事件平移：sub 战队线上提交次级联赛报名表 · 提交余韵 的 2024-06-25 09:00:00 → 2024-06-24 09:00:00",
+    "content": "sub 平移 2024-06-25 09:00:00→2024-06-24 09:00:00",
+    "cypher": "MATCH (s:SubEvent {id:'RxoSkCPyip'}) SET s.time='2024-06-24 09:00:00';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'S4FXC4ZTbk'}) SET e.description='沈暮雪把打印稿逐条过，问到数据来源陈默后背冒汗；她没夸也没贬，只在页边逐条补上训练项；临走把白板笔塞给陈默——赛前讲解由他来讲';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RU4sFkF8im'}) SET e.description='林梦要陈默陪她去漫展，日子她定好了；陈默没把话说死，说定了再回她';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RqKtjJka6S'}) SET e.description='陈默被踢出星耀，沈暮雪来电话：她决定脱离星耀、自建战队，正式邀请陈默加入；不逼他当场答复，等他想清楚再回话（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RINsONAON7'}) SET e.description='林梦的漫展邀约、苏晓禾的爬山邀约、沈暮雪的入队邀请都还没答复';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLU'}) SET e.description='自学一段时间后陈默坐上护理院面试桌——答得生涩但真诚，苏晓禾在门外等他（细节待补）';"
+  },
+  {
+    "check": "I4_event_rewrite",
+    "priority": "medium",
+    "source": "event-ideator",
+    "reason": "Event desc 零时间措辞（用户拍板口径，全窗口扫描违例一并清理）",
+    "content": "desc 去时间措辞",
+    "cypher": "MATCH (e:Event {id:'RxbGE30zTP'}) SET e.description='次级联赛被淘汰的休息日，沈暮雪约陈默同逛美术馆——她的小资地盘，两人第一次在战队之外相处（细节待补）';"
+  }
+]
