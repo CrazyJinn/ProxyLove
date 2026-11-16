@@ -1,0 +1,242 @@
+location:
+  id: S7CzKqXNmC
+  name: 美食街
+  description: 本地烟火小吃街
+room:
+  shell: open
+  floor:
+  - 16.0
+  - 8.0
+  height: 6.0
+  floor_color: '#6e6a66'
+  floor_material: 沥青
+  ground:
+    y: -2.5
+    color: '#9aa0a6'
+    desc: 主街延伸出去的远处街面与邻楼底层，正午日光下泛白
+  sky:
+    color: '#bfd9ec'
+    desc: 初夏正午，淡蓝少云，日头明亮
+  deco: 美食街主街段，两侧小吃档口与公共长桌的露天就餐区
+objects:
+- id: stall_row_near
+  spot: 档口街面区
+  name: 档口排-近段
+  type: box
+  pos:
+  - -7.35
+  - 1.15
+  - 2.6
+  size:
+  - 1.3
+  - 2.3
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b0785a'
+  desc: 小吃档口立面近段：半开卷闸的档口与摞起的蒸笼、垂挂的招牌横幅
+  material: 金属
+- id: stall_row_mid
+  spot: 档口街面区
+  name: 档口排-中段
+  type: box
+  pos:
+  - -7.35
+  - 1.15
+  - 0.0
+  size:
+  - 1.3
+  - 2.3
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b0785a'
+  desc: 小吃档口立面中段：油锅灶台与玻璃卤味柜，蒸汽不断
+  material: 金属
+- id: stall_row_far
+  spot: 档口街面区
+  name: 档口排-远段
+  type: box
+  pos:
+  - -7.35
+  - 1.15
+  - -2.6
+  size:
+  - 1.3
+  - 2.3
+  - 2.6
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b0785a'
+  desc: 小吃档口立面远段：收摊半闭的档口与堆叠的塑料筐
+  material: 金属
+- id: long_table
+  spot: 档口街面区
+  name: 公共长桌
+  type: box
+  pos:
+  - 5.0
+  - 0.38
+  - -0.6
+  size:
+  - 3.2
+  - 0.76
+  - 0.95
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b8bec2'
+  desc: 不锈钢台面公共长桌，陌生人拼桌共用
+  material: 金属
+- id: bench_a
+  spot: 档口街面区
+  name: 条凳-桌前侧
+  type: box
+  pos:
+  - 5.0
+  - 0.23
+  - 0.5
+  size:
+  - 2.9
+  - 0.46
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9a7b52'
+  desc: 长桌前侧原木条凳，坐人一侧
+  material: 原木
+- id: bench_b
+  spot: 档口街面区
+  name: 条凳-桌后侧
+  type: box
+  pos:
+  - 5.0
+  - 0.23
+  - -1.7
+  size:
+  - 2.9
+  - 0.46
+  - 0.35
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#9a7b52'
+  desc: 长桌后侧原木条凳
+  material: 原木
+- id: awning
+  spot: 档口街面区
+  name: 遮阳棚
+  type: box
+  pos:
+  - 5.0
+  - 2.4
+  - -0.6
+  size:
+  - 3.8
+  - 0.15
+  - 1.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#e8e2d4'
+  desc: 金属立柱撑起的米白条幅遮阳棚，替长桌挡住正午日头
+  material: 布艺
+- id: lamp_post
+  spot: 档口街面区
+  name: 路灯柱
+  type: cylinder
+  pos:
+  - -2.5
+  - 1.75
+  - 3.6
+  size:
+  - 0.16
+  - 3.5
+  - 0.16
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#5a5f66'
+  desc: 街边路灯，白天熄着
+  material: 金属
+scenes:
+- id: stall_walk
+  scene_id: S7DBKNvoO1
+  scene_name: 美食街-档口街面
+  spot: 档口街面区
+  camera:
+    pos:
+    - 1.8
+    - 1.55
+    - 2.4
+    look_at:
+    - -3.5
+    - 1.2
+    - -0.5
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 5.5
+    - 0.5
+    color: '#fff2d0'
+    intensity: 2.6
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#e8eef2'
+    intensity: 0.55
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
+- id: longtable_share
+  scene_id: S7DBKNvoO2
+  scene_name: 美食街-公共长桌区
+  spot: 档口街面区
+  camera:
+    pos:
+    - -2.4
+    - 1.55
+    - 2.2
+    look_at:
+    - 4.4
+    - 1.1
+    - -0.8
+    fov: 60
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 5.5
+    - 0.5
+    color: '#fff2d0'
+    intensity: 2.6
+  - type: ambient
+    pos:
+    - 0
+    - 4.0
+    - 0
+    color: '#e8eef2'
+    intensity: 0.55
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []
