@@ -1,0 +1,23 @@
+[
+  {
+    "check": "I1_placeholder_entity",
+    "priority": "medium",
+    "reason": "E1 买教材事件的场地，图上无书店 Location（名录现查确认，仅有路边摊/超市等），占位兜底避免悬空挂边。",
+    "content": "Location 占位：书店——临街两层小书店，二楼有医学护理专区。",
+    "cypher": "CREATE (l:Location {id:'S8zaNYXiEq'}) SET l.name='书店', l.description='临街两层小书店，二楼有医学护理专区';"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "arc→new（苏晓禾线 RpPzkWr7Mw 填充）：现查 06-23 16:00 推荐护理院与 06-24 10:00 自学护理知识之间缺「拿到教材」一环，本事件补齐；苏晓禾 vibe「活在真实里的松弛与细腻边界」承载挑书的干脆。挂苏晓禾线 comprises。",
+    "content": "E1 交流：苏晓禾陪陈默书店买护理教材。time=2024-06-23 18:00:00，occurs_at=书店（占位 S8zaNYXiEq），involved=陈默、苏晓禾，condition=choice:RINsONAOO0[3]。苏晓禾拉着陈默直奔书店，在护理专区把入门教材翻了个遍，挑最厚的一本基础护理学外加一本图解人体——「要考就考明白」。",
+    "cypher": "CREATE (e:Event {id:'S8zaNYXiEr'}) SET e.title='苏晓禾陪陈默书店买护理教材', e.time='2024-06-23 18:00:00', e.type='交流', e.description='苏晓禾拉着陈默直奔书店，在护理专区把入门教材翻了个遍，挑最厚的一本基础护理学外加一本图解人体——要考就考明白。', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S8zaNYXiEr'}), (l:Location {id:'S8zaNYXiEq'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S8zaNYXiEr'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S8zaNYXiEr'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S8zaNYXiEr'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "arc→new（苏晓禾线填充）：旧世界回声面向——王昊（RqeKlYIPnE，前二队队友、06-16 甩锅冲突人设，[3] 线零事件，现查）在陈默转向正常生活后当面嘲讽，苏晓禾回嘴；主旨「对手不是电竞，是虚拟世界里的沉溺」的外部显形。occurs_at=路边摊（QP23NrFZql 现查在图，[1] 线 06-25 烧烤聚餐同款场地）。挂苏晓禾线 comprises。",
+    "content": "E2 交流：书店出来路边摊撸串王昊嘲讽护理陈默苏晓禾回嘴。time=2024-06-23 18:40:00，occurs_at=路边摊，involved=陈默、苏晓禾、王昊，condition=choice:RINsONAOO0[3]。两人在路边摊撸串，王昊从隔壁桌凑过来一句「打游戏的改行去伺候人端屎端尿？」；陈默张了张嘴没接话，苏晓禾不软不硬地顶回去「他敢重新开始，你敢吗」——王昊悻悻走人。",
+    "cypher": "CREATE (e:Event {id:'S8zaNYXiEs'}) SET e.title='路边摊王昊嘲讽护理陈默苏晓禾回嘴', e.time='2024-06-23 18:40:00', e.type='交流', e.description='两人在路边摊撸串，王昊从隔壁桌凑过来一句「打游戏的改行去伺候人端屎端尿？」；陈默张了张嘴没接话，苏晓禾不软不硬地顶回去「他敢重新开始，你敢吗」——王昊悻悻走人。', e.condition='choice:RINsONAOO0[3]';\nMATCH (e:Event {id:'S8zaNYXiEs'}), (l:Location {id:'QP23NrFZql'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}), (e:Event {id:'S8zaNYXiEs'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}), (e:Event {id:'S8zaNYXiEs'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'RqeKlYIPnE'}), (e:Event {id:'S8zaNYXiEs'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}), (e:Event {id:'S8zaNYXiEs'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  }
+]
