@@ -2,13 +2,13 @@
 
 归一化规则(改这里 = 改所有已产小说的新鲜度判据,慎动;已落盘小说需重产指纹):
   Event: '|'.join(title, time, type, description, ending_kind, condition)
-  Hook/Lore(旧 info/fact): '|'.join(title, content, knowledge_level)
+  Hook/Lore: '|'.join(title, content, knowledge_level)
   每字段 strip,None/缺失 → 空串;整体 utf-8 后 sha256 取前 16 位 hex。
 
 素材 JSON 输入(cypher_exec --json 的查询产物,数组;行内 kind 或 label 二选一):
   [{"kind":"event","id":"…","title":"…",…},
    {"kind":"lore","id":"…","title":"…","content":"…","knowledge_level":3,"intensity":"E"}]
-  kind 兼容旧值 info/fact(拆分前存量形态);intensity 可选 E/S(缺省 E)。
+  intensity 可选 E/S(缺省 E)。
 
 用法:
   gen   产完整头部块(含 <!-- --> 包裹,直接嵌入小说.md 头部);--ids 只圈**实际取用**的素材子集
@@ -16,16 +16,14 @@
         --ids 条目可带强度后缀 `id:E` / `id:S`(hook/lore 行;裸 id 缺省 E,event 行忽略强度):
         python fingerprint.py gen --in materials.json --at chNN/secMM [--ids id1:E,id2:S,…]
         [--root 25_剧本] [--force]   # 或 stdin 传 JSON
-        落盘硬门禁(乱序写作防护):本节取用的每条 hook/fact/lore,按 prior=(本节,标记强度)
+        落盘硬门禁(乱序写作防护):本节取用的每条 hook/lore,按 prior=(本节,标记强度)
         重算**节号序中下一个已写消费节**的档位(most_recent_wins 使影响半径恒为 1),
         下游按序重放不容其标记强度 → 拒绝落盘(退出码 2,明细走 stderr),降 S/剔除后重跑;
         确要硬写加 --force(放行并 stderr 留痕)。自由节排序按 mtime,不门禁。
   check 自检小说.md 头部清单 vs 当前素材:退出码 0=新鲜 / 1=stale(stdout 报告明细):
         python fingerprint.py check --novel 小说.md --in materials.json
         stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)
-        kind 容错:头部 info 行 vs 素材 fact/lore 行(或反之)按同字段指纹比对不算 stale——
-        Hook/Lore label 拆分迁移期的多形态兼容。
-  consumed 扫描 root 下全部小说.md 指纹头部的 info/fact/lore 行,输出「id → 消费它的小说路径列表」
+  consumed 扫描 root 下全部小说.md 指纹头部的 hook/lore 行,输出「id → 消费它的小说路径列表」
         JSON 映射(裸映射,调度/对账用)。--ids 只查给定子集:
         python fingerprint.py consumed [--root 25_剧本] [--ids id1,…]
   freshness 新鲜度计算(Lore 新鲜度算法,2026-11-11 方案):
@@ -50,14 +48,11 @@ import sys
 
 KIND_FIELDS: dict[str, tuple[str, ...]] = {
     "event": ("title", "time", "type", "description", "ending_kind", "condition"),
-    # info/fact 为旧形态别名(拆分前);指纹字段集相同
     "hook": ("title", "content", "knowledge_level"),
-    "fact": ("title", "content", "knowledge_level"),  # 旧值等价
     "lore": ("title", "content", "knowledge_level"),
-    "info": ("title", "content", "knowledge_level"),
 }
-# freshness 管制对象(fact 仅兜底,lore 为主);event 不参与
-FRESHNESS_KINDS = {"hook", "fact", "lore", "info"}
+# freshness 管制对象(hook/lore);event 不参与
+FRESHNESS_KINDS = {"hook", "lore"}
 
 # ── 新鲜度参数表(集中一处,改这里全生效) ──────────────────────────────
 F_BASE = 100          # 百分制基准
@@ -67,7 +62,7 @@ F_ALLOW_EXPLICIT = 70  # F ≥ 此值:正面/侧面均可
 F_ALLOW_SIDE = 30      # F ≥ 此值:仅侧面;再低禁释放
 
 HEADER_OPEN = "<!-- 取材指纹(chapter-novelist 生成,chapter-dialoguer 自检;变动=重写小说+作废定稿)"
-HEADER_RE = re.compile(r"^(event|info|fact|hook|lore)\s+(\S+)\s+([0-9a-f]{16})(?:\s+([ES]))?\s*(.*)$")
+HEADER_RE = re.compile(r"^(event|hook|lore)\s+(\S+)\s+([0-9a-f]{16})(?:\s+([ES]))?\s*(.*)$")
 PATH_ORDER_RE = re.compile(r"(?:^|/)(ch(\d+))(?:/|\\)(sec(\d+))")
 FREE_RE = re.compile(r"(?:^|/)自由节(?:/|\\)(sec(\d+))")
 
@@ -98,8 +93,8 @@ def _materials(text: str) -> list[dict]:
 
 
 def _line(kind: str, row: dict, fp: str, intensity: str | None = None) -> str:
-    pad = " " if kind in ("event", "fact", "hook") else "  "  # event/fact/hook 与 info/lore 等宽对齐
-    tok = f" {intensity}" if (intensity and kind in ("hook", "fact", "lore")) else ""
+    pad = " " if kind == "event" else "  "  # event 与 hook/lore 等宽对齐(7 列)
+    tok = f" {intensity}" if (intensity and kind in ("hook", "lore")) else ""
     return f"{kind}{pad} {row['id']} {fp}{tok} {str(row.get('title') or '')}"
 
 
@@ -133,7 +128,7 @@ def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = Non
         kind = _kind(row)
         assert kind is not None  # _materials 已滤
         intensity = None
-        if kind in ("fact", "hook", "lore"):
+        if kind in ("hook", "lore"):
             if ids is not None:
                 intensity = ids.get(str(row["id"]), "E")
             else:
@@ -159,16 +154,11 @@ def _header_rows(novel_text: str) -> list[tuple[str, str, str]]:
     return out
 
 
-def _equiv_kind(kind: str) -> str:
-    """info/fact/lore 在指纹内容比对上等价(同字段集)——label 迁移期双形态兼容。"""
-    return "info-like" if kind in ("info", "fact", "hook", "lore") else kind
-
-
 def cmd_check(rows: list[dict], novel_path: str) -> int:
-    current = {(_equiv_kind(_kind(r) or ""), str(r["id"])): fingerprint(r) for r in rows}
+    current = {(_kind(r) or "", str(r["id"])): fingerprint(r) for r in rows}
     old = {}
     for kind, sid, fp in _header_rows(open(novel_path, encoding="utf-8").read()):
-        old[(_equiv_kind(kind), sid)] = fp
+        old[(kind, sid)] = fp
 
     changed = [k for k, fp in old.items() if k in current and current[k] != fp]
     deleted = sorted(k for k in old if k not in current)
@@ -290,7 +280,7 @@ def _decay(intensity: str, delta: int, h: int) -> tuple[float, int, str]:
 
 
 def _gate_next_consumption(rows: list[dict], ids: dict[str, str], root: str, at: str) -> list[str]:
-    """落盘硬门禁(乱序写作防护):本节取用的每条 hook/fact/lore,按 prior=(本节,标记强度)重算
+    """落盘硬门禁(乱序写作防护):本节取用的每条 hook/lore,按 prior=(本节,标记强度)重算
     节号序中**下一个已写消费节**的档位(most_recent_wins 使回填的影响半径恒为 1),
     下游按序重放不容其标记强度(blocked / side 容不下 E)→ 报违规。返回明细(空=通过)。"""
     at_key = _at_key_of(at)

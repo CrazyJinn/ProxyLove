@@ -61,10 +61,10 @@ RETURN 'event' AS kind, e.id AS id, e.title AS title, e.time AS time, e.type AS 
        e.description AS description, e.ending_kind AS ending_kind, e.condition AS condition,
        null AS content, null AS knowledge_level
 UNION
-MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)-[:refines]->(sub:SubEvent)-[:reveals]->(f:Hook)
-RETURN DISTINCT 'fact' AS kind, f.id AS id, f.title AS title, null AS time, null AS type,
+MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)-[:refines]->(sub:SubEvent)-[:reveals]->(h:Hook)
+RETURN DISTINCT 'hook' AS kind, h.id AS id, h.title AS title, null AS time, null AS type,
        null AS description, null AS ending_kind, null AS condition,
-       f.content AS content, f.knowledge_level AS knowledge_level
+       h.content AS content, h.knowledge_level AS knowledge_level
 UNION
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)
 MATCH (src:Character)-[:has_info]->(l:Lore)
@@ -146,15 +146,16 @@ python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" check --novel "<小说.md �
      4. **节奏节制**：一句成段只留给节拍重音（转折/落笔/收束），每场景段 ≤3~5 处，其余并入段落——碎切过密是排版技巧不是叙事。
      5. **对话人味**：术语型角色（职业身份台词密度高者）全篇至少 1~2 处「裂缝」——冷面下的细（多余的半句/顺手的动作/便签式小心思）；生活碎屑优于功能完整。
 5. **自检（就地修，不过关不进段 3）**：**去 AI 味工序**——按 [references/小说去AI味工序.md](references/小说去AI味工序.md) 执行：叙述层四病灶（价值拔高/narrator 腔/破折号过密/翻译腔）+ 对白层八反模式逐段过，再走 Pass 1 保真回读（拓扑复查——场景段数/顺序/分支与 2a 推理及图 Choice 一致；称谓与 Day 计数复查；声音一致）+ Pass 2 残留味回读（含原惯性签名轻检三样 + **落稿笔法规范五条回检**，已并入该文档）。修不掉的病灶记录进汇报不阻塞落盘。
-6. **标记实际取用素材**（段 3 gen 的输入）：指纹只记**正文实际取用**的素材，不是圈定全部——未使用的 Lore/Fact 日后修订不得误 stale 本节。创作完成后从圈定清单列出实际用到的素材 id（Event 通常全用；Hook/Lore 按正文真实引用挑），**fact/lore 逐条标注实际写法强度：正面陈述=E、侧面折射=S**（与 2a 第 5 步释放方式规划一致），供段 3 `gen --ids id:E,id:S` 使用。
+6. **标记实际取用素材**（段 3 gen 的输入）：指纹只记**正文实际取用**的素材，不是圈定全部——未使用的 Lore/Hook 日后修订不得误 stale 本节。创作完成后从圈定清单列出实际用到的素材 id（Event 通常全用；Hook/Lore 按正文真实引用挑），**hook/lore 逐条标注实际写法强度：正面陈述=E、侧面折射=S**（与 2a 第 5 步释放方式规划一致），供段 3 `gen --ids id:E,id:S` 使用。
 
 #### 小说.md 结构（固定骨架；`###` 场景段标题 = 拓扑契约，dialoguer 照搬）
 
 ```
 <!-- 取材指纹(chapter-novelist 生成,chapter-dialoguer 自检;变动=重写小说+作废定稿)
-event <id> <hash16> <title>
-info  <id> <hash16> <title>
--->                       ← 段 3 由 fingerprint.py gen 产出，Write 时置于文件首
+event  <id> <hash16> <title>
+hook   <id> <hash16> <E|S> <title>
+lore   <id> <hash16> <E|S> <title>
+-->                       ← 段 3 由 fingerprint.py gen 产出，Write 时置于文件首（kind 词表 event/hook/lore；hook/lore 行带强度标记）
 # <节标题> · chapter <NN> 小说
 ## 叙事引擎
 - 悬置问题：<一句话，含兑现/反转位置>
@@ -173,7 +174,7 @@ info  <id> <hash16> <title>
 
 ### 3. 保存结果（指纹头部 + 落盘 + 唯一作废写入 + 对账建议）
 
-1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --at <chNN/secMM> --ids <实际取用素材列表：event 裸 id，fact/lore 带 :E/:S 强度后缀（如 id1,id2:S,id3:E）>` → 产出完整头部块（**只含取用子集**，fact/lore 行记强度——它是后续 freshness 的衰减基线；省略 `--ids` 会记圈定全量，禁止）。gen 内置**邻检门禁**（乱序写作防护）：按 prior=(本节,标记强度) 重算节号序中下一个已写消费节的档位，下游按序重放不容其标记强度 → 退出码 2 拒绝落盘——按 stderr 建议降 S 或剔除该素材后重跑；确要保留加 `--force` 放行并在汇报中列出 force 条目。
+1. **指纹头部**：`python "${CLAUDE_SKILL_DIR}/scripts/fingerprint.py" gen --in .tmp/novelist/<sec_id>_materials.json --at <chNN/secMM> --ids <实际取用素材列表：event 裸 id，hook/lore 带 :E/:S 强度后缀（如 id1,id2:S,id3:E）>` → 产出完整头部块（**只含取用子集**，hook/lore 行记强度——它是后续 freshness 的衰减基线；省略 `--ids` 会记圈定全量，禁止）。gen 内置**邻检门禁**（乱序写作防护）：按 prior=(本节,标记强度) 重算节号序中下一个已写消费节的档位，下游按序重放不容其标记强度 → 退出码 2 拒绝落盘——按 stderr 建议降 S 或剔除该素材后重跑；确要保留加 `--force` 放行并在汇报中列出 force 条目。
 2. **Write** 小说.md（头部块置文件首 + 全文）到约定路径。首建模式到此完成（零图写入）。
 3. **重写模式才作废定稿链**（首建模式跳过；`sec.status IS NULL` 跳过）——`--multi` 单事务：
 
@@ -185,10 +186,10 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 > 作废后行级恢复走重拆机制（text_sha1 匹配且 wav 在的行恢复 10），plot-design 按产物链现状续推 dialoguer 重新提炼。
 
 4. **对账草稿（可选）**：段 2 中长出的新 Event/Hook（图上查无、值得对账入图的）→ 落**自然语言草稿**（给人读的 md，标签行只是惯例结构；既有实体 id 内联；不产 cypher、不跑 lint、不生成 id——Schema 严检与建议 JSON 组装归 suggest-consumer，source='chapter-novelist'）：
-   - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_草稿.md`（`_草稿.md` 结尾，不触发 dashboard 弹窗 glob；轮次 N = `python .claude/scripts/suggest_round.py` 输出，共享计数器，勿手写扫描）
+   - 落盘 `02_剧情数据/<日期>_ch<NN>sec<MM>_<节概述>_补全_草稿.md`（`_草稿.md` 结尾，不触发 dashboard 弹窗 glob；文件名不带轮次，同日同节重跑覆盖）
    - 草稿只做**叙事语义**表达，创作域红线沿用：只提新实体 + 定位关系（occurs_at/involved/establishes/leads_to），不改既有实体属性；Hook 必须写明成立源事件（establishes）、不提 reveals（揭示场合归 event-stager 拍板）——**novelist 不提 Lore**（固有设定是构图期拍板，非写作期对账产物）。字段级契约（零时间措辞、Hook 干净陈述、knowledge_level 必填 1/2/3 等）由 suggest-consumer 强制。
    - 无数量硬门控——批量由对账价值判断决定；无新增不落盘只汇报。
-5. **汇总**：小说路径 + 取材条数（event/fact/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **Lore freshness 裁量行**（每个被消费 lore id → F 值 → 本节释放方式 E/S；fact 无需）+ 对账草稿路径与下一步话术（如有：「跑 suggest-consumer 消费本草稿」）+ 分支待补标注（如有）+ 自检修正说明。
+5. **汇总**：小说路径 + 取材条数（event/hook/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **Lore freshness 裁量行**（每个被消费 lore id → F 值 → 本节释放方式 E/S；hook 无需）+ 对账草稿路径与下一步话术（如有：「跑 suggest-consumer 消费本草稿」）+ 分支待补标注（如有）+ 自检修正说明。
 
 ## 参考文档
 
@@ -198,4 +199,4 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 - 剧情 Schema：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) — Section 定稿态 / 创作流程注记「小说段」
 - 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构，**用户直触**，不经 plot-design；dashboard 人工编排直写为并列通道）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
-- 对账通道：草稿（段 4）→ [suggest-consumer](../suggest-consumer/SKILL.md)（严检/组装/lint 均在彼）→ dashboard 弹窗写回
+- 对账通道：草稿（段 4）→ [suggest-consumer](../suggest-consumer/SKILL.md)（严检/组装/lint 均在彼；用户确认后单事务执行写回——dashboard 弹窗仅为不确认时的人工备选）
