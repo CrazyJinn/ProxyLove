@@ -95,7 +95,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/build_material_list.py" <sec_id>
 - Q0~Q6 结果各自落 JSON 供复查。
 
 **清洗规则**（程序化，零裁量）：
-1. **Lore freshness**：对 Q4/Q5 全部 Lore 跑 `fingerprint.py freshness --in <合并素材JSON> --at <chNN/secMM 或 自由节路径> --root 25_剧本`——`blocked` 档**剔除**（附档位），`side` 档**保留但标红**（只可侧面折射），`explicit`/从未消费正常入清单。
+1. **Lore freshness**：对 Q4/Q5 全部 Lore 跑 `fingerprint.py freshness --in <合并素材JSON> --at <chNN/secMM 或 自由节路径> --root 25_剧本`——**注意素材行必须带 `knowledge_level` 键（查询别名 `AS kl` 须回映射，脚本已内置；缺键时 fingerprint 按"无限制"降级，freshness 形同虚设）**——`blocked` 档**剔除**（附档位），`side` 档**保留但标红**（只可侧面折射），`explicit`/从未消费正常入清单。
 2. **条件事件**：Q1 事件带 `condition` 时标红（本节走不到该支线的可能——`choice:<id>[n]` 是否成立取决于玩家路径，清单按「全支线并存」呈现，标注表达式交下游裁量）。
 3. **机位悬空 sub**：Q2 中 `scene IS NULL` 的 sub 标红（待 event-stager 补 anchored_at）。
 4. **Hook 消费过滤**：对 Q6 的每条 Hook 跑 `fingerprint.py consumed --root 25_剧本 --ids <id>`——从未消费的入清单，已消费的剔除并附「上次消费节」注记（本节是该 Hook 的揭示主场与否交下游裁量，清单只报事实）。

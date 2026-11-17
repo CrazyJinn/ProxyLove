@@ -157,8 +157,10 @@ def main() -> int:
     # ── 清洗 ──
     ch_no, sec_no = sec.get("ch_no"), sec.get("no")
     at = f"ch{ch_no:02d}/sec{sec_no:02d}" if ch_no is not None else f"自由节/sec{sec_no:02d}"
+    # fingerprint freshness 按 knowledge_level 长名取键（查询别名的 kl 需回映射，否则恒走"kl 缺失→无限制"分支）
     fresh_tiers = fingerprint_freshness(
-        [{"kind": "lore", **l} for l in data["lores"] + data["ctrl_lores"]], at)
+        [{"kind": "lore", **l, "knowledge_level": l.get("kl")}
+         for l in data["lores"] + data["ctrl_lores"]], at)
     consumed = fingerprint_consumed([h["id"] for h in data["hooks"]])
 
     events, subs, flagged = data["events"], data["subs"], []
