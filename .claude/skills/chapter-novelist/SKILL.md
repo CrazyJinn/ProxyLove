@@ -2,7 +2,7 @@
 name: chapter-novelist
 description: |
   推进 Section 图节点的小说段：提纲已内化（节的提纲即图数据本身，结构推理在思维链完成、不落提纲文件），按 includes 圈定取材（Event/Hook/Lore + Lore 遗忘曲线新鲜度裁量）→ 丰满度自检（不足拒绝产出）→ 产节级散文 小说.md（纯文件产物、零图写入；正文 `### <scene_block_id>` 场景段标题承载拓扑契约，头部取材指纹）。
-  重写场景（素材 stale / 用户明示）覆盖旧文并显式作废定稿链——本 skill 唯一图写入；对账新实体走建议 JSON 通道。
+  重写场景（素材 stale / 用户明示）覆盖旧文并显式作废定稿链——本 skill 唯一图写入；对账新实体走草稿通道（suggest-consumer 消费）。
   在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。
 argument-hint: <section_id>
 arguments:
@@ -184,17 +184,11 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 
 > 作废后行级恢复走重拆机制（text_sha1 匹配且 wav 在的行恢复 10），plot-design 按产物链现状续推 dialoguer 重新提炼。
 
-4. **对账建议（可选）**：段 2 中长出的新 Event/Hook（图上查无、值得对账入图的）→ 组装建议 JSON（顶层数组，逐项 `{check, priority, reason, content, cypher}` + `source:'chapter-novelist'`；cypher 开箱可执行、可多语句 `;` 分隔先节点后边、**禁止夹带校验节点**；落盘 `*_建议.json` 由 dashboard「📥 补全建议」弹窗拾取写回）：
-   - `check = 'N1_novel_new_entity'`，`source = 'chapter-novelist'`
-   - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_建议.json`（必须 `_建议.json` 结尾；轮次 N = `python .claude/scripts/suggest_round.py` 输出，共享计数器，勿手写扫描）
-   - **语句自包含铁律**：每条 `;` 语句的边 pattern 两端点在本语句内 MATCH/CREATE 绑定
-     （变量不跨语句延续，MERGE 边端点未先绑定会整 pattern 重建出重复节点）；每个分号独占行尾；
-     cypher 字段不带 `//` 注释行
-   - **落盘后跑** `python .claude/scripts/suggest_lint.py <文件路径>`，FAIL（exit 1）
-     就地改写、覆盖重写并重跑至全 PASS（exit 0）再汇报（dashboard 执行侧有同规格
-     兜底，FAIL 形态会在采纳时被 400 拒绝）
-   - cypher 开箱可执行：只 MERGE 新实体节点 + 定位边（occurs_at/involved/establishes/leads_to），**禁止 SET 既有实体属性、禁止夹带校验节点**；新 Event 的 title/description 不携带时间信息（时间唯一承载 = `Event.time`）；新 Hook 的 title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，novelist freshness 半衰期档位），必须挂 establishes 成立源、不建 reveals（揭示场合归 event-stager 拍板）——**novelist 不建 Lore**（固有设定是构图期拍板，非写作期对账产物）。稀疏纪律：单次至多 3 Event + 2 Hook，无新增不落盘只汇报。
-5. **汇总**：小说路径 + 取材条数（event/fact/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **Lore freshness 裁量行**（每个被消费 lore id → F 值 → 本节释放方式 E/S；fact 无需）+ 建议 JSON 路径（如有）+ 分支待补标注（如有）+ 自检修正说明。
+4. **对账草稿（可选）**：段 2 中长出的新 Event/Hook（图上查无、值得对账入图的）→ 落**自然语言草稿**（给人读的 md，标签行只是惯例结构；既有实体 id 内联；不产 cypher、不跑 lint、不生成 id——Schema 严检与建议 JSON 组装归 suggest-consumer，source='chapter-novelist'）：
+   - 落盘 `02_剧情数据/<日期>_round<N>_ch<NN>sec<MM>_<节概述>_补全_草稿.md`（`_草稿.md` 结尾，不触发 dashboard 弹窗 glob；轮次 N = `python .claude/scripts/suggest_round.py` 输出，共享计数器，勿手写扫描）
+   - 草稿只做**叙事语义**表达，创作域红线沿用：只提新实体 + 定位关系（occurs_at/involved/establishes/leads_to），不改既有实体属性；Hook 必须写明成立源事件（establishes）、不提 reveals（揭示场合归 event-stager 拍板）——**novelist 不提 Lore**（固有设定是构图期拍板，非写作期对账产物）。字段级契约（零时间措辞、Hook 干净陈述、knowledge_level 必填 1/2/3 等）由 suggest-consumer 强制。
+   - 无数量硬门控——批量由对账价值判断决定；无新增不落盘只汇报。
+5. **汇总**：小说路径 + 取材条数（event/fact/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **Lore freshness 裁量行**（每个被消费 lore id → F 值 → 本节释放方式 E/S；fact 无需）+ 对账草稿路径与下一步话术（如有：「跑 suggest-consumer 消费本草稿」）+ 分支待补标注（如有）+ 自检修正说明。
 
 ## 参考文档
 
@@ -204,4 +198,4 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 - 剧情 Schema：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) — Section 定稿态 / 创作流程注记「小说段」
 - 上游：[chapter-structurer](../chapter-structurer/SKILL.md)（章级建结构，**用户直触**，不经 plot-design；dashboard 人工编排直写为并列通道）
 - 下游：[chapter-dialoguer](../chapter-dialoguer/SKILL.md)（读小说.md 提炼 台词.ink，场景段照 `###` 标题；入场 fingerprint check 自检，stale 回退本 skill）
-- 建议通道：本文件段 4 内联契约（建议 JSON 字段 / 多语句 / dashboard 弹窗写回）
+- 对账通道：草稿（段 4）→ [suggest-consumer](../suggest-consumer/SKILL.md)（严检/组装/lint 均在彼）→ dashboard 弹窗写回
