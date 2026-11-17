@@ -2,28 +2,40 @@
 """stager 前置核验：范围解析 + 入口核验 + 演出资源现状（只读）。
 
 用法：
+    python preflight.py --consensus <共识文档路径> [--json]           # 共识模式（新事件未写图）
     python preflight.py --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
-    （三 selector 可组合；--window 止为开区间次日，如 2024-06-01,2024-06-16）
+    （图模式三 selector 可组合，与 --consensus 互斥；--window 止为开区间次日，如 2024-06-01,2024-06-16）
 
-输出：
+输出（两模式同构）：
   verdict   PASS / FAIL
-  scope     命中事件 {id, title, time, locations[], chars[]}（按 time 排序）
-  failures  契约违规清单（每事件缺 occurs_at / 缺 involved，含修复指引）
+  mode      graph / consensus
+  scope     命中事件 {id, title, time, locations[], chars[]}（按 time 排序；
+            共识模式 id=None——事件尚未写图，title 即指称）
+  failures  契约违规清单（缺 occurs_at / 缺 involved / 既有 id 图上查无，含修复指引）
   batch     单轮上限 3：命中 >3 时取时间最早 3 个，余者列入 next_round
-  assets    演出资源现状（§2 探索步的 facts）：
+            （图模式按 id、共识模式按 title 标识）
+  placeholders（共识模式）占位 Character/Location 名录——尚不在图，无演出资源，
+            着装/空间链必然全新占位（预期态，非缺口报错）
+  assets    演出资源现状（§2 探索步的 facts；共识模式只查既有 id 实体）：
     chars    每 involved Character 的立绘链：Character→AppearanceStyle→DesignSheet→IllusDesign←outfit_for← CostumeStyle
     costumes 每 involved Character 的着装（has_costume 直查，含 stager 占位 status=0——防同缺口重复建占位）
     scenes   每 occurs_at Location 的空间链：Spot →realizes→ Scene
+
+共识解析：扫 `## [I2 事件] <title>` 头与其下 time/occurs_at/involved 行；
+occurs_at/involved 逐项识别「名称(id)」既有引用与「[占位:名称]」占位指称。
+解析失败（无 I2 条目 / 缺 time / 裸名无 id 无占位）→ 可操作报错退出码 2，
+SKILL.md 约定由 LLM 回读共识人肉分诊。
 
 聚合查询一律段段 WITH 物化（双后端 Memgraph/Neo4j 兼容，见 cypher_exec.py 硬约束 11）。
 
 FAIL 语义：范围内任一事件缺 occurs_at Location 或缺 involved Character →
 stager 报错停止（不代建叙事基础实体），本脚本直接输出可操作错误
-（缺什么、哪个事件）。
+（缺什么、哪个事件；共识模式的缺字段回 event-ideator 修共识，S4 补边仅适用图模式）。
 """
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,6 +61,81 @@ def run_cypher(cypher: str) -> list:
 
 def q(v: str) -> str:
     return "'" + str(v).replace("\\", "\\\\").replace("'", "\\'") + "'"
+
+
+# ── 共识文档解析（--consensus 模式）────────────────────────────────────
+
+I2_HEADER = re.compile(r"^##\s*\[I2\s*事件\]\s*(.+?)\s*$")
+FIELD_LINE = re.compile(r"^-\s*([^:：]+?)\s*[:：]\s*(.*)$")
+ID_REF = re.compile(r"^(.*?)\s*\(\s*([A-Za-z0-9]{8,12})\s*\)\s*$")
+PLACEHOLDER_REF = re.compile(r"\[占位[:：]\s*(.+?)\s*\]")
+TIME_FMT = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+
+
+def split_refs(value: str) -> list:
+    """把 occurs_at/involved 的值拆成逐项指称，每项分类：
+    {"kind":"id","name","id"} 既有引用 / {"kind":"placeholder","name"} 占位 /
+    {"kind":"bad","raw"} 裸名（无 id 无占位标记——ideator 纪律违例）。"""
+    items = [x.strip() for x in re.split(r"[、,，]", value) if x.strip()]
+    out = []
+    for it in items:
+        m = PLACEHOLDER_REF.search(it)
+        if m:
+            out.append({"kind": "placeholder", "name": m.group(1)})
+            continue
+        m = ID_REF.match(it)
+        if m and m.group(1):
+            out.append({"kind": "id", "name": m.group(1), "id": m.group(2)})
+            continue
+        out.append({"kind": "bad", "raw": it})
+    return out
+
+
+def parse_consensus(path: str) -> list:
+    """解析共识文档的 I2 事件条目（title/time/occurs_at/involved）。
+    解析失败 → 抛 SystemExit（可操作报错：哪条目缺什么）。"""
+    p = Path(path)
+    if not p.is_file():
+        raise SystemExit(f"共识文档不存在：{path}")
+    events, cur, errors = [], None, []
+    for ln, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        m = I2_HEADER.match(line)
+        if m:
+            cur = {"title": m.group(1), "line": ln, "time": None,
+                   "occurs_at": "", "involved": ""}
+            events.append(cur)
+            continue
+        if line.startswith("## "):
+            cur = None  # 离开当前 I2 条目（I1/I3/… 的字段不收）
+            continue
+        if cur is None or not line.startswith("-"):
+            continue
+        m = FIELD_LINE.match(line)
+        if not m:
+            continue
+        key, val = m.group(1), m.group(2).strip()
+        if key == "time":
+            cur["time"] = val
+        elif key in ("occurs_at", "involved"):
+            cur[key] = (cur[key] + "、" + val) if cur[key] else val
+    if not events:
+        raise SystemExit(
+            f"共识文档未找到任何 '## [I2 事件]' 条目——核对 {p.name} 是否为 "
+            "event-ideator 产出的共识文档（*_共识.md）")
+    for ev in events:
+        if not ev["time"]:
+            errors.append(f"事件「{ev['title']}」（L{ev['line']}）缺 time 字段")
+        elif not TIME_FMT.match(ev["time"]):
+            errors.append(f"事件「{ev['title']}」time 非法（须 yyyy-MM-dd HH:mm:ss）：{ev['time']}")
+        for field in ("occurs_at", "involved"):
+            for ref in split_refs(ev[field] or ""):
+                if ref["kind"] == "bad":
+                    errors.append(
+                        f"事件「{ev['title']}」{field} 指称「{ref['raw']}」既无 id 也无占位标记"
+                        "（ideator 纪律：既有实体 id 内联，缺的写 [占位:名称]）")
+    if errors:
+        raise SystemExit("共识文档解析失败（逐条修复后重跑）：\n  - " + "\n  - ".join(errors))
+    return events
 
 
 SELFTEST_PROBE = (
@@ -103,9 +190,9 @@ def preflight(ids, titles, window) -> dict:
         "RETURN e.id AS id, e.title AS title, e.time AS time, locations, chars "
         "ORDER BY time")
     if not scope:
-        return {"verdict": "EMPTY", "scope": [], "failures": [{
+        return {"mode": "graph", "verdict": "EMPTY", "scope": [], "failures": [{
             "error": "范围内无事件——检查 id/title 拼写或时间窗（含 selector 是否全空）"}],
-            "batch": {}, "assets": {}}
+            "batch": {}, "placeholders": {}, "assets": {}}
 
     # 过滤 OPTIONAL MATCH 未命中时的占位空值（id 为 null 的收集项）
     for ev in scope:
@@ -135,6 +222,16 @@ def preflight(ids, titles, window) -> dict:
     for ev in detail:
         char_ids.update(c["id"] for c in ev["chars"])
         loc_ids.update(l["id"] for l in ev["locations"])
+
+    return {"mode": "graph",
+            "verdict": "FAIL" if failures else "PASS",
+            "scope": scope, "failures": failures, "batch": batch,
+            "placeholders": {},
+            "assets": query_assets(char_ids, loc_ids)}
+
+
+def query_assets(char_ids: set, loc_ids: set) -> dict:
+    """演出资源三查询（只读）：立绘链 / has_costume 直查（含占位防重）/ 空间链。"""
     chars = run_cypher(
         "MATCH (c:Character) WHERE c.id IN " + json.dumps(sorted(char_ids)) + " "
         "OPTIONAL MATCH (c)-[:has_appearance]->(a:AppearanceStyle) "
@@ -162,14 +259,93 @@ def preflight(ids, titles, window) -> dict:
         "cs.name AS costume, cs.status AS costume_status, "
         "i.id AS illus_id, i.status AS illus_status "
         "ORDER BY char, costume") if char_ids else []
+    return {"chars": chars, "costumes": costumes, "scenes": scenes}
 
-    return {"verdict": "FAIL" if failures else "PASS",
+
+def preflight_consensus(path: str) -> dict:
+    """共识模式：解析 *_共识.md 的 I2 事件条目 → 既有 id 验图 → 占位收集 → 资产查询。
+    事件尚未写图：scope 条目 id=None；缺字段回 event-ideator（不走 S4）；
+    占位实体无演出资源（预期态）——assets 只查既有 id 实体。"""
+    events = parse_consensus(path)
+    scope, failures = [], []
+    ph_chars, ph_locs = [], []
+    all_char_ids, all_loc_ids = set(), set()
+
+    for ev in events:
+        locs, chs = [], []
+        for ref in split_refs(ev["occurs_at"]):
+            if ref["kind"] == "placeholder":
+                ph_locs.append(ref["name"])
+                locs.append({"id": None, "name": f"[占位]{ref['name']}"})
+            else:
+                all_loc_ids.add(ref["id"])
+                locs.append({"id": ref["id"], "name": ref["name"]})
+        for ref in split_refs(ev["involved"]):
+            if ref["kind"] == "placeholder":
+                ph_chars.append(ref["name"])
+                chs.append({"id": None, "name": f"[占位]{ref['name']}"})
+            else:
+                all_char_ids.add(ref["id"])
+                chs.append({"id": ref["id"], "name": ref["name"]})
+        if not locs:
+            failures.append({"event": ev["title"], "missing": "occurs_at Location",
+                             "fix": "共识条目缺 occurs_at——回 event-ideator 补共识（S4 补边仅适用图模式）"})
+        if not chs:
+            failures.append({"event": ev["title"], "missing": "involved Character",
+                             "fix": "共识条目缺 involved——回 event-ideator 补共识（S4 补边仅适用图模式）"})
+        scope.append({"id": None, "title": ev["title"], "time": ev["time"],
+                      "locations": locs, "chars": chs})
+
+    # 既有 id 验图（错拼即报错回 ideator，防静默错挂）
+    def verify(ids, label):
+        if not ids:
+            return set()
+        rows = run_cypher(
+            f"MATCH (n:{label}) WHERE n.id IN " + json.dumps(sorted(ids)) + " "
+            "RETURN n.id AS id LIMIT 100")
+        return {r["id"] for r in rows}
+    ok_chars = verify(all_char_ids, "Character")
+    ok_locs = verify(all_loc_ids, "Location")
+    for ev in scope:
+        for ref in ev["chars"]:
+            if ref["id"] and ref["id"] not in ok_chars:
+                failures.append({"event": ev["title"],
+                                 "missing": f"Character id {ref['id']}（{ref['name']}）图上查无",
+                                 "fix": "回 event-ideator 修正共识——既有实体 id 须现查内联，防静默错挂"})
+        for ref in ev["locations"]:
+            if ref["id"] and ref["id"] not in ok_locs:
+                failures.append({"event": ev["title"],
+                                 "missing": f"Location id {ref['id']}（{ref['name']}）图上查无",
+                                 "fix": "回 event-ideator 修正共识——既有实体 id 须现查内联，防静默错挂"})
+
+    # 批次切分（同图模式：time 最早 3 个；无图 id，按 title 标识）
+    scope.sort(key=lambda e: e["time"])
+    keys = [e["title"] for e in scope]
+    if len(scope) > BATCH_LIMIT:
+        batch = {"this_round": keys[:BATCH_LIMIT], "next_round": keys[BATCH_LIMIT:]}
+        detail = scope[:BATCH_LIMIT]
+    else:
+        batch = {"this_round": keys, "next_round": []}
+        detail = scope
+
+    # 资产只查本周批次的既有 id 实体（占位实体无演出资源——链路必然全新占位）
+    char_ids, loc_ids = set(), set()
+    for ev in detail:
+        char_ids.update(c["id"] for c in ev["chars"] if c["id"])
+        loc_ids.update(l["id"] for l in ev["locations"] if l["id"])
+
+    return {"mode": "consensus",
+            "verdict": "FAIL" if failures else "PASS",
             "scope": scope, "failures": failures, "batch": batch,
-            "assets": {"chars": chars, "costumes": costumes, "scenes": scenes}}
+            "placeholders": {"characters": sorted(set(ph_chars)),
+                             "locations": sorted(set(ph_locs))},
+            "assets": query_assets(char_ids, loc_ids)}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="stager 前置核验（只读）")
+    ap.add_argument("--consensus", default="",
+                    help="共识文档路径（02_剧情数据/*_共识.md）——与三 selector 互斥")
     ap.add_argument("--ids", default="", help="event id 列表（逗号分隔）")
     ap.add_argument("--titles", default="", help="event title 列表（逗号分隔）")
     ap.add_argument("--window", default="", help="时间窗 起,止（止为开区间次日）")
@@ -186,9 +362,17 @@ def main() -> int:
     window = [x for x in args.window.split(",") if x]
     if window and len(window) != 2:
         raise SystemExit("--window 需要 起,止 两个日期")
+    if args.consensus and (ids or titles or window):
+        raise SystemExit("--consensus 与 --ids/--titles/--window 互斥（共识模式不需要图内 selector）")
 
     try:
-        r = preflight(ids, titles, window)
+        if args.consensus:
+            r = preflight_consensus(args.consensus)
+        else:
+            r = preflight(ids, titles, window)
+    except SystemExit as exc:
+        print(exc, file=sys.stderr)
+        return 2
     except RuntimeError as exc:
         print(f"preflight 执行失败（人话分诊见下；可先跑 --selftest 定位）：\n{exc}")
         return 2
@@ -196,10 +380,11 @@ def main() -> int:
         print(json.dumps(r, ensure_ascii=False, indent=1))
         return 1 if r["verdict"] == "FAIL" else 0
 
-    print(f"verdict: {r['verdict']}")
+    print(f"verdict: {r['verdict']}（mode: {r.get('mode', 'graph')}）")
     print(f"\n== 范围（{len(r['scope'])} 事件） ==")
     for ev in r["scope"]:
-        print(f"  {ev['time']}  {ev['title']} ({ev['id']})")
+        tag = f"({ev['id']})" if ev["id"] else "（共识条目，未写图）"
+        print(f"  {ev['time']}  {ev['title']} {tag}")
         print(f"      at: {', '.join(l['name'] for l in ev['locations']) or '<缺 occurs_at>'}"
               f" | who: {', '.join(c['name'] for c in ev['chars']) or '<缺 involved>'}")
     if r["failures"]:
@@ -209,6 +394,13 @@ def main() -> int:
                 print(f"  {f['error']}")
             else:
                 print(f"  {f['event']}: 缺 {f['missing']} → {f['fix']}")
+    ph = r.get("placeholders") or {}
+    if ph.get("characters") or ph.get("locations"):
+        print(f"\n== 占位实体（尚不在图，无演出资源——着装/空间链必然全新占位，预期态非缺口） ==")
+        if ph.get("locations"):
+            print(f"  Location: {'、'.join(ph['locations'])}")
+        if ph.get("characters"):
+            print(f"  Character: {'、'.join(ph['characters'])}")
     b = r["batch"]
     if b.get("next_round"):
         print(f"\n== 批次（>{BATCH_LIMIT} 切轮）: 本轮 {len(b['this_round'])} 个，"

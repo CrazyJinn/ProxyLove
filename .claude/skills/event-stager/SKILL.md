@@ -1,10 +1,10 @@
 ---
 name: event-stager
 description: |
-  事件细化落地层——输入 Event（id/title/时间窗），四步推进：前置核验（缺叙事基础实体报错不代建）→ 探索演出资源并拆解 SubEvent（戏剧节拍分析，模式库只查遗漏不做生成依据）→ 占位物化（为 sub 建 IllusDesign←appears_as←SubEvent→anchored_at→Scene 链，Spot/Scene/CostumeStyle/IllusDesign 缺口建占位意图）→ 逐 event 询问确认 + 产**自然语言建议草稿**（交 suggest-consumer 严检 Schema 并组装建议 JSON，人工经 dashboard 写回；本层不产 cypher、不跑 lint）。
-  多轮交互一次一问、每问附推荐；每批交互默认 3 个 event（preflight 切批的交互节奏，非数量门控——草稿可多批累积）。不建 Event/Hook/Lore/Choice/Location/Character。
-  在用户说「细化」「stager」「这批事件细化一下」或给出事件范围要求推进机位层时使用。
-argument-hint: <event id列表 | 事件title列表 | 时间窗>
+  事件细化落地层——双入口：①**事件共识文档**（`*_共识.md`，event-ideator 产，新事件未写图——消化共识拆解演出，产**合并定稿**：I 域条目照抄 + S 域追加）；②**图中 Event**（id/title/时间窗，存量细化/重拆/补拆——产纯 S 域定稿）。四步推进：前置核验（缺叙事基础实体报错不代建；共识模式下占位实体演出资源为零是预期态非缺口）→ 探索演出资源并拆解 SubEvent（戏剧节拍分析，模式库只查遗漏不做生成依据）→ 占位物化（为 sub 建 IllusDesign←appears_as←SubEvent→anchored_at→Scene 链，Spot/Scene/CostumeStyle/IllusDesign 缺口建占位意图）→ 逐 event 询问确认 + 产**事件定稿文档** `<日期>_<主题>_定稿.md`（交 suggest-consumer 严检 Schema 并组装建议 JSON，用户确认后执行写回；本层不产 cypher、不跑 lint）。
+  多轮交互一次一问、每问附推荐；每批交互默认 3 个 event（preflight 切批的交互节奏，非数量门控——定稿可多批累积）。不建 Event/Hook/Lore/Choice/Location/Character。
+  在用户说「细化」「stager」「消化这个共识」「这批事件细化一下」或给出事件范围/共识文档要求推进机位层时使用。
+argument-hint: <共识文档路径 | event id列表 | 事件title列表 | 时间窗>
 arguments:
   - events
 allowed-tools: Read, Bash, Write
@@ -16,16 +16,15 @@ allowed-tools: Read, Bash, Write
 
 **三条铁律**（全程生效）：
 
-1. **零直接图写入**：交互期间仅查询；全部产出经草稿落盘 → suggest-consumer 组装建议 JSON → 人工在 dashboard 写回。
-2. **自然语言草稿契约（人读优先）**：落盘 `02_剧情数据/<日期>_round<N>_<主题>_stager_草稿.md`（`_草稿.md` 结尾——**不触发** dashboard 建议弹窗的 `*_建议.json` glob）；轮次 N 由 `$ROUND` 推导（共享计数器，勿手写扫描）。草稿是**给人读的 md**——条目组织与标签行只是惯例结构，人阅读性优先于机器可解析性，既有实体 id 内联；**不产 cypher、不跑 lint、不生成 id**——Schema 严检、id 生成、建议 JSON 组装全归 suggest-consumer（source 标 'event-stager'）。
+1. **零直接图写入**：交互期间仅查询；全部产出一定稿落盘 → suggest-consumer 严检组装建议 JSON → **用户明确同意后执行写回**（不经本层）。
+2. **事件定稿契约（人读优先）**：落盘 `02_剧情数据/<日期>_<主题>_定稿.md`（`_定稿.md` 结尾——**不触发** dashboard 建议弹窗的 `*_建议.json` glob；文件名不带轮次，同日同主题重跑覆盖——汇报注明）。**共识模式定稿 = I 域条目从共识文档逐条照抄（含 reason，不改写不删减）+ S 域条目追加**，同日期同主题；**图模式定稿 = 仅 S 域条目**。定稿是**给人读的 md**——条目组织与标签行只是惯例结构，人阅读性优先于机器可解析性，既有实体 id 内联、对同文档 I 域的指称统一 `定稿I1/I2/I3「名称」` 形态；**不产 cypher、不跑 lint、不生成 id**——Schema 严检、id 生成、建议 JSON 组装全归 suggest-consumer（S 域条目 source 标 'event-stager'）。
 3. **一题一答且一 Event 一题**：一次只问一个问题、每问附可归因推荐答案；facts 自己查，decisions 才问用户；缺口修复逐条问，sub+占位方案按 Event 聚合成一题整体拍板。
 
 ## 前置
 
 ```bash
 CYPHER_EXEC="python ${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py"
-ROUND="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_round.py"    # 轮次推导（共享计数器）
-PREFLIGHT="python ${CLAUDE_SKILL_DIR}/scripts/preflight.py"          # 前置核验（范围+契约+资源）
+PREFLIGHT="python ${CLAUDE_SKILL_DIR}/scripts/preflight.py"          # 前置核验（双入口：--consensus / 图内 selector）
 OUTPUT_DIR="02_剧情数据"
 ```
 
@@ -55,22 +54,33 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 工作流（四步）
 
-### 1. 前置核验（发现确定性缺口）
+### 1. 前置核验（发现确定性缺口）——双入口
 
 ```bash
-$PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]
+$PREFLIGHT --consensus <共识文档路径> [--json]                           # 共识模式（新事件未写图）
+$PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]    # 图模式（存量细化/重拆/补拆）
 ```
 
-一次跑出四样 facts（全部只读）：
+两模式输出同构（mode/scope/failures/batch/placeholders/assets，全部只读），判读规则：
+
+**图模式**（沿用）：
 
 - **范围解析**：命中事件清单（id/title/time/occurs_at/involved），复述 N 个事件 + 时间跨度再进下一步；
 - **入口核验（权威表述）**：`verdict=FAIL`（缺 occurs_at Location / 缺 involved Character）→ **先分诊**：缺的实体**在图、只缺边** → 转 §4 的 `S4_gap_fix` 补边建议，流程继续；实体**不在图** → **报错停止**（脚本 `failures` 已逐事件列出），不代建，回 event-ideator 层补。title/description 提及实体未建档同理（LLM 读文判断，实体是否在图对照 `assets` 段核查）；
-- **批次切分**：每批默认 3 个 event（preflight `batch` 段已切好：本轮时间最早 3 个，余者列入汇报「下批可细化」）——这是**交互节奏默认，非数量门控**：需要时连续多批运行，草稿逐批累积后一并交 suggest-consumer；
 - **演出资源现状**：`assets` 段（每 involved char 立绘链 / 着装直查表 `costumes`——含 status=0 占位，**同缺口勿重复建占位** / 每 location 空间链）——§2 拆解的全部 facts，不必重查。
+
+**共识模式**（新事件尚未写图——scope 条目 id=null，title 即指称）：
+
+- **解析失败**（退出码 2：无 I2 条目 / 缺 time / 裸名指称无 id 无占位）→ 回读共识文档人肉分诊：共识本身有缺 → **报错回 event-ideator 修共识**，本层不脑补；
+- `failures`「缺 occurs_at/involved」= 共识条目缺字段 → **报错回 event-ideator**（`S4_gap_fix` 仅适用图模式「实体在图只缺边」，共识模式不产 S4）；
+- `failures`「id 图上查无」= 共识内联 id 错拼 → **报错回 event-ideator 修共识**（id 须现查内联，防静默错挂）；
+- **`placeholders` 段（占位 Character/Location）→ 演出资源为零是预期态，不是缺口报错**：着装不可继承（无立绘链）、空间无既有 Spot/Scene——链路必然全新占位（CostumeStyle+IllusDesign / Spot+Scene 占位），照常推进不得因 `assets` 空停摆；既有 id 的 Character/Location 正常查 `assets` 做继承判断。
+
+**批次切分**（两模式同）：每批默认 3 个 event（`batch` 段已切好：本轮时间最早 3 个——图模式按 id、共识模式按 title 标识；余者列入汇报「下批可细化」）——**交互节奏默认，非数量门控**：需要时连续多批运行，定稿逐批累积后一并交 suggest-consumer。
 
 ### 2. 探索演出资源 + 拆解 SubEvent
 
-**探索**（facts 由 §1 `assets` 段带出）：立绘链（Character→AppearanceStyle→DesignSheet→IllusDesign←outfit_for←CostumeStyle）是着装继承与占位判断的依据；着装全集另见 `costumes` 段（has_costume 直查，覆盖无 DesignSheet 的占位着装）——建占位前先对表防重。空间链（Spot→realizes→Scene）是机位选用与占位判断的依据；信息不足时按需补查（查询形态见 preflight.py 源码）。
+**探索**（facts 由 §1 `assets` 段带出）：立绘链（Character→AppearanceStyle→DesignSheet→IllusDesign←outfit_for←CostumeStyle）是着装继承与占位判断的依据；着装全集另见 `costumes` 段（has_costume 直查，覆盖无 DesignSheet 的占位着装）——建占位前先对表防重。空间链（Spot→realizes→Scene）是机位选用与占位判断的依据；信息不足时按需补查（查询形态见 preflight.py 源码）。**共识模式下父 Event 取自共识 I2 条目**（title/time/description 照共识，不在图中）——SubEvent title 的 `<父事件title>` 即共识 I2 的 title，时间插值以 I2 time 为锚；S2 条目「父Event」写 `定稿I2「<父title>」` 指称（suggest-consumer 组装时绑定同轮生成的 id）。
 
 **拆解六步固定**（模式库在末位做校验与补遗——先找演出价值，再对模式查遗漏）：
 
@@ -89,7 +99,7 @@ Read [SubEvent.md](../../../00_init/Schema/剧情/SubEvent.md)「description 撰
 
 对每个 sub 的链条 `IllusDesign←appears_as←sub→anchored_at→Scene` 逐环检查，缺则占位：
 
-| 缺口 | 占位节点（最小启动集，草稿以标签行表达） |
+| 缺口 | 占位节点（最小启动集，定稿以标签行表达） |
 |---|---|
 | 空间不存在（新房间/新位置） | Spot：name/kind='zone'/description + 归属 Location（必已存在，否则走入口核验报错） |
 | 机位不存在 | Scene：name/scene_type + 归属 Spot |
@@ -99,34 +109,49 @@ Read [SubEvent.md](../../../00_init/Schema/剧情/SubEvent.md)「description 撰
 
 **着装优先级**：兄弟 sub 继承 > CostumeStyle 占位 > IllusDesign 占位。**空间/着装叙事决策（哪个房间、哪套衣服）在本层拍定**——占位节点的 name 即决策载体，命名对照 [references/占位命名规范.md](references/占位命名规范.md)（四类命名模式 + 查重自检——占位与真身重名 = 图上两节点打架）。
 
-### 4. 逐 event 拍板 + 组装自然语言草稿
+### 4. 逐 event 拍板 + 组装事件定稿
 
 **一 Event 一题**（保持必问）：每题摆出该事件完整方案（0/1/N 个 sub + 各自 anchored_at 目标〔既有/占位标明〕+ appears_as 目标〔继承/占位标明〕+ 时间插值 + description 要点），用户整体拍板（可改细节后接受）。范围内事件按时间序逐个过。
 
-全部拍板后组装草稿（**顺序：占位节点 → 边**，节点先于边）：
+全部拍板后组装定稿（**S 域条目顺序：占位节点 → 边**，节点先于边）：
 
-- 条目结构（自然语言标签行 + reason；check 分类沿用）：
-  - `S1_placeholder_node` — 占位 Spot/Scene/CostumeStyle/IllusDesign（最小启动集 + 归属）；
-  - `S2_subevent` — SubEvent（title/time/description 要点）+ 父 Event（id）+ anchored_at 目标 + appears_as 目标（继承注明来源 sub id）；
-  - `S3_fact_reveal` — 读者侧揭示场合拍板（`SubEvent ─reveals→ Hook`）：拆 sub 时逐 sub 判断该场戏是否使读者知晓某既有 Hook（该 Hook 尚无 reveals 或本次有叙事增量）——揭示边挂 sub（演出发生在机位层，揭示时刻同层）；**源为 Event 或目标为 Lore 均违规**；sub 被 sync 级联重细化时边随删、重拆重拍；并入该 event 的拍板题确认，不单独立题；
-  - `S4_gap_fix` — 确定性缺口修复（involved/occurs_at 补边，仅当实体在图只缺边；实体缺失一律报错不走此类）。
+- **定稿结构（共识模式两段式；图模式只有第二段）**：
+  - **一、事件共识**——共识文档 I 域条目（I1~I5）**逐条照抄**（含 reason，不改写不删减——这是 I 域的权威快照，任何改写都会偏离用户与 ideator 达成的共识）；
+  - **二、演出拆解**——本轮 S 域条目（自然语言标签行 + reason；check 分类沿用）：
+    - `S1_placeholder_node` — 占位 Spot/Scene/CostumeStyle/IllusDesign（最小启动集 + 归属；归属可指既有 id、本节上文占位，或 `定稿I1「名称」`——共识占位 Location 物化后的 Spot 挂靠）；
+    - `S2_subevent` — SubEvent（title/time/description 要点）+ 父 Event（图模式写 id；共识模式写 `定稿I2「<父title>」`）+ anchored_at 目标 + appears_as 目标（继承注明来源 sub id）；
+    - `S3_fact_reveal` — 读者侧揭示场合拍板（`SubEvent ─reveals→ Hook`）：拆 sub 时逐 sub 判断该场戏是否使读者知晓某 Hook（**既有 Hook 优先**；同轮 I3 新建的 Hook 也可揭示——目标写 `定稿I3「<title>」`，须在拍板题向用户点明是同轮新 Hook）；揭示边挂 sub（演出发生在机位层，揭示时刻同层）；**源为 Event 或目标为 Lore 均违规**；sub 被 sync 级联重细化时边随删、重拆重拍；并入该 event 的拍板题确认，不单独立题；
+    - `S4_gap_fix` — 确定性缺口修复（involved/occurs_at 补边，**仅图模式**且实体在图只缺边；实体缺失一律报错不走此类；共识模式不产 S4——事件还没进图，无「补边」语义）。
 - **写后复查（内容层，LLM 判定两项）**：① 每个 event 的 sub 时间与父 time 及相互先后因果相容（允许合理重叠）；② 同机位同角色着装一致（EA3 口径）。发现问题就地修正后再落盘。
-- **落盘与移交**：Write `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_stager_草稿.md`（UTF-8，条目格式见下方草稿模板）；语句级护栏（语句自包含、`$SUGGEST_LINT`）与 Schema 字段契约严检归 suggest-consumer——草稿只需语义完整、既有实体 id 内联。汇报含下一步话术（「跑 suggest-consumer 消费本草稿」）。
+- **落盘与移交**：Write `${OUTPUT_DIR}/${DATE}_<主题>_定稿.md`（UTF-8，共识模式主题与来源共识相同；条目格式见下方定稿模板；同日同主题重跑覆盖——汇报注明）；语句级护栏（语句自包含、`$SUGGEST_LINT`）与 Schema 字段契约严检归 suggest-consumer——定稿只需语义完整、既有实体 id 内联。汇报含下一步话术（「跑 suggest-consumer 消费本定稿 → 严检 Schema、组装建议 JSON → 用户确认后执行写回」）。
 
-### 草稿模板（照抄改值）
+### 定稿模板（照抄改值）
 
-// ⚠ 草稿是自然语言层：语义完整即可；字段级契约（SubEvent description 撰写契约、status/最小启动集、边方向与 sync）由 suggest-consumer 对照 Schema 强制。
+// ⚠ 定稿是自然语言层：语义完整即可；字段级契约（SubEvent description 撰写契约、status/最小启动集、边方向与 sync）由 suggest-consumer 对照 Schema 强制。共识模式含「一、事件共识」照抄段；图模式只写「二、演出拆解」段。
 
 ```markdown
-# <主题> stager 草稿 round<N>
+# <主题> 定稿
+> 来源：<共识文件名>（I 域照抄）｜ stager 拆解于 <日期>
+> （图模式此行改写：图模式——图中 Event 直细化，无 I 域段）
+
+## 一、事件共识（照抄自共识，逐条原样）
+
+## [I1 占位 Location] 书店
+- 定位：临街两层小书店
+- reason: <照抄>
+
+## [I2 事件] <title>
+- …（共识文档 I1~I5 条目原样照抄，含 reason）
+
+## 二、演出拆解（本轮 S 域追加）
 
 ## [S1 占位 Scene] 康复中心-护理站走廊
 - name: 护理站走廊 / scene_type: 走廊
-- 归属 Spot: [占位：康复中心-一楼]（下条）或 既有id
+- 归属 Spot: [占位：康复中心-一楼]（上条）或 既有id 或 定稿I1「书店」
 - reason: <依据>
 
 ## [S2 SubEvent] 王昊嘲讽护理陈默苏晓禾回嘴 · 隔壁桌凑近
-- 父Event: S8zaNYXiEs
+- 父Event: S8zaNYXiEs（图模式） / 定稿I2「王昊嘲讽护理陈默苏晓禾回嘴」（共识模式）
 - title: 路边摊嘲讽 · 隔壁桌凑近
 - time: 2024-06-23 18:42:00（父事件起 2 分钟，插值）
 - description 要点: 王昊端着啤酒杯晃过来，扫见书袋，嗤笑出声
@@ -134,7 +159,8 @@ Read [SubEvent.md](../../../00_init/Schema/剧情/SubEvent.md)「description 撰
 - appears_as: 继承 <兄弟sub id> 的 IllusDesign / [占位：新套装]
 - reason: <依据>
 
-## [S3 揭示] / [S4 缺口修复] …同款结构
+## [S3 揭示] 目标 Hook：既有id 或 定稿I3「<title>」
+## [S4 缺口修复]（仅图模式）…同款结构
 ```
 
 ## 参考文档

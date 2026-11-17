@@ -6,7 +6,7 @@ suggest_lint.py — 建议 JSON cypher 语句级护栏（MERGE 绑定语义，20
     MERGE/CREATE 边要么静默挂错既有边、要么新建幽灵节点；
   根因二（MERGE 整 pattern 语义）：MERGE 边 pattern 端点带标签/属性但未在本语句
     先前位置绑定——pattern 未命中时整条创建，产出只带 {id} 的重复节点。
-根因详解与正确写法权威：Asset/.claude/skills/event-stager/references/多语句cypher与MERGE绑定语义.md
+根因详解与正确写法即本文件规则表与「防误报关键语义」节（下条检测规则表头亦载双侧同步契约）。
 
 ── 检测规则表（与 Dashboard 侧 D:\\project\\ProxyLove\\Dashboard\\app\\services\\cypher_lint.py
     逐字同一规格；改规则必须同次双侧改，并同步对侧用例。先例：node_fields.py 抄 Schema）──

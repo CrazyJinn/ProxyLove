@@ -1,0 +1,178 @@
+# Room DSL v3 —— 电影院·电影厅
+# 真源文件:改这里,图节点字段是编译投影(不一致=图落后,重新编译落图)
+# 坐标:米;原点=空间地面中心;X右 Y上 Z朝入口(+Z);rot单位度
+# 粒度:只建不移动的固定大件;可移动小物不建几何,其表现写入图 Scene.deco
+# 文字归图:deco/atmosphere/time_of_day 等 Scene 文字字段在图节点(本文件 scene 条目只留 camera/lights/objects_delta)
+location:
+  id: S8yxEfJB3Y
+  name: 电影院
+  description: 城区商业综合体里的多厅影城，散场可步行至江边
+room:
+  floor:
+  - 12
+  - 16
+  height: 6.0
+  wall_color: '#3a3a44'
+  floor_color: '#5a3a3a'
+  door:
+    side: z+
+    pos:
+    - 2.5
+    - 0
+    - 7.9
+    size:
+    - 1.6
+    - 2.0
+  deco: 深色吸音板墙面,枣红绒面联排座,过道地毯
+  floor_material: 地毯
+  wall_material: 布艺
+objects:
+- id: screen
+  spot: 电影厅
+  name: 巨幅银幕
+  type: box
+  pos:
+  - 0
+  - 2.6
+  - -7.85
+  size:
+  - 10
+  - 4.2
+  - 0.3
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#e8e8e8'
+  desc: 微弧形巨幅幕布
+  material: 玻璃
+- id: seats_r1
+  spot: 电影厅
+  name: 连排座椅
+  type: box
+  pos:
+  - 0
+  - 0.45
+  - -3.2
+  size:
+  - 9
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a2e35'
+  desc: 高靠背绒面联排软座
+  material: 布艺
+- id: seats_r2
+  spot: 电影厅
+  name: 连排座椅
+  type: box
+  pos:
+  - 0
+  - 0.45
+  - -1.8
+  size:
+  - 9
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a2e35'
+  desc: 高靠背绒面联排软座
+  material: 布艺
+- id: seats_r3
+  spot: 电影厅
+  name: 连排座椅
+  type: box
+  pos:
+  - 0
+  - 0.45
+  - -0.4
+  size:
+  - 9
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a2e35'
+  desc: 高靠背绒面联排软座
+  material: 布艺
+- id: seats_r4
+  spot: 电影厅
+  name: 连排座椅
+  type: box
+  pos:
+  - 0
+  - 0.45
+  - 1.0
+  size:
+  - 9
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a2e35'
+  desc: 高靠背绒面联排软座
+  material: 布艺
+- id: seats_r5
+  spot: 电影厅
+  name: 连排座椅
+  type: box
+  pos:
+  - 0
+  - 0.45
+  - 2.4
+  size:
+  - 9
+  - 0.9
+  - 1.0
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#7a2e35'
+  desc: 高靠背绒面联排软座
+  material: 布艺
+scenes:
+- id: hall_screen
+  scene_id: S9RLZ9jCsr
+  scene_name: 电影院-电影厅
+  spot: 电影厅
+  camera:
+    pos:
+    - 0
+    - 1.7
+    - 7.7
+    look_at:
+    - 0
+    - 1.8
+    - -8
+    fov: 65
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.6
+    - -6.0
+    color: '#cfe0ff'
+    intensity: 2.4
+  - type: ambient
+    pos:
+    - 0
+    - 3.0
+    - 0
+    color: '#2e2e3a'
+    intensity: 0.35
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

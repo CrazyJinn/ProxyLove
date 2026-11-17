@@ -4,49 +4,49 @@ location:
   description: ''
 room:
   floor:
+  - 12.0
   - 8.0
-  - 6.0
   height: 3.2
   wall_color: '#e8e4dc'
   floor_color: '#c9b48f'
   door:
     side: z+
     pos:
-    - 2.6
+    - 4.4
     - 0
-    - 2.99
+    - 3.99
     size:
     - 1.0
     - 2.1
   windows:
   - id: w1
     pos:
-    - -2.8
-    - 1.9
-    - -2.99
-    size:
+    - -3.0
     - 1.8
-    - 1.6
+    - -3.99
+    size:
+    - 2.4
+    - 1.8
     rot:
     - 0
     - 0
     - 0
     desc: 北墙大窗,上午阳光斜进练习厅
-  deco: 暖白墙面配浅木地板,镜面反射让空间加倍通透,空气里淡香薰混着橡胶垫气味
+  deco: 暖白墙面配浅木地板,整面镜墙把开阔的练习区加倍拉深,空气里淡香薰混着橡胶垫气味
   floor_material: 原木
   wall_material: 乳胶漆
 objects:
 - id: mirror_wall
-  spot: 瑜伽馆
+  spot: 练习室
   name: 练习区整面镜
   type: plane
   pos:
-  - 2.0
-  - 1.4
-  - -2.99
+  - 2.6
+  - 1.5
+  - -3.99
   size:
-  - 4.0
-  - 2.2
+  - 5.0
+  - 2.4
   rot:
   - 0
   - 0
@@ -56,17 +56,17 @@ objects:
   desc: 北墙东侧整面练习镜,体式校正对照用
   material: 镜面玻璃
 - id: prop_shelf
-  spot: 瑜伽馆
+  spot: 练习室
   name: 辅具收纳架
   type: box
   pos:
-  - 3.6
+  - 5.6
   - 0.9
-  - -1.2
+  - -1.4
   size:
   - 0.8
   - 1.8
-  - 2.4
+  - 3.0
   rot:
   - 0
   - 0
@@ -75,34 +75,14 @@ objects:
   cname: 辅具收纳架
   desc: 东墙开放格架,码放瑜伽砖与弹力带、泡沫轴
   material: 原木
-- id: reception_desk
-  spot: 瑜伽馆
-  name: 前台接待台
-  type: box
-  pos:
-  - 3.4
-  - 0.5
-  - 2.55
-  size:
-  - 1.2
-  - 1.0
-  - 0.9
-  rot:
-  - 0
-  - 0
-  - 0
-  color: '#b0a494'
-  cname: 前台接待台
-  desc: 门侧前台,预约登记本与会员卡架
-  material: 木饰面
 - id: shoe_bench
-  spot: 瑜伽馆
+  spot: 练习室
   name: 换鞋凳
   type: box
   pos:
-  - -3.6
+  - 5.2
   - 0.45
-  - 2.2
+  - 3.2
   size:
   - 0.6
   - 0.9
@@ -116,13 +96,13 @@ objects:
   desc: 门侧换鞋凳,下方格层放拖鞋
   material: 原木
 - id: plant_big
-  spot: 瑜伽馆
+  spot: 练习室
   name: 大盆龟背竹
   type: cylinder
   pos:
-  - 1.6
+  - 1.2
   - 0.75
-  - -2.55
+  - -3.5
   size:
   - 0.9
   - 1.5
@@ -136,13 +116,13 @@ objects:
   desc: 大盆龟背竹,立在镜墙前西侧
   material: 布艺
 - id: plant_small
-  spot: 瑜伽馆
+  spot: 练习室
   name: 角落琴叶榕
   type: cylinder
   pos:
-  - 3.55
+  - 5.5
   - 0.6
-  - 0.65
+  - 0.9
   size:
   - 0.7
   - 1.2
@@ -159,16 +139,16 @@ scenes:
 - id: yoga_day
   scene_id: S7k7py37ir
   scene_name: 瑜伽馆
-  spot: 瑜伽馆
+  spot: 练习室
   camera:
     pos:
-    - -2.8
+    - -4.2
     - 1.55
-    - 2.2
+    - 2.6
     look_at:
-    - -2.8
-    - 1.8
-    - -3.0
+    - -3.6
+    - 1.7
+    - -3.99
     fov: 60
   lights:
   - type: point

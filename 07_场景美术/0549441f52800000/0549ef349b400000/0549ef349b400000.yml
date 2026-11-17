@@ -1,0 +1,175 @@
+location:
+  id: S8ZbkRUPmy
+  name: 苏晓禾家
+  description: 苏晓禾独居的公寓，干净整洁
+room:
+  floor:
+  - 4.6
+  - 3.5
+  height: 2.8
+  wall_color: '#e8e4dc'
+  floor_color: '#c9a87c'
+  door:
+    side: z+
+    pos:
+    - 1.2
+    - 0
+    - 1.74
+    size:
+    - 0.9
+    - 2.0
+  windows:
+  - id: w1
+    pos:
+    - -0.3
+    - 1.6
+    - -1.74
+    size:
+    - 1.8
+    - 1.6
+    rot:
+    - 0
+    - 0
+    - 0
+    desc: 北墙大窗,上午阳光斜入
+  deco: 独居公寓客厅,兼日常用餐区,收拾得干净利落
+  floor_material: 原木
+  wall_material: 乳胶漆
+objects:
+- id: sofa
+  spot: 苏晓禾家-客厅
+  name: 双人沙发
+  type: box
+  pos:
+  - -1.875
+  - 0.36
+  - -0.85
+  size:
+  - 0.65
+  - 0.72
+  - 1.8
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#b8bcc2'
+  desc: 西墙低背布艺沙发面朝客厅,浅灰罩面搭一只抱枕
+  material: 布艺
+- id: coffee_table
+  spot: 苏晓禾家-客厅
+  name: 茶几
+  type: box
+  pos:
+  - -1.55
+  - 0.17
+  - -0.8
+  size:
+  - 0.8
+  - 0.34
+  - 0.45
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c9a87c'
+  desc: 沙发旁日式矮茶几,放着翻开的杂志与纸巾盒
+  material: 原木
+- id: dining_table
+  spot: 苏晓禾家-客厅
+  name: 小方餐桌
+  type: box
+  pos:
+  - 1.9
+  - 0.38
+  - -1.3
+  size:
+  - 0.7
+  - 0.76
+  - 0.9
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#c9a87c'
+  desc: 东北角窗下小方餐桌,两把椅子日常收在桌边
+  material: 原木
+- id: tv_stand
+  spot: 苏晓禾家-客厅
+  name: 电视柜
+  type: box
+  pos:
+  - 2.1
+  - 0.3
+  - 0.4
+  size:
+  - 0.4
+  - 0.6
+  - 1.4
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#8a6f55'
+  desc: 东墙南段矮电视柜,柜上轻薄电视
+  material: 原木
+- id: shoe_cabinet
+  spot: 苏晓禾家-客厅
+  name: 鞋柜
+  type: box
+  pos:
+  - -1.4
+  - 0.4
+  - 1.56
+  size:
+  - 0.9
+  - 0.8
+  - 0.38
+  rot:
+  - 0
+  - 0
+  - 0
+  color: '#a08668'
+  desc: 入户门旁贴墙矮鞋柜,台面搁钥匙碟
+  material: 原木
+scenes:
+- id: living_day
+  scene_id: S9R1UdkC3N
+  scene_name: 苏晓禾家-客厅
+  spot: 苏晓禾家-客厅
+  camera:
+    pos:
+    - 0
+    - 1.55
+    - 1.45
+    look_at:
+    - 0
+    - 1.2
+    - -1.2
+    fov: 50
+  lights:
+  - type: point
+    pos:
+    - 0
+    - 2.4
+    - -0.3
+    color: '#fff4e0'
+    intensity: 2.2
+  - type: point
+    pos:
+    - -0.3
+    - 1.8
+    - -1.5
+    color: '#eaf4ff'
+    intensity: 1.2
+  - type: ambient
+    pos:
+    - 0
+    - 2.0
+    - 0
+    color: '#57534d'
+    intensity: 0.3
+  objects_delta:
+    add: []
+    remove: []
+    replace: []
+  text_passthrough: []

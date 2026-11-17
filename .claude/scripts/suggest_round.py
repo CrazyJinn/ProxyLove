@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""建议 JSON 轮次推导（共享基础设施，只读）。
+"""建议 JSON 轮次推导（共享基础设施，只读）。【2026-11-17 起停用留档】
+
+停用说明：建议类文件名已去轮次（`<日期>_<主题>_共识.md / _定稿.md /
+_建议.json`，同日同主题重跑覆盖），event-ideator / event-stager /
+suggest-consumer 均不再调用本脚本；历史归档文件名仍含 round<N>，本脚本
+保留仅为读取历史依据。chapter-novelist 的 `_补全_草稿.md → _补全_建议.json`
+通道同样不带轮次。
 
 用法：
     python suggest_round.py                 # 输出下一轮次号（纯数字，供内联）

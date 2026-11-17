@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 「代恋」（ProxyLove）是一个**以 Neo4j 图数据库为唯一事实来源、由 Claude Code skills/agents 驱动的 AI 游戏生产流水线**，最终产物是一个 Godot 2D Galgame（`99_game/`），Web 版托管在 Cloudflare R2。整条链路把"世界观文字 → 叙事图 → 美术提示词 → 文生图/图生图 → 剧本 JSON → 游戏成品"自动化，人工只审关键产物（Section 定稿、行级音频、立绘、美术与声音设计；Chapter 无 status——章级无审批）。
 
 项目级文档，动手前按需读：
-- [README.md](README.md) — **编排流程视角**：三个编排 Agent（`char-design` / `scene-design` / `plot-design`）的时序图、叙事事件生产四步流程（event-ideator → event-stager → design 链 → plot-design）、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
+- [README.md](README.md) — **编排流程视角**：四个编排 Agent（`char-design` / `scene-design` / `plot-design` / `event-design`）的时序图、叙事事件生产流程（event-ideator 共识 → event-stager 定稿 → suggest-consumer 确认执行 → design 链 → plot-design）、独立审批流程、全部 Skill 功能概述、项目文件夹结构。
 - 节点 status 流转 / 审批规则 / sync 级联的权威源：[00_init/Schema/](00_init/Schema/) 与治理后台 dailian-dashboard（独立项目，见下）的 `app/services/status.py`（`NODE_STATUS`）、`app/services/cascade.py`。**改任何节点/边/status 逻辑前必读。**
 
 子项目 [99_game/README.md](99_game/README.md)（Godot 工程）有自己的指南。人工治理后台不在本仓库——已外迁为独立项目 **dailian-dashboard**（gitee `crazyjinn/dailian-dashboard`，本地克隆 `D:\project\ProxyLove\Dashboard\`，与本仓库同处一个工作区，指南见该仓库 CLAUDE.md）。
@@ -68,7 +68,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 
 ### 6. 编排 agent 是纯分发层，有铁律
 
-`char-design` / `scene-design` agent 的入口决策**只做**：解析角色/场景 → 只读查 status → 据 status 决策 → 用 `Skill` 工具加载生产 skill → 复查 → 汇报。**严禁**在入口决策阶段：亲自写 Cypher 写入、亲自调生成脚本、绕过生产 skill 直接调用纯产出子 skill（`char-prompt-assembler`/`infra-image-generator`）。**Skill 工具是扁平的**：加载某生产 skill 后，agent 即在该 skill 流程内继续执行其三段式，**包括按其指示调用其声明的子 skill**——这是预期行为，不是越界。真正越界 = ①未先加载生产 skill 就凭空直调子 skill；②调子 skill 产出文件后不走该生产 skill 的「保存结果」步写 status。详见 [.claude/agents/char-design.md](.claude/agents/char-design.md)。
+`char-design` / `scene-design` / `event-design` agent 的入口决策**只做**：解析角色/场景/事件入口 → 只读查 status（事件链为文档存在性查证） → 据 status 决策 → 用 `Skill` 工具加载生产 skill → 复查 → 汇报。**严禁**在入口决策阶段：亲自写 Cypher 写入、亲自调生成脚本、绕过生产 skill 直接调用纯产出子 skill（`char-prompt-assembler`/`infra-image-generator`）。**Skill 工具是扁平的**：加载某生产 skill 后，agent 即在该 skill 流程内继续执行其三段式，**包括按其指示调用其声明的子 skill**——这是预期行为，不是越界。真正越界 = ①未先加载生产 skill 就凭空直调子 skill；②调子 skill 产出文件后不走该生产 skill 的「保存结果」步写 status。详见 [.claude/agents/char-design.md](.claude/agents/char-design.md)（事件链编排见 [.claude/agents/event-design.md](.claude/agents/event-design.md)——其写图只经 suggest-consumer 的执行确认门，agent 不代答）。
 
 ## 写 Cypher 的硬约束
 
@@ -151,8 +151,10 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 
 ## 何时用 skill / agent
 
-- 要产出新 Event、构建/对账故事线（StoryArc）或补全叙事基础（六模式启发：动机链/质感/间隙/后果链/因果回溯/故事线填充；一次一问+每问附推荐答案；产 Event+involved/occurs_at 边+Character/Location 占位+限产 Hook[≤2/次]+StoryArc 与 comprises 边[I4 建线/扩线，I5 对账更新 description——唯一允许改既有节点属性的例外]，零图写入）→ `event-ideator`（事件启发传 char 和/或 base event，arc 故事线单独给则走建线/填充/对账支线；产 `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json`，人工经 dashboard 建议弹窗审阅写回；写回后跑 event-stager 细化；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
-- 要细化事件到机位层（SubEvent）并占位物化演出缺口 → `event-stager`（传事件 id/title 列表或时间窗；四步：前置核验[preflight.py：缺叙事基础实体报错停止] → 拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0，替代留单] → 逐 event 拍板产建议 JSON；单轮 ≤3 event）
+- 要走事件叙事链的任一段或全链（新事件启发到建议 JSON 执行写回的编排分发）→ `event-design` agent（强交互编排层：入口四态分诊——新想法/锚点→ideator、共识文档→stager、图中事件→stager 图模式、待消费文档→consumer；stager 定稿后同轮连推 consumer；**consumer 执行确认门必停等用户本人**；不跨链调 char/scene/plot）。
+- 要产出新 Event、构建/对账故事线（StoryArc）或补全叙事基础（六模式启发：动机链/质感/间隙/后果链/因果回溯/故事线填充；一次一问+每问附推荐答案，迭代到共识后显式确认；产 Event+involved/occurs_at 边+Character/Location 占位+限产 Hook[≤2/次]+StoryArc 与 comprises 边[I4 建线/扩线，I5 对账更新 description——唯一允许改既有节点属性的例外]，零图写入）→ `event-ideator`（事件启发传 char 和/或 base event，arc 故事线单独给则走建线/填充/对账支线；产 `02_剧情数据/<日期>_<主题>_共识.md`——默认交 event-stager 消化拆解，纯 I 轮次[仅 I4/I5 或明示不拆]交 suggest-consumer 直消；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
+- 要细化事件到机位层（SubEvent）并占位物化演出缺口 → `event-stager`（双入口：**共识文档**——消化共识产合并定稿[I 域照抄+S 域追加]，或**图中事件** id/title 列表/时间窗——存量细化产纯 S 域定稿；四步：前置核验[preflight.py `--consensus`/图内 selector：缺叙事基础实体报错停止，占位实体演出资源为零是预期态] → 拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0] → 逐 event 拍板产 `<日期>_<主题>_定稿.md` 交 suggest-consumer；每批交互默认 3 event）
+- 要严检消费共识/定稿/补全文档并组装建议 JSON → `suggest-consumer`（严检 Schema+组装 cypher+lint 全 PASS；**执行确认门**——用户明确同意后单事务执行写回+读回验证，不经 dashboard；不同意留 dashboard 建议弹窗人工备选）
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。
 - 要推进某场景的美术或 BGM → 调 `scene-design` agent（BgmTrack 缺口由其编排 `bgm-designer` 兜底建并产描述；wav 由用户手动生成归档）。
 - 要为某节创作节级小说土壤（提纲已内化：节的提纲即图数据，结构推理在 novelist 思维链完成；纯文件产物 小说.md，通常由 plot-design 编排，直触亦可）→ `chapter-novelist`（传 section_id；头部取材指纹，素材变动重写并作废定稿；对账新实体走建议 JSON）。

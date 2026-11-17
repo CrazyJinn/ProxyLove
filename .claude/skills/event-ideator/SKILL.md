@@ -1,8 +1,8 @@
 ---
 name: event-ideator
 description: |
-  新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定/既定事件/故事线锚点出发启发新 Event 候选，与用户多轮交互（一次一问、每问附可归因推荐答案）敲定后产**自然语言建议草稿**落盘 02_剧情数据/，交 suggest-consumer 严检 Schema 并组装建议 JSON 后由人工经 dashboard 审阅写回。零图写入、不产 cypher、不跑 lint——Schema 纪律不在本层。
-  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。草稿承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Hook + StoryArc 与 comprises 意图。
+  新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定/既定事件/故事线锚点出发启发新 Event 候选，与用户多轮交互（一次一问、每问附可归因推荐答案）迭代到共识，敲定后产**事件共识文档** `<日期>_<主题>_共识.md` 落盘 02_剧情数据/——默认交 event-stager 消化拆解演出（共识 → 定稿 → suggest-consumer → 用户确认后执行写回）；纯 I 域轮次（仅故事线构建/对账，或用户明示不拆演出）直接交 suggest-consumer。零图写入、不产 cypher、不跑 lint——Schema 纪律不在本层。
+  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Hook + StoryArc 与 comprises 意图。
   不做拆解、机位、着装等任何演出域决策。无数量硬门控——批量由创作判断决定，留白即叙事。
   在用户说「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零产出新叙事事件时使用。
 argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
@@ -16,16 +16,16 @@ allowed-tools: Read, Bash, Write
 **从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + 限产 Hook（establishes 挂成立源）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
 
 > **通道契约（全程唯一表述，各步不再重复）**：
-> - **零图写入**——交互期间仅查询；写库由人工在 dashboard（建议弹窗「采纳」或 Cypher 控制台）执行。
-> - **自然语言草稿（人读优先）**：落盘 `02_剧情数据/<日期>_round<N>_<主题>_ideator_草稿.md`（`_草稿.md` 结尾——**不触发** dashboard 建议弹窗的 `*_建议.json` glob）；轮次 N 由 `$ROUND` 推导（共享计数器全量取 max+1，勿手写文件名扫描——排序取最新会在日期翻篇时跳号）。草稿是**给人读的 md**——条目组织与标签行只是惯例结构，人阅读性优先于机器可解析性，suggest-consumer 按语义解析；**不产 cypher、不跑 lint、不生成 id**——Schema 严检、id 生成、建议 JSON 组装全归 suggest-consumer。
-> - **草稿引用纪律**：既有实体（Character/Location/Event/StoryArc/Choice）必须以**现查 id** 内联草稿标签行（名称仅作注释，重名/改名会静默错挂）；新实体（占位/Hook/新线）只写名称 + 一句话设定，由 suggest-consumer 物化为节点。condition 只写语义（如「三选一选了苏晓禾」），序号表达式由 consumer 现查 Choices 换算。
-> - **产出纪律**：每个草稿事件条目，其 involved Character 与 occurs_at Location 的**语义指称**必须明确（既有的写 id，缺的写占位意图）——不留悬空；故事线条目必须逐成员列「event id + title（0 步现查快照）」供 consumer 与人工核验。
+> - **零图写入**——交互期间仅查询；写库由 suggest-consumer 在用户明确同意后执行，本层不碰图写。
+> - **事件共识文档（人读优先）**：落盘 `02_剧情数据/<日期>_<主题>_共识.md`（`_共识.md` 结尾——**不触发** dashboard 建议弹窗的 `*_建议.json` glob；文件名不带轮次，同日同主题重跑**覆盖**，commit 汇报注明）。共识文档是 **event-stager 的输入与 I 域条目的权威快照**——stager 定稿逐条照抄、不重写，所以指称必须精确。文档是**给人读的 md**——条目组织与标签行只是惯例结构，人阅读性优先于机器可解析性；**不产 cypher、不跑 lint、不生成 id**——Schema 严检、id 生成、cypher 组装与执行全归下游。
+> - **去向双通路**：含 I2 事件的共识默认交 **event-stager** 消化拆解演出（共识 → 定稿 → suggest-consumer → 确认执行写回）；**纯 I 通路**——本轮条目仅 I4/I5（故事线构建/对账）或用户明示「不拆演出」时，共识直接交 **suggest-consumer** 消费。
+> - **引用纪律**：既有实体（Character/Location/Event/StoryArc/Choice）必须以**现查 id** 内联条目标签行（名称仅作注释，重名/改名会静默错挂——stager 的 preflight 会验图，错拼 id 直接打回本层）；新实体（占位/Hook/新线）只写名称 + 一句话设定，由 suggest-consumer 物化为节点。condition 只写语义（如「三选一选了苏晓禾」），序号表达式由 consumer 现查 Choices 换算。
+> - **产出纪律**：每个事件条目，其 involved Character 与 occurs_at Location 的**语义指称**必须明确——既有的写 id，缺的写占位意图 `[占位：名称]`（stager 据此判定该实体演出资源为零、链路全新占位）——不留悬空；故事线条目必须逐成员列「event id + title（0 步现查快照）」供 consumer 与人工核验。
 
 ## 前置
 
 ```bash
 CYPHER_EXEC="python ${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py"
-ROUND="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_round.py"     # 轮次推导（共享计数器）
 NBHD="python ${CLAUDE_SKILL_DIR}/scripts/neighborhood.py"             # 锚点关系查询（双锚连通性）
 OUTPUT_DIR="02_剧情数据"
 ```
@@ -40,8 +40,8 @@ OUTPUT_DIR="02_剧情数据"
             → 锚点关系查询 + 只读查图上下文
 1. ideate   六模式启发 → 候选批（多条差异化候选 + 评分对比表）
 2. enrich   三要素细化：char / location / time 补全；缺失实体 → 占位提案
-3. ask      一次一问逐事件敲定（候选评分表 → 用户挑选/修改/放弃）
-4. commit   问尽 → 组装自然语言草稿落盘 → 报下一步（suggest-consumer 消费）
+3. ask      一次一问逐事件敲定（候选评分表 → 用户挑选/修改/放弃）→ 共识成立确认
+4. commit   组装事件共识文档落盘 → 报下一步（默认 event-stager 消化；纯 I 轮次 suggest-consumer 直消）
 ```
 
 支线 A 故事线构建（§5a）：读图取材 → 起草主旨/氛围 → 勾骨架成员（非全量入线）→ 敲 title → commit（I4）
@@ -121,7 +121,7 @@ OUTPUT_DIR="02_剧情数据"
 | **location** | 只推既有 Location：①文本地名匹配 ②char 历史足迹 ③at 边 | 图上无 → **Location 占位提案** |
 | **char**（involved） | 只推既有 Character：同 Location 历史参与者→at 边居民→同日活动者 | 图上无（新配角）→ **Character 占位提案** |
 
-**占位只写占位意图**（待建档缺口由内容缺失表达：Character 缺 has_appearance、Location 缺空间化即骨架）：Character 占位写 name/vibe（姓名+一句话氛围人设）、Location 占位写 name/description（名称+一句话定位），**均无 status**，外貌链/空间链不在创建域；着装补充说明不涉及（stager 域）。占位意图随草稿一并落盘（格式见草稿模板），节点物化由 suggest-consumer 完成。
+**占位只写占位意图**（待建档缺口由内容缺失表达：Character 缺 has_appearance、Location 缺空间化即骨架）：Character 占位写 name/vibe（姓名+一句话氛围人设）、Location 占位写 name/description（名称+一句话定位），**均无 status**，外貌链/空间链不在创建域；着装补充说明不涉及（stager 域）。占位意图随共识文档一并落盘（格式见共识模板），节点物化由 suggest-consumer 完成。
 
 ## 3. ask — 逐事件敲定（一次一问）
 
@@ -149,17 +149,18 @@ OUTPUT_DIR="02_剧情数据"
 - **facts 不问用户**（邻接事件、名录、option 序号现查），只问取舍。
 - 回答模糊 → 标「未解决依赖」继续，矛盾时回溯重问。
 - 共识判据（事件级）：一段话可概述该事件（贡献/时间/地点/人物/因果）且连续三问无新矛盾。
+- **共识成立确认（commit 前最后一问，必问）**：全部候选处置完毕后逐项复述共识清单（事件/占位/Hook/线），问「以上 N 项共识是否成立？」——推荐答案「成立」；用户明确答复成立 → 进 §4 落盘（含 I2 → 默认交 stager；纯 I4/I5 → 落盘后交 consumer）；答复回改 → 定位到具体条目重问。沉默或「差不多」不算成立，追问确认。
 - 收尾复述：每约 5 个决定复述一次；commit 前最终复述。
 - 不一次性抛问卷、不替用户写大段正文、始终用「你」。
 
-**无数量硬门控**：草稿不再卡「≤3 Event + 2 Hook + 2 故事线」——批量由创作判断与留白原则决定（多次运行逐步丰满，留白即叙事）；超大草稿的审阅负担由 suggest-consumer 在汇报中提示分批，不在本层拦截。
+**无数量硬门控**：共识不再卡「≤3 Event + 2 Hook + 2 故事线」——批量由创作判断与留白原则决定（多次运行逐步丰满，留白即叙事）；超大共识的审阅负担由 suggest-consumer 在汇报中提示分批，不在本层拦截。
 
-## 4. commit — 组装自然语言草稿落盘
+## 4. commit — 组装事件共识文档落盘
 
 全部候选有处置（敲定/放弃，放弃留痕）后：
 
 1. **主题** = char 名（+ base event 短题）；故事线支线时主题 = arc title。
-2. **组装草稿条目**（顺序：先占位实体后事件——节点先于边）：
+2. **组装共识条目**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体条目（类型 I1）：`[占位 Character]`/`[占位 Location]`——名称 + 一句话氛围人设/定位；
    - 事件条目（类型 I2）：title + type + time + occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
    - Hook 条目（类型 I3）：title + content + knowledge_level + 成立源事件（id）；
@@ -167,8 +168,8 @@ OUTPUT_DIR="02_剧情数据"
    - 对账条目（类型 I5）：线 id + 重写后的 description 全文草案；
    - arc→new 敲定的事件：条目内注明「挂线：<arc id>」——不为挂边单独立条。
    - 每条目附 reason（依据：图上实查 vs 常识推断，分离标注）。
-3. **Write 落盘** `${OUTPUT_DIR}/${DATE}_round<N>_<主题>_ideator_草稿.md`（UTF-8，条目格式见下方草稿模板）。
-4. **汇报**：草稿路径 + 条目数与类型分布 + 放弃清单 + 占位清单 + 下一步话术（「跑 suggest-consumer 消费本草稿 → 严检 Schema、组装建议 JSON → dashboard `/events`『📥 补全建议』审阅写回」）。
+3. **Write 落盘** `${OUTPUT_DIR}/${DATE}_<主题>_共识.md`（UTF-8，条目格式见下方共识模板；同日同主题重跑覆盖——汇报注明）。
+4. **汇报**：共识路径 + 条目数与类型分布 + 放弃清单 + 占位清单 + 下一步话术**双分支**——默认「跑 event-stager 消化本共识（拆 SubEvent → 定稿 → suggest-consumer → 用户确认后执行写回）」；纯 I 轮次「跑 suggest-consumer 消费本共识（严检 Schema、组装建议 JSON → 用户确认后执行写回）」。
 
 ## 5. 故事线支线 —— 构建（I4）与对账（I5）
 
@@ -178,22 +179,22 @@ OUTPUT_DIR="02_剧情数据"
 2. **起草 description（写作思路层，不是事件复述）**：两段式——**主旨**（一两句：这条线想表达什么）+ **氛围**（一段：质感与调性），「主旨：」「氛围：」引导、段间换行。不复述情节结构（时序由成员 Event.time 承载）；计划中但未建图的走向可写，须与用户确认；段内不写时间戳。
 3. **勾骨架成员**（一次一问，交互纪律沿用 §3；**非全量入线**——事件不进线≠不重要，只圈承载主旨的骨架事件）：摆「成员事件时间轴 + 主旨草案」对照表，逐事件问「它承载主旨的哪个面向？」（推荐答案来自 1 的取材；可勾可弃可补查）。
 4. **敲定 title**（≤10 字弧线名，如「陆择的救赎线」）。
-5. **主旨覆盖自检 + commit**：勾定后若主旨某面向零成员——提醒用户（改 description 或留注「收束待补」），随后走 §4 同款草稿落盘/汇报；I4 一条目，主题 = arc title。
+5. **主旨覆盖自检 + commit**：勾定后若主旨某面向零成员——提醒用户（改 description 或留注「收束待补」），随后走 §4 同款共识落盘/汇报（故事线支线 = 纯 I 通路，落盘后交 suggest-consumer 直消）；I4 一条目，主题 = arc title。
 
 ### 5b. 对账（description vs 实际成员）
 
 **触发**：自动（本次产出涉及 comprises 挂边——I4 建线/扩线、或 arc→new 的 I2 事件挂线——commit 前对每条被触碰的 StoryArc 跑一次）/ 手动（用户说「对账」「检查故事线」，入参 arc id/title（单线）或 event id（反查所属线，逐线对账）；无入参时列名录让用户选）。
 
-**步骤**：① 重读该线 description + 当前成员全集（含本次即将新增的）；② 判断两类失配：新成员改变主旨表达（新面向进线 / 原有面向该收束了）、description 写了但成员里没有的事（描述预言了未发生/已删除的事）；③ 失配 → 产 I5（content = 重写后的 description **全文**，一线一条目，随本次草稿落盘）；不失配 → 不产 I5，汇报注明「故事线『<title>』核对无变化」。
+**步骤**：① 重读该线 description + 当前成员全集（含本次即将新增的）；② 判断两类失配：新成员改变主旨表达（新面向进线 / 原有面向该收束了）、description 写了但成员里没有的事（描述预言了未发生/已删除的事）；③ 失配 → 产 I5（content = 重写后的 description **全文**，一线一条目，随本次共识落盘，纯 I 通路直消）；不失配 → 不产 I5，汇报注明「故事线『<title>』核对无变化」。
 
 **边界**：对账只产 I5 描述更新项与 I4 扩线挂边；**摘成员边（DELETE 关系）不进建议 JSON**——删除类操作由用户在 dashboard Cypher 控制台人工执行，对账汇报里只提示「建议摘除：<event title>」。
 
-## 草稿模板（照抄改值）
+## 共识模板（照抄改值）
 
-// ⚠ 草稿是给人读的自然语言 md：标签行只是惯例结构，可自由组织；语义完整即可，字段级撰写契约（零时间措辞、title 事实句等）由 suggest-consumer 对照 Schema 强制。既有实体一律 id 内联，新实体只写名称+一句话。
+// ⚠ 共识文档是给人读的自然语言 md：标签行只是惯例结构，可自由组织；语义完整即可，字段级撰写契约（零时间措辞、title 事实句等）由 suggest-consumer 对照 Schema 强制。既有实体一律 id 内联（stager preflight 据此验图），新实体只写名称+一句话；占位指称统一 `[占位：名称]` 形态（stager 据此判定演出资源为零）。
 
 ```markdown
-# <主题> ideator 草稿 round<N>
+# <主题> 共识
 
 ## [I1 占位 Location] 书店
 - 定位：临街两层小书店，二楼有医学护理专区

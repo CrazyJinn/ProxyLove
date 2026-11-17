@@ -1,6 +1,6 @@
 # 代恋 - 编排 Agent 流程图
 
-> **本文定位**：可视化 [.claude/agents/](.claude/agents/) 编排层 Agent（三链 `char-design` / `scene-design` / `plot-design`）与 [.claude/skills/](.claude/skills/) 叙事事件双 skill（`event-ideator` 需求提出 + `event-stager` 细化落地）的执行流程（[§3](#叙事事件生产流程四步)），统一用**时序图**表达。
+> **本文定位**：可视化 [.claude/agents/](.claude/agents/) 编排层 Agent（四链 `char-design` / `scene-design` / `plot-design` / `event-design`）与 [.claude/skills/](.claude/skills/) 叙事事件链 skill（`event-ideator` 共识提出 + `event-stager` 拆解定稿 + `suggest-consumer` 严检执行）的执行流程（[§3](#叙事事件生产流程五步)），统一用**时序图**表达。
 >
 > - **审批流程独立成节**（[§2](#2-审批流程)），不在各 Agent 时序图里展开——时序图只画"生产调度"主线，遇到待审就用 `⏸ 待审 → 批准` 一行带过并引用 §2。
 
@@ -8,9 +8,9 @@
 
 ## 目录
 
-1. [三个 Agent 的共同铁律](#三个-agent-的共同铁律)
+1. [四个 Agent 的共同铁律](#四个-agent-的共同铁律)
 2. [审批流程](#2-审批流程)
-3. [叙事事件生产流程（四步）](#叙事事件生产流程四步)
+3. [叙事事件生产流程（五步）](#叙事事件生产流程五步)
 4. [char-design —— 角色美术 + 声音生产链](#char-design--角色美术--声音生产链)
 5. [scene-design —— 场景美术生产链](#scene-design--场景美术生产链)
 6. [plot-design —— 剧情创作生产链](#plot-design--剧情创作生产链)
@@ -18,9 +18,9 @@
 
 ---
 
-## 三个 Agent 的共同铁律
+## 四个 Agent 的共同铁律
 
-> `char-design` / `scene-design` / `plot-design` 是三条生产链各自的**纯编排层**，骨架完全一致，差异只在"调度哪几个 skill / agent"。
+> `char-design` / `scene-design` / `plot-design` / `event-design` 是四条生产链各自的**纯编排层**，骨架完全一致，差异只在"调度哪几个 skill / agent"。event-design 链是强交互链（skill 内含多轮问答与执行确认门）：其"只读查证"为文档存在性查证（非图 status），写图只经 suggest-consumer 的执行确认门、agent 不代答——其余铁律同样适用。
 
 | 铁律 | 含义 |
 |------|------|
@@ -94,61 +94,76 @@ sequenceDiagram
 
 ---
 
-## 叙事事件生产流程（四步）
+## 叙事事件生产流程（五步）
 
-> **职责**：叙事事件从无到有的完整生产线——**① event-ideator 提需求（启发新 Event + 叙事基础占位）→ ② event-stager 细化落地（拆 SubEvent + 演出域占位）→ ③ char-design / scene-design 消化占位产资产 → ④ plot-design 写作**。
+> **职责**：叙事事件从无到有的完整生产线——**① event-ideator 共识（启发新 Event + 叙事基础占位，多轮迭代产 `_共识.md`）→ ② event-stager 定稿（消化共识拆 SubEvent + 演出域占位，产 `_定稿.md`）→ ③ suggest-consumer 严检执行（产建议 JSON，**用户确认后执行写回**）→ ④ char-design / scene-design 消化占位产资产 → ⑤ plot-design 写作**。①~③ 由 `event-design` agent 全链编排（亦可用户直触各 skill 跑单段）。
 >
-> **门控说明**：plot-design 写作**不等美术资产**（前驱只看叙事素材——novelist 丰满度自检），美术与写作并行推进；资产门控天然留在配音选绘（IllusDesign ≠ 11 报警跳过）与发布阶段，流程顺序靠占位节点（status=0 挂账，design 链入口查询天然圈到）+ 用户跑 design 链保证。
+> **门控说明**：plot-design 写作**不等美术资产**（前驱只看叙事素材——novelist 丰满度自检），美术与写作并行推进；资产门控天然留在配音选绘（IllusDesign ≠ 11 报警跳过）与发布阶段，流程顺序靠占位节点（status=0 挂账，design 链入口查询天然圈到）+ 用户跑 design 链保证。**③ 执行写回前新事件不在图中**（共识→定稿全程文档接力，不经过图）——chapter-structurer / plot-design 圈事件须在执行写回之后。
 
 ### 分工边界
 
 | 环节 | 定位 | 产物通道 |
 |------|------|---------|
-| `event-ideator`（skill） | **需求提出层（发散）**——六模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯 / arc→new 故事线填充）+ 一次一问敲定，产 Event + involved/occurs_at 边 + Character/Location 占位 + 限产 Hook + StoryArc 故事线（构建 I4 / 对账更新 description I5；存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | 建议 JSON（source='event-ideator'）→ dashboard 审阅写回 |
-| `event-stager`（skill） | **需求细化层（收敛）**——拆 SubEvent + 演出域占位物化（Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0 流水线起点），缺口不走文本留单而是图上占位自描述 | 建议 JSON（source='event-stager'）→ dashboard 审阅写回 |
+| `event-ideator`（skill） | **需求提出层（发散）**——六模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯 / arc→new 故事线填充）+ 一次一问迭代到**共识显式确认**，产 Event + involved/occurs_at 边 + Character/Location 占位 + 限产 Hook + StoryArc 故事线（构建 I4 / 对账更新 description I5；存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | `<日期>_<主题>_共识.md`（I1~I5）→ 默认交 event-stager 消化；纯 I 轮次交 suggest-consumer 直消 |
+| `event-stager`（skill） | **需求细化层（收敛）**——双入口（共识文档 / 图中事件 id/title/时间窗），拆 SubEvent + 演出域占位物化（Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0 流水线起点），缺口不走文本留单而是图上占位自描述 | `<日期>_<主题>_定稿.md`（共识模式 I 域照抄+S 域追加 / 图模式纯 S）→ 交 suggest-consumer |
+| `suggest-consumer`（skill） | **Schema 守门 + 执行层**——严检共识/定稿/补全文档（撰写契约+机器项+红线）、生成 snowflake id、组装建议 JSON（先节点后边、语句自包含、同文档指称绑定）、lint 全 PASS；**执行确认门**：用户明确同意后单事务执行写回 + 读回验证（dashboard 弹窗保留为人工备选，幂等共存） | 同名 `_建议.json` → 执行写回 / dashboard 人工采纳 |
 
 ### 时序图
 
 ```mermaid
 sequenceDiagram
     actor U as 用户
+    participant ED as event-design 编排Agent
     participant IDE as event-ideator skill
+    participant STG as event-stager skill
+    participant SC as suggest-consumer skill
     participant DB as Neo4j 图
     participant DA as Dashboard 人工
-    participant STG as event-stager skill
     participant CD as char-design 编排Agent
     participant SD as scene-design 编排Agent
     participant PD as plot-design 编排Agent
 
     rect rgb(235, 245, 255)
-    Note over IDE,DA: ① event-ideator：六模式启发新 Event / 故事线构建与对账 + 敲定（一次一问附推荐，零图写入）
-    U->>IDE: char（必填）+ base event（可选）
+    Note over IDE,ED: ① event-ideator：六模式启发 + 多轮迭代 → 事件共识（一次一问附推荐，零图写入）
+    U->>ED: 新想法（char + base event；或 arc 建线/对账）
+    ED->>IDE: Skill event-ideator（入口四态分诊）
     IDE->>DB: 锚点关系查询（neighborhood.py：char×base 连通性/间接路径，或单锚一跳清单）<br/>+ 实体名录 / 待审建议防重
     Note over IDE: 推荐答案必须有图数据依据（人物设定/锚点关系，不凭空造戏）
     IDE-->>U: 候选批 + 评分对比表（人设契合/查图去重/戏剧价值/生产成本）
-    loop 每个入选候选 × 决策维度（弧线贡献删除测试 / title / time / occurs_at / involved+role / description / 因果）
+    loop 每个入选候选 × 决策维度（弧线贡献删除测试 / title / time / occurs_at / involved / description / 因果）
         IDE-->>U: 一问（附推荐答案 + 理由标签）
         U->>IDE: 敲定 / 修改 / 放弃
     end
-    Note over IDE: 三要素缺失实体 → Character/Location 占位提案（裸节点，无 status——缺口由内容缺失表达）
-    IDE-->>U: 建议 JSON 落盘 02_剧情数据/（至多 3 Event + 占位实体；先占位后事件）
-    U->>DA: /events 页「📥 补全建议」弹窗逐条审阅「采纳」
-    DA->>DB: 执行建议 cypher（占位 Character/Location + Event + involved/occurs_at 挂边，MERGE 幂等）
+    Note over IDE: 三要素缺失实体 → Character/Location 占位提案（裸节点，无 status）<br/>共识成立确认（commit 前最后一问，必问）
+    IDE-->>U: 共识落盘 02_剧情数据/<日期>_<主题>_共识.md（I1~I5；先占位后事件）
+    ED->>U: 继续拆解演出？（推荐 → ② ／ 纯 I 轮次 → ③ 直消共识 ／ 暂停）
     end
 
     rect rgb(240, 255, 240)
-    Note over STG,DB: ② event-stager：拆解 SubEvent + 占位物化（建议 JSON，逐 event 拍板；单轮 ≤3 event）
-    U->>STG: event-stager <新事件 id/title 列表>
-    STG->>DB: preflight.py 一次跑出（只读）：范围解析 + 入口核验（缺 involved/occurs_at 报错停止，不代建）<br/>+ 批次切分（>3 取最早 3 个）+ 演出资源现状（char 立绘链 / location 空间链）
-    STG-->>U: 每 Event 一题：完整方案（N 个 sub + anchored_at/appears_as 目标 + 时间插值 + description 要点）
-    U->>STG: 拍板 / 改细节
+    Note over STG,SC: ② event-stager：消化共识拆 SubEvent + 占位物化（逐 event 拍板；每批默认 3）
+    U->>STG: event-stager <共识文档路径>（或图中事件 id/title/时间窗——存量细化，纯 S 域定稿）
+    STG->>DB: preflight.py --consensus（只读）：I2 事件解析 + 既有 id 验图<br/>+ 占位收集（演出资源为零=预期态）+ 既有实体资源现状
+    loop 每 Event 一题：完整方案整体拍板
+        STG-->>U: N 个 sub + anchored_at/appears_as 目标（既有/占位/继承）+ 时间插值
+        U->>STG: 拍板 / 改细节
+    end
     Note over STG: 揭示场合（SubEvent─reveals→Hook）并入同题拍板；sub.description 按 Schema 节拍级契约
-    STG-->>U: 建议 JSON 落盘（占位 Spot 骨架 + Scene/CostumeStyle/IllusDesign status=0 → SubEvent + refines/anchored_at/appears_as）
-    U->>DA: 「📥 补全建议」审阅写回（占位即挂账，替代旧文本留单）
+    STG-->>U: 定稿落盘 <同日期同主题>_定稿.md（I 域照抄 + S 域追加）
+    Note over ED,SC: ③ suggest-consumer：严检 + 组装 + 执行确认（同轮零停等连推，无人工审环节）
+    SC->>DB: 严检机器项现查（枚举 / id 验图 / condition 换算 / 定稿I1/I2/I3 指称→id 映射）
+    SC-->>U: 建议 JSON 落盘（先节点后边 I1→S1→I2→S2→S3/S4）+ lint 全 PASS + 跨条目依赖清单
+    SC-->>U: 【执行确认门】是否直接执行写回图？（必停一问，agent 不代答）
+    alt 用户明确同意
+        SC->>DB: cypher_exec --multi 单事务执行（MERGE 幂等）+ 读回验证
+        SC-->>U: 已写回：事件 N / SubEvent M / 占位 K——执行写回后方可分节推进
+    else 暂缓（备选通道）
+        U->>DA: /events 页「📥 补全建议」弹窗逐条人工采纳（与执行通道幂等共存）
+        DA->>DB: 执行建议 cypher（MERGE 幂等，重复执行不建重复节点）
+    end
     end
 
     rect rgb(255, 248, 240)
-    Note over CD,SD: ③ 消化占位产资产（两链并行，各自完整生产链见 §4 / §5）
+    Note over CD,SD: ④ 消化占位产资产（两链并行，各自完整生产链见 §4 / §5）
     CD->>DB: 入口查询圈占位（IllusDesign/CostumeStyle status=0；占位 Character 按缺外貌链结构判据圈定）
     SD->>DB: 入口查询圈 status=0 占位（Spot/Scene + room.yml 细化）
     CD-->>U: IllusDesign → 10 待审 ⏸（见 §2 审批流程）
@@ -156,7 +171,7 @@ sequenceDiagram
     end
 
     rect rgb(255, 240, 245)
-    Note over PD,DB: ④ plot-design：写作（不等美术资产——前驱只看叙事素材丰满度）
+    Note over PD,DB: ⑤ plot-design：写作（不等美术资产——前驱只看叙事素材丰满度）
     U->>PD: plot-design 章节 / section id（完整生产链见 §6）
     PD->>DB: 按 Section→includes→Event→refines→SubEvent→anchored_at/appears_as 取材
     Note over PD: novelist 丰满度自检不足 → 报缺口退出（用户跑 event-ideator 补素材）<br/>立绘上游 IllusDesign≠11 → 报警跳过（美术与写作并行，门控在配音选绘 / 发布）
@@ -397,14 +412,15 @@ sequenceDiagram
 
 ## 全部 Skill 功能概述
 
-> 下表覆盖三条生产链的全部 skill + 叙事层 + 基础设施。**纯产出层**（只产文件、不读写图、不写 status）单独标注。三个**编排 Agent**（`char-design` / `scene-design` / `plot-design`）不在此表——它们是调度者，调度的对象就是表里的 skill。
+> 下表覆盖各生产链的全部 skill + 叙事层 + 基础设施。**纯产出层**（只产文件、不读写图、不写 status）单独标注。四个**编排 Agent**（`char-design` / `scene-design` / `plot-design` / `event-design`）不在此表——它们是调度者，调度的对象就是表里的 skill。
 
 ### 叙事层（创作输入 → 叙事图）
 
 | Skill | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|---------|-------------------|
-| event-ideator | 新事件与故事线需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 六模式启发[动机链/质感/间隙/后果链/回溯/故事线填充] → 三要素细化 → 一次一问敲定 → 建议 JSON 落盘；产 Event + involved/occurs_at 边 + Character/Location 占位（裸节点）+ 限产 Hook ≤2 + StoryArc/comprises[I4 建线，I5 对账更新 description]；至多 3 Event + 2 条故事线/次） | `02_剧情数据/<日期>_round<N>_<主题>_ideator_建议.json` | ✅（建议经 dashboard 审阅写回） |
-| event-stager | 事件细化落地（四步：前置核验[`scripts/preflight.py`：范围解析+入口核验+批次切分+演出资源现状] → 拆 SubEvent[对照 `references/微演出模式库.md` 十一种模式，按演出价值判据；description 按 SubEvent.md 节拍级契约] → 占位物化[Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0，命名照 `references/占位命名规范.md`] → 逐 event 拍板；单轮 ≤3 event；缺叙事基础实体报错停止不代建） | `02_剧情数据/<日期>_round<N>_<主题>_stager_建议.json` | ✅（建议经 dashboard 审阅写回） |
+| event-ideator | 新事件与故事线需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 六模式启发[动机链/质感/间隙/后果链/回溯/故事线填充] → 三要素细化 → 一次一问迭代敲定+共识显式确认 → 共识落盘；产 Event + involved/occurs_at 边 + Character/Location 占位（裸节点）+ 限产 Hook ≤2 + StoryArc/comprises[I4 建线，I5 对账更新 description]） | `02_剧情数据/<日期>_<主题>_共识.md` | ✅（零图写入；交 event-stager 消化或纯 I 轮次交 suggest-consumer） |
+| event-stager | 事件细化落地（四步：前置核验[`scripts/preflight.py` 双入口：`--consensus` 共识解析+既有 id 验图+占位收集 / 图内 selector 范围解析+入口核验；缺叙事基础实体报错停止不代建，占位实体演出资源为零是预期态] → 拆 SubEvent[对照 `references/微演出模式库.md` 十一种模式，按演出价值判据；description 按 SubEvent.md 节拍级契约] → 占位物化[Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0，命名照 `references/占位命名规范.md`] → 逐 event 拍板；每批交互默认 3 event） | `02_剧情数据/<日期>_<主题>_定稿.md`（共识模式 I 域照抄+S 域追加 / 图模式纯 S） | ✅（零图写入；交 suggest-consumer） |
+| suggest-consumer | Schema 守门 + 执行（六步：读文档定来源[共识/定稿/补全三态] → 逐条目严检[撰写契约+机器项+按条目域红线；文档内指称解析] → snowflake id → 组装建议 JSON[先节点后边、语句自包含、混合定稿 I1→S1→I2→S2 依赖序] → 落盘+lint 全 PASS → **执行确认门**：用户明确同意后单事务执行写回+读回验证，不同意留 dashboard 人工通道） | 同名 `_建议.json` → 执行写回 | ✅（默认零图写入；明确同意后执行） |
 
 ### 角色美术 + 声音层（Character → IllusDesign / VoiceDesign）
 
@@ -444,7 +460,7 @@ sequenceDiagram
 |------|------|------|
 | infra-image-generator | 读 prompt 调 OfoxAI API 出图（纯产出） | 文生图 / 图生图；不写图、不写 status |
 | cypher_exec.py | 执行 Cypher（统一图读写入口） | 所有 skill 读写 Neo4j 的唯一脚本，支持 `-c`/`-f`/`--stdin`/`--multi`/`--json` |
-| suggest_round.py | 建议 JSON 轮次推导（共享计数器，全量取 max+1） | event-ideator / event-stager / chapter-novelist 共用；防文件名排序跳号 |
+| suggest_round.py | ~~建议 JSON 轮次推导（共享计数器）~~ 已停用留档 | 2026-11-17 起建议类文件名去轮次（`<日期>_<主题>_*`，同日同主题重跑覆盖），三个叙事 skill 不再引用；历史归档文件名仍含 round |
 | `.claude/skills/section-voice-publisher/scripts/` | 声音链脚本组（收编进 skill） | script_splitter.py（台词.ink 拆分对齐进图：parse_ink + difflib 对齐 + 单事务写图）· voice_clone_runner.py（Qwen3 全家：候选/试听/ref + 逐句配音 publish，env/.venv-qwen）· voice_bundler.py（voice key 单一源 make_voice_key + tasks-from-graph/bind-graph + publish 发布期拷运行时）· paths.py（模型路径配置，读 settings.json）；char-voice-design / chapter-publisher 跨 skill 引用 |
 
 ---
@@ -468,7 +484,7 @@ sequenceDiagram
 ├── 01_叙事数据/                      # 历史：初始建图离线产出
 │   └── csv/                          # 实体/关系 CSV + import.cypher
 │
-├── 02_剧情数据/                      # ideator / stager / novelist 建议 JSON（<日期>_round<N>_<主题>_ideator/stager/补全_建议.json + _reviewed.json 审批留痕）
+├── 02_剧情数据/                      # 事件链文档接力（<日期>_<主题>_共识.md / _定稿.md / _建议.json）+ novelist 对账补全（_补全_草稿.md → _补全_建议.json）；历史归档文件名含 round<N>
 │
 ├── 06_角色美术/                      # 角色美术产出（目录=图链路径 hexid 段：char→ds→costume→立绘）
 │   └── <char_id>/                    # hexid(Character.id)
