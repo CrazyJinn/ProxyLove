@@ -84,7 +84,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 8. **status 白名单**：仅 `-1/0/1/2/10/11`。
 9. **`--multi` 只按 `;` 分割语句**：仅换行分隔的多条 `MATCH...SET` 会被拼接为单条查询（变量复用使后续 MATCH 退化为过滤条件），**每批只有首条生效且退出码为 0——静默丢失**。批量写图语句必须 `;` 分隔，且写后必须读回验证。
 10. **Cypher map 字面量键用裸标识符**（本版 Neo4j 不接受双引号字符串键）：`SET n += {name: 'x'}` 而非 `{"name": ...}`。
-11. **双后端（Memgraph/Neo4j）聚合兼容**：多段 `OPTIONAL MATCH` 后**禁止直接 `RETURN` 聚合**（collect/count/sum 跨段引用 → Memgraph `Unbound variable` 崩，Neo4j 正常）。每段后紧跟 `WITH <锚>, collect(...) AS ...` 物化再进下一段；聚合后 `ORDER BY` 只用 RETURN 别名（`ORDER BY time`，禁 `ORDER BY e.time`）；collect 物化后计数/过滤用列表推导并显式滤 null 项（`x IS NOT NULL`）。段数 ≥3 或混合行粒度时优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，见 suggest_lint.py R5）
+11. **双后端（Memgraph/Neo4j）聚合兼容**：多段 `OPTIONAL MATCH` 后**禁止直接 `RETURN` 聚合**（collect/count/sum 跨段引用 → Memgraph `Unbound variable` 崩，Neo4j 正常）。每段后紧跟 `WITH <锚>, collect(...) AS ...` 物化再进下一段；聚合后 `ORDER BY` 只用 RETURN 别名（`ORDER BY t`，禁 `ORDER BY e.start_time`）；collect 物化后计数/过滤用列表推导并显式滤 null 项（`x IS NOT NULL`）。段数 ≥3 或混合行粒度时优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，见 suggest_lint.py R5）
 12. **禁 pattern comprehension** `[(a)-[:r]->(b) | expr]`（Neo4j 独有，Memgraph 不支持）——改 `OPTIONAL MATCH` + `WITH ... collect(...)`，或拆查询。
 13. **谓词/CASE 内避免 `IN` 字面量列表**（Memgraph 对 IN+负数列表 parse 崩；字符串字面量列表未验证不赌）：常量多值判断用 `=` + `OR`；动态 id 集合的 IN 可保留（服务器 Memgraph 验证清单项）。计数用 collect 物化 + `size([x IN l WHERE ...])`。
 14. **属性值禁备忘/解释性文字**：不写日期注记（「2026-11-10 修改」）、编号引用推导（「I31+I39→…」）、归属标注（「（归属林梦）」）——属性只存当下有效值，变更历史不落图。占位文字（如「内容待补」）允许。
@@ -93,7 +93,8 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 
 - **Event 定位一律 `occurs_at → Location`**（一跳；N:N——跨地点事件多挂）；细化 `Event ─refines{sync:true}→ SubEvent`（1:N，event-stager 产生；sub 是机位层演出物化，只挂 `anchored_at → Scene` 与 `appears_as → IllusDesign` 两边——**Event 直挂这两边为违规**；删父 Event 连带删 sub；时间轴/分节查询只碰 Event label）。
 - 节成员 `Section ─includes{order}→ Event`（order=事件 time 序）；空间链统一父→子：`Location ─part_of→ Spot ─realizes→ Scene`。
-- **Event 间禁建 `evt_relation`**（先后时序由 `Event.time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Hook/Lore 无出边**：事实成立挂 `Event ─establishes→ Hook`，固有设定挂 `(Character|Location) ─has_info→ Lore`，读者侧揭示时刻挂 `SubEvent ─reveals→ Hook`——事件与信息之间不走因果边。
+- **Event 间禁建 `evt_relation`**（先后时序由 `Event.start_time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Info/Lore 无出边**：事件性事实建 `Info` 节点、知晓挂 `Event ─knows→ Info`（知晓者=事件 involved 参与者推导、知晓时间=事件 start/end；固有前史事实建前史事件承载），固有设定挂 `(Character|Location) ─has_info→ Lore`——事件与信息之间不走因果边。
+- **人物时空/关系区间边**：`Character ─at→ Location`（type=居住|工作|暂驻）与 `relation` 的 start_time/end_time **必填**；久远/无法推导写哨兵 `开篇前`、持续中写 `至今`（哨兵不参与字符串序比较，区间查询须特判）。事件时人物所在地 = 覆盖该事件 start_time 的 at 区间（多条覆盖取最短，常态长区间兜底）；远程在场事件（电话/连麦）各参与人各自查 at 边，与 occurs_at 机位端解耦。
 - Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/剧情/](00_init/Schema/剧情/)）。
 - **占位节点**由 event-ideator（叙事基础域：Character/Location）与 event-stager（演出域：Spot/Scene/CostumeStyle/IllusDesign）经建议 JSON 创建——Character/Location/Spot 为裸节点（**无 status**，缺口由内容缺失/结构表达）；Scene/CostumeStyle/IllusDesign 为流水线 status=0 起点。实现 agent 入口查询圈占位消化（裸节点按结构判据，如占位 Character=缺 has_appearance）。
 
@@ -152,7 +153,7 @@ python 99_game/tools/deploy_r2.py      # brotli 上传 R2；--dry-run 只看计�
 ## 何时用 skill / agent
 
 - 要走事件叙事链的任一段或全链（新事件启发到建议 JSON 执行写回的编排分发）→ `event-design` agent（强交互编排层：入口四态分诊——新想法/锚点→ideator、共识文档→stager、图中事件→stager 图模式、待消费文档→consumer；stager 定稿后同轮连推 consumer；**consumer 执行确认门必停等用户本人**；不跨链调 char/scene/plot）。
-- 要产出新 Event、构建/对账故事线（StoryArc）或补全叙事基础（六模式启发：动机链/质感/间隙/后果链/因果回溯/故事线填充；一次一问+每问附推荐答案，迭代到共识后显式确认；产 Event+involved/occurs_at 边+Character/Location 占位+限产 Hook[≤2/次]+StoryArc 与 comprises 边[I4 建线/扩线，I5 对账更新 description——唯一允许改既有节点属性的例外]，零图写入）→ `event-ideator`（事件启发传 char 和/或 base event，arc 故事线单独给则走建线/填充/对账支线；产 `02_剧情数据/<日期>_<主题>_共识.md`——默认交 event-stager 消化拆解，纯 I 轮次[仅 I4/I5 或明示不拆]交 suggest-consumer 直消；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
+- 要产出新 Event、构建/对账故事线（StoryArc）或补全叙事基础（六模式启发：动机链/质感/间隙/后果链/因果回溯/故事线填充；一次一问+每问附推荐答案，迭代到共识后显式确认；产 Event+involved/occurs_at 边+Character/Location 占位+Info 与 knows 边[随共识给知晓承载事件]+StoryArc 与 comprises 边[I4 建线/扩线，I5 对账更新 description——唯一允许改既有节点属性的例外]，零图写入）→ `event-ideator`（事件启发传 char 和/或 base event，arc 故事线单独给则走建线/填充/对账支线；产 `02_剧情数据/<日期>_<主题>_共识.md`——默认交 event-stager 消化拆解，纯 I 轮次[仅 I4/I5 或明示不拆]交 suggest-consumer 直消；存量图缺口发现用 dashboard 体检页，补全同走本 skill）。
 - 要细化事件到机位层（SubEvent）并占位物化演出缺口 → `event-stager`（双入口：**共识文档**——消化共识产合并定稿[I 域照抄+S 域追加]，或**图中事件** id/title 列表/时间窗——存量细化产纯 S 域定稿；四步：前置核验[preflight.py `--consensus`/图内 selector：缺叙事基础实体报错停止，占位实体演出资源为零是预期态] → 拆 SubEvent → 占位物化[Spot/Scene/CostumeStyle/IllusDesign status=0] → 逐 event 拍板产 `<日期>_<主题>_定稿.md` 交 suggest-consumer；每批交互默认 3 event）
 - 要严检消费共识/定稿/补全文档并组装建议 JSON → `suggest-consumer`（严检 Schema+组装 cypher+lint 全 PASS；**执行确认门**——用户明确同意后单事务执行写回+读回验证，不经 dashboard；不同意留 dashboard 建议弹窗人工备选）
 - 要推进某角色的整条美术链 → 调 `char-design` agent（传角色名或 ID）。

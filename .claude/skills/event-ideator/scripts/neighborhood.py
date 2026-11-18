@@ -9,7 +9,7 @@
 双锚（主模式）查两锚在叙事基础域的连通性，不做全量邻域扫描：
   直接关系   两锚间的直接边（含 properties）
   间接路径   ≤4 跳路径（边限 involved/occurs_at/at/relation/leads_to，
-             节点限 Character/Event/Location——Hook/Lore/Choice/演出域实体不参与），
+             节点限 Character/Event/Location——Info/Lore/Choice/演出域实体不参与），
              按跳数排序取前 10
   不连通     两锚无路径——启发空隙（新事件即桥），如实输出
 
@@ -30,7 +30,7 @@ SKILL_DIR = Path(__file__).resolve().parents[1]          # .../skills/event-idea
 ROOT = SKILL_DIR.parents[2]                               # 项目根
 CYPHER_EXEC = ROOT / ".claude" / "scripts" / "cypher_exec.py"
 
-# 三实体之间流转的叙事基础边（Schema/剧情/边.md 出边表归纳；Hook/Lore/Choice 中转由节点过滤排除）
+# 三实体之间流转的叙事基础边（Schema/剧情/边.md 出边表归纳；Info/Lore/Choice 中转由节点过滤排除）
 EDGE_TYPES = "involved|occurs_at|at|relation|leads_to"
 MAX_HOPS = 4
 
@@ -81,8 +81,8 @@ def pair(char_id: str, base_id: str) -> dict:
 def single_char(char_id: str) -> dict:
     events = run_cypher(
         f"MATCH (c:Character {{id:{q(char_id)}}})-[:involved]->(e:Event) "
-        f"RETURN e.title AS title, e.time AS time, e.type AS type "
-        f"ORDER BY e.time DESC LIMIT 10")
+        f"RETURN e.title AS title, e.start_time AS start_time, e.type AS type "
+        f"ORDER BY e.start_time DESC LIMIT 10")
     at = run_cypher(
         f"MATCH (c:Character {{id:{q(char_id)}}})-[r:at]->(l:Location) "
         f"RETURN l.name AS loc, properties(r) AS props")
@@ -161,7 +161,7 @@ def main() -> int:
         print(f"锚点: {a['name']}(Character) 一跳清单")
         print(f"近期事件（{len(result['events'])} 条，时间倒序）：")
         for e in result["events"]:
-            print(f"  {e['time']}  [{e['type']}] {e['title']}")
+            print(f"  {e['start_time']}  [{e['type']}] {e['title']}")
         if result["at"]:
             print(f"常驻地: " + "、".join(x["loc"] for x in result["at"]))
         if result["relations"]:

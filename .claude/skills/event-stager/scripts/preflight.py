@@ -30,7 +30,7 @@ SKILL.md 约定由 LLM 回读共识人肉分诊。
 
 FAIL 语义：范围内任一事件缺 occurs_at Location 或缺 involved Character →
 stager 报错停止（不代建叙事基础实体），本脚本直接输出可操作错误
-（缺什么、哪个事件；共识模式的缺字段回 event-ideator 修共识，S4 补边仅适用图模式）。
+（缺什么、哪个事件；共识模式的缺字段回 event-ideator 修共识，S3 补边仅适用图模式）。
 """
 
 import argparse
@@ -101,8 +101,8 @@ def parse_consensus(path: str) -> list:
     for ln, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
         m = I2_HEADER.match(line)
         if m:
-            cur = {"title": m.group(1), "line": ln, "time": None,
-                   "occurs_at": "", "involved": ""}
+            cur = {"title": m.group(1), "line": ln, "start_time": None,
+                   "end_time": None, "occurs_at": "", "involved": ""}
             events.append(cur)
             continue
         if line.startswith("## "):
@@ -114,8 +114,10 @@ def parse_consensus(path: str) -> list:
         if not m:
             continue
         key, val = m.group(1), m.group(2).strip()
-        if key == "time":
-            cur["time"] = val
+        if key == "start_time":
+            cur["start_time"] = val
+        elif key == "end_time":
+            cur["end_time"] = val
         elif key in ("occurs_at", "involved"):
             cur[key] = (cur[key] + "、" + val) if cur[key] else val
     if not events:
@@ -123,10 +125,12 @@ def parse_consensus(path: str) -> list:
             f"共识文档未找到任何 '## [I2 事件]' 条目——核对 {p.name} 是否为 "
             "event-ideator 产出的共识文档（*_共识.md）")
     for ev in events:
-        if not ev["time"]:
-            errors.append(f"事件「{ev['title']}」（L{ev['line']}）缺 time 字段")
-        elif not TIME_FMT.match(ev["time"]):
-            errors.append(f"事件「{ev['title']}」time 非法（须 yyyy-MM-dd HH:mm:ss）：{ev['time']}")
+        if not ev["start_time"]:
+            errors.append(f"事件「{ev['title']}」（L{ev['line']}）缺 start_time 字段")
+        elif not TIME_FMT.match(ev["start_time"]):
+            errors.append(f"事件「{ev['title']}」start_time 非法（须 yyyy-MM-dd HH:mm:ss）：{ev['start_time']}")
+        if ev["end_time"] and not TIME_FMT.match(ev["end_time"]):
+            errors.append(f"事件「{ev['title']}」end_time 非法（须 yyyy-MM-dd HH:mm:ss）：{ev['end_time']}")
         for field in ("occurs_at", "involved"):
             for ref in split_refs(ev[field] or ""):
                 if ref["kind"] == "bad":
@@ -174,7 +178,7 @@ def build_scope_clause(ids, titles, window) -> str:
     if titles:
         conds.append("e.title IN [" + ",".join(q(t) for t in titles) + "]")
     if window:
-        conds.append(f"e.time >= {q(window[0] + ' 00:00:00')} AND e.time < {q(window[1] + ' 00:00:00')}")
+        conds.append(f"e.start_time >= {q(window[0] + ' 00:00:00')} AND e.start_time < {q(window[1] + ' 00:00:00')}")
     if not conds:
         raise SystemExit("至少给一个 selector：--ids / --titles / --window")
     return " OR ".join(conds)
@@ -187,8 +191,8 @@ def preflight(ids, titles, window) -> dict:
         "WITH e, collect(DISTINCT {id: l.id, name: l.name}) AS locations "
         "OPTIONAL MATCH (c:Character)-[:involved]->(e) "
         "WITH e, locations, collect(DISTINCT {id: c.id, name: c.name}) AS chars "
-        "RETURN e.id AS id, e.title AS title, e.time AS time, locations, chars "
-        "ORDER BY time")
+        "RETURN e.id AS id, e.title AS title, e.start_time AS start_time, locations, chars "
+        "ORDER BY start_time")
     if not scope:
         return {"mode": "graph", "verdict": "EMPTY", "scope": [], "failures": [{
             "error": "范围内无事件——检查 id/title 拼写或时间窗（含 selector 是否全空）"}],
@@ -264,7 +268,7 @@ def query_assets(char_ids: set, loc_ids: set) -> dict:
 
 def preflight_consensus(path: str) -> dict:
     """共识模式：解析 *_共识.md 的 I2 事件条目 → 既有 id 验图 → 占位收集 → 资产查询。
-    事件尚未写图：scope 条目 id=None；缺字段回 event-ideator（不走 S4）；
+    事件尚未写图：scope 条目 id=None；缺字段回 event-ideator（不走 S3）；
     占位实体无演出资源（预期态）——assets 只查既有 id 实体。"""
     events = parse_consensus(path)
     scope, failures = [], []
@@ -289,11 +293,11 @@ def preflight_consensus(path: str) -> dict:
                 chs.append({"id": ref["id"], "name": ref["name"]})
         if not locs:
             failures.append({"event": ev["title"], "missing": "occurs_at Location",
-                             "fix": "共识条目缺 occurs_at——回 event-ideator 补共识（S4 补边仅适用图模式）"})
+                             "fix": "共识条目缺 occurs_at——回 event-ideator 补共识（S3 补边仅适用图模式）"})
         if not chs:
             failures.append({"event": ev["title"], "missing": "involved Character",
-                             "fix": "共识条目缺 involved——回 event-ideator 补共识（S4 补边仅适用图模式）"})
-        scope.append({"id": None, "title": ev["title"], "time": ev["time"],
+                             "fix": "共识条目缺 involved——回 event-ideator 补共识（S3 补边仅适用图模式）"})
+        scope.append({"id": None, "title": ev["title"], "start_time": ev["start_time"],
                       "locations": locs, "chars": chs})
 
     # 既有 id 验图（错拼即报错回 ideator，防静默错挂）
@@ -319,7 +323,7 @@ def preflight_consensus(path: str) -> dict:
                                  "fix": "回 event-ideator 修正共识——既有实体 id 须现查内联，防静默错挂"})
 
     # 批次切分（同图模式：time 最早 3 个；无图 id，按 title 标识）
-    scope.sort(key=lambda e: e["time"])
+    scope.sort(key=lambda e: e["start_time"])
     keys = [e["title"] for e in scope]
     if len(scope) > BATCH_LIMIT:
         batch = {"this_round": keys[:BATCH_LIMIT], "next_round": keys[BATCH_LIMIT:]}
@@ -384,7 +388,7 @@ def main() -> int:
     print(f"\n== 范围（{len(r['scope'])} 事件） ==")
     for ev in r["scope"]:
         tag = f"({ev['id']})" if ev["id"] else "（共识条目，未写图）"
-        print(f"  {ev['time']}  {ev['title']} {tag}")
+        print(f"  {ev['start_time']}  {ev['title']} {tag}")
         print(f"      at: {', '.join(l['name'] for l in ev['locations']) or '<缺 occurs_at>'}"
               f" | who: {', '.join(c['name'] for c in ev['chars']) or '<缺 involved>'}")
     if r["failures"]:

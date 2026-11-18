@@ -13,7 +13,7 @@
 | description | 情境 | string | 否 | 选择发生那一刻的情境一两句；不写各选项后果（由 option 边承载） |
 | time | 时间 | string(datetime) | 否 | `yyyy-MM-dd HH:mm:ss`，自时间锚点推算（选填） |
 
-> Choice 无 status 字段、不参与生产流水线，与 Character/Event/Location/Hook/Lore 同属纯数据实体。
+> Choice 无 status 字段、不参与生产流水线，与 Character/Event/Location/Info/Lore 同属纯数据实体。
 
 **结局**：结局不单独建节点，仍用 `Event` + 可选属性 `ending_kind`（`BE`/`TE`/`HE`/`NE`，字段定义见上文事件节）表达；`option{leads_to_ending:true}`（见下文）指向的 Event 即结局事件。
 

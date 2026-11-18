@@ -39,8 +39,8 @@ WITH c, ls, vd
 OPTIONAL MATCH (c)-[:has_info]->(info:Lore)
 WITH c, ls, vd, collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos
 OPTIONAL MATCH (c)-[:involved]->(evt:Event)
-WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .time }) AS events
-OPTIONAL MATCH (c)-[:involved]->(e2:Event)-[:refines]->(:SubEvent)-[:reveals]->(evtInfo:Hook)
+WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .start_time }) AS events
+OPTIONAL MATCH (c)-[:involved]->(ke:Event)-[:knows]->(evtInfo:Info)
 WITH c, ls, vd, infos, events,
      collect(DISTINCT evtInfo { .title, .content, .knowledge_level }) AS event_infos
 RETURN c, ls, vd, infos, events, event_infos;

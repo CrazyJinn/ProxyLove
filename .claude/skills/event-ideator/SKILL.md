@@ -2,7 +2,7 @@
 name: event-ideator
 description: |
   新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定/既定事件/故事线锚点出发启发新 Event 候选，与用户多轮交互（一次一问、每问附可归因推荐答案）迭代到共识，敲定后产**事件共识文档** `<日期>_<主题>_共识.md` 落盘 02_剧情数据/——默认交 event-stager 消化拆解演出（共识 → 定稿 → suggest-consumer → 用户确认后执行写回）；纯 I 域轮次（仅故事线构建/对账，或用户明示不拆演出）直接交 suggest-consumer。零图写入、不产 cypher、不跑 lint——Schema 纪律不在本层。
-  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Hook + StoryArc 与 comprises 意图。
+  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Info 与 knows 意图 + StoryArc 与 comprises 意图。
   不做拆解、机位、着装等任何演出域决策。无数量硬门控——批量由创作判断决定，留白即叙事。
   在用户说「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零产出新叙事事件时使用。
 argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
@@ -13,13 +13,13 @@ allowed-tools: Read, Bash, Write
 
 # 新事件启发与敲定（event-ideator）
 
-**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + 限产 Hook（establishes 挂成立源）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
+**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + Info 与 knows 边（随共识给初始知晓者清单）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
 
 > **通道契约（全程唯一表述，各步不再重复）**：
 > - **零图写入**——交互期间仅查询；写库由 suggest-consumer 在用户明确同意后执行，本层不碰图写。
 > - **事件共识文档（人读优先）**：落盘 `02_剧情数据/<日期>_<主题>_共识.md`（`_共识.md` 结尾——**不触发** dashboard 建议弹窗的 `*_建议.json` glob；文件名不带轮次，同日同主题重跑**覆盖**，commit 汇报注明）。共识文档是 **event-stager 的输入与 I 域条目的权威快照**——stager 定稿逐条照抄、不重写，所以指称必须精确。文档是**给人读的 md**——条目组织与标签行只是惯例结构，人阅读性优先于机器可解析性；**不产 cypher、不跑 lint、不生成 id**——Schema 严检、id 生成、cypher 组装与执行全归下游。
 > - **去向双通路**：含 I2 事件的共识默认交 **event-stager** 消化拆解演出（共识 → 定稿 → suggest-consumer → 确认执行写回）；**纯 I 通路**——本轮条目仅 I4/I5（故事线构建/对账）或用户明示「不拆演出」时，共识直接交 **suggest-consumer** 消费。
-> - **引用纪律**：既有实体（Character/Location/Event/StoryArc/Choice）必须以**现查 id** 内联条目标签行（名称仅作注释，重名/改名会静默错挂——stager 的 preflight 会验图，错拼 id 直接打回本层）；新实体（占位/Hook/新线）只写名称 + 一句话设定，由 suggest-consumer 物化为节点。condition 只写语义（如「三选一选了苏晓禾」），序号表达式由 consumer 现查 Choices 换算。
+> - **引用纪律**：既有实体（Character/Location/Event/StoryArc/Choice）必须以**现查 id** 内联条目标签行（名称仅作注释，重名/改名会静默错挂——stager 的 preflight 会验图，错拼 id 直接打回本层）；新实体（占位/Info/新线）只写名称 + 一句话设定，由 suggest-consumer 物化为节点。condition 只写语义（如「三选一选了苏晓禾」），序号表达式由 consumer 现查 Choices 换算。
 > - **产出纪律**：每个事件条目，其 involved Character 与 occurs_at Location 的**语义指称**必须明确——既有的写 id，缺的写占位意图 `[占位：名称]`（stager 据此判定该实体演出资源为零、链路全新占位）——不留悬空；故事线条目必须逐成员列「event id + title（0 步现查快照）」供 consumer 与人工核验。
 
 ## 前置
@@ -30,7 +30,7 @@ NBHD="python ${CLAUDE_SKILL_DIR}/scripts/neighborhood.py"             # 锚点�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/establishes/leads_to/Hook/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
+- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info/knows/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring（内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
 ## 流程总览（五步 + 故事线支线）
@@ -39,7 +39,7 @@ OUTPUT_DIR="02_剧情数据"
 0. explore  解析入参（char + base + arc；事件启发需 char/base ≥1，arc 单独给 → 走 §5 故事线支线）
             → 锚点关系查询 + 只读查图上下文
 1. ideate   六模式启发 → 候选批（多条差异化候选 + 评分对比表）
-2. enrich   三要素细化：char / location / time 补全；缺失实体 → 占位提案
+2. enrich   三要素细化：char / location / start_time 补全；缺失实体 → 占位提案
 3. ask      一次一问逐事件敲定（候选评分表 → 用户挑选/修改/放弃）→ 共识成立确认
 4. commit   组装事件共识文档落盘 → 报下一步（默认 event-stager 消化；纯 I 轮次 suggest-consumer 直消）
 ```
@@ -69,7 +69,7 @@ OUTPUT_DIR="02_剧情数据"
      MATCH (a:StoryArc) RETURN a LIMIT 100;
      // c. 成员按时间序（读缺口的主依据）
      MATCH (a:StoryArc {id:'<arc_id>'})-[:comprises]->(e:Event)
-     RETURN e ORDER BY e.time LIMIT 200;
+     RETURN e ORDER BY e.start_time LIMIT 200;
      // d. 反查所属线（对账传 event id 时）
      MATCH (a:StoryArc)-[:comprises]->(e:Event {id:'<event_id>'})
      RETURN a LIMIT 10;
@@ -140,7 +140,7 @@ OUTPUT_DIR="02_剧情数据"
 | 9 | 因果（**仅用户明说才建** leads_to） | 时间窗因果候选 |
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
-**Hook 提案（可选）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对某事的隐认知、伏笔注记、背景事实）时，提议若干 Hook——并入候选批一起询问，不单独立题。挂靠：**事实成立**挂 `Event ─establishes→ Hook`（必答「事实由哪个事件成立」，锚只能是 Event）；**读者侧揭示场合** `reveals` 由 event-stager 演出域拍板（ideator 不建 reveals）。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位）。
+**Info 提案（可选）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对某事的隐认知、伏笔注记、背景事实）时，提议若干 Info——并入候选批一起询问，不单独立题。挂靠：**知晓承载事件**挂 `Event ─knows→ Info`（必答「谁在哪个事件中知道了它」——知晓者=该事件 involved 参与者推导，知晓时间=事件 start/end；固有前史事实建前史事件承载，无 sub 不演出）。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位）。
 
 **交互纪律**：
 
@@ -149,11 +149,11 @@ OUTPUT_DIR="02_剧情数据"
 - **facts 不问用户**（邻接事件、名录、option 序号现查），只问取舍。
 - 回答模糊 → 标「未解决依赖」继续，矛盾时回溯重问。
 - 共识判据（事件级）：一段话可概述该事件（贡献/时间/地点/人物/因果）且连续三问无新矛盾。
-- **共识成立确认（commit 前最后一问，必问）**：全部候选处置完毕后逐项复述共识清单（事件/占位/Hook/线），问「以上 N 项共识是否成立？」——推荐答案「成立」；用户明确答复成立 → 进 §4 落盘（含 I2 → 默认交 stager；纯 I4/I5 → 落盘后交 consumer）；答复回改 → 定位到具体条目重问。沉默或「差不多」不算成立，追问确认。
+- **共识成立确认（commit 前最后一问，必问）**：全部候选处置完毕后逐项复述共识清单（事件/占位/Info/线），问「以上 N 项共识是否成立？」——推荐答案「成立」；用户明确答复成立 → 进 §4 落盘（含 I2 → 默认交 stager；纯 I4/I5 → 落盘后交 consumer）；答复回改 → 定位到具体条目重问。沉默或「差不多」不算成立，追问确认。
 - 收尾复述：每约 5 个决定复述一次；commit 前最终复述。
 - 不一次性抛问卷、不替用户写大段正文、始终用「你」。
 
-**无数量硬门控**：共识不再卡「≤3 Event + 2 Hook + 2 故事线」——批量由创作判断与留白原则决定（多次运行逐步丰满，留白即叙事）；超大共识的审阅负担由 suggest-consumer 在汇报中提示分批，不在本层拦截。
+**无数量硬门控**：共识不再卡「≤3 Event + 2 Info + 2 故事线」——批量由创作判断与留白原则决定（多次运行逐步丰满，留白即叙事）；超大共识的审阅负担由 suggest-consumer 在汇报中提示分批，不在本层拦截。
 
 ## 4. commit — 组装事件共识文档落盘
 
@@ -162,8 +162,8 @@ OUTPUT_DIR="02_剧情数据"
 1. **主题** = char 名（+ base event 短题）；故事线支线时主题 = arc title。
 2. **组装共识条目**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体条目（类型 I1）：`[占位 Character]`/`[占位 Location]`——名称 + 一句话氛围人设/定位；
-   - 事件条目（类型 I2）：title + type + time + occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
-   - Hook 条目（类型 I3）：title + content + knowledge_level + 成立源事件（id）；
+   - 事件条目（类型 I2）：title + type + start_time（跨时段事件补 end_time，点事件省略）+ occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
+   - Info 条目（类型 I3）：title + content + knowledge_level + 知晓承载事件（既有 id 或 `定稿I2「<title>」`，可多条）；
    - 故事线条目（类型 I4）：title + description 草案（主旨/氛围）+ 逐成员「event id + title」（建线/扩线注明）；
    - 对账条目（类型 I5）：线 id + 重写后的 description 全文草案；
    - arc→new 敲定的事件：条目内注明「挂线：<arc id>」——不为挂边单独立条。
@@ -176,7 +176,7 @@ OUTPUT_DIR="02_剧情数据"
 ### 5a. 构建（用户说「建故事线」「拉一条线」；入参：主题口述，arc 可空）
 
 1. **读图取材**（0 步第 6 项查询）：候选成员池 = 主题关键词扫 Event（title/description CONTAINS）+ 相关 Character 的 involved 事件 + 时间窗聚类；同时查 StoryArc 全名录——同主题线已存在 → 建议「扩线/对账」而非新建。
-2. **起草 description（写作思路层，不是事件复述）**：两段式——**主旨**（一两句：这条线想表达什么）+ **氛围**（一段：质感与调性），「主旨：」「氛围：」引导、段间换行。不复述情节结构（时序由成员 Event.time 承载）；计划中但未建图的走向可写，须与用户确认；段内不写时间戳。
+2. **起草 description（写作思路层，不是事件复述）**：两段式——**主旨**（一两句：这条线想表达什么）+ **氛围**（一段：质感与调性），「主旨：」「氛围：」引导、段间换行。不复述情节结构（时序由成员 Event.start_time 承载）；计划中但未建图的走向可写，须与用户确认；段内不写时间戳。
 3. **勾骨架成员**（一次一问，交互纪律沿用 §3；**非全量入线**——事件不进线≠不重要，只圈承载主旨的骨架事件）：摆「成员事件时间轴 + 主旨草案」对照表，逐事件问「它承载主旨的哪个面向？」（推荐答案来自 1 的取材；可勾可弃可补查）。
 4. **敲定 title**（≤10 字弧线名，如「陆择的救赎线」）。
 5. **主旨覆盖自检 + commit**：勾定后若主旨某面向零成员——提醒用户（改 description 或留注「收束待补」），随后走 §4 同款共识落盘/汇报（故事线支线 = 纯 I 通路，落盘后交 suggest-consumer 直消）；I4 一条目，主题 = arc title。
@@ -210,12 +210,12 @@ OUTPUT_DIR="02_剧情数据"
 - 挂线: RpPzkWr7Mw（苏晓禾线）
 - reason: <依据>
 
-## [I3 Hook] / [I4 故事线] / [I5 对账] …同款结构
+## [I3 Info] / [I4 故事线] / [I5 对账] …同款结构
 ```
 
 - 条目顺序：先占位实体后事件（节点先于边）；involved 每人一列、occurs_at 可多条；ending_kind/condition/因果仅敲定时注明。
 
 ## 参考文档
 
-- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/Hook/Lore/StoryArc/comprises）
+- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/Info/Lore/StoryArc/comprises）
 - Character/Location 节点定义见 [Schema/角色美术/Character.md](../../../00_init/Schema/角色美术/Character.md) / [Schema/场景美术/Location.md](../../../00_init/Schema/场景美术/Location.md)

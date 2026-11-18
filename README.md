@@ -104,7 +104,7 @@ sequenceDiagram
 
 | 环节 | 定位 | 产物通道 |
 |------|------|---------|
-| `event-ideator`（skill） | **需求提出层（发散）**——六模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯 / arc→new 故事线填充）+ 一次一问迭代到**共识显式确认**，产 Event + involved/occurs_at 边 + Character/Location 占位 + 限产 Hook + StoryArc 故事线（构建 I4 / 对账更新 description I5；存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | `<日期>_<主题>_共识.md`（I1~I5）→ 默认交 event-stager 消化；纯 I 轮次交 suggest-consumer 直消 |
+| `event-ideator`（skill） | **需求提出层（发散）**——六模式启发（char→new→base 动机链 / char→new 质感 / base→new→base 间隙 / base→new 后果链 / new→base 因果回溯 / arc→new 故事线填充）+ 一次一问迭代到**共识显式确认**，产 Event + involved/occurs_at 边 + Character/Location 占位 + Info 与 knows 边（随共识给知晓承载事件）+ StoryArc 故事线（构建 I4 / 对账更新 description I5；存量补全同走此口：dashboard 体检页发现缺口 → 拿锚点跑本 skill） | `<日期>_<主题>_共识.md`（I1~I5）→ 默认交 event-stager 消化；纯 I 轮次交 suggest-consumer 直消 |
 | `event-stager`（skill） | **需求细化层（收敛）**——双入口（共识文档 / 图中事件 id/title/时间窗），拆 SubEvent + 演出域占位物化（Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0 流水线起点），缺口不走文本留单而是图上占位自描述 | `<日期>_<主题>_定稿.md`（共识模式 I 域照抄+S 域追加 / 图模式纯 S）→ 交 suggest-consumer |
 | `suggest-consumer`（skill） | **Schema 守门 + 执行层**——严检共识/定稿/补全文档（撰写契约+机器项+红线）、生成 snowflake id、组装建议 JSON（先节点后边、语句自包含、同文档指称绑定）、lint 全 PASS；**执行确认门**：用户明确同意后单事务执行写回 + 读回验证（dashboard 弹窗保留为人工备选，幂等共存） | 同名 `_建议.json` → 执行写回 / dashboard 人工采纳 |
 
@@ -147,7 +147,7 @@ sequenceDiagram
         STG-->>U: N 个 sub + anchored_at/appears_as 目标（既有/占位/继承）+ 时间插值
         U->>STG: 拍板 / 改细节
     end
-    Note over STG: 揭示场合（SubEvent─reveals→Hook）并入同题拍板；sub.description 按 Schema 节拍级契约
+    Note over STG: sub.description 按 Schema 节拍级契约
     STG-->>U: 定稿落盘 <同日期同主题>_定稿.md（I 域照抄 + S 域追加）
     Note over ED,SC: ③ suggest-consumer：严检 + 组装 + 执行确认（同轮零停等连推，无人工审环节）
     SC->>DB: 严检机器项现查（枚举 / id 验图 / condition 换算 / 定稿I1/I2/I3 指称→id 映射）
@@ -362,7 +362,7 @@ sequenceDiagram
     opt 节目录无 小说.md 且非存量直连（待小说）
         A->>NV: Skill chapter-novelist sec_id（首建 / stale 重写）
         alt 素材够（丰满度自检通过）
-            Note right of NV: 圈定取材（includes 成员 + reveals Hook + has_info Lore）<br/>→ 五步产 小说.md（零图写入）；stale 重写作废定稿链；对账新实体走建议 JSON
+            Note right of NV: 圈定取材（includes 成员 + 成员事件 knows 的 Info + has_info Lore）<br/>→ 五步产 小说.md（零图写入）；stale 重写作废定稿链；对账新实体走建议 JSON
             NV-->>A: 小说.md 落盘（存量直连节跳过本段）
         else 素材不足
             NV-->>A: 报缺口（不写 status）
@@ -418,7 +418,7 @@ sequenceDiagram
 
 | Skill | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|---------|-------------------|
-| event-ideator | 新事件与故事线需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 六模式启发[动机链/质感/间隙/后果链/回溯/故事线填充] → 三要素细化 → 一次一问迭代敲定+共识显式确认 → 共识落盘；产 Event + involved/occurs_at 边 + Character/Location 占位（裸节点）+ 限产 Hook ≤2 + StoryArc/comprises[I4 建线，I5 对账更新 description]） | `02_剧情数据/<日期>_<主题>_共识.md` | ✅（零图写入；交 event-stager 消化或纯 I 轮次交 suggest-consumer） |
+| event-ideator | 新事件与故事线需求提出（五步：锚点关系查询[`scripts/neighborhood.py`：char×base 连通性→间接路径/不连通判定，单锚退化一跳清单] → 六模式启发[动机链/质感/间隙/后果链/回溯/故事线填充] → 三要素细化 → 一次一问迭代敲定+共识显式确认 → 共识落盘；产 Event + involved/occurs_at 边 + Character/Location 占位（裸节点）+ Info 与 knows 边[知晓承载事件] + StoryArc/comprises[I4 建线，I5 对账更新 description]） | `02_剧情数据/<日期>_<主题>_共识.md` | ✅（零图写入；交 event-stager 消化或纯 I 轮次交 suggest-consumer） |
 | event-stager | 事件细化落地（四步：前置核验[`scripts/preflight.py` 双入口：`--consensus` 共识解析+既有 id 验图+占位收集 / 图内 selector 范围解析+入口核验；缺叙事基础实体报错停止不代建，占位实体演出资源为零是预期态] → 拆 SubEvent[对照 `references/微演出模式库.md` 十一种模式，按演出价值判据；description 按 SubEvent.md 节拍级契约] → 占位物化[Spot 无 status 骨架；Scene/CostumeStyle/IllusDesign status=0，命名照 `references/占位命名规范.md`] → 逐 event 拍板；每批交互默认 3 event） | `02_剧情数据/<日期>_<主题>_定稿.md`（共识模式 I 域照抄+S 域追加 / 图模式纯 S） | ✅（零图写入；交 suggest-consumer） |
 | suggest-consumer | Schema 守门 + 执行（六步：读文档定来源[共识/定稿/补全三态] → 逐条目严检[撰写契约+机器项+按条目域红线；文档内指称解析] → snowflake id → 组装建议 JSON[先节点后边、语句自包含、混合定稿 I1→S1→I2→S2 依赖序] → 落盘+lint 全 PASS → **执行确认门**：用户明确同意后单事务执行写回+读回验证，不同意留 dashboard 人工通道） | 同名 `_建议.json` → 执行写回 | ✅（默认零图写入；明确同意后执行） |
 
@@ -448,7 +448,7 @@ sequenceDiagram
 | Skill | 阶段 | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|------|---------|-------------------|
 | chapter-structurer | ① 章级结构（**用户直触**，不经 plot-design） | 建 Chapter + 按情感弧分节建 Section（纯编排容器）+ 各节 `Section-includes->Event`（块 id=scene_id 由 novelist 现场取用，structurer 不碰块） | Chapter + has_section + Section + includes 边 | ✅ |
-| chapter-novelist | ② 节级小说（提纲内化） | 圈定取材（includes 成员 + reveals Hook + has_info Lore）+ 丰满度自检 → 五步产 **小说.md**（纯文件零图写入；`### 场景段标题`=拓扑契约 + 头部取材指纹；stale 重写作废定稿链；对账新实体走建议 JSON） | `25_剧本/ch<NN>/sec<MM>/小说.md` + `02_剧情数据/..._补全_建议.json` | ✅（零图写入；唯一例外 = stale 作废定稿链） |
+| chapter-novelist | ② 节级小说（提纲内化） | 圈定取材（includes 成员 + 成员事件 knows 的 Info + has_info Lore）+ 丰满度自检 → 五步产 **小说.md**（纯文件零图写入；`### 场景段标题`=拓扑契约 + 头部取材指纹；stale 重写作废定稿链；对账新实体走建议 JSON） | `25_剧本/ch<NN>/sec<MM>/小说.md` + `02_剧情数据/..._补全_建议.json` | ✅（零图写入；唯一例外 = stale 作废定稿链） |
 | chapter-dialoguer | ③ 节级定稿 | 从小说提炼台词（指纹自检，stale 回退 novelist；存量直连读历史文件）→ 产人读 ink 方言 **台词.ink**（不写演出标注，立绘由配音期选绘判定）；唯一图写入 `SET sec.script_path + sec.status=10` 定稿待审 | `25_剧本/ch<NN>/sec<MM>/台词.ink` + Section 定稿态 | — |
 | section-voice-publisher | ④ 节级拆分+选绘+配音 | 定稿已批（Section.status=11）：拆分对齐进图（幂等）→ LLM 逐句判 emotion / tts_text / 选立绘（apply 建 uses 边，缺变体兜底建）→ Qwen3 逐句克隆 → bind-graph 行 status=10；母带即产物，运行时副本由发布期收录 | 图逐句行 + uses 选绘边 + 立绘缺口 + `15_声音/` 母带（master_path） | ✅ |
 | ambient-sfx-designer | ⑤ 节级环境音 | 推进单节音频环境行（sfx 点状行走 Freesound CC0 实录检索、bed 音床行走 AudioFly 生成；先落盘试听后写图 ambient_track + status=10；不拷运行时副本——发布期按 status=11 收录） | `15_声音/` sfx / bed 母带 + `15_声音/sfx_raw/SOURCES.md` | ✅ |

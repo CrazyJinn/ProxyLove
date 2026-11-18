@@ -1,9 +1,10 @@
 """fingerprint.py — 小说.md 取材指纹的生成与自检(生成与自检同源,杜绝双入口不一致)。
 
 归一化规则(改这里 = 改所有已产小说的新鲜度判据,慎动;已落盘小说需重产指纹):
-  Event: '|'.join(title, time, type, description, ending_kind, condition)
-  Hook/Lore: '|'.join(title, content, knowledge_level)
+  Event: '|'.join(title, start_time, type, description, ending_kind, condition)
+  Info/Lore: '|'.join(title, content, knowledge_level)
   每字段 strip,None/缺失 → 空串;整体 utf-8 后 sha256 取前 16 位 hex。
+  旧指纹头的 `hook` 行按 `info` 归一读入(hash 算法不变,存量文件零 stale)。
 
 素材 JSON 输入(cypher_exec --json 的查询产物,数组;行内 kind 或 label 二选一):
   [{"kind":"event","id":"…","title":"…",…},
@@ -13,21 +14,21 @@
 用法:
   gen   产完整头部块(含 <!-- --> 包裹,直接嵌入小说.md 头部);--ids 只圈**实际取用**的素材子集
         (指纹=「使用的」而非「圈定的全部」,无关素材修订不误 stale 本节)。
-        --ids 条目可带强度后缀 `id:E` / `id:S`(hook/lore 行;裸 id 缺省 E,event 行忽略强度):
+        --ids 条目可带强度后缀 `id:E` / `id:S`(info/lore 行;裸 id 缺省 E,event 行忽略强度):
         python fingerprint.py gen --in materials.json --at chNN/secMM [--ids id1:E,id2:S,…]
         [--root 25_剧本] [--force]   # 或 stdin 传 JSON
-        落盘硬门禁(乱序写作防护):本节取用的每条 hook/lore,按 prior=(本节,标记强度)
+        落盘硬门禁(乱序写作防护):本节取用的每条 info/lore,按 prior=(本节,标记强度)
         重算**节号序中下一个已写消费节**的档位(most_recent_wins 使影响半径恒为 1),
         下游按序重放不容其标记强度 → 拒绝落盘(退出码 2,明细走 stderr),降 S/剔除后重跑;
         确要硬写加 --force(放行并 stderr 留痕)。自由节排序按 mtime,不门禁。
   check 自检小说.md 头部清单 vs 当前素材:退出码 0=新鲜 / 1=stale(stdout 报告明细):
         python fingerprint.py check --novel 小说.md --in materials.json
         stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)
-  consumed 扫描 root 下全部小说.md 指纹头部的 hook/lore 行,输出「id → 消费它的小说路径列表」
+  consumed 扫描 root 下全部小说.md 指纹头部的 info/lore 行,输出「id → 消费它的小说路径列表」
         JSON 映射(裸映射,调度/对账用)。--ids 只查给定子集:
         python fingerprint.py consumed [--root 25_剧本] [--ids id1,…]
   freshness 新鲜度计算(Lore 新鲜度算法,2026-11-11 方案):
-        对 --in 素材中的每条 hook/lore,按「最近一次消费点 → --at 节」的间隔 Δ 算
+        对 --in 素材中的每条 info/lore,按「最近一次消费点 → --at 节」的间隔 Δ 算
         R = base × 2^(−Δ/h)(上次消费 E:base=1.0 / S:base=S_RESET),F = round(100×(1−R)),
         并给允许档位 explicit/side/blocked。--at 接受 chNN/secMM 相对形态或小说.md 路径:
         python fingerprint.py freshness --in materials.json --at ch02/sec06 [--root 25_剧本]
@@ -47,12 +48,12 @@ import re
 import sys
 
 KIND_FIELDS: dict[str, tuple[str, ...]] = {
-    "event": ("title", "time", "type", "description", "ending_kind", "condition"),
-    "hook": ("title", "content", "knowledge_level"),
+    "event": ("title", "start_time", "type", "description", "ending_kind", "condition"),
+    "info": ("title", "content", "knowledge_level"),
     "lore": ("title", "content", "knowledge_level"),
 }
-# freshness 管制对象(hook/lore);event 不参与
-FRESHNESS_KINDS = {"hook", "lore"}
+# freshness 管制对象(info/lore);event 不参与
+FRESHNESS_KINDS = {"info", "lore"}
 
 # ── 新鲜度参数表(集中一处,改这里全生效) ──────────────────────────────
 F_BASE = 100          # 百分制基准
@@ -62,13 +63,18 @@ F_ALLOW_EXPLICIT = 70  # F ≥ 此值:正面/侧面均可
 F_ALLOW_SIDE = 30      # F ≥ 此值:仅侧面;再低禁释放
 
 HEADER_OPEN = "<!-- 取材指纹(chapter-novelist 生成,chapter-dialoguer 自检;变动=重写小说+作废定稿)"
-HEADER_RE = re.compile(r"^(event|hook|lore)\s+(\S+)\s+([0-9a-f]{16})(?:\s+([ES]))?\s*(.*)$")
+HEADER_RE = re.compile(r"^(event|hook|info|lore)\s+(\S+)\s+([0-9a-f]{16})(?:\s+([ES]))?\s*(.*)$")
+
+
+def _norm_kind(kind: str) -> str:
+    return "info" if kind == "hook" else kind
 PATH_ORDER_RE = re.compile(r"(?:^|/)(ch(\d+))(?:/|\\)(sec(\d+))")
 FREE_RE = re.compile(r"(?:^|/)自由节(?:/|\\)(sec(\d+))")
 
 
 def _kind(row: dict) -> str | None:
     k = str(row.get("kind") or row.get("label") or "").strip().lower()
+    k = _norm_kind(k)
     return k if k in KIND_FIELDS else None
 
 
@@ -87,14 +93,14 @@ def _materials(text: str) -> list[dict]:
     out = []
     for row in rows:
         if _kind(row) is None or not row.get("id"):
-            continue  # 容错跳过非 Event/Hook/Lore 行(圈定查询可能带出别的列)
+            continue  # 容错跳过非 Event/Info/Lore 行(圈定查询可能带出别的列)
         out.append(row)
     return out
 
 
 def _line(kind: str, row: dict, fp: str, intensity: str | None = None) -> str:
-    pad = " " if kind == "event" else "  "  # event 与 hook/lore 等宽对齐(7 列)
-    tok = f" {intensity}" if (intensity and kind in ("hook", "lore")) else ""
+    pad = " " if kind == "event" else "  "  # event 与 info/lore 等宽对齐(7 列)
+    tok = f" {intensity}" if (intensity and kind in ("info", "lore")) else ""
     return f"{kind}{pad} {row['id']} {fp}{tok} {str(row.get('title') or '')}"
 
 
@@ -122,13 +128,13 @@ def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = Non
             raise SystemExit(f"--ids 指定的素材不在输入 JSON 中: {sorted(missing)}")
         rows = [r for r in rows if str(r["id"]) in want]
     if not rows:
-        raise SystemExit("素材为空:圈定查询未命中任何 Event/Hook/Lore(或 --ids 过滤后为空)")
+        raise SystemExit("素材为空:圈定查询未命中任何 Event/Info/Lore(或 --ids 过滤后为空)")
     lines = [HEADER_OPEN]
     for row in rows:
         kind = _kind(row)
         assert kind is not None  # _materials 已滤
         intensity = None
-        if kind in ("hook", "lore"):
+        if kind in ("info", "lore"):
             if ids is not None:
                 intensity = ids.get(str(row["id"]), "E")
             else:
@@ -150,7 +156,7 @@ def _header_rows(novel_text: str) -> list[tuple[str, str, str]]:
     for line in m.group(0).splitlines():
         hit = HEADER_RE.match(line.strip())
         if hit:
-            out.append((hit.group(1), hit.group(2), hit.group(3)))
+            out.append((_norm_kind(hit.group(1)), hit.group(2), hit.group(3)))
     return out
 
 
@@ -219,7 +225,7 @@ def _header_rows_full(novel_text: str) -> list[tuple[str, str, str, str | None]]
     for line in m.group(0).splitlines():
         hit = HEADER_RE.match(line.strip())
         if hit:
-            out.append((hit.group(1), hit.group(2), hit.group(3), hit.group(4)))
+            out.append((_norm_kind(hit.group(1)), hit.group(2), hit.group(3), hit.group(4)))
     return out
 
 
@@ -280,7 +286,7 @@ def _decay(intensity: str, delta: int, h: int) -> tuple[float, int, str]:
 
 
 def _gate_next_consumption(rows: list[dict], ids: dict[str, str], root: str, at: str) -> list[str]:
-    """落盘硬门禁(乱序写作防护):本节取用的每条 hook/lore,按 prior=(本节,标记强度)重算
+    """落盘硬门禁(乱序写作防护):本节取用的每条 info/lore,按 prior=(本节,标记强度)重算
     节号序中**下一个已写消费节**的档位(most_recent_wins 使回填的影响半径恒为 1),
     下游按序重放不容其标记强度(blocked / side 容不下 E)→ 报违规。返回明细(空=通过)。"""
     at_key = _at_key_of(at)

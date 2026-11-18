@@ -18,7 +18,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [Schema/剧情/](Schema/剧情/) | 叙事与剧情数据——每节点一文件 + 边.md | Event, SubEvent, Hook, Lore, Choice, StoryArc, Chapter, Section, LineAudio |
+| [Schema/剧情/](Schema/剧情/) | 叙事与剧情数据——每节点一文件 + 边.md | Event, SubEvent, Info, Lore, Choice, StoryArc, Chapter, Section, LineAudio |
 | [Schema/角色美术/](Schema/角色美术/) | 角色域——每节点一文件 + 边.md | Character, AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [Schema/场景美术/](Schema/场景美术/) | 空间域——每节点一文件 + 边.md | Location, Spot, Scene, SceneLayer |
 | [Schema/声音/](Schema/声音/) | 角色如何从文字变成声音 + 场景 BGM——每节点一文件 + 边.md | VoiceDesign, BgmTrack |
@@ -32,8 +32,8 @@
 
 **剧情——事件与信息**
 - **Event** — 某时某刻发生的某件事
-- **SubEvent** — 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as/reveals 三边，无 status
-- **Hook** — 一条事件性事实（Event 记「发生」，Hook 记「埋设」；establishes 成立、sub reveals 揭示）
+- **SubEvent** — 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as 两边，无 status
+- **Info** — 一条事件性事实（Event 记「发生」，Info 记「事实」；knows 边承载知晓分布，交付时机归写作层裁量）
 - **Lore** — 一条固有设定（角色/地点的固有事实；has_info 宿主挂靠，无揭示时刻，暴露节奏归写作层遗忘曲线）
 
 **剧情——分叉与编排**
@@ -66,7 +66,7 @@
 
 ## 全局边速查
 
-> **时间字段全局约定**：时间类字段（Event.time、relation/at 起止、Choice.time）统一 `yyyy-MM-dd HH:mm:ss` 字符串，自 [游戏概览.md](游戏概览.md)「时间锚点」推算；字符串序即时间序，计算用 `datetime()` 现场转换。
+> **时间字段全局约定**：时间类字段（Event/SubEvent 的 start_time/end_time、relation/at 起止、Choice.time）统一 `yyyy-MM-dd HH:mm:ss` 字符串，自 [游戏概览.md](游戏概览.md)「时间锚点」推算；Event 排序/时间窗查询一律用 `start_time`（字符串序即时间序），计算用 `datetime()` 现场转换。relation/at 为状态区间边：start/end 必填，久远/无法推导写哨兵 `开篇前`、持续中写哨兵 `至今`——哨兵不参与字符串序比较，机械校验与区间查询须特判。
 
 | 边 | 从 → 到 | 基数 | sync | 说明 |
 |----|---------|------|------|------|
@@ -74,21 +74,20 @@
 | involved | Character → Event | N:N | ❌ | 人物参与事件 |
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
-| leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.time 承载；事件↔信息归 establishes/reveals） |
-| establishes | Event → Hook | N:N | ❌ | **事实成立**（成立轴）——Hook 因源事件成立（递交辞呈→沈暮雪辞职）；event-ideator 产；固有事实走 has_info→Lore |
+| leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.start_time 承载；事件↔信息归 Info 节点与 knows 边） |
 | has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
-| reveals | SubEvent → Hook | N:N | ❌ | **读者侧揭示**（揭示轴）——读者通过该场戏知晓该 Hook（信息释放时刻锚点，2026-11-11 自 Event 下沉）；event-stager 拆 sub 时逐 sub 拍；目标为 Lore / 源为 Event 均违规 |
+| knows | Event → Info | N:N | ❌ | **知晓**（知晓轴）——该事件使人知晓这条事实（陈念上门探望→陈默被温蔓青分手）；知晓者=事件 involved 参与者（推导，不建人→信息边）、知晓时间=事件 start/end；固有前史事实建前史事件承载；每条 Info ≥1 入边；event-ideator 产 |
 | **剧情——分叉与编排** | | | | |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
-| comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层，无 order——次序由 Event.time + description 承载） |
+| comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层，无 order——次序由 Event.start_time + description 承载） |
 | has_section | Chapter → Section | 1:N | ✅ | 章→节（组成关系，级联重做） |
 | produces | Section → LineAudio | 1:N | ✅ | 节产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；节属性变更→全部行作废，重拆按 text_sha1 恢复未变句；小说素材变动时显式作废） |
-| includes | Section → Event | N:M | ❌ | 节包含事件（order=事件 time 序；节成员物化，替代原 contains） |
+| includes | Section → Event | N:M | ❌ | 节包含事件（order=事件 start_time 序；节成员物化，替代原 contains） |
 | uses | LineAudio → StandingIllustration | 1:N | ❌ | 台词行使用立绘（每 say 行至多 1 条；行级演出引用，禁止级联） |
 | **角色美术** | | | | |
-| relation | Character → Character | N:N | ❌ | 人物关系 |
-| at | Character → Location | N:N | ❌ | 人物—地点 |
+| relation | Character → Character | N:N | ❌ | 人物关系（start/end 必填+哨兵） |
+| at | Character → Location | N:N | ❌ | 人物—地点（时间区间；事件时人物所在地=覆盖事件 start_time 的区间，最短优先） |
 | has_appearance | Character → AppearanceStyle | 1:1 | ✅ | 角色外貌 |
 | has_costume | Character → CostumeStyle | 1:N | ✅ | 角色着装 |
 | has_voice_style | Character → LanguageStyle | 1:1 | ✅ | 角色语言风格 |
@@ -115,7 +114,7 @@ flowchart LR
     subgraph 剧情_事件["剧情——事件与信息"]
         Event["Event"]
         SubEvent["SubEvent（演出物化）"]
-        Hook["Hook"]
+        Info["Info"]
         Lore["Lore"]
     end
 
@@ -169,8 +168,6 @@ flowchart LR
     SubEvent -.->|"anchored_at ❌ N:N"| Scene
     SubEvent -->|"appears_as ❌ N:N"| IllusDesign
     Event -->|"leads_to ❌ N:N"| Event
-    Event -->|"establishes ❌ N:N"| Hook
-    SubEvent -->|"reveals ❌ N:N"| Hook
     Event -->|"presents ❌ N:N"| Choice
     Choice -->|"option ❌ N:N"| Event
     StoryArc -->|"comprises ❌ N:M"| Event
@@ -191,7 +188,7 @@ flowchart LR
 
 ## 剧情域
 
-> 本文件定义全部叙事与剧情数据实体：**事件与信息**（Event / SubEvent / Hook / Lore——**Event 记「发生」，Hook 记「埋设」，Lore 记「固有」**）、**选择分叉与故事线**（Choice / StoryArc）、**剧本编排**（Chapter / Section / LineAudio）。人物实体（Character）见 [角色美术/Character.md](角色美术/Character.md)；空间实体（Location / Spot / Scene）见 [场景美术/](场景美术/) 各节点文件。「事件与信息 + 选择分叉/故事线」即旧称的**叙事基础域**（原独立文件已并入本文件）。
+> 本文件定义全部叙事与剧情数据实体：**事件与信息**（Event / SubEvent / Info / Lore——**Event 记「发生」，Info 记「事实」，Lore 记「固有」**）、**选择分叉与故事线**（Choice / StoryArc）、**剧本编排**（Chapter / Section / LineAudio）。人物实体（Character）见 [角色美术/Character.md](角色美术/Character.md)；空间实体（Location / Spot / Scene）见 [场景美术/](场景美术/) 各节点文件。「事件与信息 + 选择分叉/故事线」即旧称的**叙事基础域**（原独立文件已并入本文件）。
 
 > `includes`（Section→Event）承载节成员与顺序；选绘沿 `Section→includes→Event→refines→SubEvent→appears_as→IllusDesign` 直读。
 
@@ -210,8 +207,7 @@ flowchart LR
     Location["Location（场景域）"] -->|"has_info ❌ N:N"| Lore
     Event -->|"occurs_at ❌ N:N"| Location
     Event -->|"refines ✅ 1:N"| SubEvent["SubEvent<br/>演出物化"]
-    Event -->|"establishes ❌ N:N"| Hook["Hook<br/>事件性事实"]
-    SubEvent -->|"reveals ❌ N:N"| Hook
+    Event -->|"knows ❌ N:N"| Info["Info<br/>事件性事实"]
     Event -->|"leads_to ❌ N:N"| Event
     StoryArc["StoryArc<br/>故事线（无 status）"] -->|"comprises ❌ N:M"| Event
     Event -->|"presents ❌ N:N"| Choice["Choice<br/>选择分叉"]
@@ -236,7 +232,7 @@ python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
 引用已有节点时，通过名称从数据库查询：
 ```cypher
 MATCH (e:Event) WHERE e.title='事件标题' RETURN e.id AS id
-MATCH (f:Hook) WHERE f.title='事实标题' RETURN f.id AS id
+MATCH (f:Info) WHERE f.title='事实标题' RETURN f.id AS id
 MATCH (l:Lore) WHERE l.title='设定标题' RETURN l.id AS id
 MATCH (ch:Choice) WHERE ch.name='选择名' RETURN ch.id AS id
 MATCH (a:StoryArc) WHERE a.title='故事线标题' RETURN a.id AS id
@@ -251,10 +247,10 @@ MATCH (c:Chapter) WHERE c.title='章标题' RETURN c.id AS id
 
 | from | 允许的边 | to |
 |------|---------|-----|
-| Event | occurs_at, leads_to, establishes, presents, refines | Location / Event / Hook / Choice / SubEvent |
-| Hook | （无出边——事实终点，只被 establishes/reveals 指向） | — |
+| Event | occurs_at, leads_to, presents, refines, knows | Location / Event / Choice / SubEvent / Info |
+| Info | （无出边——事实终点，只被 Event─knows 指向） | — |
 | Lore | （无出边——设定终点，只被 has_info 指向） | — |
-| SubEvent | anchored_at*, appears_as**, reveals | Scene / IllusDesign / Hook |
+| SubEvent | anchored_at*, appears_as** | Scene / IllusDesign |
 | Choice | option | Event |
 | StoryArc | comprises | Event |
 | Chapter | has_section | Section |

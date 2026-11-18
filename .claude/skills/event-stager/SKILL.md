@@ -2,7 +2,7 @@
 name: event-stager
 description: |
   事件细化落地层——双入口：①**事件共识文档**（`*_共识.md`，event-ideator 产，新事件未写图——消化共识拆解演出，产**合并定稿**：I 域条目照抄 + S 域追加）；②**图中 Event**（id/title/时间窗，存量细化/重拆/补拆——产纯 S 域定稿）。四步推进：前置核验（缺叙事基础实体报错不代建；共识模式下占位实体演出资源为零是预期态非缺口）→ 探索演出资源并拆解 SubEvent（戏剧节拍分析，模式库只查遗漏不做生成依据）→ 占位物化（为 sub 建 IllusDesign←appears_as←SubEvent→anchored_at→Scene 链，Spot/Scene/CostumeStyle/IllusDesign 缺口建占位意图）→ 逐 event 询问确认 + 产**事件定稿文档** `<日期>_<主题>_定稿.md`（交 suggest-consumer 严检 Schema 并组装建议 JSON，用户确认后执行写回；本层不产 cypher、不跑 lint）。
-  多轮交互一次一问、每问附推荐；每批交互默认 3 个 event（preflight 切批的交互节奏，非数量门控——定稿可多批累积）。不建 Event/Hook/Lore/Choice/Location/Character。
+  多轮交互一次一问、每问附推荐；每批交互默认 3 个 event（preflight 切批的交互节奏，非数量门控——定稿可多批累积）。不建 Event/Info/Lore/Choice/Location/Character。
   在用户说「细化」「stager」「消化这个共识」「这批事件细化一下」或给出事件范围/共识文档要求推进机位层时使用。
 argument-hint: <共识文档路径 | event id列表 | 事件title列表 | 时间窗>
 arguments:
@@ -30,9 +30,9 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 职责边界
 
-- **创建域 = 演出域四类占位 + SubEvent**：SubEvent + refines 边；anchored_at 边（Scene 缺则建占位，挂 realizes 到既有 Spot，Spot 也缺则建 Spot 占位）；appears_as 边（着装优先继承父/兄弟 sub，套缺则建 CostumeStyle 占位、版本缺则建 IllusDesign 占位）；S3 揭示边（见 §4）。
+- **创建域 = 演出域三类占位 + SubEvent**：SubEvent + refines 边；anchored_at 边（Scene 缺则建占位，挂 realizes 到既有 Spot，Spot 也缺则建 Spot 占位）；appears_as 边（着装优先继承父/兄弟 sub，套缺则建 CostumeStyle 占位、版本缺则建 IllusDesign 占位）。
 - **着装占位必须同时挂 `Character→has_costume` 归属边**——归属角色 = 该着装缺口所属的 involved 角色（拍板上下文恒明确）；孤儿占位在 dashboard 全链路不可见、体检 E1 误报。
-- **禁建**：Event/Hook/Lore/Choice/Location/Character（缺叙事基础实体一律报错回 event-ideator 层）；Event 直挂 anchored_at/appears_as（EA5 体检兜查）；改既有节点属性。
+- **禁建**：Event/Info/Lore/Choice/Location/Character（缺叙事基础实体一律报错回 event-ideator 层）；Event 直挂 anchored_at/appears_as（EA5 体检兜查）；改既有节点属性。
 - **sub 与 Scene 的边界**：sub 描述剧情动作（谁做了什么、什么变化），Scene 只管机位/背景画面——人物姿势、表情、位置属立绘与演出指令层；镜头设计（近景/特写切换）是剧本分镜层的事，sub 只到「机位级演出段」粒度。
 - 删父 Event 连带删其全部 sub（dashboard event_crud 已实现级联）。
 
@@ -48,7 +48,7 @@ OUTPUT_DIR="02_剧情数据"
 着装链：  Character ─has_costume→ CostumeStyle ─outfit_for→ IllusDesign ← 缺则建占位（占位即挂归属边）
 ```
 
-- SubEvent 属性仅 id/title/time/description；**无** status/type/involved/occurs_at。
+- SubEvent 属性仅 id/title/start_time/end_time/description；**无** status/type/involved/occurs_at。
 - 占位节点属性 = 最小启动集（Spot: name/kind/description 无 status 骨架；Scene: name/scene_type；CostumeStyle: name/vibe；IllusDesign: 裸节点——后三者流水线 status=0 起点，含义是"待生产"非"占位标记"）；其余字段由消化方（scene-designer / char-design 链）按各自 Schema 补全。
 - 占位 Scene 后续改名/改字段不造成 sub 漂移（title/description 不引用机位信息，见 §2 规范）。
 
@@ -65,14 +65,14 @@ $PREFLIGHT --ids <id1,id2> [--titles t1,t2] [--window 起,止] [--json]    # 图
 
 **图模式**（沿用）：
 
-- **范围解析**：命中事件清单（id/title/time/occurs_at/involved），复述 N 个事件 + 时间跨度再进下一步；
-- **入口核验（权威表述）**：`verdict=FAIL`（缺 occurs_at Location / 缺 involved Character）→ **先分诊**：缺的实体**在图、只缺边** → 转 §4 的 `S4_gap_fix` 补边建议，流程继续；实体**不在图** → **报错停止**（脚本 `failures` 已逐事件列出），不代建，回 event-ideator 层补。title/description 提及实体未建档同理（LLM 读文判断，实体是否在图对照 `assets` 段核查）；
+- **范围解析**：命中事件清单（id/title/start_time/occurs_at/involved），复述 N 个事件 + 时间跨度再进下一步；
+- **入口核验（权威表述）**：`verdict=FAIL`（缺 occurs_at Location / 缺 involved Character）→ **先分诊**：缺的实体**在图、只缺边** → 转 §4 的 `S3_gap_fix` 补边建议，流程继续；实体**不在图** → **报错停止**（脚本 `failures` 已逐事件列出），不代建，回 event-ideator 层补。title/description 提及实体未建档同理（LLM 读文判断，实体是否在图对照 `assets` 段核查）；
 - **演出资源现状**：`assets` 段（每 involved char 立绘链 / 着装直查表 `costumes`——含 status=0 占位，**同缺口勿重复建占位** / 每 location 空间链）——§2 拆解的全部 facts，不必重查。
 
 **共识模式**（新事件尚未写图——scope 条目 id=null，title 即指称）：
 
-- **解析失败**（退出码 2：无 I2 条目 / 缺 time / 裸名指称无 id 无占位）→ 回读共识文档人肉分诊：共识本身有缺 → **报错回 event-ideator 修共识**，本层不脑补；
-- `failures`「缺 occurs_at/involved」= 共识条目缺字段 → **报错回 event-ideator**（`S4_gap_fix` 仅适用图模式「实体在图只缺边」，共识模式不产 S4）；
+- **解析失败**（退出码 2：无 I2 条目 / 缺 start_time / 裸名指称无 id 无占位）→ 回读共识文档人肉分诊：共识本身有缺 → **报错回 event-ideator 修共识**，本层不脑补；
+- `failures`「缺 occurs_at/involved」= 共识条目缺字段 → **报错回 event-ideator**（`S3_gap_fix` 仅适用图模式「实体在图只缺边」，共识模式不产 S3）；
 - `failures`「id 图上查无」= 共识内联 id 错拼 → **报错回 event-ideator 修共识**（id 须现查内联，防静默错挂）；
 - **`placeholders` 段（占位 Character/Location）→ 演出资源为零是预期态，不是缺口报错**：着装不可继承（无立绘链）、空间无既有 Spot/Scene——链路必然全新占位（CostumeStyle+IllusDesign / Spot+Scene 占位），照常推进不得因 `assets` 空停摆；既有 id 的 Character/Location 正常查 `assets` 做继承判断。
 
@@ -119,10 +119,9 @@ Read [SubEvent.md](../../../00_init/Schema/剧情/SubEvent.md)「description 撰
   - **一、事件共识**——共识文档 I 域条目（I1~I5）**逐条照抄**（含 reason，不改写不删减——这是 I 域的权威快照，任何改写都会偏离用户与 ideator 达成的共识）；
   - **二、演出拆解**——本轮 S 域条目（自然语言标签行 + reason；check 分类沿用）：
     - `S1_placeholder_node` — 占位 Spot/Scene/CostumeStyle/IllusDesign（最小启动集 + 归属；归属可指既有 id、本节上文占位，或 `定稿I1「名称」`——共识占位 Location 物化后的 Spot 挂靠）；
-    - `S2_subevent` — SubEvent（title/time/description 要点）+ 父 Event（图模式写 id；共识模式写 `定稿I2「<父title>」`）+ anchored_at 目标 + appears_as 目标（继承注明来源 sub id）；
-    - `S3_fact_reveal` — 读者侧揭示场合拍板（`SubEvent ─reveals→ Hook`）：拆 sub 时逐 sub 判断该场戏是否使读者知晓某 Hook（**既有 Hook 优先**；同轮 I3 新建的 Hook 也可揭示——目标写 `定稿I3「<title>」`，须在拍板题向用户点明是同轮新 Hook）；揭示边挂 sub（演出发生在机位层，揭示时刻同层）；**源为 Event 或目标为 Lore 均违规**；sub 被 sync 级联重细化时边随删、重拆重拍；并入该 event 的拍板题确认，不单独立题；
-    - `S4_gap_fix` — 确定性缺口修复（involved/occurs_at 补边，**仅图模式**且实体在图只缺边；实体缺失一律报错不走此类；共识模式不产 S4——事件还没进图，无「补边」语义）。
-- **写后复查（内容层，LLM 判定两项）**：① 每个 event 的 sub 时间与父 time 及相互先后因果相容（允许合理重叠）；② 同机位同角色着装一致（EA3 口径）。发现问题就地修正后再落盘。
+    - `S2_subevent` — SubEvent（title/start_time/description 要点）+ 父 Event（图模式写 id；共识模式写 `定稿I2「<父title>」`）+ anchored_at 目标 + appears_as 目标（继承注明来源 sub id）；
+    - `S3_gap_fix` — 确定性缺口修复（involved/occurs_at 补边，**仅图模式**且实体在图只缺边；实体缺失一律报错不走此类；共识模式不产 S3——事件还没进图，无「补边」语义）。
+- **写后复查（内容层，LLM 判定两项）**：① 每个 event 的 sub 时间与父事件 start_time 及相互先后因果相容（允许合理重叠）；② 同机位同角色着装一致（EA3 口径）。发现问题就地修正后再落盘。
 - **落盘与移交**：Write `${OUTPUT_DIR}/${DATE}_<主题>_定稿.md`（UTF-8，共识模式主题与来源共识相同；条目格式见下方定稿模板；同日同主题重跑覆盖——汇报注明）；语句级护栏（语句自包含、`$SUGGEST_LINT`）与 Schema 字段契约严检归 suggest-consumer——定稿只需语义完整、既有实体 id 内联。汇报含下一步话术（「跑 suggest-consumer 消费本定稿 → 严检 Schema、组装建议 JSON → 用户确认后执行写回」）。
 
 ### 定稿模板（照抄改值）
@@ -159,12 +158,11 @@ Read [SubEvent.md](../../../00_init/Schema/剧情/SubEvent.md)「description 撰
 - appears_as: 继承 <兄弟sub id> 的 IllusDesign / [占位：新套装]
 - reason: <依据>
 
-## [S3 揭示] 目标 Hook：既有id 或 定稿I3「<title>」
-## [S4 缺口修复]（仅图模式）…同款结构
+## [S3 缺口修复]（仅图模式）…同款结构
 ```
 
 ## 参考文档
 
 - [references/微演出模式库.md](references/微演出模式库.md) — §2 第 4 步校验时读（十一种模式范式 + 不拆反例 + 自检清单）
 - [references/占位命名规范.md](references/占位命名规范.md) — §3 占位物化时读（四类命名模式 + 查重自检）
-- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/SubEvent/Hook/Lore）/ [Schema/场景美术/](../../../00_init/Schema/场景美术/) / [Schema/角色美术/](../../../00_init/Schema/角色美术/)
+- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/SubEvent/Info/Lore）/ [Schema/场景美术/](../../../00_init/Schema/场景美术/) / [Schema/角色美术/](../../../00_init/Schema/角色美术/)

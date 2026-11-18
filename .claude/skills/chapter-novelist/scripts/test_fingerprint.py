@@ -27,8 +27,12 @@ def lore(iid, kl=3, title="测试设定", content="内容", intensity=None):
     return row
 
 
+def info(iid, kl=1, title="测试事实", content="内容"):
+    return {"kind": "info", "id": iid, "title": title, "content": content, "knowledge_level": kl}
+
+
 def evt(iid, title="t"):
-    return {"kind": "event", "id": iid, "title": title, "time": "", "type": "",
+    return {"kind": "event", "id": iid, "title": title, "start_time": "", "type": "",
             "description": "", "ending_kind": "", "condition": ""}
 
 
@@ -85,10 +89,10 @@ def test_gen_missing_id_rejected():
 # ── check 双形态 kind 容错 ───────────────────────────────────────────
 
 def test_check_kind_equivalence(tmp_path):
-    # 头部写 info(旧形态),素材给 lore(新形态),同 id 同内容 → 不 stale
+    # 头部写 hook(旧形态),素材给 info(新形态),同 id 同内容 → 不 stale
     novel = write_novel(tmp_path, "ch00/sec00/小说.md",
-                        [f"info   L1 {fp.fingerprint(lore('L1'))} 设定一"])
-    rc, _ = capture(fp.cmd_check, [lore("L1")], novel)
+                        [f"hook   L1 {fp.fingerprint(info('L1'))} 事实一"])
+    rc, _ = capture(fp.cmd_check, [info("L1")], novel)
     assert rc == 0
 
 

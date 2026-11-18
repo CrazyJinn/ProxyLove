@@ -54,7 +54,7 @@ CLI 用法：
 11. 双后端（Memgraph/Neo4j）聚合兼容：多段 OPTIONAL MATCH 后禁止直接 RETURN 聚合
     （collect/count/sum 跨段引用 → Memgraph "Unbound variable" 崩，Neo4j 正常）。每段后
     紧跟 WITH <锚>, collect(...) AS ... 物化再进下一段；聚合后 ORDER BY 只用 RETURN
-    别名（ORDER BY time，禁 ORDER BY e.time）。collect 物化后计数/过滤用列表推导，且
+    别名（ORDER BY t，禁 ORDER BY e.start_time）。collect 物化后计数/过滤用列表推导，且
     一律显式滤 OPTIONAL 未命中的 null 项（x IS NOT NULL）。段数 ≥3 或混合行粒度时
     优先拆多条简单查询，Python/LLM 侧汇总。（仅读查询；建议 JSON 写语句仍禁 WITH，
     见 suggest_lint.py R5）

@@ -48,7 +48,7 @@ suggest-consumer      → 同名 _建议.json（lint 全 PASS）
 
 - **不碰其他链**：不调 char-design / scene-design / plot-design agent 及其 skill；不调 chapter-*（chapter-structurer / chapter-publisher 均用户直触）；不经任何 suggestion 通道之外的路径写图。
 - **不产内容**：不写 cypher、不生成 snowflake、不改共识/定稿正文（发现正文问题 → 报给用户，回对应 skill 层修）。
-- **体检缺口输入**（用户从 dashboard 体检页带锚点来）→ 按缺口域分诊：叙事基础域（Event/Hook/边缺失）→ event-ideator；演出域（Spot/Scene/着装/揭示缺失）→ event-stager。
+- **体检缺口输入**（用户从 dashboard 体检页带锚点来）→ 按缺口域分诊：叙事基础域（Event/Info/knows 边缺失）→ event-ideator；演出域（Spot/Scene/着装缺失）→ event-stager。
 - Bash 只做只读查证（`test -f` / 列目录找最新文档名），不做任何图写入。
 
 ## 汇报纪律

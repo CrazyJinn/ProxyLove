@@ -52,8 +52,8 @@ LIMIT 1
 ```cypher
 // 时间窗入参 <起>~<止>（yyyy-MM-dd）：窗内事件 → occurs_at → Location → Spot → realizes → Scene
 MATCH (e:Event)-[:occurs_at]->(loc:Location)-[:part_of]->(sp:Spot)-[:realizes]->(s:Scene)
-WHERE e.time >= '<起>' AND e.time < '<止次日>'
-RETURN DISTINCT s, loc.name AS loc, count(e) AS evt_count, min(e.time) AS first_evt
+WHERE e.start_time >= '<起>' AND e.start_time < '<止次日>'
+RETURN DISTINCT s, loc.name AS loc, count(e) AS evt_count, min(e.start_time) AS first_evt
 ORDER BY first_evt LIMIT 50
 ```
 
@@ -63,7 +63,7 @@ ORDER BY first_evt LIMIT 50
 
 #### 2a. 选 Scene + 排序 + 分节规划
 
-据调用方给定的叙事范围，圈定本章事件清单（按 Event.time 时间序），**按叙事段落感把有序事件列表切成 K 个连续段，每段一节**——节 = 事件的有序组合。节的 Scene 序由节内事件的 `refines→SubEvent→anchored_at→Scene` 首现序推导（未细化事件提示先跑 `event-stager`；未场景化事件报缺口、提示 scene-design 消化 Scene 占位或先跑 `event-stager` 建占位）。
+据调用方给定的叙事范围，圈定本章事件清单（按 Event.start_time 时间序），**按叙事段落感把有序事件列表切成 K 个连续段，每段一节**——节 = 事件的有序组合。节的 Scene 序由节内事件的 `refines→SubEvent→anchored_at→Scene` 首现序推导（未细化事件提示先跑 `event-stager`；未场景化事件报缺口、提示 scene-design 消化 Scene 占位或先跑 `event-stager` 建占位）。
 - 每节各字段按 [Section.md](../../../00_init/Schema/剧情/Section.md) 字段表定（含章内序号从 0 起、戏剧职责一句话——职责分工与撰写纪律见 [Schema总览.md](../../../00_init/Schema总览.md) 属性撰写总则）；节的时间坐标由成员事件时间承载，不另设时间字段。
 - 分节依据是叙事段落感（一个情绪单元 / 一个叙事小目标），不是机械等分。**线性章节可只分 1 节**（K=1 合法）。
 - 节是事件时间序的**连续切片**，不交错（节 A 含事件 t0–t5，节 B 含 t6–t10）。
@@ -96,7 +96,7 @@ SET sec.<字段> = '...', sec.<字段> = '...',   // ← 按字段表逐字段 S
     sec.status = 0;    // 创建待定稿（定稿审在下游 dialoguer/dashboard）
 MATCH (ch:Chapter {id:'<chapter_id>'}), (sec:Section {id:'<sec_id>'})
 MERGE (ch)-[r:has_section]->(sec) SET r.sync = true;
-//    节内每个事件（按 Event.time 字符串序，order 从 0 起）：
+//    节内每个事件（按 Event.start_time 字符串序，order 从 0 起）：
 MATCH (sec:Section {id:'<sec_id>'}), (e:Event {id:'<event_id>'})
 MERGE (sec)-[r:includes]->(e) SET r.order = <order>, r.sync = false;
 ```

@@ -8,10 +8,11 @@
 |------|------|------|------|------|
 | id | 编号 | string | 是 | snowflake Base62 |
 | title | 标题 | string | 是 | `<父事件title> · <叙事短名>`——短名 = 该演出段的叙事副题，贴切为先、不拘字数（如 `塞满唠叨`、`一个人的游戏`）；**不用机位名**（机位信息只走 anchored_at 边，Scene 改名零漂移） |
-| time | 时间 | string(datetime) | 是 | 继承父事件或时间插值 |
+| start_time | 开始时间 | string(datetime) | 是 | 继承父事件或时间插值；点演出段与 end_time 同值 |
+| end_time | 结束时间 | string(datetime) | 是 | 同 start_time 格式 |
 | description | 描述 | string | 否 | 演出内容——节拍级 2~4 分句（撰写契约见下节） |
 
-- SubEvent **无** status / type / ending_kind / condition / involved / occurs_at——叙事身份（时间、人物、地点、因果、分支）全部在父 Event 层；sub 只承载 `anchored_at→Scene`、`appears_as→IllusDesign` 与 `reveals→Hook` 三边。
+- SubEvent **无** status / type / ending_kind / condition / involved / occurs_at——叙事身份（时间、人物、地点、因果、分支）全部在父 Event 层；sub 只承载 `anchored_at→Scene` 与 `appears_as→IllusDesign` 两边。
 - **时间轴查询只碰 Event**（label 隔离——SubEvent 不干扰 Event 时间轴/时间窗查询）。
 - 删父 Event 必须连带删其全部 sub。
 
@@ -30,7 +31,7 @@ sub 是**结构决策层，不是初稿层**：novelist 拿它知道「该演哪
 | | 字段头（「动作：」「基调：」等一律不写） |
 | | 机位名（只走 anchored_at 边） |
 | | 参与人名单（sub 的参与角色由父 Event 的 `involved` 边唯一承载——description 写名单即第二套事实，必与图漂移） |
-| | 跨事件相对时间词（「同日下午」「当晚」——跨事件时序由 leads_to 边与 Event.time 承载，时间唯一承载是 Event.time） |
+| | 跨事件相对时间词（「同日下午」「当晚」——跨事件时序由 leads_to 边与 Event.start_time 承载，时间唯一承载是 Event 的 start_time/end_time） |
 
 sub 写成微剧本的代价：道具台词进了图却不进 novelist 取材指纹（sub 不受 stale 保护，两层无感漂移）；改一句台词要动图→小说→ink 三层。
 

@@ -61,8 +61,8 @@ RETURN spot_id, spot_name, kind, dsl_path, scenes;
 // ② 未归组事件明细（归组判定证据 + objects 建模证据；scene-design 未推进过的 Location 此处=全部事件）
 MATCH (e:Event)-[:occurs_at]->(l:Location {id: '<loc_id>'})
 WHERE NOT EXISTS { MATCH (e)-[:refines]->(:SubEvent)-[:anchored_at]->(:Scene)<-[:realizes]-(:Spot)<-[:part_of]-(l) }
-RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.time AS time
-ORDER BY e.time;
+RETURN e.id AS event_id, e.title AS title, e.description AS descr, e.start_time AS start_time
+ORDER BY e.start_time;
 
 // ③ 既有 zone Spot 归组分布（「既有 spot 够用性」的量化依据）
 MATCH (l:Location {id: '<loc_id>'})-[:part_of]->(sp:Spot)
@@ -109,7 +109,7 @@ MERGE (l:Location {name: '<Location名>'})
 
 **2c. 机位决策**（新建 Scene 时显式决定）：为每个新建 Scene 定 `camera {pos, look_at, fov}`（室内对话机位自门口平视略高；机位即构图——「机位后退、家具沿墙、中下部留空」由 camera 数值保证；起步数值取 [references/room-yml-v3.md](references/room-yml-v3.md) §6 基线）。调机位先在 dashboard /room3d 相机预览看效果。
 
-对需**新建**的 Scene，生成 snowflake id 并填写内容——**先 Read [Scene.md](../../../00_init/Schema/场景美术/Scene.md)**：字段全集、类型与写法以该文件字段表为准，不凭记忆写字段（时段自 Event.time 推导；vibe/deco 撰写纪律已在字段表说明列）。
+对需**新建**的 Scene，生成 snowflake id 并填写内容——**先 Read [Scene.md](../../../00_init/Schema/场景美术/Scene.md)**：字段全集、类型与写法以该文件字段表为准，不凭记忆写字段（时段自 Event.start_time 推导；vibe/deco 撰写纪律已在字段表说明列）。
 
 **内容生成规则**：
 1. 构图/光影/配色**不写字段**——构图由机位数值保证（2c：机位后退、家具沿墙、中下部留空），光影由 room.yml `lights` 数值承载，配色归美术风格.md 全局风格。
