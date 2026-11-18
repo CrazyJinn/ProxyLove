@@ -80,7 +80,7 @@
 | **剧情——分叉与编排** | | | | |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
-| comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层，无 order——次序由 Event.start_time + description 承载） |
+| comprises | StoryArc → Event | N:M | ❌ | 故事线包含事件（叙事规划层=叙事宪法，无 order——次序由 Event.start_time 承载，description 只记主旨/氛围） |
 | has_section | Chapter → Section | 1:N | ✅ | 章→节（组成关系，级联重做） |
 | produces | Section → LineAudio | 1:N | ✅ | 节产出**逐句台词行**（order 大间距排序：初始 ×1000，句间插入取中点；节属性变更→全部行作废，重拆按 text_sha1 恢复未变句；小说素材变动时显式作废） |
 | includes | Section → Event | N:M | ❌ | 节包含事件（order=事件 start_time 序；节成员物化，替代原 contains） |

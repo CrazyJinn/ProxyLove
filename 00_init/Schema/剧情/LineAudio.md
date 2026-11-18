@@ -9,7 +9,7 @@
 | id | 编号 | string | 是 | snowflake Base62（= 行身份） |
 | op | 行类型 | enum | 是 | `say`/`narrate`/`transition`/`bed_start`/`bed_end`/`label`/`choice`/`hide`/`ending`。**transition**=点状音效（1~2s 播完再接下一句）；**bed_start/bed_end**=音床起止对（区间声景循环，同块配对）；**choice**=选择行（连续 `*`/`+` 聚合一条）；**hide**=立绘下台指令（清 slots 角色槽）；场景标题不进行（块 id=scene_id 直连 Scene） |
 | who | 说话人 | string | 否 | say 行必填（Character.name 原名） |
-| pos | 立绘位 | enum | 否 | `left`/`center`/`right`；拆分按块内规则自动分配（1 人 center / 2 人先左后右 / ≥3 人按首话序），定稿 `pos:` 行可覆盖 |
+| pos | 立绘位 | enum | 否 | **恒空——舞台调度不落图**（投影期由章 JSON 组装按块内座位规则现算注入：1 人 center / 2 人先左后右 / ≥3 人按首话序，ink `pos:` 声明可覆盖）；图上出现值即陈旧残留 |
 | text | 行正文 | string | 否 | **行正文唯一载体**（2026-11-12 M3 合并：原 name 双写字段已删）；投影字幕用；choice 行选项明细在 options |
 | tts_text | 配音变体 | string | 否 | 仅 say 行；text 的标点/停顿级变体，TTS 实际输入——**禁增删改任何汉字**、不得写回 text、一句一变体 |
 | kind | 结局类型 | enum | 否 | 仅 op=ending：`BE`/`TE`/`HE`/`NE` |

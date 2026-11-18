@@ -105,7 +105,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" candidates \
    - tasks 项透传的 clone_mode 是**初值**：人工在 dashboard 改过的非缺省值视为意志表达，**除非与语境明显矛盾否则保留**；重配句参考上一轮模式——上轮 icl 被驳回/作废的非平静句优先改判 xvec（反之亦然）。
 
 4. **选立绘（stand）**：为 tasks 里**每个**任务句选一张立绘（`台词.ink` 演出层已与台词分离——选绘在此判定，即使与上一句相同也每句都写）：
-   - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`description` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
+   - **优先复用候选池已有变体**：`"stand": "<stand_id>"`。判据：该句台词氛围 + 前后语境 + 角色情绪走向与哪个 `variant_label`/`vibe` 最贴；重配句参考候选池透传的 `current_stand`（上轮选绘），人工未反对则倾向保持。候选含 status<11（未出图）的也可选——出图由 plot-design 后续推进，不阻塞配音。
    - **池中无贴切变体（含池空、候选全不搭）→ 提新变体**：`"stand": {"variant_label": "<简短词，字数/词性以 Schema 为准>", "vibe": "<该变体调性一句话：情绪强度/神态/身体张力——写法纪律见 [StandingIllustration.md](../../../00_init/Schema/角色美术/StandingIllustration.md)>"}`。variant_label 避免与候选池已有标签重复（apply 会按标签去重复用已有节点）。**候选池带 `design_sheet.notes`（形象版本改动描述）时，vibe 的发型/形象细节必须与之对齐**——剪发后角色不得写「长发拂动」「拨弄刘海遮眼」等旧形象神态。
    - **节奏原则**：同一段落情绪内保持同一 stand（不为每句强行换）；情绪转折/强反应处换变体；也不许整节只选一个变体敷衍——变体区分度是立绘表现力来源。
    - 旁白/narrate 行不选（tasks 只含 say 行）。**任何任务句不得缺 stand 字段**（3c 的 apply 会拒绝整个 tasks）。
@@ -124,7 +124,7 @@ python "${CLAUDE_SKILL_DIR}/scripts/portrait_binder.py" apply \
 
 `apply`（先全量校验后单事务写图）：读 tasks 每项的 `stand` 字段 → ①新变体兜底建（同 IllusDesign 下同 variant_label 已有则**复用**不重建；否则 `StandingIllustration{variant_label, vibe, status=0}` + `expands_to`）②该行旧 uses 边 DELETE 后 `MERGE (l)-[u:uses]->(st) SET u.sync=false`（幂等替换，**不动 status/voice_key**——重选立绘不重配音）。
 
-- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿本节 say 行 uses 边推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 description 等，非阻断）。
+- 读报告：`lines_bound`（应 = 本轮任务句数）/ `new_variants`（新变体清单——进段 7 汇报，plot-design 后续沿本节 say 行 uses 边推进出图）/ `reused_variants` / `warnings`（跨着装引用、缺 vibe 等，非阻断）。
 - **校验失败**（缺 stand / stand_id 不存在 / 行不属于本节）→ 报告逐条列出坏项且**未写图**，回 3b 补齐 tasks 后重跑 apply（无图副作用）。
 - 3a 报 `0 行待判` 时本步跳过（无新判断，已建边保持）。
 
