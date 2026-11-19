@@ -362,7 +362,7 @@ sequenceDiagram
     opt 节目录无 小说.md 且非存量直连（待小说）
         A->>NV: Skill chapter-novelist sec_id（首建 / stale 重写）
         alt 素材够（丰满度自检通过）
-            Note right of NV: 圈定取材（includes 成员 + 成员事件 establishes 的 Info + 成员事件 forms 的 Cognition + has_info Lore）<br/>→ 五步产 小说.md（零图写入）；stale 重写作废定稿链；对账新实体走建议 JSON
+            Note right of NV: 圈定取材（includes 成员 + 成员 involved 角色的认知集内 Info[has_cognition→about，forms 锚≤本节末] + has_info Lore）<br/>→ 五步产 小说.md（零图写入）；stale 重写作废定稿链；对账新实体走建议 JSON
             NV-->>A: 小说.md 落盘（存量直连节跳过本段）
         else 素材不足
             NV-->>A: 报缺口（不写 status）

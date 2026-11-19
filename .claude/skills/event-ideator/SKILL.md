@@ -140,7 +140,7 @@ OUTPUT_DIR="02_剧情数据"
 | 9 | 因果（**仅用户明说才建** leads_to） | 时间窗因果候选 |
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
-**Info 提案（新事件默认伴随）**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。挂靠：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。**知晓分布由认知条目显式承载**（`Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition`，契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）：提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）——封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位，不影响认知集投放）。
+**Info 提案（新事件默认伴随）**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；**从严口径**：只立有持续叙事意义的事实（身份/关系/资源/知情面的持久变化），过程性/过渡性事实（战绩起伏/单次冲突/方案文档/邀约悬置类）默认不立，宁漏勿滥；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。**分支纪律**：挂 condition 的分支事件不提 Info/不产认知条目——分支备线非既成事实，建了会经 forms 键跨支泄漏进小说取材。挂靠：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。**知晓分布由认知条目显式承载**（`Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition`，契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）：提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）——封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位，不影响认知集投放）。存量盘点（非新事件提案）另有全流程：见 [../../02_剧情数据/Info盘点方法论.md](../../02_剧情数据/Info盘点方法论.md)。
 
 **交互纪律**：
 
@@ -163,7 +163,7 @@ OUTPUT_DIR="02_剧情数据"
 2. **组装共识条目**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体条目（类型 I1）：`[占位 Character]`/`[占位 Location]`——名称 + 一句话氛围人设/定位；
    - 事件条目（类型 I2）：title + type + start_time（跨时段事件补 end_time，点事件省略）+ occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
-   - Info 条目（类型 I3）：title + content + knowledge_level + 知晓承载事件（默认本事件；既有 id 或 `定稿I2「<title>」`，可多条）——**承载事件必须使该事实全员可知**（参与即知情无例外），否则换承载事件或拆 Info；
+   - Info 条目（类型 I3）：title + content + knowledge_level + 成立承载事件（establishes，默认本事件；既有 id 或 `定稿I2「<title>」`，可多条）+ 全量认知条目（知情者/偏差者逐人：type/title(仅偏差)/forms 锚）——知晓分布由认知条目逐人显式承载，与承载事件的选择无关；分支事件（挂 condition）不出本类条目；
    - 故事线条目（类型 I4）：title + description 草案（主旨/氛围）+ 逐成员「event id + title」（建线/扩线注明）；
    - 对账条目（类型 I5）：线 id + 重写后的 description 全文草案；
    - arc→new 敲定的事件：条目内注明「挂线：<arc id>」——不为挂边单独立条。

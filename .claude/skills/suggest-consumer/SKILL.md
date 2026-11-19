@@ -62,7 +62,7 @@ OUTPUT_DIR="02_剧情数据"
 - **文档内指称解析（混合定稿）**：S 条目中 `定稿I1/I2/I3「名称」` 指称（S2 父Event、S1 归属等）→ 在同文档 I 域条目中找到对应条目，组装时绑定其**同轮生成的 id**；指称找不到对应 I 条目 = 报错退回（不脑补、不许猜成既有实体——同文档指称只指向同文档条目）；
 - 占位查重：新占位与图上同名/同缺口实体对照（占位与真身重名=图上两节点打架）；同缺口勿重复建占位；**保留名占位带宿主 id 后缀**——`居住地点占位·<宿主id>`/`工作地点占位·<宿主id>`（后缀=Character 雪花 id，稳定唯一不受人名重复/改名影响；同名查重照常适用，同宿主同名占位再次出现=真冲突退回）；
 - **Lore 宿主查重（细化块机器项）**：新 Lore 与该 Character 既有 `has_info→Lore` 语义重复 → 报错退回（防第二套重复设定），不改写；
-- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**(Character, Info) 二元组唯一**——现查图已有 has_cognition 链，并存即报错退回（当前态：转变条目必须写成改写型不是新建）；**forms ≥1**（开篇前固有认知走前史事件承载）；**不查 type×title 映射**（语义表是写作参考非门禁）；
+- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**(Character, Info) 二元组唯一**——现查图已有 has_cognition 链，并存即报错退回（当前态：转变条目必须写成改写型不是新建）；改写型三形态——态度转变（SET type/title + forms 换锚删旧建新）、**主语换挂**（认知归属人 A→B：删旧 has_cognition 边 + 建新边，Cognition/about/forms 复用不动）、混合（两者兼改）；**forms ≥1**（开篇前固有认知走前史事件承载）；**锚事件 condition 检查**——establishes 与 forms 的锚事件挂 condition（choice 表达式分支事件）→ 报错退回（分支备线非既成事实，建了会跨支泄漏进小说取材）；**不查 type×title 映射**（语义表是写作参考非门禁）；
 - 表外字段一律不写：占位 Character 只 name/vibe（细化块有 priority 则加写）、Location 只 name/description/**priority（占位恒 P3）**、Spot 只 name/kind/description、Scene 只 name/scene_type/status=0、CostumeStyle 只 name/vibe/status=0、IllusDesign 只 status=0。
 
 **各来源创作域红线**（越域条目报错退回，不改写；混合定稿按条目域各查各的）：
@@ -89,7 +89,7 @@ OUTPUT_DIR="02_剧情数据"
 
 - ideator 域：I1_placeholder_entity（占位 Character 节点，细化块有 priority 则并入本项 SET；占位 Location 节点恒 priority=P3）/ I2_new_event（结局/转折 high 否则 medium）/ I3_new_info（low）/ I4_new_story_arc（medium；扩线注明、省略 CREATE 句）/ I5_story_arc_update（low，唯一改既有节点属性的例外，仅 description）；
 - refiner 域（I1 细化块物化，source='entity-refiner'）：R1_anchor_at（保留名占位 Location 节点 + at 边，随人物一项，medium）/ R2_char_lore（基础 Lore 节点 + has_info 边，每条一项，low）/ R3_char_priority（点名轮既有 Character 补写或改判 priority，low）；
-- cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（新建型：Cognition 节点 + has_cognition/about/forms 三边；改写型：现查 (Character, Info) 唯一后 SET type/title + forms 换锚——删旧建新分句写；叙事关键 medium 否则 low）；
+- cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（新建型：Cognition 节点 + has_cognition/about/forms 三边；改写型三形态——态度转变：SET type/title + forms 换锚删旧建新；主语换挂：删旧 has_cognition 边建新边，节点/about/forms 复用；均分句写；叙事关键 medium 否则 low）；
 - stager 域：S1_placeholder_node（high）/ S2_subevent / S3_gap_fix；
 - novelist 域：N1_novel_new_entity（新 Event/Info + 定位边，priority 按事件类型同 I2）；
 - arc→new 事件：I2 项 cypher 末尾追加 comprises 挂线语句（不为挂边单独立项）；
@@ -123,21 +123,21 @@ OUTPUT_DIR="02_剧情数据"
 ### ideator 域
 
 ```
-// 占位 Character（裸节点：name/vibe；I1 细化块有 priority 则并入本句 SET）
-CREATE (c:Character {id:'<snowflake>'}) SET c.name='<姓名>', c.vibe='<一句话氛围人设>', c.priority='<P0~P5，仅细化块有则写>';
+// 占位 Character（裸节点：name/vibe；I1 细化块有 priority 则并入本句 SET；MERGE 幂等——重跑/双通道重入无重复节点）
+MERGE (c:Character {id:'<snowflake>'}) ON CREATE SET c.name='<姓名>', c.vibe='<一句话氛围人设>', c.priority='<P0~P5，仅细化块有则写>';
 // 占位 Location（裸节点：name/description + priority 恒 P3；空间链不在创建域）
-CREATE (l:Location {id:'<snowflake>'}) SET l.name='<名称>', l.description='<一句话定位>', l.priority='P3';
+MERGE (l:Location {id:'<snowflake>'}) ON CREATE SET l.name='<名称>', l.description='<一句话定位>', l.priority='P3';
 // 新事件
-CREATE (e:Event {id:'<snowflake>'}) SET e.title='<title>', e.start_time='<yyyy-MM-dd HH:mm:ss>', e.end_time='<yyyy-MM-dd HH:mm:ss 点事件同值>', e.type='<type>', e.description='<desc>';
+MERGE (e:Event {id:'<snowflake>'}) ON CREATE SET e.title='<title>', e.start_time='<yyyy-MM-dd HH:mm:ss>', e.end_time='<yyyy-MM-dd HH:mm:ss 点事件同值>', e.type='<type>', e.description='<desc>';
 MATCH (e:Event {id:'<event_id>'}) MATCH (l:Location {id:'<loc_id>'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;
 MATCH (c:Character {id:'<char_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;
 // 仅文档明说因果时（方向 = 因 → 果）
 MATCH (a:Event {id:'<既有事件id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e) ON CREATE SET r.sync=false;
 // Info（Event ─establishes→ Info，每个成立承载事件一条 establishes 边）
-CREATE (f:Info {id:'<snowflake>'}) SET f.title='<标题>', f.content='<内容>', f.knowledge_level=<1|2|3>;
+MERGE (f:Info {id:'<snowflake>'}) ON CREATE SET f.title='<标题>', f.content='<内容>', f.knowledge_level=<1|2|3>;
 MATCH (ev:Event {id:'<carrier_event_id>'}) MATCH (f:Info {id:'<info_id>'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;
 // 故事线（I4 建线形；扩线形 = 仅 MERGE，每成员一条）
-CREATE (a:StoryArc {id:'<snowflake>'}) SET a.title='<标题>', a.description='主旨：…\n氛围：…';
+MERGE (a:StoryArc {id:'<snowflake>'}) ON CREATE SET a.title='<标题>', a.description='主旨：…\n氛围：…';
 MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 // I5 对账更新（唯一改既有节点属性的例外，仅 description）
 MATCH (a:StoryArc {id:'<arc_id>'}) SET a.description='<重写后的主旨/氛围全文>';
@@ -150,11 +150,11 @@ MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[
 ```
 // R1_anchor_at——保留名占位 Location（名带宿主 Character id 后缀，稳定唯一；每锚点独立 id）+ at 边（节点先于边，各语句自包含；工作地与居住地同地点时不建工作锚）
 // ⚠ at 边 MERGE 必须带 {type:…} 入 pattern：不带 type 时同人物同地点的第二条边（如工作）会 MERGE 命中第一条（居住）而静默不建（2026-11-19 全角色细化轮实测事故）
-CREATE (l:Location {id:'<snowflake>'}) SET l.name='居住地点占位·QP23NrFZrz', l.priority='P3';
+MERGE (l:Location {id:'<snowflake>'}) ON CREATE SET l.name='居住地点占位·QP23NrFZrz', l.priority='P3';
 MATCH (c:Character {id:'<char_id_本建议占位或既有>'}) MATCH (l:Location {id:'<snowflake_同上>'})
 MERGE (c)-[r:at {type:'居住'}]->(l) ON CREATE SET r.start_time='<yyyy-MM-dd HH:mm:ss 或 开篇前>', r.end_time='<同左 或 至今>', r.sync=false;
 // R2_char_lore——基础 Lore 节点 + has_info 宿主边（每条一项）
-CREATE (f:Lore {id:'<snowflake>'}) SET f.title='<标题：干净事实陈述>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
+MERGE (f:Lore {id:'<snowflake>'}) ON CREATE SET f.title='<标题：干净事实陈述>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
 MATCH (c:Character {id:'<char_id>'}) MATCH (f:Lore {id:'<snowflake_同上>'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;
 // R3_char_priority——点名轮既有 Character 补写/改判（唯一改既有 Character 属性的通道，仅 priority）
 MATCH (c:Character {id:'<char_id>'}) SET c.priority='<P0~P5>';
@@ -163,19 +163,19 @@ MATCH (c:Character {id:'<char_id>'}) SET c.priority='<P0~P5>';
 ### cognition 域（R4_cognition）
 
 ```
-// 新建型——先查后建保 (Character, Info) 唯一，节点先于边，各语句自包含
-MATCH (ch:Character {id:'<char_id>'}) MATCH (i:Info {id:'<info_id>'})
-OPTIONAL MATCH (ch)-[:has_cognition]->(ex:Cognition)-[:about]->(i)
-WITH ch, i, ex WHERE ex IS NULL
-CREATE (c:Cognition {id:'<snowflake>'}) SET c.type='<KNOWS|BELIEVES|SUSPECTS|DOUBTS>', c.title='<仅所信≠Info title 时写，否则删本段>';
+// 新建型——MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；(Character, Info) 唯一由 §1 严检在生成端保证（生成前现查二元组不并存）
+MERGE (c:Cognition {id:'<snowflake>'}) ON CREATE SET c.type='<KNOWS|BELIEVES|SUSPECTS|DOUBTS>', c.title='<仅所信≠Info title 时写，否则删本段>';
 MATCH (ch:Character {id:'<char_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;
 MATCH (c:Cognition {id:'<snowflake_同上>'}) MATCH (i:Info {id:'<info_id>'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;
 MATCH (ev:Event {id:'<forms_event_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
-// 改写型——态度转变（当前态：就地改写 + forms 换锚，不并存）
+// 改写型·态度转变（当前态：就地改写 + forms 换锚，不并存）
 MATCH (ch:Character {id:'<char_id>'})-[:has_cognition]->(c:Cognition)-[:about]->(i:Info {id:'<info_id>'})
 SET c.type='<新type>', c.title=<新title 或 null>;
 MATCH (c:Cognition {id:'<cognition_id_现查>'}) OPTIONAL MATCH (old:Event)-[f:forms]->(c) DELETE f;
 MATCH (ev:Event {id:'<转变事件id>'}) MATCH (c:Cognition {id:'<cognition_id_同上>'}) MERGE (ev)-[f2:forms]->(c) ON CREATE SET f2.sync=false;
+// 改写型·主语换挂（认知归属人 A→B，Cognition/about/forms 复用不动）
+MATCH (old:Character {id:'<原主语id>'})-[r:has_cognition]->(cg:Cognition {id:'<cognition_id_现查>'}) DELETE r;
+MATCH (ch:Character {id:'<新主语id>'}) MATCH (cg:Cognition {id:'<cognition_id_同上>'}) MERGE (ch)-[r2:has_cognition]->(cg) ON CREATE SET r2.sync=false;
 ```
 
 ### stager 域

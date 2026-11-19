@@ -47,19 +47,15 @@ type 答「以什么态度持有」，title 答「实际信的是什么」：
 ## 建边模板（幂等）
 
 ```cypher
-// 新建：先查后建（保证 (Character, Info) 唯一）
-MATCH (ch:Character {id:'…'}) MATCH (i:Info {id:'…'})
-OPTIONAL MATCH (ch)-[:has_cognition]->(ex:Cognition)-[:about]->(i)
-WITH ch, i, ex WHERE ex IS NULL
-CREATE (c:Cognition {id:'<snowflake>'}) SET c.type='KNOWS'
-CREATE (ch)-[:has_cognition]->(c)
-CREATE (c)-[:about]->(i)
-MATCH (ev:Event {id:'…'}) MATCH (c:Cognition {id:'<snowflake>'})
-MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
+// 新建：MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；(Character, Info) 唯一由建议生成端严检保证（生成前现查二元组不并存）
+MERGE (c:Cognition {id:'<snowflake>'}) ON CREATE SET c.type='<KNOWS|BELIEVES|SUSPECTS|DOUBTS>', c.title='<仅所信≠Info title 时写，否则删本段>';
+MATCH (ch:Character {id:'<char_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;
+MATCH (c:Cognition {id:'<snowflake_同上>'}) MATCH (i:Info {id:'<info_id>'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;
+MATCH (ev:Event {id:'<forms_event_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
 
-// 改写（态度转变）：就地改 type/title + forms 换锚
-MATCH (ch:Character {id:'…'})-[:has_cognition]->(c:Cognition)-[:about]->(i:Info {id:'…'})
-SET c.type='KNOWS', c.title=null
-OPTIONAL MATCH (old:Event)-[f:forms]->(c) DELETE f
-MATCH (ev:Event {id:'…'}) MERGE (ev)-[f2:forms]->(c) ON CREATE SET f2.sync=false;
+// 改写（态度转变）：就地改 type/title + forms 换锚（当前态，不并存）
+MATCH (ch:Character {id:'<char_id>'})-[:has_cognition]->(c:Cognition)-[:about]->(i:Info {id:'<info_id>'})
+SET c.type='<新type>', c.title=<新title 或 null>;
+MATCH (c:Cognition {id:'<cognition_id_现查>'}) OPTIONAL MATCH (old:Event)-[f:forms]->(c) DELETE f;
+MATCH (ev:Event {id:'<转变事件id>'}) MATCH (c:Cognition {id:'<cognition_id_同上>'}) MERGE (ev)-[f2:forms]->(c) ON CREATE SET f2.sync=false;
 ```
