@@ -1,0 +1,138 @@
+[
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "林梦（NvCkQmFPFt）补工作锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbg'}) SET l.name='工作地点占位·NvCkQmFPFt', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFt'}) MATCH (l:Location {id:'SC6FWKkKbg'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "沈暮雪（NvCkQmFPFu）补居住锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbh'}) SET l.name='居住地点占位·NvCkQmFPFu', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFu'}) MATCH (l:Location {id:'SC6FWKkKbh'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "温蔓青（NvCkQmFPFr）双锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbi'}) SET l.name='居住地点占位·NvCkQmFPFr', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFr'}) MATCH (l:Location {id:'SC6FWKkKbi'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\nCREATE (l:Location {id:'SC6FWKkKbj'}) SET l.name='工作地点占位·NvCkQmFPFr', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFr'}) MATCH (l:Location {id:'SC6FWKkKbj'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "顾盈（NvCkQmFPFv）双锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbk'}) SET l.name='居住地点占位·NvCkQmFPFv', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFv'}) MATCH (l:Location {id:'SC6FWKkKbk'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\nCREATE (l:Location {id:'SC6FWKkKbl'}) SET l.name='工作地点占位·NvCkQmFPFv', l.priority='P3';\nMATCH (c:Character {id:'NvCkQmFPFv'}) MATCH (l:Location {id:'SC6FWKkKbl'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "小夏（PHuTf3ogEq）补居住锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbm'}) SET l.name='居住地点占位·PHuTf3ogEq', l.priority='P3';\nMATCH (c:Character {id:'PHuTf3ogEq'}) MATCH (l:Location {id:'SC6FWKkKbm'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "陈念（QP23NrFZrz）补工作锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbn'}) SET l.name='工作地点占位·QP23NrFZrz', l.priority='P3';\nMATCH (c:Character {id:'QP23NrFZrz'}) MATCH (l:Location {id:'SC6FWKkKbn'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "Tony（QmJFWWyN18）补居住锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbo'}) SET l.name='居住地点占位·QmJFWWyN18', l.priority='P3';\nMATCH (c:Character {id:'QmJFWWyN18'}) MATCH (l:Location {id:'SC6FWKkKbo'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "季棠（QmJFWWyN19）补居住锚",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbp'}) SET l.name='居住地点占位·QmJFWWyN19', l.priority='P3';\nMATCH (c:Character {id:'QmJFWWyN19'}) MATCH (l:Location {id:'SC6FWKkKbp'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "点名轮常驻地补全（共识 2026-11-19_全角色细化）",
+    "content": "朵朵（S3oFjfNVlg）补居住锚（工作豁免：学龄儿童）",
+    "cypher": "CREATE (l:Location {id:'SC6FWKkKbq'}) SET l.name='居住地点占位·S3oFjfNVlg', l.priority='P3';\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (l:Location {id:'SC6FWKkKbq'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "选手/队长常驻基地（用户默认采纳推断）",
+    "content": "江烈（NvCkQmFPFw）居住=星耀基地",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFw'}) MATCH (l:Location {id:'QP23NrFZqd'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "选手/队长常驻基地（用户默认采纳推断）",
+    "content": "王昊（RqeKlYIPnE）居住+工作=星耀基地",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) MATCH (l:Location {id:'QP23NrFZqd'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\nMATCH (c:Character {id:'RqeKlYIPnE'}) MATCH (l:Location {id:'QP23NrFZqd'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R1_anchor_at",
+    "priority": "medium",
+    "reason": "选手/队长常驻基地（用户默认采纳推断）",
+    "content": "李想（RqeKlYIPnF）居住+工作=星耀基地",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnF'}) MATCH (l:Location {id:'QP23NrFZqd'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;\nMATCH (c:Character {id:'RqeKlYIPnF'}) MATCH (l:Location {id:'QP23NrFZqd'})\nMERGE (c)-[r:at]->(l) ON CREATE SET r.type='工作', r.start_time='开篇前', r.end_time='至今', r.sync=false;\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R3_char_priority",
+    "priority": "low",
+    "reason": "点名轮 priority 补写/改判（共识 2026-11-19_全角色细化）",
+    "content": "王昊 补判 P3",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) SET c.priority='P3';\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R3_char_priority",
+    "priority": "low",
+    "reason": "点名轮 priority 补写/改判（共识 2026-11-19_全角色细化）",
+    "content": "李想 补判 P3",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnF'}) SET c.priority='P3';\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R3_char_priority",
+    "priority": "low",
+    "reason": "点名轮 priority 补写/改判（共识 2026-11-19_全角色细化）",
+    "content": "朵朵 补判 P4",
+    "cypher": "MATCH (c:Character {id:'S3oFjfNVlg'}) SET c.priority='P4';\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R3_char_priority",
+    "priority": "low",
+    "reason": "点名轮 priority 补写/改判（共识 2026-11-19_全角色细化）",
+    "content": "备用角色1 改判 P5",
+    "cypher": "MATCH (c:Character {id:'QoNtXyLjfc'}) SET c.priority='P5';\n",
+    "source": "entity-refiner"
+  },
+  {
+    "check": "R3_char_priority",
+    "priority": "low",
+    "reason": "点名轮 priority 补写/改判（共识 2026-11-19_全角色细化）",
+    "content": "备用角色2 改判 P5",
+    "cypher": "MATCH (c:Character {id:'QoNtXyLjfd'}) SET c.priority='P5';\n",
+    "source": "entity-refiner"
+  }
+]

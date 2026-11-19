@@ -96,7 +96,7 @@ python 99_game/tools/deploy_r2.py     # 上传 R2：index.wasm/pck brotli+Conten
 - **Event 间禁建 `evt_relation`**（先后时序由 `Event.start_time` 字符串序承载），事件因果一律 `leads_to`（仅 `Event→Event` 单向）。**Info/Lore 无出边**：事件性事实建 `Info` 节点、知晓挂 `Event ─knows→ Info`（知晓者=事件 involved 参与者推导、知晓时间=事件 start/end；固有前史事实建前史事件承载），固有设定挂 `(Character|Location) ─has_info→ Lore`——事件与信息之间不走因果边。
 - **人物时空/关系区间边**：`Character ─at→ Location`（type=居住|工作|暂驻）与 `relation` 的 start_time/end_time **必填**；久远/无法推导写哨兵 `开篇前`、持续中写 `至今`（哨兵不参与字符串序比较，区间查询须特判）。事件时人物所在地 = 覆盖该事件 start_time 的 at 区间（多条覆盖取最短，常态长区间兜底）；远程在场事件（电话/连麦）各参与人各自查 at 边，与 occurs_at 机位端解耦。
 - Event 激活条件写 `Event.condition`（`choice:<id>[<n>]` 表达式，序号 = option 按 label 字典序的 1 基编号，语法见 [00_init/Schema/剧情/](00_init/Schema/剧情/)）。
-- **占位节点**由 event-ideator（叙事基础域：Character/Location）与 event-stager（演出域：Spot/Scene/CostumeStyle/IllusDesign）经建议 JSON 创建——Character/Location/Spot 为裸节点（**无 status**，缺口由内容缺失/结构表达）；Scene/CostumeStyle/IllusDesign 为流水线 status=0 起点。实现 agent 入口查询圈占位消化（裸节点按结构判据，如占位 Character=缺 has_appearance）。
+- **占位节点**由 event-ideator（叙事基础域：Character/Location）与 event-stager（演出域：Spot/Scene/CostumeStyle/IllusDesign）经建议 JSON 创建——Character/Location/Spot 为裸节点（**无 status**，缺口由内容缺失/结构表达）；Scene/CostumeStyle/IllusDesign 为流水线 status=0 起点。实现 agent 入口查询圈占位消化（裸节点按结构判据，如占位 Character=缺 has_appearance）。**占位 Character 的细化（priority/常驻地/基础 Lore）由 entity-refiner 承担**：共识/定稿条目就地追加「细化：」块（event-design agent 调度，ideator/stager 不感知），物化随 suggest-consumer 建议 JSON——常驻地一律新增带人名后缀的保留名占位「居住地点占位·<人名>」「工作地点占位·<人名>」（后缀即消歧，同名查重照常）+ `at` 边，工作地与居住地同地点时只写居住；豁免口=退休/无业类事实进基础 Lore（`has_info`）。**priority 生产链准入**：Character P0~P5（P5 纯提及不进）/ Location P0~P3（**占位恒 P3=锚点级，不进空间化生产链**，需要时提案改级）——各排除自己最低级，无值=未评级。
 
 ## 容易踩的坑（status / 级联 / 分发 / Godot 运行时）
 
