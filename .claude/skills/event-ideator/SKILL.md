@@ -2,7 +2,7 @@
 name: event-ideator
 description: |
   新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定/既定事件/故事线锚点出发启发新 Event 候选，与用户多轮交互（一次一问、每问附可归因推荐答案）迭代到共识，敲定后产**事件共识文档** `<日期>_<主题>_共识.md` 落盘 02_剧情数据/——默认交 event-stager 消化拆解演出（共识 → 定稿 → suggest-consumer → 用户确认后执行写回）；纯 I 域轮次（仅故事线构建/对账，或用户明示不拆演出）直接交 suggest-consumer。零图写入、不产 cypher、不跑 lint——Schema 纪律不在本层。
-  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Info 与 knows 意图 + StoryArc 与 comprises 意图。
+  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Info 与 establishes 意图 + 认知条目（Cognition）意图 + StoryArc 与 comprises 意图。
   不做拆解、机位、着装等任何演出域决策。无数量硬门控——批量由创作判断决定，留白即叙事。
   在用户说「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零产出新叙事事件时使用。
 argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
@@ -13,7 +13,7 @@ allowed-tools: Read, Bash, Write
 
 # 新事件启发与敲定（event-ideator）
 
-**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + Info 与 knows 边（随共识给初始知晓者清单）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
+**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + Info 与 establishes 边（事件的信息要素，成立轴）+ 认知条目（Cognition：知情者/偏差者+forms 锚）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
 
 > **通道契约（全程唯一表述，各步不再重复）**：
 > - **零图写入**——交互期间仅查询；写库由 suggest-consumer 在用户明确同意后执行，本层不碰图写。
@@ -30,7 +30,7 @@ NBHD="python ${CLAUDE_SKILL_DIR}/scripts/neighborhood.py"             # 锚点�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info/knows/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
+- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info/establishes/Cognition/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring（内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
 ## 流程总览（五步 + 故事线支线）
@@ -140,7 +140,7 @@ OUTPUT_DIR="02_剧情数据"
 | 9 | 因果（**仅用户明说才建** leads_to） | 时间窗因果候选 |
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
-**Info 提案（可选）**：锚点关系查询或深读中明显缺内心戏/静态注记（角色对某事的隐认知、伏笔注记、背景事实）时，提议若干 Info——并入候选批一起询问，不单独立题。挂靠：**知晓承载事件**挂 `Event ─knows→ Info`（必答「谁在哪个事件中知道了它」——知晓者=该事件 involved 参与者推导，知晓时间=事件 start/end；固有前史事实建前史事件承载，无 sub 不演出）。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位）。
+**Info 提案（新事件默认伴随）**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。挂靠：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。**知晓分布由认知条目显式承载**（`Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition`，契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）：提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）——封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位，不影响认知集投放）。
 
 **交互纪律**：
 
@@ -163,7 +163,7 @@ OUTPUT_DIR="02_剧情数据"
 2. **组装共识条目**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体条目（类型 I1）：`[占位 Character]`/`[占位 Location]`——名称 + 一句话氛围人设/定位；
    - 事件条目（类型 I2）：title + type + start_time（跨时段事件补 end_time，点事件省略）+ occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
-   - Info 条目（类型 I3）：title + content + knowledge_level + 知晓承载事件（既有 id 或 `定稿I2「<title>」`，可多条）；
+   - Info 条目（类型 I3）：title + content + knowledge_level + 知晓承载事件（默认本事件；既有 id 或 `定稿I2「<title>」`，可多条）——**承载事件必须使该事实全员可知**（参与即知情无例外），否则换承载事件或拆 Info；
    - 故事线条目（类型 I4）：title + description 草案（主旨/氛围）+ 逐成员「event id + title」（建线/扩线注明）；
    - 对账条目（类型 I5）：线 id + 重写后的 description 全文草案；
    - arc→new 敲定的事件：条目内注明「挂线：<arc id>」——不为挂边单独立条。

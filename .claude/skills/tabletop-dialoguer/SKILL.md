@@ -21,7 +21,11 @@ allowed-tools: Read, Bash, Write, Edit, delegate_task, terminal
 DM（主 agent，独占全量图数据）
   │ 开拍查询：Section→includes→Event→refines→SubEvent（sub.description=判定依据；机位=sub 的 anchored_at Scene，occurs_at 只是事件地点足迹）
   │ 人物所在地查询：各在拍角色覆盖事件 start_time 的 at 区间（多条覆盖取最短、哨兵 开篇前/至今 特判）——远程在场事件（电话/连麦）对端由此得出，不默认同机位
-  │ 认知集查询：(Character)-[:involved]→(Event)-[:knows]→(Info)（知晓者=事件参与者推导；事件 start_time 晚于本拍时刻的不投）+ (Character)-[:has_info]→(Lore)
+  │ 认知集查询（时间在 cypher 的 WHERE 中控制，勿 LLM 自行裁剪）：
+  │   MATCH (c:Character {id:'<角色id>'})-[:has_cognition]->(cg:Cognition)-[:about]->(i:Info)
+  │   MATCH (ke:Event)-[:forms]->(cg) WHERE ke.start_time <= '<本拍时刻>'
+  │   RETURN i.title, i.knowledge_level
+  │   UNION MATCH (c:Character {id:'<角色id>'})-[:has_info]->(l:Lore) RETURN l.title
   │ 共同经历查询：(Character)-[:involved]→(Event)，按时间过滤
   ▼
 每角色一个常驻 subagent（delegate_task 派发，全场一次）
@@ -46,7 +50,7 @@ DM 逐手审验（串行铁律：一手一回传一手，严禁并行派发+预�
 
 ## 3. 信封契约（DM → 角色）
 
-信封只装三样，**永不装**：本手指令、别人的钉子、全局图数据、未来节拍、他人内心。**信息投放白名单 = 该角色认知集**（knows 可达的 Info ∪ 自己 has_info 的 Lore，知晓时机不晚于本拍）——认知集之外的信息即使剧情需要也不经信封泄露（世界事件通道另议）。
+信封只装三样，**永不装**：本手指令、别人的钉子、全局图数据、未来节拍、他人内心。**信息投放白名单 = 该角色认知集**（has_cognition→about 可达的 Info ∪ 自己 has_info 的 Lore，forms 锚事件不晚于本拍；封闭世界——无认知链=不知道）——认知集之外的信息即使剧情需要也不经信封泄露（世界事件通道另议）。
 
 1. **场景帧**：开拍/转场时，含【旁白·机位：…】【BGM：待定·…】【转场：…】【你所在：…】占位符（机位取自图 sub 的 anchored_at，各角色所在取覆盖事件 start_time 的 at 区间——语音场对端与机位端不同地是常态，照实分开写，不手写散文）；
 2. **新增可见历史**：他人言行转述 + 自己没说过的客观事实；「（沉默）」可见；
@@ -75,8 +79,18 @@ DM 逐手审验（串行铁律：一手一回传一手，严禁并行派发+预�
 ## 6. 共同经历与认知集（开拍前查询）
 
 - 共同经历查询：`(Character)-[:involved]→(Event)`，取当拍在场角色集合交集，**按剧情时间过滤（只投本节之前的事件）**——v3 实测把 06-18 的「踢人事件」误当 sec02 前史，靠时间过滤剔除；
-- 认知集查询：`(Character)-[:involved]→(Event)-[:knows]→(Info)` + `(Character)-[:has_info]→(Lore)`——每个角色实例只知道自己认知集内的事实；知晓者=知晓承载事件的 involved 参与者（信息语义自带限定时 LLM 据语义排除，如「未言明的理由」在场者未必知道），知晓时间=事件 start/end（晚于本拍的不投，防剧透）；**角色不知道的信息不投、也不允许角色引用**（confabulation 与 improvisation 的分界线：有钉子时的自由发挥是特性，无钉子时的编造是事故）；
-- 注入纪律：①亲历者各拿各版本的记忆（同一事件，不同角色记得不同侧面）；②**宿主/灵魂归属检查**：宿主参与、入住之前的事件 knows 的 Info 与宿主名下 Lore，灵魂没有记忆（陆择的认知集=陆择自己 involved 的事件 knows，不含宿主前史）——投前必查入住时间线；③只供事实不供感受；
+- 认知集查询（**cypher 语句如下，时间在查询中控制**，不凭记忆手抄清单）：
+  ```cypher
+  MATCH (c:Character {id:'<角色id>'})-[:has_cognition]->(cg:Cognition)-[:about]->(i:Info)
+  MATCH (ke:Event)-[:forms]->(cg)
+  WHERE ke.start_time <= '<本拍时刻>'
+  RETURN 'info' AS kind, i.title AS title, i.knowledge_level AS kl, cg.type AS attitude, coalesce(cg.title,'') AS believed, ke.start_time AS since
+  UNION
+  MATCH (c:Character {id:'<角色id>'})-[:has_info]->(l:Lore)
+  RETURN 'lore' AS kind, l.title AS title, l.knowledge_level AS kl, '' AS since
+  ```
+  每个角色实例只知道自己认知集内的事实；**封闭世界认知，无例外**——无 has_cognition 链=不知道，involved 不推导知情（「参与即知情」已废止）；漏建认知条目=角色被误判无知，发现缺口在汇报中报，不在投放侧补丁；防剧透由 `WHERE ke.start_time <= 本拍时刻`（forms 锚事件）兜住；**角色不知道的信息不投、也不允许角色引用**（confabulation 与 improvisation 的分界线：有钉子时的自由发挥是特性，无钉子时的编造是事故）；认知条目带 type 与偏差 title（believed 非空=该角色信的是另一个命题，注入时照所信命题而非 Info 本体）；
+- 注入纪律：①亲历者各拿各版本的记忆（同一事件，不同角色记得不同侧面）；②**宿主/灵魂归属检查**：宿主入住前形成的认知（has_cognition 链且 forms 锚事件早于入住）与宿主名下 Lore，灵魂没有记忆（陆择的认知集=陆择自己的认知链，不含宿主前史认知）——投前必查入住时间线；③只供事实不供感受；
 - 已知局限：注入被角色吸收（气质相容）但未必显式引用；显式唤起需要更强的世界事件触发，待验证。
 
 ## 7. 汇编（交付物）

@@ -53,7 +53,7 @@ LIMIT 1
 
 - 1a 查询已带回本节机位素材集 `scene_ids`（includes→anchored_at→Scene 的 DISTINCT id）——**段 id 唯一合法来源 = 所写机位的 scene_id**（同机位多段重复用同一 id，段边界由行序承载）。**创作自由不包括凭空发明地点**：切分只能在素材机位集合内（includes→refines→SubEvent→anchored_at）；想写集合外机位（无 sub 锚定的导语/转场段）时**即停即报**（段名+动机+三可能：隐含演出段未细化[走 event-stager 补 sub+anchored_at，含 Scene 占位物化] / 越界脑补[重切] / sub 锚错机位[修 anchored_at]），由用户拍板，禁止自行查图补 id 静默自愈。
 
-圈定查询（一条 UNION，产出指纹素材 JSON——**显式字段罗列 + null 对齐是机器契约**（fingerprint.py 按行形状 kind/id/title/… 解析），**不做整节点直返改写**；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持），Info/Lore 按 label 分流两源防过宽：**Info** 走本节 involved 角色**认知集**内的事件性事实——`(src)-[:involved]->(ke)-[:knows]->(i)`含 `relation{type:控制}` 的控制者认知——与 Lore 同款控制跳，灵魂的认知经控制关系流入宿主的戏；知晓者=知晓承载事件的参与者推导；`ke.start_time ≤ 本节末`防未来事件剧透；早期事件的动机类认知由此自然进入后续节——「陆择理解拯救弱者为找女朋友」形成于 ch00 宣告、驱动 ch01 全章）；**本节是否向读者交付、以何种方式交付由叙事引擎第 5 步信息释放节奏裁量**（freshness 防车轱辘话，见 1b'），图不预设揭示主场；**Lore** 走本节 involved 角色 `has_info` 的固有设定（含 `relation{type:控制}` 的控制者人格——受控角色的戏折射控制者特质，换魂/操控类题材通用；无揭示时刻，暴露节奏归遗忘曲线，见 1b'））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
+圈定查询（一条 UNION，产出指纹素材 JSON——**显式字段罗列 + null 对齐是机器契约**（fingerprint.py 按行形状 kind/id/title/… 解析），**不做整节点直返改写**；Event 沿 `Section→includes→Event` 直连 Event 驱动化，**includes 即成员、不做任何时间过滤**（节的时间坐标由成员事件推导，跨天节天然支持），Info/Lore 按 label 分流两源防过宽：**Info** 走本节 involved 角色**认知集**内的事件性事实——`(src)-[:has_cognition]->(cg)-[:about]->(i)` 且 `(ke)-[:forms]->(cg)`（forms 锚事件即「何时知道」），含 `relation{type:控制}` 的控制者认知——与 Lore 同款控制跳，灵魂的认知经控制关系流入宿主的戏；封闭世界=无认知链即不知情（知晓分布显式落 Cognition 层，involved 不推导）；`ke.start_time ≤ 本节末`（forms 锚）防未来认知剧透；早期事件的动机类认知由此自然进入后续节——「陆择理解拯救弱者为找女朋友」形成于 ch00 宣告、驱动 ch01 全章）；**本节是否向读者交付、以何种方式交付由叙事引擎第 5 步信息释放节奏裁量**（freshness 防车轱辘话，见 1b'），图不预设揭示主场；**Lore** 走本节 involved 角色 `has_info` 的固有设定（含 `relation{type:控制}` 的控制者人格——受控角色的戏折射控制者特质，换魂/操控类题材通用；无揭示时刻，暴露节奏归遗忘曲线，见 1b'））。场景段标题的场景名/时段来源：`MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)-[:refines]->(sub:SubEvent)-[:anchored_at]->(s:Scene) RETURN DISTINCT s.name AS name, s.time_of_day AS tod`：
 
 ```cypher
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e:Event)
@@ -62,7 +62,8 @@ RETURN 'event' AS kind, e.id AS id, e.title AS title, e.start_time AS start_time
        null AS content, null AS knowledge_level
 UNION
 MATCH (sec:Section {id:'<sec_id>'})-[:includes]->(e2:Event)
-MATCH (src:Character)-[:involved]->(ke:Event)-[:knows]->(i:Info)
+MATCH (src:Character)-[:has_cognition]->(cg:Cognition)-[:about]->(i:Info)
+MATCH (ke:Event)-[:forms]->(cg)
 WHERE ((src)-[:involved]->(e2)
        OR (src)-[:relation {type:'控制'}]->(:Character)-[:involved]->(e2))
   AND ke.start_time <= '<本节最末成员事件的 end_time，现场替换>'
@@ -191,7 +192,7 @@ MATCH (sec:Section {id:'<sec_id>'})-[p:produces]->(l:LineAudio) WHERE l.status <
 
 4. **对账草稿（可选）**：段 2 中长出的新 Event/Info（图上查无、值得对账入图的）→ 落**自然语言草稿**（给人读的 md，标签行只是惯例结构；既有实体 id 内联；不产 cypher、不跑 lint、不生成 id——Schema 严检与建议 JSON 组装归 suggest-consumer，source='chapter-novelist'）：
    - 落盘 `02_剧情数据/<日期>_ch<NN>sec<MM>_<节概述>_补全_草稿.md`（`_草稿.md` 结尾，不触发 dashboard 弹窗 glob；文件名不带轮次，同日同节重跑覆盖）
-   - 草稿只做**叙事语义**表达，创作域红线沿用：只提新实体 + 定位关系（occurs_at/involved/leads_to/knows），不改既有实体属性；Info 必须给初始知晓者清单（knows 边）——**novelist 不提 Lore**（固有设定是构图期拍板，非写作期对账产物）。字段级契约（零时间措辞、Info 干净陈述、knowledge_level 必填 1/2/3 等）由 suggest-consumer 强制。
+   - 草稿只做**叙事语义**表达，创作域红线沿用：只提新实体 + 定位关系（occurs_at/involved/leads_to/establishes）与认知条目（has_cognition/about/forms），不改既有实体属性；新 Info 必须给全量知情者/偏差者的认知条目（封闭世界要求，漏建=误判不知情）——**novelist 不提 Lore**（固有设定是构图期拍板，非写作期对账产物）。字段级契约（零时间措辞、Info 干净陈述、knowledge_level 必填 1/2/3 等）由 suggest-consumer 强制。
    - 无数量硬门控——批量由对账价值判断决定；无新增不落盘只汇报。
 5. **汇总**：小说路径 + 取材条数（event/info/lore 分计）+ 模式（首建/重写）+ 是否作废定稿链（sec.status 与行数前后变化）+ **freshness 裁量行**（每个被消费 info/lore id → F 值 → 本节释放方式 E/S）+ 对账草稿路径与下一步话术（如有：「跑 suggest-consumer 消费本草稿」）+ 分支待补标注（如有）+ 自检修正说明。
 

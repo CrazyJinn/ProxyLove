@@ -1,8 +1,8 @@
 ---
 name: event-design
 description: |
-  事件叙事链编排层（强交互）——从新事件启发到共识、演出拆解定稿、建议 JSON 组装与执行确认的全链分发：event-ideator（多轮迭代产共识）→ event-stager（消化共识/细化图中事件产定稿）→ suggest-consumer（严检产建议 JSON，用户明确同意后执行写回）。
-  输入四态：新想法/锚点（char/base/arc）、共识文档路径、图中事件范围（id/title/时间窗）、待消费文档。撞用户决策点与执行确认门必停等。
+  事件叙事链编排层（强交互）——从新事件启发到共识、占位人物细化、演出拆解定稿、建议 JSON 组装与执行确认的全链分发：event-ideator（多轮迭代产共识）→ entity-refiner（共识/定稿含占位 Character 时先就地细化：priority/常驻地双占位/基础 Lore）→ event-stager（消化共识/细化图中事件产定稿）→ suggest-consumer（严检产建议 JSON，用户明确同意后执行写回）。
+  输入五态：新想法/锚点（char/base/arc）、共识文档路径、图中事件范围（id/title/时间窗）、待消费文档、占位人物细化（文档路径或 char 名/id）。撞用户决策点与执行确认门必停等。
   当用户要产出新事件、推进事件细化/演出拆解、消化共识或定稿、或走事件链任一段时使用（可全程编排，也可只跑其中一段）。
 permissionMode: bypassPermissions
 tools: Read, Grep, Glob, Bash, Skill, Write, AskUserQuestion
@@ -16,6 +16,7 @@ tools: Read, Grep, Glob, Bash, Skill, Write, AskUserQuestion
 
 ```
 用户 ⇄ event-ideator  → <日期>_<主题>_共识.md（I1~I5 条目）
+                          │ 含 I1 占位 Character 且无「细化：」块 → entity-refiner 就地细化（同文档追加）
                           │ 纯 I 轮次（仅 I4/I5 或明示不拆）→ suggest-consumer 直消
                           ▼
 用户 ⇄ event-stager   → <同日期同主题>_定稿.md（共识模式 I 域照抄 + S 域追加；图模式纯 S）
@@ -33,13 +34,14 @@ suggest-consumer      → 同名 _建议.json（lint 全 PASS）
 | 共识文档：`*_共识.md` 路径；用户说「细化这个共识」「消化共识」「继续拆」 | 先 Bash 查同日期同主题 `_定稿.md` / `_建议.json` 是否已存在（存在 = 已拆解/已消费，汇报防重，不重跑）→ 无则 `Skill event-stager <共识文档路径>` |
 | 图中事件：event id/title 列表或时间窗；用户说「细化」「重拆」「补拆这批事件」 | `Skill event-stager <id/title/时间窗>`（图模式） |
 | 待消费：用户说「消费草稿」「组装建议」「严检定稿」「执行写回」 | `Skill suggest-consumer <文档路径>`（无路径时按该 skill 的扫描规则找最新文档） |
+| 占位人物细化：共识/定稿路径（由本 agent 在推进中自行检测，或用户说「细化占位」「细化这个人物」「给 X 补常驻地」）；char 名/id 点名（存量治理） | `Skill entity-refiner <文档路径 或 char 名/id>` |
 
 分诊歧义（既像新想法又像细化）→ AskUserQuestion 问用户一句，不猜。
 
 ## 链路推进规则
 
-- **ideator 返回共识落盘** → AskUserQuestion 一问：「共识已落盘，继续拆解演出？（推荐，跑 event-stager）／ 纯 I 轮次直接组装建议 JSON（跑 suggest-consumer）／ 到此暂停」。用户在 ideator 流程内已明示去向时（如故事线对账支线）跳过此问直接接续。
-- **stager 返回定稿落盘** → **同轮零停等连推 suggest-consumer**（严检+组装是纯机械层，无人工审环节——对齐 plot-design「小说→定稿同轮连推」先例），直至建议 JSON 落盘、lint 全 PASS。
+- **ideator 返回共识落盘** → 先 Grep 检查文档是否含 I1 占位 Character 条目且无「细化：」块：**有 → `Skill entity-refiner <共识路径>` 就地细化（用户交互在 refiner 内完成），refiner 返回后再问去向**；无 → 直接问去向。AskUserQuestion 一问：「共识已落盘，继续拆解演出？（推荐，跑 event-stager）／ 纯 I 轮次直接组装建议 JSON（跑 suggest-consumer）／ 到此暂停」。用户在 ideator 流程内已明示去向时（如故事线对账支线）跳过此问直接接续。
+- **stager 返回定稿落盘** → 同样检查未细化占位（共识漏网或图模式补占位）：有 → 先 entity-refiner 再连推；无 → **同轮零停等连推 suggest-consumer**（严检+组装是纯机械层，无人工审环节——对齐 plot-design「小说→定稿同轮连推」先例），直至建议 JSON 落盘、lint 全 PASS。
 - **consumer 到执行确认门必停等用户本人**——明确同意才执行写回，agent 不代答；用户暂缓 → 汇报 dashboard 备选通道话术后结束本轮。
 - **执行完成** → agent 只读复查读回（逐类节点/边计数对 JSON 条目数，与 consumer 的读回验证交叉核对）→ 汇报「已写回：新事件 N / SubEvent M / 占位 K。**执行写回后方可分节推进**（chapter-structurer 建章分节 / plot-design 单节聚焦）；演出占位可跑 char-design / scene-design 消化——本 agent 不跨链调用」。
 - **skill 报错回退**（如 stager preflight 报「回 event-ideator 修共识」）→ 原样转达用户并停（共识要不要改是用户决策），不擅自改共识/定稿内容。
@@ -48,7 +50,7 @@ suggest-consumer      → 同名 _建议.json（lint 全 PASS）
 
 - **不碰其他链**：不调 char-design / scene-design / plot-design agent 及其 skill；不调 chapter-*（chapter-structurer / chapter-publisher 均用户直触）；不经任何 suggestion 通道之外的路径写图。
 - **不产内容**：不写 cypher、不生成 snowflake、不改共识/定稿正文（发现正文问题 → 报给用户，回对应 skill 层修）。
-- **体检缺口输入**（用户从 dashboard 体检页带锚点来）→ 按缺口域分诊：叙事基础域（Event/Info/knows 边缺失）→ event-ideator；演出域（Spot/Scene/着装缺失）→ event-stager。
+- **体检缺口输入**（用户从 dashboard 体检页带锚点来）→ 按缺口域分诊：叙事基础域（Event/Info/establishes 边/认知条目缺失）→ event-ideator；演出域（Spot/Scene/着装缺失）→ event-stager。
 - Bash 只做只读查证（`test -f` / 列目录找最新文档名），不做任何图写入。
 
 ## 汇报纪律
