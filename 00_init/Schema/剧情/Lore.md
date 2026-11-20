@@ -5,8 +5,8 @@
 最小粒度：一条**事件性事实**（Info）或一条**固有设定**（Lore）。与 Event 对仗：**Event 记「发生」，Info 记「事实」，Lore 记「固有」**。
 
 - **Event = 行为、事件**——需要在故事时间轴上**被演出**、直接推进剧情的事：有参与者、发生即改变局面，可细化演出（`refines → SubEvent` 落机位）。
-- **Info = 事件性事实**——因事件而成立、按「谁知道」管理的世界状态（如「视频火了」「陈默被温蔓青分手」）。成立与揭示时刻不落图：事实成立由 `Event ─establishes→ Info` 承载（成立轴），知晓分布由 Cognition 层显式承载（见 [Cognition.md](Cognition.md)），何时向读者交付由写作层（novelist/DM）裁量。
-- **Lore = 固有设定**——角色/地点的固有事实（人设底色、世界观规则、背景前史）。无时间轴位置，反复以侧面折射方式被消费；**暴露节奏由写作层遗忘曲线算法管制**（chapter-novelist freshness，见其 skill），图上不计划。
+- **Info = 事件性事实**——因事件而成立、按「谁知道」管理的世界状态（如「视频火了」「陈默被温蔓青分手」）。成立与揭示时刻不落图：事实成立由 `Event ─establishes→ Info` 承载（成立轴），知晓分布由 Cognition 层显式承载（见 [Cognition.md](Cognition.md)），何时向读者交付由写作层（tabletop/dialoguer）裁量。
+- **Lore = 固有设定**——角色/地点的固有事实（人设底色、世界观规则、背景前史）。无时间轴位置，反复以侧面折射方式被消费；**暴露节奏由写作层遗忘曲线算法管制**（freshness，消费方 tabletop/dialoguer），图上不计划。
 - **判定测试**：这个内容要不要在时间轴上「演出来」？要 → Event；因事件成立的认知、且不同角色知晓状态有分布意义 → Info；角色/地点固有属性 → Lore。一件事的数字细节、氛围摘句归 `Event.description`，**不另立**（防复述）；角色间双边关系事实优先 `relation` 边承载（见 [../角色美术/边.md](../角色美术/边.md)）。
 - **挂靠（Info/Lore 无出边，只被指向）**：
   - **Info 成立轴**：`Event ─establishes→ Info`（该事件使事实成立并进入故事，如 陈念上门探望→「陈默被温蔓青分手」）。**由 event-ideator 产**（新 Info 随共识给成立承载事件）。知晓分布由 Cognition 层显式承载（见 [Cognition.md](Cognition.md)）；固有前史事实建前史事件承载。

@@ -63,7 +63,7 @@ OUTPUT_DIR="02_剧情数据"
 - 占位查重：新占位与图上同名/同缺口实体对照（占位与真身重名=图上两节点打架）；同缺口勿重复建占位；**保留名占位带宿主 id 后缀**——`居住地点占位·<宿主id>`/`工作地点占位·<宿主id>`（后缀=Character 雪花 id，稳定唯一不受人名重复/改名影响；同名查重照常适用，同宿主同名占位再次出现=真冲突退回）；
 - **Lore 宿主查重（细化块机器项）**：新 Lore 与该 Character 既有 `has_info→Lore` 语义重复 → 报错退回（防第二套重复设定），不改写；
 - **Info 查重浅验证（2026-11-20 裁定：语义判断归生成端 event-ideator，本层不做语义对照）**：新 Info 的承载事件为图上既有时，其已有 `establishes→` 其他 Info → 该 I3 条目必须带显式「不同侧面」区分标注（reason/区分点），缺 → 报错退回；新 Info title 归一化（去空白/标点）与既有 Info 完全同名 → 拦。除此之外不设任何语义判断；
-- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**认知链唯一**（每对 (Character, Info) 经 `has_cognition→Cognition→about` 至多一条链——非直连边）——现查图已有该链，并存即报错退回（当前态：转变条目必须写成改写型不是新建）；改写型三形态——态度转变（SET type/title + forms 换锚删旧建新）、**主语换挂**（认知归属人 A→B：删旧 has_cognition 边 + 建新边，Cognition/about/forms 复用不动）、混合（两者兼改）；**forms ≥1**（开篇前固有认知走前史事件承载）；**锚事件 condition 检查**——establishes 与 forms 的锚事件挂 condition（choice 表达式分支事件）→ 报错退回（分支备线非既成事实，建了会跨支泄漏进小说取材）；**不查 type×title 映射**（语义表是写作参考非门禁）；
+- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**认知三元不重复**（认知编年史：同一 (Character, Info) 多条并存合法，仅同 (Character, Info, forms 锚事件) 三元重复才报错退回——现查图已有同锚条目即拦）；态度转变 = **追加新条目**（新 Cognition + 三边，forms 锚转变事件，旧条零改动——无任何 SET/DELETE 改写语句）；**主语换挂**（认知归属人 A→B）在新条目照建后于汇报提示「建议摘除旧主语链（dashboard 人工执行）」——删边类不进建议 JSON；**forms ≥1**（开篇前固有认知走前史事件承载）；**锚事件 condition 检查**——establishes 与 forms 的锚事件挂 condition（choice 表达式分支事件）→ 报错退回（分支备线非既成事实，建了会跨支泄漏进小说取材）；**不查 type×title 映射**（语义表是写作参考非门禁）；
 - 表外字段一律不写：占位 Character 只 name/vibe（细化块有 priority 则加写）、Location 只 name/description/**priority（占位恒 P3）**、Spot 只 name/kind/description、Scene 只 name/scene_type/status=0、CostumeStyle 只 name/vibe/status=0、IllusDesign 只 status=0。
 
 **各来源创作域红线**（越域条目报错退回，不改写；混合定稿按条目域各查各的）：
@@ -90,7 +90,7 @@ OUTPUT_DIR="02_剧情数据"
 
 - ideator 域：I1_placeholder_entity（占位 Character 节点，细化块有 priority 则并入本项 SET；占位 Location 节点恒 priority=P3）/ I2_new_event（结局/转折 high 否则 medium）/ I3_new_info（low）/ I4_new_story_arc（medium；扩线注明、省略 CREATE 句）/ I5_story_arc_update（low，唯一改既有节点属性的例外，仅 description）；
 - refiner 域（I1 细化块物化，source='entity-refiner'）：R1_anchor_at（保留名占位 Location 节点 + at 边，随人物一项，medium）/ R2_char_lore（基础 Lore 节点 + has_info 边，每条一项，low）/ R3_char_priority（点名轮既有 Character 补写或改判 priority，low）；
-- cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（新建型：Cognition 节点 + has_cognition/about/forms 三边；改写型三形态——态度转变：SET type/title + forms 换锚删旧建新；主语换挂：删旧 has_cognition 边建新边，节点/about/forms 复用；均分句写；叙事关键 medium 否则 low）；
+- cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（Cognition 节点 + has_cognition/about/forms 三边，新建与追加同款——态度转变即追加新条目（forms 锚转变事件），主语换挂建新条目后汇报提示旧链人工摘除；叙事关键 medium 否则 low）；
 - stager 域：S1_placeholder_node（high）/ S2_subevent / S3_gap_fix；
 - novelist 域：N1_novel_new_entity（新 Event/Info + 定位边，priority 按事件类型同 I2）；
 - arc→new 事件：I2 项 cypher 末尾追加 comprises 挂线语句（不为挂边单独立项）；
@@ -164,19 +164,12 @@ MATCH (c:Character {id:'<char_id>'}) SET c.priority='<P0~P5>';
 ### cognition 域（R4_cognition）
 
 ```
-// 新建型——MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；(Character, Info) 唯一由 §1 严检在生成端保证（生成前现查二元组不并存）
+// 新建/追加同款（认知编年史：态度转变=追加新条目，旧条零改动）——MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；同 (Character, Info, forms 锚事件) 三元不重复由 §1 严检在生成端保证（生成前现查三元组）
 MERGE (c:Cognition {id:'<snowflake>'}) ON CREATE SET c.type='<KNOWS|BELIEVES|SUSPECTS|DOUBTS>', c.title='<仅所信≠Info title 时写，否则删本段>';
 MATCH (ch:Character {id:'<char_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;
 MATCH (c:Cognition {id:'<snowflake_同上>'}) MATCH (i:Info {id:'<info_id>'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;
 MATCH (ev:Event {id:'<forms_event_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
-// 改写型·态度转变（当前态：就地改写 + forms 换锚，不并存）
-MATCH (ch:Character {id:'<char_id>'})-[:has_cognition]->(c:Cognition)-[:about]->(i:Info {id:'<info_id>'})
-SET c.type='<新type>', c.title=<新title 或 null>;
-MATCH (c:Cognition {id:'<cognition_id_现查>'}) OPTIONAL MATCH (old:Event)-[f:forms]->(c) DELETE f;
-MATCH (ev:Event {id:'<转变事件id>'}) MATCH (c:Cognition {id:'<cognition_id_同上>'}) MERGE (ev)-[f2:forms]->(c) ON CREATE SET f2.sync=false;
-// 改写型·主语换挂（认知归属人 A→B，Cognition/about/forms 复用不动）
-MATCH (old:Character {id:'<原主语id>'})-[r:has_cognition]->(cg:Cognition {id:'<cognition_id_现查>'}) DELETE r;
-MATCH (ch:Character {id:'<新主语id>'}) MATCH (cg:Cognition {id:'<cognition_id_同上>'}) MERGE (ch)-[r2:has_cognition]->(cg) ON CREATE SET r2.sync=false;
+// 主语换挂：新主语按上款建新条目；旧主语链的删边不进建议 JSON——汇报提示「建议摘除旧主语链 <cognition_id>（dashboard 人工执行）」
 ```
 
 ### stager 域

@@ -34,7 +34,7 @@
 - **Event** — 某时某刻发生的某件事
 - **SubEvent** — 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as 两边，无 status
 - **Info** — 一条事件性事实（Event 记「发生」，Info 记「事实」；establishes 边承载成立，Cognition 层承载知晓分布，交付时机归写作层裁量）
-- **Cognition** — 一条认知持有（某角色对某 Info 当前以什么态度持有什么认知；封闭世界：无 has_cognition 链=不知情；当前态——态度转变就地改写，转变留痕走 Info 层；见 [剧情/Cognition.md](剧情/Cognition.md)）
+- **Cognition** — 一条认知持有（某角色自 forms 锚事件起对某 Info 以什么态度持有什么认知；封闭世界：时间点 T 无 forms≤T 的链=不知情；认知编年史——同 (Character, Info) 多条并存，态度转变=追加新条目旧条保留；见 [剧情/Cognition.md](剧情/Cognition.md)）
 - **Lore** — 一条固有设定（角色/地点的固有事实；has_info 宿主挂靠，无揭示时刻，暴露节奏归写作层遗忘曲线）
 
 **剧情——分叉与编排**
@@ -78,9 +78,9 @@
 | leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.start_time 承载；事件↔信息归 Info 节点与 establishes 边） |
 | has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
 | establishes | Event → Info | N:N | ❌ | **成立**（成立轴）——该事件使事实成立并进入故事（陈念上门探望→陈默被温蔓青分手）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；固有前史事实建前史事件承载；每条 Info ≥1 入边；event-ideator 产 |
-| has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色当前持有对某 Info 的认知；每对 (Character, Info) 至多一个 Cognition（当前态，转变就地改写） |
+| has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色自 forms 锚事件起持有对某 Info 的认知；同 (Character, Info) 多条并存（认知编年史，转变=追加新条目） |
 | about | Cognition → Info | N:1 | ❌ | **指向**（指向轴）——认知针对哪条 Info |
-| forms | Event → Cognition | N:N | ❌ | **成因**（成因轴）——角色在该事件形成/改变认知（「何时知道」=锚事件 start_time）；每条 Cognition ≥1 入边，开篇前固有认知走前史事件 |
+| forms | Event → Cognition | N:N | ❌ | **成因**（成因轴）——角色在该事件形成/改变认知（「何时知道」=锚事件 start_time）；每条 Cognition ≥1 入边，开篇前固有认知走前史事件；时间点 T 的认知态=该 (Character, Info) 下 forms≤T 最新一条 |
 | **剧情——分叉与编排** | | | | |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |

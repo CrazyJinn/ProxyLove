@@ -63,6 +63,9 @@ F_ALLOW_EXPLICIT = 70  # F ≥ 此值:正面/侧面均可
 F_ALLOW_SIDE = 30      # F ≥ 此值:仅侧面;再低禁释放
 
 HEADER_OPEN = "<!-- 取材指纹(chapter-novelist 生成,chapter-dialoguer 自检;变动=重写小说+作废定稿)"
+HEADER_OPEN_TABLETOP = "<!-- 取材指纹(tabletop-dialoguer 生成,chapter-dialoguer 自检;变动=重跑跑团+作废定稿)"
+# 存量 小说.md 头部与 HEADER_OPEN 严格匹配——该常量永不能改;跑团草稿走 TABLETOP 变体
+STEM_FILES = ("小说.md", "跑团草稿.md")  # 指纹消费文件的文件名集(freshness/consumed 扫描范围)
 HEADER_RE = re.compile(r"^(event|hook|info|lore)\s+(\S+)\s+([0-9a-f]{16})(?:\s+([ES]))?\s*(.*)$")
 
 
@@ -104,8 +107,20 @@ def _line(kind: str, row: dict, fp: str, intensity: str | None = None) -> str:
     return f"{kind}{pad} {row['id']} {fp}{tok} {str(row.get('title') or '')}"
 
 
+def _scan_stems(root: str) -> list[str]:
+    """扫描 root 下全部带指纹的消费文件(小说.md 存量 + 跑团草稿.md 现行),排序去重。"""
+    import glob
+    import os
+
+    seen: set[str] = set()
+    for name in STEM_FILES:
+        for p in glob.glob(os.path.join(root, "**", name), recursive=True):
+            seen.add(p)
+    return sorted(seen)
+
+
 def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = None,
-            at: str | None = None, force: bool = False) -> int:
+            at: str | None = None, force: bool = False, target: str = "novel") -> int:
     if root is not None and at is not None:
         id_map = ids
         if id_map is None:
@@ -129,7 +144,7 @@ def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = Non
         rows = [r for r in rows if str(r["id"]) in want]
     if not rows:
         raise SystemExit("素材为空:圈定查询未命中任何 Event/Info/Lore(或 --ids 过滤后为空)")
-    lines = [HEADER_OPEN]
+    lines = [HEADER_OPEN_TABLETOP if target == "tabletop" else HEADER_OPEN]
     for row in rows:
         kind = _kind(row)
         assert kind is not None  # _materials 已滤
@@ -151,7 +166,7 @@ def _header_rows(novel_text: str) -> list[tuple[str, str, str]]:
     """解析小说.md 头部取材指纹块(第一个 <!-- 取材指纹 … --> 之间)。"""
     m = re.search(r"<!--\s*取材指纹.*?-->", novel_text, re.S)
     if not m:
-        raise SystemExit("小说.md 头部未找到「取材指纹」块——旧版或手删,需重跑 chapter-novelist 重产")
+        raise SystemExit("文件头部未找到「取材指纹」块——旧版或手删,需重跑创作段(novelist 存量 / tabletop 现行)重产")
     out = []
     for line in m.group(0).splitlines():
         hit = HEADER_RE.match(line.strip())
@@ -172,7 +187,7 @@ def cmd_check(rows: list[dict], novel_path: str) -> int:
     if not (changed or deleted):
         print(f"新鲜:已记取材 {len(old)} 条素材指纹全部一致(圈定共 {len(current)} 条,未标注 {len(current) - len(old)} 条未使用属常态)")
         return 0
-    print("STALE——需重跑 chapter-novelist(重写小说 + 作废定稿):")
+    print("STALE——需重跑创作段(novelist 存量重写小说 / tabletop 重跑跑团;均作废定稿):")
     for kind, sid in changed:
         print(f"  变动  {kind} {sid}:头部 {old[(kind, sid)]} → 当前 {current[(kind, sid)]}")
     for kind, sid in deleted:
@@ -181,11 +196,8 @@ def cmd_check(rows: list[dict], novel_path: str) -> int:
 
 
 def cmd_consumed(root: str, ids: set[str] | None) -> int:
-    """扫描 root 下全部 小说.md 指纹头部,汇总 id → 消费路径列表。"""
-    import glob
-    import os
-
-    novels = sorted(glob.glob(os.path.join(root, "**", "小说.md"), recursive=True))
+    """扫描 root 下全部指纹消费文件(小说.md + 跑团草稿.md)头部,汇总 id → 消费路径列表。"""
+    novels = _scan_stems(root)
     mapping: dict[str, list[str]] = {}
     for path in novels:
         try:
@@ -230,22 +242,21 @@ def _header_rows_full(novel_text: str) -> list[tuple[str, str, str, str | None]]
 
 
 def _at_key_of(at: str) -> tuple:
-    """--at(chNN/secMM 或其 小说.md 路径)→ 全局节序键。"""
+    """--at(chNN/secMM 或指纹文件路径)→ 全局节序键。"""
     at_norm = at.replace("\\", "/")
-    if not at_norm.endswith("小说.md"):
+    if not any(at_norm.endswith(n) for n in STEM_FILES):
         at_norm = at_norm.rstrip("/") + "/小说.md"
     key = _sec_order_key(at_norm, {})
     if key is None:
-        raise SystemExit(f"--at 无法解析节位次(须 chNN/secMM 或其小说.md 路径): {at}")
+        raise SystemExit(f"--at 无法解析节位次(须 chNN/secMM 或指纹文件路径): {at}")
     return key
 
 
 def _consumption_events(root: str) -> dict[str, list[tuple[tuple, str, str]]]:
-    """扫描 root 下全部小说.md 指纹头:id → [(order_key, path, intensity)](仅 FRESHNESS_KINDS;旧头无标记按 E)。"""
-    import glob
+    """扫描 root 下全部指纹消费文件(小说.md + 跑团草稿.md)头:id → [(order_key, path, intensity)](仅 FRESHNESS_KINDS;旧头无标记按 E)。"""
     import os
 
-    novels = sorted(glob.glob(os.path.join(root, "**", "小说.md"), recursive=True))
+    novels = _scan_stems(root)
     free_mtime = {}
     for p in novels:
         pn = p.replace("\\", "/")
@@ -350,18 +361,20 @@ def main() -> int:
         if name in ("gen", "check", "freshness"):
             p.add_argument("--in", dest="infile", help="素材 JSON 文件;缺省读 stdin")
         if name == "check":
-            p.add_argument("--novel", required=True, help="小说.md 路径")
+            p.add_argument("--novel", required=True, help="指纹文件路径(小说.md / 跑团草稿.md)")
         elif name == "gen":
             p.add_argument("--ids", help="逗号分隔素材 id,可带强度后缀 id:E/id:S(缺省 E);只圈实际取用子集")
-            p.add_argument("--at", required=True, help="本节位次:chNN/secMM 或其 小说.md 路径(邻检门禁)")
-            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md;邻检门禁)")
+            p.add_argument("--at", required=True, help="本节位次:chNN/secMM 或指纹文件路径(邻检门禁)")
+            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找指纹文件;邻检门禁)")
             p.add_argument("--force", action="store_true", help="邻检违规仍落盘(stderr 留痕放行)")
+            p.add_argument("--target", choices=["novel", "tabletop"], default="novel",
+                           help="指纹头变体:novel=存量小说链(默认) / tabletop=跑团草稿")
         elif name == "consumed":
-            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md)")
+            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找指纹文件)")
             p.add_argument("--ids", help="逗号分隔的 id 列表——只查给定子集")
         else:  # freshness
-            p.add_argument("--at", required=True, help="目标节位次:chNN/secMM 或其 小说.md 路径")
-            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找 小说.md)")
+            p.add_argument("--at", required=True, help="目标节位次:chNN/secMM 或指纹文件路径")
+            p.add_argument("--root", default="25_剧本", help="扫描根目录(递归找指纹文件)")
     args = ap.parse_args()
     if args.cmd == "consumed":
         ids = set(s.strip() for s in args.ids.split(",")) if args.ids else None
@@ -380,7 +393,7 @@ def main() -> int:
                     ids[sid.strip()] = inten.strip().upper()
                 else:
                     ids[part] = "E"
-        return cmd_gen(rows, ids, args.root, args.at, args.force)
+        return cmd_gen(rows, ids, args.root, args.at, args.force, args.target)
     if args.cmd == "freshness":
         return cmd_freshness(rows, args.root, args.at)
     return cmd_check(rows, args.novel)

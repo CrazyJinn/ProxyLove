@@ -1,0 +1,34 @@
+[
+  {
+    "check": "I3_new_info",
+    "priority": "low",
+    "reason": "手改「陈念来电」description 剥信息要素触发回补（承载二择一铁则）；从严口径判可立（陈苏关系起点事实+知情差有叙事意义）；双锚承载（兑现主+邀约并列，判例「多事件同事实」）；图上实查：两锚事件 condition 均空、establishes 均空、全图无相亲相关 Info",
+    "content": "Info「陈念为陈默安排了与苏晓禾的相亲」kl=2，establishes 双锚：RU7x61XmiG（兑现揭底，主）+ RlpdqBxQzw（邀约起点，并列）",
+    "cypher": "MERGE (f:Info {id:'SETBtdNvfM'}) ON CREATE SET f.title='陈念为陈默安排了与苏晓禾的相亲', f.content='陈念以家庭聚餐名义邀约陈默，实为安排陈默与苏晓禾的相亲；陈默到场方知', f.knowledge_level=2;\nMATCH (ev:Event {id:'RU7x61XmiG'}) MATCH (f:Info {id:'SETBtdNvfM'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RlpdqBxQzw'}) MATCH (f:Info {id:'SETBtdNvfM'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "R4_cognition",
+    "priority": "medium",
+    "reason": "安排者全程知情；forms 锚局的执行起点（推断锚：对象确定过程无图上事件）；认知编年史首批数据",
+    "content": "陈念(QP23NrFZrz) KNOWS，forms=RlpdqBxQzw（陈念来电）",
+    "cypher": "MERGE (c:Cognition {id:'SETBtdNvfN'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'QP23NrFZrz'}) MATCH (c:Cognition {id:'SETBtdNvfN'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SETBtdNvfN'}) MATCH (i:Info {id:'SETBtdNvfM'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RlpdqBxQzw'}) MATCH (c:Cognition {id:'SETBtdNvfN'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "R4_cognition",
+    "priority": "medium",
+    "reason": "误信态：只知聚餐邀约（封闭世界推导——不知真相+电话名义是聚餐）；认知编年史标志性条目（误信与揭底并存）",
+    "content": "陈默(NvCkQmFPFq) BELIEVES title「陈念约的是家庭聚餐」，forms=RlpdqBxQzw（陈念来电）；严检改写：文档原写「（以为是）一起吃饭」→ 干净偏差命题",
+    "cypher": "MERGE (c:Cognition {id:'SETBtdNvfO'}) ON CREATE SET c.type='BELIEVES', c.title='陈念约的是家庭聚餐';\nMATCH (ch:Character {id:'NvCkQmFPFq'}) MATCH (c:Cognition {id:'SETBtdNvfO'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SETBtdNvfO'}) MATCH (i:Info {id:'SETBtdNvfM'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RlpdqBxQzw'}) MATCH (c:Cognition {id:'SETBtdNvfO'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+    "source": "event-ideator"
+  },
+  {
+    "check": "R4_cognition",
+    "priority": "medium",
+    "reason": "揭底追加态：到场方知相亲；与上条误信态并存（认知编年史 append-only）",
+    "content": "陈默(NvCkQmFPFq) KNOWS，forms=RU7x61XmiG（相亲局）",
+    "cypher": "MERGE (c:Cognition {id:'SETBtdNvfP'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFq'}) MATCH (c:Cognition {id:'SETBtdNvfP'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SETBtdNvfP'}) MATCH (i:Info {id:'SETBtdNvfM'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RU7x61XmiG'}) MATCH (c:Cognition {id:'SETBtdNvfP'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+    "source": "event-ideator"
+  }
+]

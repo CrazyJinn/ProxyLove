@@ -46,6 +46,8 @@ WITH c, ls, vd, infos, events,
 RETURN c, ls, vd, infos, events, event_infos;
 ```
 
+> 认知支路不做 forms 时间过滤——本查询供音色设计语境（非投放白名单），认知编年史下同 (角色,Info) 多条态经 DISTINCT 事实题去重后时间线无害；需要拍时刻快照的过滤范式见 tabletop-dialoguer Q3。
+
 同场角色（查其已有 VoiceDesign 的 instruct，避免撞声）：
 
 ```cypher

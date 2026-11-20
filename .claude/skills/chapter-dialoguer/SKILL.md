@@ -1,8 +1,8 @@
 ---
 name: chapter-dialoguer
 description: |
-  推进 Section 图节点的定稿段：读小说.md（场景段照搬 `###` 拓扑契约 + 取材指纹自检，stale 回退 chapter-novelist；分支事实以图 Choice/option 为准）→ 从小说**节奏重写**逐句对话（非转写：钉子句仅限事实锚、旁白/内心轨量化纪律、感官句迁移、sfx 每场景块 ≤1）→ 产节级 台词.ink（人读/人改的唯一定稿格式，ink 方言 v3）→ ink_line_lint 量化门禁 → 唯一图写入 `SET sec.script_path + sec.status=10` 待审（dashboard 批准 11 后方可拆分配音）。
-  双模式：常规创作 / 填充模式（只扩写 llm: 占位，其余行一字不动）；另含存量直连模式（旧流程节读 script_path 历史文件照旧创作）。BGM 不归本 skill。
+  推进 Section 图节点的定稿段：读跑团草稿.md（现行链，tabletop-dialoguer 产——拍头【场景…｜block <scene_block_id>】拓扑契约 + 取材指纹自检，stale 回退 tabletop 重跑；存量小说.md 照旧消费；分支事实以图 Choice/option 为准）→ 从草稿**节奏重写**逐句对话（非转写：剥离 DM 判定/量化附录等非叙事杂质、钉子句仅限事实锚、旁白/内心轨量化纪律、感官句迁移、sfx 每场景块 ≤1）→ 产节级 台词.ink（人读/人改的唯一定稿格式，ink 方言 v3）→ ink_line_lint 量化门禁 → 唯一图写入 `SET sec.script_path + sec.status=10` 待审（dashboard 批准 11 后方可拆分配音）。
+  双模式：常规创作 / 填充模式（只扩写 llm: 占位，其余行一字不动）；另含存量兼容（旧流程节：小说.md / script_path 历史文件照旧创作）。BGM 不归本 skill。
   在需要为某节产定稿台词、或定稿含 llm: 占位需填充时使用（由 plot-design 编排触发）。
 argument-hint: <section_id>
 arguments:
@@ -10,11 +10,11 @@ arguments:
 allowed-tools: Read, Bash, Write, Edit
 ---
 
-> **status=-1 = 作废重做**：当本节 `Section.status` 被重置为 `-1` 时（如 Section/Chapter 属性变更沿 has_section/produces 级联、小说素材变动由 chapter-novelist 显式作废、或人工在 dashboard 驳回定稿），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（定稿后写回 10 待审）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（小说.md——须先过指纹自检；存量直连节读 script_path 历史文件）为唯一来源重新创作。
+> **status=-1 = 作废重做**：当本节 `Section.status` 被重置为 `-1` 时（如 Section/Chapter 属性变更沿 has_section/produces 级联、素材 stale 经编排回退重产（tabletop 重跑草稿 / 存量小说链重写）、或人工在 dashboard 驳回定稿），即使 `台词.ink` 已落盘，也**必须重新创作并覆盖**（定稿后写回 10 待审）。`-1` 明确表示有旧产物要覆盖，**禁止因文件已存在而跳过，也禁止读旧台词内容**，直接以当前图节点数据 + 创作土壤（跑团草稿.md / 存量小说.md——均须先过指纹自检；存量直连节读 script_path 历史文件）为唯一来源重新创作。
 
 # 节细节对话（Section 定稿态 · status=10/11/-1）
 
-剧情创作流程的**第三段**（节级）。读创作土壤（小说模式：`chapter-novelist` 的**本节小说.md**——场景段照搬其 `###` 拓扑契约；存量直连模式：sec.script_path 历史提纲/骨架文件），**从小说提炼**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：人工批准后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
+剧情创作流程的**定稿段**（节级第二环；第一环 tabletop-dialoguer 产跑团草稿——chapter-novelist 已软删 2026-11-20）。读创作土壤（跑团模式：本节**跑团草稿.md**——拍头【场景…｜block】行即拓扑契约；存量小说模式：小说.md 的 `###` 场景段标题照旧；存量直连模式：sec.script_path 历史提纲/骨架文件），**从草稿打磨重写**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：人工批准后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
 
 ## 参数
 
@@ -46,14 +46,15 @@ LIMIT 1
 - **`sec.status = -1`** → 作废重做：整篇重新创作覆盖（见顶部注记）。
 - **`sec.status = 10`** → 定稿待人工审：停止并提示（批准 11 后由 voice-publisher 拆分；驳回 -1 后才轮到本 skill 重做——编排层不会在 10 态调本 skill，此处为防御）。
 - **含 `llm:` 占位** → 进入**填充模式**（直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工微调」，**禁止整篇重写覆盖手改**。
-- **无占位 且 script_path 已有值** → 定稿已批（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 novelist 作废、dashboard 驳回或用户明示）。
+- **无占位 且 script_path 已有值** → 定稿已批（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 dashboard 驳回或用户明示）。
 - **script_path 为空** → 常规创作流程。
 
 #### 1b. 章级依据（图）+ 创作土壤（小说 / 存量提纲）+ 查创作上下文
 
 **先读两份创作依据**：
-- **创作土壤二选一（按 1b-2 判定）**：
-  - **小说模式**：Read 节目录 `小说.md`（chapter-novelist 产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
+- **创作土壤（按 1b-2 判定）**：
+  - **跑团模式（现行链）**：Read 节目录 `跑团草稿.md`（tabletop-dialoguer 产出）——拍头 `【场景：地点·时间｜block <scene_block_id>】` 行是拓扑契约（场景块 id 唯一来源，同机位多拍同 id、按拍序合并为场景块，照搬不改写）；DM 旁白 + 台词行 + 内心轨是创作土壤；**文末内部附录（DM 判定/量化对照/机制发现）不是土壤，打磨时整体剥离**。
+  - **存量小说模式（兼容）**：Read 节目录 `小说.md`（chapter-novelist 存量产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
   - **存量直连模式**：Read `sec.script_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
 
 再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:includes]->(e:Event) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
@@ -74,40 +75,43 @@ LIMIT 20
 
 #### 1b-2. 创作土壤判定 + 取材指纹自检（填充模式跳过本节）
 
-**按小说.md 存在性判定**：
-- 节目录 `小说.md` 存在 → **小说模式**（下文必过指纹自检）。
-- 无 `小说.md` 且 `script_path` 已有历史值 → **存量直连模式**（旧流程节，读该历史文件照旧创作，跳过指纹自检）。
-- 无 `小说.md` 且 `script_path` 为空 → 停止并提示先跑 `chapter-novelist <sec_id>`（小说段未做，台词须从小说提炼）。
+**按创作土壤文件存在性判定（优先级从上到下）**：
+- 节目录 `跑团草稿.md` 存在 → **跑团模式**（现行链，下文必过指纹自检）。
+- 无 `跑团草稿.md` 但 `小说.md` 存在 → **存量小说模式**（兼容，下文必过指纹自检）。
+- 两者皆无且 `script_path` 已有历史值 → **存量直连模式**（旧流程节，读该历史文件照旧创作，跳过指纹自检）。
+- 两者皆无且 `script_path` 为空 → 停止并提示先跑 `tabletop-dialoguer <sec_id>`（草稿段未做，台词须从跑团草稿打磨）。
 
-**小说模式必过指纹自检**（小说是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
+**跑团/小说模式必过指纹自检**（草稿是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
 
 ```bash
-# 1) 圈定素材（与 chapter-novelist 1b 同一条 UNION 查询,includes 物化成员直取,见该 SKILL.md）
+# 1) 圈定素材（与 tabletop-dialoguer §9 同一条 UNION 查询,includes 物化成员直取,见该 SKILL.md）
 python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<圈定 UNION 查询>" --json > .tmp/novelist/<sec_id>_materials.json
-# 2) 自检（同源脚本,归一化规则与生成侧一致）
-python "${CLAUDE_SKILL_DIR}/../chapter-novelist/scripts/fingerprint.py" check --novel "<小说.md>" --in .tmp/novelist/<sec_id>_materials.json
+# 2) 自检（同源脚本,归一化规则与生成侧一致;--novel 参数对 跑团草稿.md / 小说.md 通用）
+python "${CLAUDE_SKILL_DIR}/../../scripts/fingerprint.py" check --novel "<跑团草稿.md|小说.md>" --in .tmp/novelist/<sec_id>_materials.json
 ```
 
-- **exit 0（新鲜）** → 小说可用，进入段 2 提炼。
-- **exit 1（stale：已记素材变动/被删）** → **停止**，产出报告（stale 明细 + 「需先重跑 chapter-novelist 重写小说并作废定稿」）退出——本 skill 不作废 sc（职责在 novelist），plot-design 接住后调 novelist，重写后本 skill 重新提炼。圈定内未标注（未使用）的素材不算 stale，属常态。
+- **exit 0（新鲜）** → 草稿可用，进入段 2 打磨。
+- **exit 1（stale：已记素材变动/被删）** → **停止**，产出报告（stale 明细 + 「需先重跑 tabletop-dialoguer 重产草稿并作废定稿；存量小说链经编排重写」）退出——本 skill 不作废 sc（职责在编排层），plot-design 接住后调 tabletop 重跑（其落盘步作废定稿链），重产后本 skill 重新打磨。圈定内未标注（未使用）的素材不算 stale，属常态。
 
-### 2. 完成任务（从小说提炼细节对话）
+### 2. 完成任务（从草稿打磨细节对话）
 
-按 1b-2 判定的创作土壤逐场景段（小说模式的小说 `###` 结构 / 存量直连模式的历史文件），据角色 LanguageStyle 与事件脉络，**从小说提炼**逐句对话写入 `台词.ink`。
+按 1b-2 判定的创作土壤逐场景段（跑团模式按拍头 block 合并场景块 / 存量小说模式的 `###` 结构 / 存量直连模式的历史文件），据角色 LanguageStyle 与事件脉络，**从草稿打磨重写**逐句对话写入 `台词.ink`。
 
-#### 从小说提炼台词的纪律（小说模式 · 节奏重写，非转写）
+#### 从草稿打磨台词的纪律（跑团/小说模式 · 节奏重写，非转写）
 
-> 提炼 = **为逐行点击/逐行语音播报重写节奏**。散文句为「读页」优化（从句、长句、意象铺陈），台词行为「点击」优化——把小说句子截断搬运进 ink 是本 skill 头号病灶（量化门禁拦截，见下方 ink_line_lint）。
+> 打磨 = **为逐行点击/逐行语音播报重写节奏**。跑团草稿的台词已是对话体但为「会话流」优化（自然长、口语拖尾、轮转松散），台词行为「点击」优化——把草稿台词原样誊录进 ink 是本 skill 头号病灶（量化门禁拦截，见下方 ink_line_lint）；小说散文（存量模式）则须经体裁转换（散文 → say + 旁白）。
 
-- **拓扑契约权威 = 小说 `### <scene_block_id> <场景名> <时段>` 场景段标题**（场景块 id/顺序唯一来源，照搬为 ink `=== <id> // <名>（<时段>）`，不改写不自创）；**分支事实权威 = 图 Choice/option**——小说结构与图分支冲突时报 **FAIL**（回退 chapter-novelist），不静默对齐。
-- **立场守恒（收窄）**：事实、事件顺序、情感极性、节拍位置零变化——**措辞不在守恒范围**（措辞守恒=搬运，违门禁）。只做体裁转换（散文 → say + 旁白），不改剧情、不加私货反转。
+- **跑团模式专属**：文末内部附录（DM 判定/量化对照/机制发现）整体剥离不进 ink；DM 旁白散文按旁白纪律压缩改写（非搬运）；草稿「（沉默）」可转 silence 处理或删；`inner`（内心）按内心轨纪律限量重写。
+- **拓扑契约权威 = 草稿块标注**（跑团模式：拍头 `【场景：…｜block <scene_block_id>】`——同机位多拍合并为同一 ink 场景块，段边界由拍序承载；存量小说模式：`### <scene_block_id> <场景名> <时段>` 场景段标题），照搬为 ink `=== <id> // <名>（<时段>）`，不改写不自创；**分支事实权威 = 图 Choice/option**——草稿结构与图分支冲突时报 **FAIL**（回退 tabletop 重跑），不静默对齐。
+
+- **立场守恒（收窄）**：事实、事件顺序、情感极性、节拍位置零变化——**措辞不在守恒范围**（措辞守恒=搬运，违门禁）。只做节奏与体裁转换（跑团会话流 → 点击节奏 / 存量散文 → say + 旁白），不改剧情、不加私货反转。
 - **旁白纪律**：一行 ≤25 字（目标 ≤15）；每场景块旁白行数 ≤ say 行数；旁白只写三类——时空切换（到了哪/几点）、可见动作（谁做了什么）、视线引导（看向哪）。**环境氛围、感官质感、比喻意象禁入旁白**（走下方感官句迁移）；禁止 ≥3 行旁白连排。
 - **内心轨纪律**（控制者轨，换宿题材）：每场景块 ≤3 行、全文 ≤10 行；**必须口语化**——按控制者 LS 自问自答/糙话/即时吐槽，一句一口气，禁书面叙述句（反例：*关系户。手离键盘三分钟、回来顺手就点下一局的，靠什么进的队，比靠什么赢比赛清楚*——这是小说叙述段；重写如*这手离键盘三分钟还点下一局——哦，懂了，塞进来的*）。**入场券**：只写「说不出但玩家必须知道的信息」（反讽/误读/身份张力）；场面可自行读出的心理描写不拆轨。
 - **钉子句沿用（收窄）**：钉子 = **事实锚**（*「陈默」两个字又快又顺*、*手是好的*）——原样进台词，读者跨层要认得同一根钉子；**意象句/氛围句不是钉子**（*温水攥出咯吱咯吱的响*、*空椅子在原地打转*）——转 sfx/动作行或删，禁原句入旁白。
 - **感官句迁移规则**：小说感官/环境句的落点优先级 = **动作行（写进谁做了什么）> bed（持续声景）> sfx（点状，受限）> 删**；旁白不是感官句的落点。
-- **对白重塑**：小说对白按角色 LanguageStyle.speech_style（情绪为轴）重塑后进 say 行（小说口语 ≠ 台词定稿）。
+- **对白重塑**：草稿/小说对白按角色 LanguageStyle.speech_style（情绪为轴）重塑后进 say 行（草稿口语 ≠ 台词定稿）。
 - **sfx 限量**：**每场景块 ≤1 个、全文 ≤3 个**；语义 = 可检索物理短事件——名词+动词、≤10 字、无修饰（*门轴吱呀*、*键盘连点* ✓；*笔尖落在合同纸上*、*语音频道挂断的提示音* ✗ 改 *挂断提示音*）；没有必须标的点状声就不写——sfx 是重音不是配乐。
-- **去 AI 味重工序在本层做**（novelist 只做了惯性签名轻检）：台词层的库存句换角色性格推出的话、留白要有锚点——详见格式规范与方言规范。
+- **去 AI 味重工序在本层做**：台词层的库存句换角色性格推出的话、留白要有锚点——详见格式规范与方言规范。
 
 #### 台词.ink 格式规范（正式定稿格式，标准合法 ink 方言 v3，机器可解析）
 
@@ -159,7 +163,7 @@ bed- rain
 
 创作完成后自检，若发现**根本问题在创作土壤而非台词**——再怎么写也写不出合格对话，按根因分两路（都不落盘、不写 status，产出「结构性问题报告」）：
 
-- **根因在小说层**（小说模式）：人物速写自相矛盾 / 视角漂移 / scene 间无情绪推进（无 turning point/climax）/ 小说场景段结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 小说层」，由 plot-design 接住后调 `chapter-novelist` 强制重写（重写即按其段 3 作废定稿链）。**与 novelist 素材不足报告对称**——不硬凑烂对话交付。
+- **根因在草稿层**（跑团模式）：场景帧要素矛盾 / 角色行止与钉子冲突 / scene 间无情绪推进（无 turning point/climax）/ 草稿块结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 草稿层」，由 plot-design 接住后调 `tabletop-dialoguer` 强制重跑（重跑覆盖草稿并作废定稿链）；存量小说模式根因（人物速写矛盾/视角漂移等）同走编排回退。**与上游素材不足报告对称**——不硬凑烂对话交付。
 - **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `event-ideator` 补全 Choice 分化或落点事件后重调。
 
 > 通过自检才进段 3 写图。
@@ -167,10 +171,10 @@ bed- rain
 #### 台词层量化自检（ink_line_lint，常规创作与填充模式均必过）
 
 ```bash
-python "${CLAUDE_SKILL_DIR}/scripts/ink_line_lint.py <台词.ink> --novel <小说.md> [--inner <控制者轨名>]
+python "${CLAUDE_SKILL_DIR}/scripts/ink_line_lint.py <台词.ink> --novel <跑团草稿.md|小说.md> [--inner <控制者轨名>]
 ```
 
-程序判：旁白行长（≤25）/ 旁白连排（<3 行）/ 每块旁白≤say 行数 / 内心轨每块 ≤3、全文 ≤10 / sfx 每块 ≤1、全文 ≤3、描述 ≤10 字 / **搬运率**（旁白+内心轨行与小说原句连续重叠 ≥10 字的行占比 ≤15%）。**exit 1 = 门禁拦截**——逐条看违规明细就地修后重跑至 PASS；填充模式扩写行同样受检。书面腔内心轨无法程序判，人工按控制者 LS 抽检。
+程序判：旁白行长（≤25）/ 旁白连排（<3 行）/ 每块旁白≤say 行数 / 内心轨每块 ≤3、全文 ≤10 / sfx 每块 ≤1、全文 ≤3、描述 ≤10 字 / **搬运率**（旁白+内心轨行与草稿原句连续重叠 ≥10 字的行占比 ≤15%——--novel 对 跑团草稿.md / 小说.md 通用，比对源即 1b-2 判定的创作土壤文件）。**exit 1 = 门禁拦截**——逐条看违规明细就地修后重跑至 PASS；填充模式扩写行同样受检。书面腔内心轨无法程序判，人工按控制者 LS 抽检。
 
 #### §2b 占位填充模式（1a-2 判定进入；只扩写占位，其余行一字不动）
 
@@ -205,5 +209,5 @@ SET sec.script_path = '<script_path>',   // 25_剧本/.../台词.ink  ← 字段
 ## 参考文档
 
 - 剧情 Schema：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) — Section（定稿态载体）/LineAudio 逐句行/produces{order}
-- 上游：[chapter-novelist](../chapter-novelist/SKILL.md)（本节小说.md 创作土壤 + 场景段拓扑契约 + 取材指纹；自检脚本 [fingerprint.py](../chapter-novelist/scripts/fingerprint.py)）
+- 上游：[tabletop-dialoguer](../tabletop-dialoguer/SKILL.md)（跑团草稿.md 创作土壤，现行链）/[chapter-novelist-mark-delete](../chapter-novelist-mark-delete/SKILL.md)（存量小说.md 链，已软删 2026-11-20）；自检脚本 [fingerprint.py](../../scripts/fingerprint.py)（共享）
 - 下游：[section-voice-publisher](../section-voice-publisher/SKILL.md)（sc=11 已批后拆分进图 + 配音）；拆分解析器 [script_splitter.py](../section-voice-publisher/scripts/script_splitter.py)（parse_ink——机器侧权威）；[ink方言规范.md](references/ink方言规范.md)（定稿方言规范权威，与本 SKILL 互链）

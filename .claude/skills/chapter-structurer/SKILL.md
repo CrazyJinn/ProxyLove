@@ -111,4 +111,4 @@ MERGE (sec)-[r:includes]->(e) SET r.order = <order>, r.sync = false;
 
 - 剧情 Schema：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/) — Chapter/Section（定稿态）/LineAudio/has_section/produces/includes 定义、status 流转
 - 场景美术 Schema：[00_init/Schema/场景美术/](../../../00_init/Schema/场景美术/) — Scene 字段
-- 下游：[chapter-novelist](../chapter-novelist/SKILL.md)（结构产出即可用，按节圈定取材/结构推理/产小说）
+- 下游：[tabletop-dialoguer](../tabletop-dialoguer/SKILL.md)（结构产出即可用，按节跑团产草稿；chapter-novelist 已软删，存量见 [chapter-novelist-mark-delete](../chapter-novelist-mark-delete/SKILL.md)）
