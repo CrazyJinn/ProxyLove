@@ -2,10 +2,10 @@
 name: event-ideator
 description: |
   新事件与故事线的需求提出层（叙事生产链第一环）：从人物设定/既定事件/故事线锚点出发启发新 Event 候选，与用户多轮交互（一次一问、每问附可归因推荐答案）迭代到共识，敲定后产**事件共识文档** `<日期>_<主题>_共识.md` 落盘 02_剧情数据/——默认交 event-stager 消化拆解演出（共识 → 定稿 → suggest-consumer → 用户确认后执行写回）；纯 I 域轮次（仅故事线构建/对账，或用户明示不拆演出）直接交 suggest-consumer。零图写入、不产 cypher、不跑 lint——Schema 纪律不在本层。
-  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Info 与 establishes 意图 + 认知条目（Cognition）意图 + StoryArc 与 comprises 意图。
+  六种启发模式按 char/base/arc 入参组合触发（动机链补桥/人物质感/间隙填充/后果链/因果回溯/故事线填充，模式表见正文）；arc 单独给 = 建线/对账支线；**盘点范围**单独给 = 存量 Info/认知盘点支线（§6，逐事件扫雷补条目，产 `_Info盘点<范围>_共识.md` 纯 I 通路直消 suggest-consumer）。共识承载 Event + involved/occurs_at 关联 + Character/Location 占位意图 + Info 与 establishes 意图 + 认知条目（Cognition）意图 + StoryArc 与 comprises 意图。
   不做拆解、机位、着装等任何演出域决策。无数量硬门控——批量由创作判断决定，留白即叙事。
-  在用户说「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」或要从零产出新叙事事件时使用。
-argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title>（事件启发 char/base 至少一个；arc 单独给走故事线支线）
+  在用户说「想事件」「启发事件」「敲定事件」「新增事件」「建故事线」「故事线对账」「盘点」「重盘」或要从零产出新叙事事件时使用。
+argument-hint: <char 名或 id | base event id或title | arc 故事线 id或title | 盘点范围（章/时间窗/全量/游离段）>（事件启发 char/base 至少一个；arc 单独给走故事线支线；盘点范围单独给走 §6 盘点支线）
 arguments:
   - char_base_arc
 allowed-tools: Read, Bash, Write
@@ -33,10 +33,10 @@ OUTPUT_DIR="02_剧情数据"
 - Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info/establishes/Cognition/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring（内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
-## 流程总览（五步 + 故事线支线）
+## 流程总览（五步 + 故事线支线 + 盘点支线）
 
 ```
-0. explore  解析入参（char + base + arc；事件启发需 char/base ≥1，arc 单独给 → 走 §5 故事线支线）
+0. explore  解析入参（char + base + arc + 盘点范围；事件启发需 char/base ≥1，arc 单独给 → 走 §5 故事线支线，盘点范围单独给 → 走 §6 盘点支线）
             → 锚点关系查询 + 只读查图上下文
 1. ideate   六模式启发 → 候选批（多条差异化候选 + 评分对比表）
 2. enrich   三要素细化：char / location / start_time 补全；缺失实体 → 占位提案
@@ -46,6 +46,7 @@ OUTPUT_DIR="02_剧情数据"
 
 支线 A 故事线构建（§5a）：读图取材 → 起草主旨/氛围 → 勾骨架成员（非全量入线）→ 敲 title → commit（I4）
 支线 B 故事线对账（§5b）：读线+成员 → 比对 description vs 实际 → 失配产 I5；自动（触碰 comprises 的流程结尾）+ 手动（用户说「对账」）
+支线 C 存量盘点（§6）：圈范围 → 查基线 → 事实登记表 → 逐事件过堂 → 同义对照 → 汇总拍板落盘（纯 I 通路）→ 终验
 
 ---
 
@@ -140,7 +141,9 @@ OUTPUT_DIR="02_剧情数据"
 | 9 | 因果（**仅用户明说才建** leads_to） | 时间窗因果候选 |
 | 10 | **去重冲突终检**（时间/地点/参与人重叠对照：合并/改时间/放弃） | 只读查图 |
 
-**Info 提案（新事件默认伴随）**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；**从严口径**：只立有持续叙事意义的事实（身份/关系/资源/知情面的持久变化），过程性/过渡性事实（战绩起伏/单次冲突/方案文档/邀约悬置类）默认不立，宁漏勿滥；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。**分支纪律**：挂 condition 的分支事件不提 Info/不产认知条目——分支备线非既成事实，建了会经 forms 键跨支泄漏进小说取材。挂靠：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。**知晓分布由认知条目显式承载**（`Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition`，契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）：提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）——封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 novelist freshness 半衰期档位，不影响认知集投放）。存量盘点（非新事件提案）另有全流程：见 [../../02_剧情数据/Info盘点方法论.md](../../02_剧情数据/Info盘点方法论.md)。
+**Info 提案（新事件默认伴随）**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；**从严口径**：只立有持续叙事意义的事实（身份/关系/资源/知情面的持久变化），过程性/过渡性事实（战绩起伏/单次冲突/方案文档/邀约悬置类）默认不立，宁漏勿滥；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。**分支纪律**：挂 condition 的分支事件不提 Info/不产认知条目——分支备线非既成事实，建了会经 forms 键跨支泄漏进小说取材。挂靠：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。**知晓分布由认知条目显式承载**（`Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition`，契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）：提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）——封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许），knowledge_level 必填（1/2/3，下游 freshness 半衰期档位，不影响认知集投放）。存量盘点（非新事件提案）走 §6 盘点支线；换述判例见 [references/Info盘点判例.md](references/Info盘点判例.md)。
+
+**同义对照步（Info 查重主闸，提 I3 前必做；2026-11-20 裁定：语义判断在本层，consumer 只浅验证）**：先圈**对照池**（四源，全部图上结构/字符串查询，零语义成本）——① **同承载产出**：承载事件为图上既有时查其既有 `establishes→` Info，承载为新事件/同文档 I2 时对照同文档内挂同一承载事件的其他 I3 草案；② involved 角色认知集内 Info（`has_cognition→about`）；③ 候选事件时间窗 ±7 天内事件承载的 Info；④ 候选 title/content 中实体名（角色名/专名）`CONTAINS` 扫全量 Info title。**池上限 20 条**，①→④ 优先级装池，超限截断并在 reason 注明截断了哪些源。池内逐条三分类：**同一事实**（换述/近义）→不新建，改回补（补承载边+认知挂既有 Info）；**不同侧面**→可新建，reason 必注与相近条目的区分点；**拿不准**→列裁决点附推荐。升级口：池内疑似不确定或用户对裁决点追问时，允许对全量做一次 LLM 对照（reason 注明「全量复核」），常态不跑。
 
 **交互纪律**：
 
@@ -188,6 +191,30 @@ OUTPUT_DIR="02_剧情数据"
 **步骤**：① 重读该线 description + 当前成员全集（含本次即将新增的）；② 判断两类失配：新成员改变主旨表达（新面向进线 / 原有面向该收束了）、description 写了但成员里没有的事（描述预言了未发生/已删除的事）；③ 失配 → 产 I5（content = 重写后的 description **全文**，一线一条目，随本次共识落盘，纯 I 通路直消）；不失配 → 不产 I5，汇报注明「故事线『<title>』核对无变化」。
 
 **边界**：对账只产 I5 描述更新项与 I4 扩线挂边；**摘成员边（DELETE 关系）不进建议 JSON**——删除类操作由用户在 dashboard Cypher 控制台人工执行，对账汇报里只提示「建议摘除：<event title>」。
+
+## 6. 盘点支线 —— 存量 Info/认知补全（纯 I 通路）
+
+**入口**：入参 `盘点范围`（章号 / 时间窗 / 全量 / 游离段）单独给出即走本支线（与 char/base 同给时仍走事件启发 §0~§4，本支线不混跑）。适用：全量盘点、按章批次盘点、主支确定后的分支段重盘、任意存量知情补全。模型契约见 [Schema/剧情/](../../../00_init/Schema/剧情/)；陷阱与判例见 [references/Info盘点判例.md](references/Info盘点判例.md)。
+
+**七步**：
+
+1. **圈定范围**：查事件全量明细 id/title/start_time/description/involved/occurs_at/**condition**——condition 决定分支处置，先查分布（`MATCH (e:Event) WHERE e.start_time >= '…' RETURN e.condition, count(*)`）；
+2. **查基线**：既有 Info 与认知分布（establishes 汇总 + has_cognition/about/forms 明细）——**只记补条目**（新承载边/新知情者/态度转变改写），不重建；
+3. **建事实登记表**（文档内表格：事实 → 承载事件集 → 已登记认知）——贯穿维护，防「同一事实跨 5+ 事件再现靠记忆必漏」；
+4. **逐事件过堂**（start_time 升序）：每事件答「使什么事实成立（0~N 条）」→ 每条当场判认知分布（谁以什么态度知道、forms 锚哪个事件——**先问「他在此事件之前是否已知」**，更早形成的认知锚更早事件）；三分记录：**产出 / 零增量 / 从严不立**（留痕供重盘）；
+5. **同义对照**：每条候选新 Info 走 §3 同义对照步（对照池四源、上限 20、三分类）——同一事实改回补，不新建；
+6. **汇总**：新 Info（title 中性事实句/kl/establishes 源/认知分布）+ 补条目 + 裁决点清单（附推荐）→ 用户拍板 → 共识落盘 `${OUTPUT_DIR}/${DATE}_Info盘点<范围>_共识.md`（纯 I 通路直消 suggest-consumer）；
+7. **终验**（落图后）：无孤 Info（全部 ≥1 establishes）、无残认知（forms≥1 且 about 齐）、**认知链零并存**（每对 (Character, Info) 经 Cognition 至多一条链）、近重复对扫描（范围内两两 title 对照，报告人工拍板；合并走 dashboard 人工执行——删除类不进建议 JSON）。
+
+**执行口径（项目口径）**：
+
+1. **穿越后主语**：2024-05-31 18:00（穿越）起身体行为获得的认知，主语一律记陆择；陈默原主灵魂状态图上不表达；
+2. **远程知晓 forms 锚**＝内容可得的源头事件（发布/直播/告知事件），不锚下游行为事件；
+3. **疑似知情者按叙事意图推断补建**，条目 reason 标注「推断」；
+4. **分支事件不建**：挂 condition 的事件一律零增量；Choice 兑现事件（选项本体）同理；分支段重盘以**主支确定**为前提；
+5. **从严口径（最高优先）**：只立有持续叙事意义的事实（身份/关系/资源/知情面的持久变化），过程性/过渡性事实默认不立，宁漏勿滥；拿不准列裁决点附「从严建议不立」。
+
+**条目映射**（复用现有类型，不新增 I6）：新 Info/补承载边 = I3（承载事件写既有 id，多事件并列在条目内列全）；认知补建 = I3 认知块（知情者/偏差者逐人）；认知改写 = 认知块「改写型」标注（原主语→新主语/新 type/新 forms 锚——consumer R4 三形态照吃）。
 
 ## 共识模板（照抄改值）
 

@@ -1,6 +1,7 @@
 ---
 name: chapter-novelist
 description: |
+  【已软删除 2026-11-20：小说段暂停产出，待跑团形式替代（tabletop-dialoguer 试验中）；存量小说/定稿链与 fingerprint.py 仍有效】
   推进 Section 图节点的小说段：提纲已内化（节的提纲即图数据本身，结构推理在思维链完成、不落提纲文件），按 includes 圈定取材（Event/Info/Lore + 遗忘曲线新鲜度裁量）→ 丰满度自检（不足拒绝产出）→ 产节级散文 小说.md（纯文件产物、零图写入；正文 `### <scene_block_id>` 场景段标题承载拓扑契约，头部取材指纹）。
   重写场景（素材 stale / 用户明示）覆盖旧文并显式作废定稿链——本 skill 唯一图写入；对账新实体走草稿通道（suggest-consumer 消费）。
   在需要为某节创作节级小说、plot-design 编排推进小说段、或定稿段报素材 stale 需重写时使用。

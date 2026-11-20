@@ -1,0 +1,58 @@
+[
+ {
+  "check": "R6_char_vibe_backfill",
+  "priority": "low",
+  "reason": "例外通道（用户点名存量治理，不扩 skill）：vibe 缺失回填；文案按 Character.md vibe 生成规范（2~3句、性格内核→感官调性含配色）撰写，素材锚点=图上既有 Lore+LanguageStyle，无新增设定",
+  "content": "李想 vibe：冷白青灰的干净利落：话钉在操作里，存在感是击键的节奏而不是音量；压到极限时那点青黑才翻上来——账一笔一笔算清，字字见骨",
+  "cypher": "MATCH (c:Character {id:'RqeKlYIPnF'}) SET c.vibe='冷白青灰的干净利落：话钉在操作里，存在感是击键的节奏而不是音量；压到极限时那点青黑才翻上来——账一笔一笔算清，字字见骨';",
+  "source": "user-directive"
+ },
+ {
+  "check": "R6_char_vibe_backfill",
+  "priority": "low",
+  "reason": "同上；王昊 vibe 回填",
+  "content": "王昊 vibe：土黄与旧金的懒散油光：混子气的松弛底气，椅子永远半躺；场面话像温吞的茶，一套一套不烫人；被点破时那点仗势的热辣辣才窜上来",
+  "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) SET c.vibe='土黄与旧金的懒散油光：混子气的松弛底气，椅子永远半躺；场面话像温吞的茶，一套一套不烫人；被点破时那点仗势的热辣辣才窜上来';",
+  "source": "user-directive"
+ },
+ {
+  "check": "R7_char_lore_fix",
+  "priority": "medium",
+  "reason": "用户口径落图（2026-11-20）：王昊场上位置既定为辅助；仅改 title 字面（队员→辅助），id/knowledge_level 不动；rp-ch02sec02-v6 拍4 DM 退回的位置误称由此断根",
+  "content": "王昊 Lore title：王昊是星耀二队队员（关系户，高层的侄子）→ 王昊是星耀二队辅助（关系户，高层的侄子）",
+  "cypher": "MATCH (l:Lore {id:'S0cWhQi1bd'}) SET l.title='王昊是星耀二队辅助（关系户，高层的侄子）';",
+  "source": "user-directive"
+ },
+ {
+  "check": "R1_anchor_at",
+  "priority": "medium",
+  "reason": "用户口径（2026-11-20）：王昊长期居住在星耀电竞基地——居住=工作同地，只补居住边挂既有真身 Location（点名轮允许），不建占位不提 Lore；开篇前~至今",
+  "content": "王昊 at 边：居住 → 星耀电竞基地（QP23NrFZqd），开篇前~至今",
+  "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) MATCH (l:Location {id:'QP23NrFZqd'}) MERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;",
+  "source": "user-directive"
+ },
+ {
+  "check": "R1_anchor_at",
+  "priority": "medium",
+  "reason": "用户口径（2026-11-20）：李想工作、居住都在他自己家——新建保留名占位（宿主 id 后缀，P3）+ 居住边 开篇前~至今；职业 Lore 已有，居家线上训练不另提 Lore",
+  "content": "李想居住占位 Location 居住地点占位·RqeKlYIPnF + at 边（居住，开篇前~至今）",
+  "cypher": "MERGE (l:Location {id:'SDzfOEJkPo'}) ON CREATE SET l.name='居住地点占位·RqeKlYIPnF', l.priority='P3';\nMATCH (c:Character {id:'RqeKlYIPnF'}) MATCH (l:Location {id:'SDzfOEJkPo'}) MERGE (c)-[r:at]->(l) ON CREATE SET r.type='居住', r.start_time='开篇前', r.end_time='至今', r.sync=false;",
+  "source": "user-directive"
+ },
+ {
+  "check": "R8_at_conflict_fix",
+  "priority": "medium",
+  "reason": "用户口径（2026-11-20）：李想工作在自己家——既有工作边（→星耀电竞基地）与口径矛盾，删除；破坏性语句，执行前已在确认门单独标注",
+  "content": "删除李想 → 星耀电竞基地 的 at 工作边（type=工作）",
+  "cypher": "MATCH (c:Character {id:'RqeKlYIPnF'})-[r:at]->(l:Location {id:'QP23NrFZqd'}) WHERE r.type='工作' DELETE r;",
+  "source": "user-directive"
+ },
+ {
+  "check": "R1_anchor_at",
+  "priority": "medium",
+  "reason": "修复：原#4 MERGE 命中既有工作边致 ON CREATE 未触发（2026-11-20 读回验证发现，用户批准修复）；CREATE 直建居住边",
+  "content": "王昊 at 居住边 → 星耀电竞基地（开篇前~至今）——CREATE 直建",
+  "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) MATCH (l:Location {id:'QP23NrFZqd'}) CREATE (c)-[:at {type:'居住', start_time:'开篇前', end_time:'至今', sync:false}]->(l);",
+  "source": "user-directive"
+ }
+]
