@@ -1,0 +1,42 @@
+[
+  {
+    "check": "I6_desc_update",
+    "priority": "low",
+    "reason": "分界契约修正：before「陈念来电来电，从吃穿住唠到个人感情问题。话里话外盼陈默别再耗在游戏上」→ after 补邀约名义（行为层合法入 description，实为相亲归 Info 已落）+修重复字；三检过：零时间措辞✓不复述title✓不写认知解读✓",
+    "content": "陈念来电（RlpdqBxQzw）description 重写",
+    "cypher": "MATCH (e:Event {id:'RlpdqBxQzw'}) SET e.description='陈念来电，从吃穿住唠到个人感情问题，话里话外盼陈默别再耗在游戏上；末了以家庭聚餐为名约陈默出门吃饭';",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I6_desc_update",
+    "priority": "low",
+    "reason": "分界契约修正：before「…正式成为星耀二队选手（细节待补）」→ after 删 Info「陈默加入星耀二队」title 的复述（防双承载漂移）；三检过",
+    "content": "签二队合同（RlpdqBxQzx）description 重写",
+    "cypher": "MATCH (e:Event {id:'RlpdqBxQzx'}) SET e.description='陈默到星耀电竞基地签署二队合同；沈暮雪在场见证（细节待补）';",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I6_desc_update",
+    "priority": "low",
+    "reason": "分界契约修正：before「沈暮雪由此说出自己的目标——重振中国dota」→ after 目标内容归 Info（「沈暮雪的目标是重振中国 dota」已承载），description 只记行为（道出目标）；三检过",
+    "content": "荣誉墙初见王昊（Rqgx3enDMW）description 重写",
+    "cypher": "MATCH (e:Event {id:'Rqgx3enDMW'}) SET e.description='沈暮雪带陈默熟悉基地，路过一队荣誉墙；陈默感叹满墙都是 dota1 时代的旧荣誉，沈暮雪顺势道出自己接队的目标；参观途中与二队队友王昊初次照面（细节待补）';",
+    "source": "event-ideator"
+  },
+  {
+    "check": "I6_desc_update",
+    "priority": "low",
+    "reason": "分界契约修正：before「…当天训练赛全败…」→ after 删时序定位词「当天」（零时间措辞，时间唯一承载 start_time）；三检过",
+    "content": "二队训练赛全败（RRl7l6AeGG）description 重写",
+    "cypher": "MATCH (e:Event {id:'RRl7l6AeGG'}) SET e.description='二队合练首日配合生疏，训练赛全败；沈暮雪组织复盘';",
+    "source": "event-ideator"
+  },
+  {
+    "check": "L1_lore",
+    "priority": "low",
+    "reason": "盘点 Lore 候选经用户裁决建立（构图期通道特批；仅挂基地单宿主）：荣誉墙场景的固有背景支撑，kl=1 公开背景；图上实查：星耀系既有 5 条 Lore 无此条",
+    "content": "Lore「星耀一队的辉煌停留在 dota1 时代」kl=1，宿主=星耀电竞基地（QP23NrFZqd）",
+    "cypher": "MERGE (f:Lore {id:'SEU6JwhJsu'}) ON CREATE SET f.title='星耀一队的辉煌停留在 dota1 时代', f.knowledge_level=1;\nMATCH (l:Location {id:'QP23NrFZqd'}) MATCH (f:Lore {id:'SEU6JwhJsu'}) MERGE (l)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+    "source": "event-ideator"
+  }
+]

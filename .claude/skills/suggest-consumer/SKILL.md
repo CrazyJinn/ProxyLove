@@ -68,7 +68,7 @@ OUTPUT_DIR="02_剧情数据"
 
 **各来源创作域红线**（越域条目报错退回，不改写；混合定稿按条目域各查各的）：
 
-- ideator：不建 SubEvent/Spot/Scene/CostumeStyle/IllusDesign/Choice，不改既有节点属性（I5 的 description 除外）；
+- ideator：不建 SubEvent/Spot/Scene/CostumeStyle/IllusDesign/Choice，不改既有节点属性（I5 的 StoryArc.description 与 I6 的 Event.description 除外——后者仅盘点支线分界契约修正场景：剥 Info 复述/补行为名义/删时间措辞，reason 必含 before/after 摘要）；
 - refiner（I1 细化块）：只产 Character.priority、at 边（type=居住/工作，挂保留名占位或点名轮既有 Location id）、基础 Lore + has_info 边；不建 Event/Info/Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign，不改 vibe/name/事件条目；
 - stager：不建 Event/Info/Lore/Choice/Location/Character；Event 直挂 anchored_at/appears_as 为违规（EA5）；
 - novelist（N1）：只提新 Event/Info + 定位边（occurs_at/involved/leads_to/establishes）与认知条目（has_cognition/about/forms），**禁改既有实体属性、禁夹带校验节点、不建 Lore**。
@@ -88,7 +88,7 @@ OUTPUT_DIR="02_剧情数据"
 
 汇报附**跨条目依赖清单**（如「#5 S1 依赖 #1 I1 的生成 id」），提示执行/人工采纳按序全采、勿只采一半。check/priority 沿用：
 
-- ideator 域：I1_placeholder_entity（占位 Character 节点，细化块有 priority 则并入本项 SET；占位 Location 节点恒 priority=P3）/ I2_new_event（结局/转折 high 否则 medium）/ I3_new_info（low）/ I4_new_story_arc（medium；扩线注明、省略 CREATE 句）/ I5_story_arc_update（low，唯一改既有节点属性的例外，仅 description）；
+- ideator 域：I1_placeholder_entity（占位 Character 节点，细化块有 priority 则并入本项 SET；占位 Location 节点恒 priority=P3）/ I2_new_event（结局/转折 high 否则 medium）/ I3_new_info（low）/ I4_new_story_arc（medium；扩线注明、省略 CREATE 句）/ I5_story_arc_update（low，改既有节点属性例外一，仅 StoryArc.description）/ I6_desc_update（low，改既有节点属性例外二，仅 Event.description，盘点分界契约修正——新文案过零时间措辞/不复述 title/不写认知解读三检，reason 必含 before/after 摘要）；
 - refiner 域（I1 细化块物化，source='entity-refiner'）：R1_anchor_at（保留名占位 Location 节点 + at 边，随人物一项，medium）/ R2_char_lore（基础 Lore 节点 + has_info 边，每条一项，low）/ R3_char_priority（点名轮既有 Character 补写或改判 priority，low）；
 - cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（Cognition 节点 + has_cognition/about/forms 三边，新建与追加同款——态度转变即追加新条目（forms 锚转变事件），主语换挂建新条目后汇报提示旧链人工摘除；叙事关键 medium 否则 low）；
 - stager 域：S1_placeholder_node（high）/ S2_subevent / S3_gap_fix；
@@ -142,6 +142,8 @@ MERGE (a:StoryArc {id:'<snowflake>'}) ON CREATE SET a.title='<标题>', a.descri
 MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 // I5 对账更新（唯一改既有节点属性的例外，仅 description）
 MATCH (a:StoryArc {id:'<arc_id>'}) SET a.description='<重写后的主旨/氛围全文>';
+// I6 Event.description 修正（盘点分界契约场景：剥 Info 复述/补行为名义/删时间措辞；新文案过零时间措辞/不复述 title/不写认知解读三检）
+MATCH (e:Event {id:'<event_id>'}) SET e.description='<重写后的 description 全文>';
 // arc→new 新事件挂线（追加在该事件 I2 项 cypher 末尾）
 MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
 ```
