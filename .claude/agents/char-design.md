@@ -16,7 +16,7 @@ Schema 文件：`00_init/Schema/角色美术/`（美术）+ `00_init/Schema/声�
 
 **设计图版本链（多版本形象）**：剧情永久外貌变更（如 sec02 剪发）走 DesignSheet 增量版本——输入含 `from <参考版ds_id> <口述改动>`（口述须含变更描述 + 生效点 `ch<NN>/sec<MM>`）时，委派 `char-design-sheet` 增量模式（图生图，参考版设计图为底，仅变更口述维度）；推进多版本角色的 IllusDesign 时透传 `design_sheet=<ds_id>` 控出图范围。状态查询天然容忍多版本（返回多行 DS）；**汇报按版本逐个交代**（各版本 active_from/status）。
 
-**DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（路径锚 `Character.ref_image_path` 属性 = `06_角色美术/<char_id>/参考图.jpg`，推荐经 dashboard 角色详情页上传——自动压缩、规范命名并写属性）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
+**DesignSheet 常规生成前置——用户参考照片（用户动作阻塞，同 BGM wav 模式）**：首版与 status∈{-1,0} 重做均以用户单张真人参考照片图生图（路径锚 `Character.ref_image_path` 属性 = `06_角色美术/<hexid(char_id)>/参考图.jpg`，推荐经 dashboard 角色详情页上传——自动压缩、规范命名并写属性）。参考图缺失时 char-design-sheet **停止并提示用户上传**，char-design 汇报时归入「需用户决策」（不误报为故障），**不自行找图、不回退文生图**。
 
 **占位消化模式**：event-stager/event-ideator 经建议 JSON 创建的占位节点由本 agent 消化——流水线占位（CostumeStyle/IllusDesign，status=0 待生产）入口查询天然圈到（0 与 -1 同为待办）；占位节点在图上的位置（挂在哪个 CostumeStyle 下、被哪个 sub 的 appears_as 引用）自带需求上下文，按既有链路补全字段并推进生产即可。**占位 Character（无 has_appearance 出边的裸骨架，无 status——缺口由结构表达）由本 agent 兜底创建外貌链**（AppearanceStyle 起），这是 Q2 拍板的分工：ideator 只建裸节点，链由本侧现场建。
 
