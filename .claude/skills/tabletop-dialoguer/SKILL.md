@@ -2,7 +2,7 @@
 name: tabletop-dialoguer
 description: |
   跑团式节台词生成（DM 制 + 常驻角色 subagent，邮箱模式 inbox/outbox）：主 agent 任 DM，一个角色一个常驻 subagent，角色按自身三钉自由发挥、互相对话逐句推进直到 sub 内容演完；DM 只当裁判不导演。
-  节级创作链第一环（chapter-novelist 已软删 2026-11-20，本 skill 为替代）：产出读者向台词草稿 跑团草稿.md（DM 旁白散文织入台词之间，每拍带【场景：地点·时间｜block <scene_block_id>】行 + 头部取材指纹），落盘 25_剧本/ch<NN>/sec<MM>/，交 chapter-dialoguer 打磨定稿；零图写入（status 推进归 dialoguer 唯一图写入）。
+  节级创作链第一环（chapter-novelist 已软删 2026-11-20，本 skill 为替代）：产出读者向台词草稿 跑团草稿.md（DM 旁白散文织入台词之间，每拍带【场景：地点·时间｜block <scene_block_id>】行 + 头部取材指纹），落盘 25_剧本/ch<NN>/sec<MM>/，交 chapter-dialoguer 打磨定稿；图写入仅一处 = 消费完毕置 Section.status 1→2（§0）。
   在需要为某 Section 产台词草稿（plot-design 编排触发或用户直呼）时使用。argument-hint: <section_id>
 argument-hint: <section_id>
 arguments:
@@ -13,7 +13,21 @@ allowed-tools: Read, Bash, Write, Edit, delegate_task, terminal
 # 跑团式台词生成（DM 制 · 常驻邮箱模式 · 按 Event 分批 + 事件后回收）
 
 > 经 ch02 sec02 五轮实测：台词中位 17 字、真 silence 可触发、披露审验实弹两拦两成。派发粒度按 Event 分批，事件收束即回收实例。
-> 生产定位：节级创作链第一环（小说段替代——chapter-novelist 已软删 2026-11-20）。产 跑团草稿.md 交 chapter-dialoguer 打磨定稿（草稿→台词.ink 两段式）；本 skill 零图写入——不改 Section.status、不写 script_path，图写入归 dialoguer 唯一图写入；不动存量 小说.md/台词.ink（存量节定稿链照旧）。
+> 生产定位：节级创作链第一环（小说段替代——chapter-novelist 已软删 2026-11-20）。产 跑团草稿.md 交 chapter-dialoguer 打磨定稿（草稿→台词.ink 两段式）；本 skill 图写入仅一处 = 消费完毕置 Section.status 1→2（§0，入场校验 status=1；script_path 仍不写），其余图写入归 dialoguer 唯一图写入；不动存量 小说.md/台词.ink（存量节定稿链照旧）。
+
+## 0. 入场校验与完成置位（跑团消费支线，2026-11-23）
+
+- **入场校验**：开跑前查 `MATCH (s:Section {id:'<sec_id>'}) RETURN s.status AS st`，必须 `st=1`（跑团待消费）——非 1（含 0/2/10/11/-1）拒绝入场并如实报告，不改图。
+- **完成置位**：§7 汇编落盘 跑团草稿.md 后（产出判据 = 草稿文件存在），置 status=2 并读回验证：
+
+```bash
+~/dailian-dashboard/.venv/bin/python ~/ProxyLove/.claude/scripts/cypher_exec.py \
+  -c "MATCH (s:Section {id:'<sec_id>'}) SET s.status = 2 RETURN s.id AS id, s.status AS st" --json
+```
+
+- **中途失败/放弃**：status 保持 `1`，次日定时任务重入（重跑覆盖旧草稿）。
+- **重跑已消费节**：禁 `2→1`（用户裁决 2026-11-23）——先由用户置 `-1` 再置 `1` 重入管线；本 skill 不置 `-1`。
+- **定时消费入口**：Hermes 每日 00:30 cron 逐节串行消费全部 `status=1` 节（不并行，一节演完再开下一节）。
 
 ## 1. 架构与信息流
 
@@ -33,7 +47,7 @@ DM（主 agent，受限视角——一切图查询带时间上限，见 §6 样�
 DM 逐手审验（串行铁律：一手一回传一手，严禁并行派发+预填历史）
   │ 判 sub 事实项演到 → 世界事件/旁白推进；未演到且僵住 → 下一拍
   ▼
-汇编 跑团草稿.md（拍头旁白帧 + 逐手台词；文末附录 DM 判定/量化对照）——落盘 25_剧本/ch<NN>/sec<MM>/，零图写入（契约见 §7/§9）
+汇编 跑团草稿.md（拍头旁白帧 + 逐手台词；文末附录 DM 判定/量化对照）——落盘 25_剧本/ch<NN>/sec<MM>/，落盘后置 Section.status 1→2（§0；本 skill 唯一图写入）
 ```
 
 角色权威状态永远在图（Character/Lore/LanguageStyle）；inbox/outbox 是单次会话的舞台便签，跨会话复用明确不做。
@@ -232,4 +246,4 @@ RETURN DISTINCT 'lore' AS kind, l.id AS id, l.title AS title, null AS start_time
 ```
 
 - **freshness 裁量（DM 旁白专用）**：圈定含 info/lore 行时跑 `fingerprint.py freshness --in … --at <chNN/secMM> --root 25_剧本`，按 `allow` 档位（explicit 正面/侧面均可、side 只可侧面折射、blocked 禁释放）裁量 **DM 旁白与读者向细节**的信息释放；角色台词不受此限（认知投放按 §3 白名单，角色重复提自己知道的事是真实感的一部分）。
-- **stale 语义**：草稿头部指纹与当前图素材不一致（dialoguer 侧 `fingerprint.py check` exit 1）→ dialoguer 停止报 stale，回退本 skill 重跑（重跑覆盖旧草稿；该节定稿链作废由 plot-design 编排触发，本 skill 零图写入不变）。
+- **stale 语义**：草稿头部指纹与当前图素材不一致（dialoguer 侧 `fingerprint.py check` exit 1）→ dialoguer 停止报 stale，回退本 skill 重跑（重跑覆盖旧草稿；该节定稿链作废由 plot-design 编排触发，本 skill 图写入仅 §0 的 status 置位）。

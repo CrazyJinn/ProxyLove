@@ -1,0 +1,322 @@
+[
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查：Rp7aXEZgwa description 承载该事实、图上无对应 Info；主线关键节点（裁决点A1成立）",
+  "content": "星耀高层以破坏团结为由踢掉陈默和李想",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRo'}) ON CREATE SET f.title='星耀高层以破坏团结为由踢掉陈默和李想', f.knowledge_level=1;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (f:Info {id:'SIwObbpBRo'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查：一次性冲突+认知分布有意义（判例：江烈冲突条）；承载事件已有 establishes「陈默与江烈试训起冲突」——不同侧面（王昊×李想对决裂+陈默立场 vs 陈默×江烈试训冲突），用户裁决 A2/A3 合并",
+  "content": "线上复盘王昊甩锅李想、陈默公开力挺李想",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRp'}) ON CREATE SET f.title='线上复盘王昊甩锅李想、陈默公开力挺李想', f.knowledge_level=2;\nMATCH (ev:Event {id:'RqeKlYIPnG'}) MATCH (f:Info {id:'SIwObbpBRp'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查：宣言（电话）与兑现（辞呈）双锚；RxAkEHM6eO 已承载「沈暮雪辞职」——不同侧面（自建战队决定 vs 离职事实）",
+  "content": "沈暮雪决定脱离星耀自建战队",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRq'}) ON CREATE SET f.title='沈暮雪决定脱离星耀自建战队', f.knowledge_level=2;\nMATCH (ev:Event {id:'RqKtjJka6S'}) MATCH (f:Info {id:'SIwObbpBRq'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RxAkEHM6eO'}) MATCH (f:Info {id:'SIwObbpBRq'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查：伊芙判词承载的下地狱理由；RINsONAOMl 已承载试炼/灵魂控制两条——不同侧面（判词理由 vs 试炼条款）",
+  "content": "陆择生前玩弄众多女孩感情",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRr'}) ON CREATE SET f.title='陆择生前玩弄众多女孩感情', f.knowledge_level=3;\nMATCH (ev:Event {id:'RINsONAOMl'}) MATCH (f:Info {id:'SIwObbpBRr'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查+用户裁决成立；与 i1 不同侧面（偏袒结构 vs 除名结果）",
+  "content": "王昊是高层偏袒的关系户",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRs'}) ON CREATE SET f.title='王昊是高层偏袒的关系户', f.knowledge_level=3;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (f:Info {id:'SIwObbpBRs'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I3_new_info",
+  "priority": "low",
+  "reason": "图上实查+用户裁决成立；承载事件图上无既有 Info",
+  "content": "王昊对二队训练态度敷衍",
+  "cypher": "MERGE (f:Info {id:'SIwObbpBRt'}) ON CREATE SET f.title='王昊对二队训练态度敷衍', f.knowledge_level=2;\nMATCH (ev:Event {id:'RqkMkDXB5M'}) MATCH (f:Info {id:'SIwObbpBRt'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "图上实查：在场力争亲历",
+  "content": "沈暮雪 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRu'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFu'}) MATCH (c:Cognition {id:'SIwObbpBRu'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRu'}) MATCH (i:Info {id:'SIwObbpBRo'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (c:Cognition {id:'SIwObbpBRu'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "推断：电话中陈默已知被踢",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRv'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBRv'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRv'}) MATCH (i:Info {id:'SIwObbpBRo'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqKtjJka6S'}) MATCH (c:Cognition {id:'SIwObbpBRv'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "推断：被踢当事人获知",
+  "content": "李想 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRw'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnF'}) MATCH (c:Cognition {id:'SIwObbpBRw'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRw'}) MATCH (i:Info {id:'SIwObbpBRo'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (c:Cognition {id:'SIwObbpBRw'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "推断：冲突另一方，高层决定后知情",
+  "content": "王昊 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRx'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnE'}) MATCH (c:Cognition {id:'SIwObbpBRx'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRx'}) MATCH (i:Info {id:'SIwObbpBRo'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (c:Cognition {id:'SIwObbpBRx'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "图上实查：同语音在场亲历",
+  "content": "王昊 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRy'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnE'}) MATCH (c:Cognition {id:'SIwObbpBRy'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRy'}) MATCH (i:Info {id:'SIwObbpBRp'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqeKlYIPnG'}) MATCH (c:Cognition {id:'SIwObbpBRy'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "图上实查：同语音在场亲历",
+  "content": "李想 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBRz'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnF'}) MATCH (c:Cognition {id:'SIwObbpBRz'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBRz'}) MATCH (i:Info {id:'SIwObbpBRp'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqeKlYIPnG'}) MATCH (c:Cognition {id:'SIwObbpBRz'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "图上实查：同语音在场亲历",
+  "content": "沈暮雪 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS0'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFu'}) MATCH (c:Cognition {id:'SIwObbpBS0'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS0'}) MATCH (i:Info {id:'SIwObbpBRp'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqeKlYIPnG'}) MATCH (c:Cognition {id:'SIwObbpBS0'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "medium",
+  "reason": "图上实查：同语音在场亲历",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS1'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBS1'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS1'}) MATCH (i:Info {id:'SIwObbpBRp'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqeKlYIPnG'}) MATCH (c:Cognition {id:'SIwObbpBS1'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：本人宣言",
+  "content": "沈暮雪 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS2'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFu'}) MATCH (c:Cognition {id:'SIwObbpBS2'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS2'}) MATCH (i:Info {id:'SIwObbpBRq'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqKtjJka6S'}) MATCH (c:Cognition {id:'SIwObbpBS2'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：电话接听方",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS3'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBS3'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS3'}) MATCH (i:Info {id:'SIwObbpBRq'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqKtjJka6S'}) MATCH (c:Cognition {id:'SIwObbpBS3'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：判词听者",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS4'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBS4'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS4'}) MATCH (i:Info {id:'SIwObbpBRr'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RINsONAOMl'}) MATCH (c:Cognition {id:'SIwObbpBS4'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：判词宣读者",
+  "content": "伊芙 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS5'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFp'}) MATCH (c:Cognition {id:'SIwObbpBS5'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS5'}) MATCH (i:Info {id:'SIwObbpBRr'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RINsONAOMl'}) MATCH (c:Cognition {id:'SIwObbpBS5'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "推断：力争现场体察高层偏袒（用户裁决 B1 成立）",
+  "content": "沈暮雪 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS6'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFu'}) MATCH (c:Cognition {id:'SIwObbpBS6'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS6'}) MATCH (i:Info {id:'SIwObbpBRs'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'Rp7aXEZgwa'}) MATCH (c:Cognition {id:'SIwObbpBS6'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：训练赛在场（用户裁决 B2 成立）",
+  "content": "沈暮雪 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS7'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFu'}) MATCH (c:Cognition {id:'SIwObbpBS7'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS7'}) MATCH (i:Info {id:'SIwObbpBRt'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqkMkDXB5M'}) MATCH (c:Cognition {id:'SIwObbpBS7'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：训练赛在场（用户裁决 B2 成立）",
+  "content": "李想 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS8'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnF'}) MATCH (c:Cognition {id:'SIwObbpBS8'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS8'}) MATCH (i:Info {id:'SIwObbpBRt'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqkMkDXB5M'}) MATCH (c:Cognition {id:'SIwObbpBS8'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：训练赛在场（用户裁决 B2 成立）",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBS9'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBS9'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBS9'}) MATCH (i:Info {id:'SIwObbpBRt'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqkMkDXB5M'}) MATCH (c:Cognition {id:'SIwObbpBS9'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "用户口径 2026-11-23：苏晓禾亦被诓到场、知晓是相亲局但不知安排人——弱命题 BELIEVES",
+  "content": "苏晓禾 BELIEVES 有人安排了陈默与自己的相亲",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBSA'}) ON CREATE SET c.type='BELIEVES', c.title='有人安排了陈默与自己的相亲';\nMATCH (ch:Character {id:'NvCkQmFPFs'}) MATCH (c:Cognition {id:'SIwObbpBSA'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBSA'}) MATCH (i:Info {id:'SETBtdNvfM'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RU7x61XmiG'}) MATCH (c:Cognition {id:'SIwObbpBSA'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "图上实查：电话中告知脱离星耀",
+  "content": "陆择 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBSB'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFo'}) MATCH (c:Cognition {id:'SIwObbpBSB'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBSB'}) MATCH (i:Info {id:'RxhLwLmgo9'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RqKtjJka6S'}) MATCH (c:Cognition {id:'SIwObbpBSB'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "推断：线上合练参与者即知",
+  "content": "李想 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBSC'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnF'}) MATCH (c:Cognition {id:'SIwObbpBSC'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBSC'}) MATCH (i:Info {id:'SCecaKlTiS'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RRl7l6AeGG'}) MATCH (c:Cognition {id:'SIwObbpBSC'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "推断：线上合练参与者即知",
+  "content": "王昊 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBSD'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'RqeKlYIPnE'}) MATCH (c:Cognition {id:'SIwObbpBSD'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBSD'}) MATCH (i:Info {id:'SCecaKlTiS'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RRl7l6AeGG'}) MATCH (c:Cognition {id:'SIwObbpBSD'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "R4_cognition",
+  "priority": "low",
+  "reason": "推断：沈暮雪顶着江烈挖人→江烈知情",
+  "content": "江烈 KNOWS",
+  "cypher": "MERGE (c:Cognition {id:'SIwObbpBSE'}) ON CREATE SET c.type='KNOWS';\nMATCH (ch:Character {id:'NvCkQmFPFw'}) MATCH (c:Cognition {id:'SIwObbpBSE'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;\nMATCH (c:Cognition {id:'SIwObbpBSE'}) MATCH (i:Info {id:'SCcEiqWI25'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;\nMATCH (ev:Event {id:'RINsONAON6'}) MATCH (c:Cognition {id:'SIwObbpBSE'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（拓扑注记违规）。before: 「跳江选择 option「再想想」=主线」 / after: 陈默翻回栏杆，接陈念来电连环追问（声音不对、留言什么意思、明天过来），支吾安抚后挂断",
+  "content": "RINsONAOMm description 修正",
+  "cypher": "MATCH (e:Event {id:'RINsONAOMm'}) SET e.description='陈默翻回栏杆，接陈念来电连环追问（声音不对、留言什么意思、明天过来），支吾安抚后挂断';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（来源注记违规+Info 复述（老人离世已由 Info 承载））。before: 「sec08 口述源：…问出康复中心待她很好的老人突然离世」（用户改稿） / after: 晨跑闲聊察觉苏晓禾低落，苏晓禾说出了自己低落的原因；两人并肩跑一段",
+  "content": "RINsONAON4 description 修正",
+  "cypher": "MATCH (e:Event {id:'RINsONAON4'}) SET e.description='晨跑闲聊察觉苏晓禾低落，苏晓禾说出了自己低落的原因；两人并肩跑一段';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（复述 title；垫底事实无 Info 承接按铁则保留）。before: 「二队训练赛全败（2）；队里…」 / after: 队里有个队友个人能力明显跟不上、一直垫底，问题开始显化（细节待补）",
+  "content": "RU39CYtoIq description 修正",
+  "cypher": "MATCH (e:Event {id:'RU39CYtoIq'}) SET e.description='队里有个队友个人能力明显跟不上、一直垫底，问题开始显化（细节待补）';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（复述 title）。before: 「二队训练赛全败，气氛接近凝固」 / after: 再度全败，语音里气氛接近凝固，没人先开口",
+  "content": "RU2KEkWd9M description 修正",
+  "cypher": "MATCH (e:Event {id:'RU2KEkWd9M'}) SET e.description='再度全败，语音里气氛接近凝固，没人先开口';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（desc=title 复述，补行为细节）。before: 「陈默在林梦家醒来」（=title） / after: 陈默宿醉醒来发现天花板陌生，愣了几秒蹑手蹑脚起身；客厅撞见林梦，两人都僵了一下",
+  "content": "RU4iVOG1SK description 修正",
+  "cypher": "MATCH (e:Event {id:'RU4iVOG1SK'}) SET e.description='陈默宿醉醒来发现天花板陌生，愣了几秒蹑手蹑脚起身；客厅撞见林梦，两人都僵了一下';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（认知解读违规；酒量差事实 B4 未立按铁则留 desc 弱承载）。before: 「…结果忘记了自己穿越的身份喝醉了」 / after: 林梦叫陈默出来陪喝酒；陈默嘲笑林梦喝啤酒、自诩酒量很好，两三杯高度调制酒下肚醉倒，被林梦带回她家",
+  "content": "RU44a1J1vs description 修正",
+  "cypher": "MATCH (e:Event {id:'RU44a1J1vs'}) SET e.description='林梦叫陈默出来陪喝酒；陈默嘲笑林梦喝啤酒、自诩酒量很好，两三杯高度调制酒下肚醉倒，被林梦带回她家';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（备忘文字违规；顶住江烈反对 B6 未立留 desc 弱承载）。before: 「…理由内容待补（用户口述）」 / after: 咖啡店长谈，沈暮雪首次开口回应当初那句「等你值得得到答案」，吐露挖他与自建战队的真正理由；理由内容待补",
+  "content": "RxAkEHM6eQ description 修正",
+  "cypher": "MATCH (e:Event {id:'RxAkEHM6eQ'}) SET e.description='咖啡店长谈，沈暮雪首次开口回应当初那句「等你值得得到答案」，吐露挖他与自建战队的真正理由；理由内容待补';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（跨事件回指违规）。before: 「漫展余温未散，林梦抢了…」 / after: 林梦抢了动画剧场版首映场的票拉陈默同看，全程毒舌点评却在结尾黑暗里安静下来；散场灯亮前她别过脸，说眼睛进灰了",
+  "content": "S8yxEfJB3a description 修正",
+  "cypher": "MATCH (e:Event {id:'S8yxEfJB3a'}) SET e.description='林梦抢了动画剧场版首映场的票拉陈默同看，全程毒舌点评却在结尾黑暗里安静下来；散场灯亮前她别过脸，说眼睛进灰了';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（跨事件回指违规）。before: 「探班相叙后，苏晓禾临别…」 / after: 苏晓禾临别主动邀陈默去爬山；陈默没有当场答应，说想想再回她",
+  "content": "RQEfM71ctk description 修正",
+  "cypher": "MATCH (e:Event {id:'RQEfM71ctk'}) SET e.description='苏晓禾临别主动邀陈默去爬山；陈默没有当场答应，说想想再回她';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（跨事件回指违规）。before: 「瑜伽馆散场后她随手买了…」 / after: 苏晓禾随手买了两张经典老片胶片修复重映场的票拉陈默同看；散场后两人没打车，沿江边慢慢走回南滨路，聊的尽是电影外的闲话",
+  "content": "S8yxEfJB3Z description 修正",
+  "cypher": "MATCH (e:Event {id:'S8yxEfJB3Z'}) SET e.description='苏晓禾随手买了两张经典老片胶片修复重映场的票拉陈默同看；散场后两人没打车，沿江边慢慢走回南滨路，聊的尽是电影外的闲话';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（语病修正）。before: 「沈暮雪告诉陈默已经二队人员已经齐了…」 / after: 沈暮雪告知二队人员已齐，发来队伍训练日程安排",
+  "content": "RMxYXuS6IC description 修正",
+  "cypher": "MATCH (e:Event {id:'RMxYXuS6IC'}) SET e.description='沈暮雪告知二队人员已齐，发来队伍训练日程安排';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（拓扑注记违规）。before: 「…——沈暮雪支线结局，与三女主三选一同日（细节待补）」 / after: 陈默回拨沈暮雪电话，给出答复：决定加入她自建战队（细节待补）",
+  "content": "RINsONAONA description 修正",
+  "cypher": "MATCH (e:Event {id:'RINsONAONA'}) SET e.description='陈默回拨沈暮雪电话，给出答复：决定加入她自建战队（细节待补）';",
+  "source": "event-ideator"
+ },
+ {
+  "check": "I6_desc_update",
+  "priority": "low",
+  "reason": "盘点分界契约修正（跨事件回指违规（回指 20:00 直播事件））。before: 「下播后连麦闲聊…」 / after: 连麦闲聊里陈默把加入星耀二队的事说了；林梦先炸「本小姐投资的潜力股升职了」，随即反应过来经理是「雪姐」，八卦之魂当场燃烧，逼问了十分钟",
+  "content": "RQBqw5y3oe description 修正",
+  "cypher": "MATCH (e:Event {id:'RQBqw5y3oe'}) SET e.description='连麦闲聊里陈默把加入星耀二队的事说了；林梦先炸「本小姐投资的潜力股升职了」，随即反应过来经理是「雪姐」，八卦之魂当场燃烧，逼问了十分钟';",
+  "source": "event-ideator"
+ }
+]
