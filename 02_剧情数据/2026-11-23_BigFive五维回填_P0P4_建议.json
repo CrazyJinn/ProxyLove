@@ -1,0 +1,130 @@
+[
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理，同 2026-11-20 vibe 补齐先例）：Big Five 五维回填 16 人之 1/16（林梦）；数值锚图上 vibe+LS+Lore 素材（锚点见回填 md U1），int 0-100 五维一次写齐，无新增设定",
+    "content": "林梦 Big Five：开放 72 / 尽责 58 / 外向 82 / 宜人 38 / 神经质 62",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFt'}) SET c.bf_openness=72, c.bf_conscientiousness=58, c.bf_extraversion=82, c.bf_agreeableness=38, c.bf_neuroticism=62;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 2/16（沈暮雪）；数值锚图上素材（锚点见回填 md U2），int 0-100 五维一次写齐",
+    "content": "沈暮雪 Big Five：开放 48 / 尽责 85 / 外向 30 / 宜人 46 / 神经质 28",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFu'}) SET c.bf_openness=48, c.bf_conscientiousness=85, c.bf_extraversion=30, c.bf_agreeableness=46, c.bf_neuroticism=28;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 3/16（苏晓禾）；数值锚图上素材（锚点见回填 md U3），int 0-100 五维一次写齐",
+    "content": "苏晓禾 Big Five：开放 65 / 尽责 80 / 外向 74 / 宜人 84 / 神经质 32",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFs'}) SET c.bf_openness=65, c.bf_conscientiousness=80, c.bf_extraversion=74, c.bf_agreeableness=84, c.bf_neuroticism=32;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 4/16（陆择）；数值锚图上素材（锚点见回填 md U4），int 0-100 五维一次写齐",
+    "content": "陆择 Big Five：开放 78 / 尽责 52 / 外向 85 / 宜人 44 / 神经质 60",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFo'}) SET c.bf_openness=78, c.bf_conscientiousness=52, c.bf_extraversion=85, c.bf_agreeableness=44, c.bf_neuroticism=60;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 5/16（陈默）；数值锚图上素材（锚点见回填 md U5），int 0-100 五维一次写齐",
+    "content": "陈默 Big Five：开放 66 / 尽责 58 / 外向 55 / 宜人 78 / 神经质 76",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFq'}) SET c.bf_openness=66, c.bf_conscientiousness=58, c.bf_extraversion=55, c.bf_agreeableness=78, c.bf_neuroticism=76;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 6/16（伊芙）；数值锚图上素材（锚点见回填 md U6），int 0-100 五维一次写齐",
+    "content": "伊芙 Big Five：开放 68 / 尽责 76 / 外向 46 / 宜人 82 / 神经质 55",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFp'}) SET c.bf_openness=68, c.bf_conscientiousness=76, c.bf_extraversion=46, c.bf_agreeableness=82, c.bf_neuroticism=55;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 7/16（Tony）；数值锚图上素材（锚点见回填 md U7），int 0-100 五维一次写齐",
+    "content": "Tony Big Five：开放 58 / 尽责 70 / 外向 80 / 宜人 74 / 神经质 35",
+    "cypher": "MATCH (c:Character {id:'QmJFWWyN18'}) SET c.bf_openness=58, c.bf_conscientiousness=70, c.bf_extraversion=80, c.bf_agreeableness=74, c.bf_neuroticism=35;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 8/16（季棠）；数值锚图上素材（锚点见回填 md U8），int 0-100 五维一次写齐",
+    "content": "季棠 Big Five：开放 55 / 尽责 72 / 外向 42 / 宜人 68 / 神经质 44",
+    "cypher": "MATCH (c:Character {id:'QmJFWWyN19'}) SET c.bf_openness=55, c.bf_conscientiousness=72, c.bf_extraversion=42, c.bf_agreeableness=68, c.bf_neuroticism=44;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 9/16（小夏）；数值锚图上素材（锚点见回填 md U9），int 0-100 五维一次写齐",
+    "content": "小夏 Big Five：开放 48 / 尽责 62 / 外向 56 / 宜人 85 / 神经质 72",
+    "cypher": "MATCH (c:Character {id:'PHuTf3ogEq'}) SET c.bf_openness=48, c.bf_conscientiousness=62, c.bf_extraversion=56, c.bf_agreeableness=85, c.bf_neuroticism=72;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 10/16（江烈）；数值锚图上素材（锚点见回填 md U10），int 0-100 五维一次写齐",
+    "content": "江烈 Big Five：开放 40 / 尽责 82 / 外向 28 / 宜人 36 / 神经质 58",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFw'}) SET c.bf_openness=40, c.bf_conscientiousness=82, c.bf_extraversion=28, c.bf_agreeableness=36, c.bf_neuroticism=58;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 11/16（温蔓青）；数值锚图上 vibe（LS 图上缺口，锚点见回填 md U11），int 0-100 五维一次写齐，待 LS 补齐后可复核",
+    "content": "温蔓青 Big Five：开放 64 / 尽责 66 / 外向 68 / 宜人 34 / 神经质 60",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFr'}) SET c.bf_openness=64, c.bf_conscientiousness=66, c.bf_extraversion=68, c.bf_agreeableness=34, c.bf_neuroticism=60;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 12/16（陈念）；数值锚图上素材（锚点见回填 md U12），int 0-100 五维一次写齐",
+    "content": "陈念 Big Five：开放 42 / 尽责 70 / 外向 84 / 宜人 80 / 神经质 64",
+    "cypher": "MATCH (c:Character {id:'QP23NrFZrz'}) SET c.bf_openness=42, c.bf_conscientiousness=70, c.bf_extraversion=84, c.bf_agreeableness=80, c.bf_neuroticism=64;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 13/16（顾盈）；数值锚图上 vibe+LS（锚点见回填 md U13），int 0-100 五维一次写齐",
+    "content": "顾盈 Big Five：开放 70 / 尽责 60 / 外向 54 / 宜人 32 / 神经质 42",
+    "cypher": "MATCH (c:Character {id:'NvCkQmFPFv'}) SET c.bf_openness=70, c.bf_conscientiousness=60, c.bf_extraversion=54, c.bf_agreeableness=32, c.bf_neuroticism=42;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 14/16（李想）；数值锚图上素材（锚点见回填 md U14），int 0-100 五维一次写齐",
+    "content": "李想 Big Five：开放 36 / 尽责 84 / 外向 24 / 宜人 40 / 神经质 62",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnF'}) SET c.bf_openness=36, c.bf_conscientiousness=84, c.bf_extraversion=24, c.bf_agreeableness=40, c.bf_neuroticism=62;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 15/16（王昊）；数值锚图上素材（锚点见回填 md U15），int 0-100 五维一次写齐",
+    "content": "王昊 Big Five：开放 46 / 尽责 26 / 外向 72 / 宜人 28 / 神经质 60",
+    "cypher": "MATCH (c:Character {id:'RqeKlYIPnE'}) SET c.bf_openness=46, c.bf_conscientiousness=26, c.bf_extraversion=72, c.bf_agreeableness=28, c.bf_neuroticism=60;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R9_char_bigfive_backfill",
+    "priority": "low",
+    "reason": "例外通道（用户点名存量治理）：Big Five 五维回填 16 人之 16/16（朵朵）；数值锚图上素材（锚点见回填 md U16），int 0-100 五维一次写齐",
+    "content": "朵朵 Big Five：开放 76 / 尽责 48 / 外向 52 / 宜人 80 / 神经质 70",
+    "cypher": "MATCH (c:Character {id:'S3oFjfNVlg'}) SET c.bf_openness=76, c.bf_conscientiousness=48, c.bf_extraversion=52, c.bf_agreeableness=80, c.bf_neuroticism=70;",
+    "source": "user-directive"
+  }
+]

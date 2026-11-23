@@ -1,19 +1,19 @@
 ---
 name: tabletop-dialoguer
 description: |
-  跑团式节台词生成（DM 制 + 常驻角色 subagent，邮箱模式 inbox/outbox）：主 agent 任 DM，一个角色一个常驻 subagent，角色按自身三钉自由发挥、互相对话逐句推进直到 sub 内容演完；DM 只当裁判不导演。
+  跑团式节台词生成（DM 制 + 常驻角色 subagent，邮箱模式 inbox/outbox）：主 agent 任 DM，一个角色一个常驻 subagent，角色按自身三钉与 Big Five 人格五维（可缺省量化）自由发挥、互相对话逐句推进直到 sub 内容演完；DM 只当裁判不导演。
   节级创作链第一环（chapter-novelist 已软删 2026-11-20，本 skill 为替代）：产出读者向台词草稿 跑团草稿.md（DM 旁白散文织入台词之间，每拍带【场景：地点·时间｜block <scene_block_id>】行 + 头部取材指纹），落盘 25_剧本/ch<NN>/sec<MM>/，交 chapter-dialoguer 打磨定稿；图写入仅一处 = 消费完毕置 Section.status 1→2（§0）。
-  在需要为某 Section 产台词草稿（plot-design 编排触发或用户直呼）时使用。argument-hint: <section_id>
+  在需要为某 Section 产台词草稿（plot-design 编排触发或用户直呼）时使用。
 argument-hint: <section_id>
 arguments:
   - section_id
-allowed-tools: Read, Bash, Write, Edit, delegate_task, terminal
+allowed-tools: Read, Bash, Write, Edit, Agent, delegate_task, terminal
 ---
 
 # 跑团式台词生成（DM 制 · 常驻邮箱模式 · 按 Event 分批 + 事件后回收）
 
 > 经 ch02 sec02 五轮实测：台词中位 17 字、真 silence 可触发、披露审验实弹两拦两成。派发粒度按 Event 分批，事件收束即回收实例。
-> 生产定位：节级创作链第一环（小说段替代——chapter-novelist 已软删 2026-11-20）。产 跑团草稿.md 交 chapter-dialoguer 打磨定稿（草稿→台词.ink 两段式）；本 skill 图写入仅一处 = 消费完毕置 Section.status 1→2（§0，入场校验 status=1；script_path 仍不写），其余图写入归 dialoguer 唯一图写入；不动存量 小说.md/台词.ink（存量节定稿链照旧）。
+> 生产定位：节级创作链第一环（小说段替代——chapter-novelist 已软删 2026-11-20）。产 跑团草稿.md 交 chapter-dialoguer 打磨定稿；本 skill 图写入仅 §0 一处（Section.status 1→2 置位；script_path 仍不写，其余图写入归 dialoguer）；不动存量 小说.md/台词.ink（存量节定稿链照旧）。
 
 ## 0. 入场校验与完成置位（跑团消费支线，2026-11-23）
 
@@ -21,7 +21,9 @@ allowed-tools: Read, Bash, Write, Edit, delegate_task, terminal
 - **完成置位**：§7 汇编落盘 跑团草稿.md 后（产出判据 = 草稿文件存在），置 status=2 并读回验证：
 
 ```bash
-~/dailian-dashboard/.venv/bin/python ~/ProxyLove/.claude/scripts/cypher_exec.py \
+# CWD = cypher_exec.py 所在仓库根（本机 Asset/、hermes 机为其克隆根，两环境同构）；
+# python = 带 neo4j driver 的解释器（hermes 机系统 python 无 driver 时用其 Dashboard venv）
+python .claude/scripts/cypher_exec.py \
   -c "MATCH (s:Section {id:'<sec_id>'}) SET s.status = 2 RETURN s.id AS id, s.status AS st" --json
 ```
 
@@ -37,26 +39,27 @@ DM（主 agent，受限视角——一切图查询带时间上限，见 §6 样�
   │   未来数据不进信封也不进 DM 判定依据）
   │ 四条合并查询（样例见 §6：开跑 Q1 骨架+Q2 静态包；每批 Q3 动态包+Q4 共同经历）：
   │   Q1 骨架：节结构+拍序（sub.start_time）+判定依据+场景锚+在场名单（→批划分）
-  │   Q2 静态包：vibe/Lore/relation/LS（三钉+语境角色定义+对手关系口径素材）
+  │   Q2 静态包：vibe/Lore/relation/LS/Big Five 五维（三钉+人格量化+语境角色定义+对手关系口径素材；五维可缺省）
   │   Q3 动态包：认知集白名单（forms 锚 ≤ cutoff，同 (角色,Info) 多条时间线全量返回——认知编年史）∪ at 区间（哨兵 开篇前/至今 特判）
   │   Q4 共同经历：UNWIND 角色组，size(ppl)=size(group) 图内交集（< cutoff）
   ▼
-每 Event 一批常驻 subagent（delegate_task 派发，只含本 Event 在场角色；贯穿角色每 Event 新实例，前情由场景帧现查重组）
+每 Event 一批常驻 subagent（subagent 派发：本机用 Agent、hermes 用 delegate_task；只含本 Event 在场角色；贯穿角色每 Event 新实例，前情由场景帧现查重组）
   │ 收信循环：poll inbox_N.txt → 按人设自由反应 → 追加 outbox_N.txt（<编号>|<JSON>）
   ▼
 DM 逐手审验（串行铁律：一手一回传一手，严禁并行派发+预填历史）
   │ 判 sub 事实项演到 → 世界事件/旁白推进；未演到且僵住 → 下一拍
   ▼
-汇编 跑团草稿.md（拍头旁白帧 + 逐手台词；文末附录 DM 判定/量化对照）——落盘 25_剧本/ch<NN>/sec<MM>/，落盘后置 Section.status 1→2（§0；本 skill 唯一图写入）
+汇编 跑团草稿.md（拍头旁白帧 + 逐手台词；文末附录 DM 判定/量化对照）——落盘 25_剧本/ch<NN>/sec<MM>/，落盘后置 Section.status 1→2（§0）
 ```
 
 角色权威状态永远在图（Character/Lore/LanguageStyle）；inbox/outbox 是单次会话的舞台便签，跨会话复用明确不做。
 
 ## 2. 生命周期与协议（单 Event 生命周期，收束即回收）
 
-- 按 Event 分批派发：每批只 spawn 本 Event 在场角色；语境含角色定义（三钉/LS/台词纪律/内心轨规则）+ 驻留协议，只装本 Event 的 sub 序与场景帧（未来 Event 不进视野）。贯穿角色（如陈默）每 Event 一个全新实例——实例间零记忆连续性，前情由场景帧按当日现查的认知集重组（权威在图，跨会话/跨批复用明确不做）。
+- 按 Event 分批派发：每批只 spawn 本 Event 在场角色；语境含角色定义（三钉/Big Five 五维（可缺省）/LS/台词纪律/内心轨规则）+ 驻留协议，只装本 Event 的 sub 序与场景帧（未来 Event 不进视野）。贯穿角色（如陈默）每 Event 一个全新实例——实例间零记忆连续性，前情由场景帧按当日现查的认知集重组（权威在图，跨会话/跨批复用明确不做）。
+- **Big Five 五维注入纪律**：Q2 五列（bf_openness 等）任一为 null = 该角色未量化——整组不注入、不推断、不代填（禁止对未回填角色用「高神经质」类人格标签反推）；已量化时在角色定义段追加一行「人格五维：开 68 / 尽 74 / 外 42 / 宜 81 / 神 66（0-100）」。定位 = **行为倾向权重**（高开放→更接即兴新玩法、低外向→主动开口更少、高神经质→负面情绪反应阈值更低、高尽责→守约细节控、高宜人→冲突中更让步），只调「怎么反应」的倾向，三钉定「反应什么」——不作为台词内容与事实的依据。
 - 收信循环：`awk -F'|' '$1>已回最高编号' inbox_N.txt` → 回信追加 `outbox_N.txt`；**回信先于查信**——查到新信前必须已回完上一信全部手，严禁把旧信尾答攒到下一批（实测判例：跨拍延迟手 6 处，含 echo 签手）。
-- 事件收束即回收四步：判完成（sub 事实项演到）→ 对本批全部实例投 `99|END`（编号大于各自已回最高编号）→ 收末手核 outbox 行数（实例自评只当索引，会漂）→ delegate_task stop 逐实例兜底（已优雅退场则 stop 为空操作），归档该 Event 段、README 记 delegation id 后再开下一批。
+- 事件收束即回收四步：判完成（sub 事实项演到）→ 对本批全部实例投 `99|END`（编号大于各自已回最高编号）→ 收末手核 outbox 行数（实例自评只当索引，会漂）→ 派发工具 stop 逐实例兜底（已优雅退场则 stop 为空操作），归档该 Event 段、README 记 delegation id 后再开下一批。
 - **固定 `sleep 10`，禁自适应退避**（实测退避把节拍切换延迟拉到 2 分钟）。
 - **END 信优先于一切超时**：每轮 poll 第一动作查 END；预算（总驻留 90 分钟）只对「无 END 收件」生效（实测有实例因预算抢跑错过 END）。
 - 退出三通道：END 优雅退场（汇报演出史）> 预算自尽 > DM stop。
@@ -141,7 +144,7 @@ RETURN e.start_time AS evt_st, e.title AS evt, ppl,
 ORDER BY st
 ```
 
-**Q2 角色静态包（开跑一次）**——vibe/priority/Lore/relation/LS 一次取齐（三钉组装素材+语境角色定义段+场景帧「我面对的是谁」的关系口径，全节不漂；图料不足报缺口勿编造）
+**Q2 角色静态包（开跑一次）**——vibe/priority/Lore/relation/LS/Big Five 五维一次取齐（三钉组装素材+人格量化+语境角色定义段+场景帧「我面对的是谁」的关系口径，全节不漂；五维 null=未量化整组不注入；图料不足报缺口勿编造）
 
 ```cypher
 MATCH (c:Character) WHERE c.name IN ['陈默','陆择','陈念','沈暮雪','王昊','李想']
@@ -150,7 +153,10 @@ WITH c, collect({title:l.title, kl:l.knowledge_level}) AS lores
 OPTIONAL MATCH (c)-[r:relation]->(o:Character)
 WITH c, lores, collect({other:o.name, type:r.type, st:r.start_time, et:r.end_time}) AS rels
 OPTIONAL MATCH (c)-[:has_voice_style]->(ls:LanguageStyle)
-RETURN c.name AS who, c.vibe AS vibe, c.priority AS prio, lores, rels, ls.speech_style AS ls
+RETURN c.name AS who, c.vibe AS vibe, c.priority AS prio, lores, rels, ls.speech_style AS ls,
+       c.bf_openness AS bf_openness, c.bf_conscientiousness AS bf_conscientiousness,
+       c.bf_extraversion AS bf_extraversion, c.bf_agreeableness AS bf_agreeableness,
+       c.bf_neuroticism AS bf_neuroticism
 ```
 
 **Q3 Event 动态包（每批一次，UNION 归一列式）**——认知集+所在地合并；逐角色「现在知道什么」白名单，兼出 speaker 独有 Info 集（披露审验 hold 表素材）。**hold 表前置**：每批开拍前由 Q3 素材建本批 hold 表——批内每对 (speaker, 听者) × 每条 Info 两条判定线：听者无链 → speaker 不可对其披露该 Info；听者持偏差态（BELIEVES+title）→ speaker 不可说破真相定性（§5 误信态保护）；逐手审验按表执行（v7 实测前置 hold 表全程零违约）。认知编年史：同 (角色,Info) 多条认知（如误信态+揭底态）按上款全量返回——`since` 列即时间线；**信封白名单取拍时刻最新有效态**（多行供 DM 理解认知演变，不聚合）
