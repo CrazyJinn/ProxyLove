@@ -77,7 +77,7 @@
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.start_time 承载；事件↔信息归 Info 节点与 establishes 边） |
 | has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
-| establishes | Event → Info | N:N | ❌ | **成立**（成立轴）——该事件使事实成立并进入故事（陈念上门探望→陈默被温蔓青分手）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；固有前史事实建前史事件承载；每条 Info ≥1 入边；event-ideator 产 |
+| establishes | Event → Info | 1:N | ❌ | **成立**（成立轴）——该事件使事实成立并进入故事（陈念来电→相亲安排成立）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；成立锚唯一：每条 Info 恰 1 入边，成立≠揭示，揭示/告知/印证事件不挂本边；固有前史事实建前史事件承载；event-ideator 产 |
 | has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色自 forms 锚事件起持有对某 Info 的认知；同 (Character, Info) 多条并存（认知编年史，转变=追加新条目） |
 | about | Cognition → Info | N:1 | ❌ | **指向**（指向轴）——认知针对哪条 Info |
 | forms | Event → Cognition | N:N | ❌ | **成因**（成因轴）——角色在该事件形成/改变认知（「何时知道」=锚事件 start_time）；每条 Cognition ≥1 入边，开篇前固有认知走前史事件；时间点 T 的认知态=该 (Character, Info) 下 forms≤T 最新一条 |
@@ -211,7 +211,7 @@ flowchart LR
     Location["Location（场景域）"] -->|"has_info ❌ N:N"| Lore
     Event -->|"occurs_at ❌ N:N"| Location
     Event -->|"refines ✅ 1:N"| SubEvent["SubEvent<br/>演出物化"]
-    Event -->|"establishes ❌ N:N"| Info["Info<br/>事件性事实"]
+    Event -->|"establishes ❌ 1:N"| Info["Info<br/>事件性事实"]
     Character -->|"has_cognition ❌ 1:N"| Cog["Cognition<br/>认知持有"]
     Cog -->|"about ❌ N:1"| Info
     Event -->|"forms ❌ N:N"| Cog
