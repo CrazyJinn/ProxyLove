@@ -72,7 +72,69 @@ import argparse
 from pathlib import Path
 from urllib.parse import urlparse, unquote
 
-from neo4j import GraphDatabase
+
+def _find_neo4j_python() -> str | None:
+    """找一个装了 neo4j 包的 Python 解释器（当前解释器缺包时用）。
+
+    候选优先级：环境变量 CYPHER_EXEC_PYTHON > 本脚本祖先/祖先的兄弟目录下
+    的 dailian-dashboard/.venv 与 .venv。候选会先 subprocess 验证能 import neo4j。
+    """
+    import subprocess
+
+    candidates: list[str] = []
+    env_py = os.environ.get("CYPHER_EXEC_PYTHON")
+    if env_py:
+        candidates.append(env_py)
+
+    script_dir = Path(__file__).resolve().parent
+    d = script_dir
+    for _ in range(6):
+        for c in (
+            d / "dailian-dashboard" / ".venv" / "bin" / "python",
+            d / ".venv" / "bin" / "python",
+        ):
+            candidates.append(str(c))
+        if d.parent == d:
+            break
+        d = d.parent
+
+    for cand in candidates:
+        if not cand or not Path(cand).exists():
+            continue
+        try:
+            ok = (
+                subprocess.run(
+                    [cand, "-c", "import neo4j"],
+                    capture_output=True,
+                    timeout=15,
+                ).returncode
+                == 0
+            )
+        except Exception:
+            ok = False
+        if ok:
+            return cand
+    return None
+
+
+try:
+    from neo4j import GraphDatabase
+except ImportError:
+    # 多解释器兼容：作为脚本执行且当前解释器缺 neo4j 时，自动切换到带包
+    # 的解释器重跑（环境变量 _CYPHER_EXEC_BOOTSTRAPPED 防循环）。
+    if os.environ.get("_CYPHER_EXEC_BOOTSTRAPPED") or __name__ != "__main__":
+        raise
+    _py = _find_neo4j_python()
+    if _py is None:
+        print(
+            "错误：当前解释器缺 neo4j 包，且未找到带该包的 Python。\n"
+            "可安装依赖，或用 CYPHER_EXEC_PYTHON 指向带 neo4j 的解释器。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    os.environ["_CYPHER_EXEC_BOOTSTRAPPED"] = "1"
+    print(f"提示：当前解释器缺 neo4j，改用 {_py} 重跑。", file=sys.stderr)
+    os.execv(_py, [_py, str(Path(__file__).resolve())] + sys.argv[1:])
 
 
 # ─── 连接配置 ────────────────────────────────────────────────
