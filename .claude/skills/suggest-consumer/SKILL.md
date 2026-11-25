@@ -1,7 +1,7 @@
 ---
 name: suggest-consumer
 description: |
-  建议消费层——叙事事件链的 Schema 守门人：消费三类人读优先的自然语言文档（按语义解析）——**事件共识**（`*_共识.md`，纯 I 域条目）/ **事件定稿**（`*_定稿.md`，I+S 混合或纯 S 域）/ **小说对账补全**（`*_补全_草稿.md`，N 域）。逐条目对照 00_init/Schema/ 字段表契约严检（撰写契约、枚举、必填、时间格式、condition 序号换算、占位最小启动集、id 存在性、占位查重、文档内指称解析、各来源创作域红线），违例就地改写并留痕（before/after），生成 snowflake id、按模板组装建议 JSON（含 cypher，先节点后边、语句自包含、同文档指称绑定同轮生成 id），落盘同名 `_建议.json`，跑 suggest_lint 至全 PASS。I1 条目含 entity-refiner「细化：」块时一并物化（priority / 常驻地保留名占位 + at 边 / 基础 Lore + has_info，source='entity-refiner'）。**执行确认门**：lint PASS 后必停一问，用户明确同意才直接执行写回（单事务 + 读回验证，不经 dashboard）；不同意则留 dashboard 建议弹窗人工备选通道。
+  建议消费层——叙事事件链的 Schema 守门人：消费三类人读优先的自然语言文档（按语义解析）——**事件共识**（`*_共识.md`，纯 I 域条目）/ **事件定稿**（`*_定稿.md`，I+S 混合或纯 S 域）/ **小说对账补全**（`*_补全_草稿.md`，N 域）。逐条目对照 00_init/Schema/ 字段表契约严检（撰写契约、枚举、必填、时间格式、condition 序号换算、占位最小启动集、id 存在性、占位查重、文档内指称解析、各来源创作域红线），违例就地改写并留痕（before/after），生成 snowflake id、按模板组装建议 JSON（含 cypher，先节点后边、语句自包含、同文档指称绑定同轮生成 id），落盘同名 `_建议.json`，跑 suggest_lint 至全 PASS。I1 条目含 entity-refiner「细化：」块时一并物化（priority / 常驻地保留名占位 + at 边 / 基础固有 Info + has_info，source='entity-refiner'）。**执行确认门**：lint PASS 后必停一问，用户明确同意才直接执行写回（单事务 + 读回验证，不经 dashboard）；不同意则留 dashboard 建议弹窗人工备选通道。
   默认零图写入（未经明确同意绝不执行）、原则上零交互（执行确认是唯一必问；严检违例自动改写并汇报；语义两可才回头问用户）；无数量硬门控（不设上限校验，超大文档仅提示分批审阅）。
   在用户说「消费草稿」「组装建议」「严检定稿」「执行写回」或 ideator/stager/novelist 汇报指向本文档时使用。
 argument-hint: <文档路径（02_剧情数据/*_共识.md | *_定稿.md | *_补全_草稿.md）>
@@ -23,7 +23,7 @@ SUGGEST_LINT="python ${CLAUDE_SKILL_DIR}/../../scripts/suggest_lint.py"   # 建�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema（严检的唯一依据，**逐条目按涉及节点 Read 对应文件**，不凭记忆）：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/)（Event/SubEvent/Info/Lore/Cognition/StoryArc/Choice 与各边）、[Schema/角色美术/](../../../00_init/Schema/角色美术/)（Character）、[Schema/场景美术/](../../../00_init/Schema/场景美术/)（Location/Spot/Scene）。
+- Schema（严检的唯一依据，**逐条目按涉及节点 Read 对应文件**，不凭记忆）：[00_init/Schema/剧情/](../../../00_init/Schema/剧情/)（Event/SubEvent/Info〔固有 / 事件两类〕/Cognition/StoryArc/Choice 与各边）、[Schema/角色美术/](../../../00_init/Schema/角色美术/)（Character）、[Schema/场景美术/](../../../00_init/Schema/场景美术/)（Location/Spot/Scene）。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring（内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
 ## 流程（六步）
@@ -48,8 +48,8 @@ OUTPUT_DIR="02_剧情数据"
 
 - Event.title：一句话可独立成立的事实句（主谓宾）；
 - Event.description：钉子细节 1-3 句，**零时间措辞**——时序定位词（周X/当晚/当天/次日/深夜等）与相对时长词（N 天后）一律不写，**跨事件时序锚定（「瑜伽馆散场后/推荐完/买完教材」类回指上游事件的措辞）同禁**——时间唯一承载是 `start_time`/`end_time` 字段；不复述 title、不写后果（另一 Event+leads_to 的职责）、不写认知解读（Info 职责）、不写拓扑注记（Choice 边职责）、不着装（appears_as 边职责）；
-- Info.title/content：干净事实陈述，禁备忘/推导/编号引用/归属标注；knowledge_level 必填（1/2/3）；
-- Lore.title/content：同 Info 契约（干净事实陈述、禁备忘/推导/编号引用/归属标注）；knowledge_level 必填（1/2/3）；
+- Info.title/content：干净事实陈述，禁备忘/推导/编号引用/归属标注；knowledge_level 必填（1/2/3）。**两种标题契约**——固有 Info（挂 has_info）写「维度：值」、不带宿主名、一条一事（如「职业：理发师」）；事件 Info（挂 establishes）是带主语的完整事实句；content 默认不填；
+- **Info 挂靠互斥（机器项）**：每条 Info 恰一种挂靠——事件 Info 恰 1 条 establishes、0 条 has_info；固有 Info ≥1 条 has_info、0 条 establishes。两种都无或都有 → 报错退回；
 - StoryArc.description：主旨+氛围两段式（「主旨：」「氛围：」引导），值内换行写 `\n` 转义（禁物理换行），段内不写时间戳、不复述情节；
 - SubEvent.title：`<父title> · <叙事短名>`（非机位名）；description 节拍级粒度，对照 SubEvent.md 撰写契约正反例。
 
@@ -61,17 +61,17 @@ OUTPUT_DIR="02_剧情数据"
 - 既有实体 id 存在性：文档内联的全部 id 逐个 MATCH 验在图；故事线成员逐个验（MATCH 落空=静默丢边，缺失即报错回上游层，不静默丢弃）；
 - **文档内指称解析（混合定稿）**：S 条目中 `定稿I1/I2/I3「名称」` 指称（S2 父Event、S1 归属等）→ 在同文档 I 域条目中找到对应条目，组装时绑定其**同轮生成的 id**；指称找不到对应 I 条目 = 报错退回（不脑补、不许猜成既有实体——同文档指称只指向同文档条目）；
 - 占位查重：新占位与图上同名/同缺口实体对照（占位与真身重名=图上两节点打架）；同缺口勿重复建占位；**保留名占位带宿主 id 后缀**——`居住地点占位·<宿主id>`/`工作地点占位·<宿主id>`（后缀=Character 雪花 id，稳定唯一不受人名重复/改名影响；同名查重照常适用，同宿主同名占位再次出现=真冲突退回）；
-- **Lore 宿主查重（细化块机器项）**：新 Lore 与该 Character 既有 `has_info→Lore` 语义重复 → 报错退回（防第二套重复设定），不改写；
+- **固有 Info 宿主查重（细化块机器项）**：新固有 Info 与该 Character 既有的固有 Info（`MATCH (c {id:'…'})-[:has_info]->(i:Info) RETURN i.title LIMIT 50`）语义重复 → 报错退回（防第二套重复设定），不改写；新固有 Info 的 title 含宿主名 → 就地改写为「维度：值」（如「Tony 是理发师」→「职业：理发师」）；
 - **Info 查重浅验证（2026-11-20 裁定：语义判断归生成端 event-ideator，本层不做语义对照）**：新 Info 的承载事件为图上既有时，其已有 `establishes→` 其他 Info → 该 I3 条目必须带显式「不同侧面」区分标注（reason/区分点），缺 → 报错退回；新 Info title 归一化（去空白/标点）与既有 Info 完全同名 → 拦。除此之外不设任何语义判断；
-- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**认知三元不重复**（认知编年史：同一 (Character, Info) 多条并存合法，仅同 (Character, Info, forms 锚事件) 三元重复才报错退回——现查图已有同锚条目即拦）；态度转变 = **追加新条目**（新 Cognition + 三边，forms 锚转变事件，旧条零改动——无任何 SET/DELETE 改写语句）；**主语换挂**（认知归属人 A→B）在新条目照建后于汇报提示「建议摘除旧主语链（dashboard 人工执行）」——删边类不进建议 JSON；**forms ≥1**（开篇前固有认知走前史事件承载）；**锚事件 condition 检查**——establishes 与 forms 的锚事件挂 condition（choice 表达式分支事件）→ 报错退回（分支备线非既成事实，建了会跨支泄漏进小说取材）；**不查 type×title 映射**（语义表是写作参考非门禁）；
+- **Cognition 机器项（认知条目，契约见 [Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）**：type 枚举（KNOWS/BELIEVES/SUSPECTS/DOUBTS）；title 条件必填——所信命题 ≠ Info title 时必填、= 事实时不填（填即复述，违规改写为 null）；**认知三元不重复**（认知编年史：同一 (Character, Info) 多条并存合法，仅同 (Character, Info, forms 锚事件或「前史」) 三元重复才报错退回——现查图已有同锚条目即拦）；态度转变 = **追加新条目**（新 Cognition + 三边，forms 锚转变事件，旧条零改动——无任何 SET/DELETE 改写语句）；**主语换挂**（认知归属人 A→B）在新条目照建后于汇报提示「建议摘除旧主语链（dashboard 人工执行）」——删边类不进建议 JSON；**forms 可选、有口径**——指向事件 Info（有 establishes）的认知必须 ≥1 条 forms；**无 forms = 前史认知**（开篇前就知道），只能指向固有 Info（挂 has_info、无 establishes），指向事件 Info 却无 forms → 报错退回；**宿主不给自己建认知**（持有者同时是所指固有 Info 的宿主 → 报错退回）；**锚事件 condition 检查**——establishes 与 forms 的锚事件挂 condition（choice 表达式分支事件）→ 报错退回（分支备线非既成事实，建了会跨支泄漏进小说取材）；**不查 type×title 映射**（语义表是写作参考非门禁）；
 - 表外字段一律不写：占位 Character 只 name/vibe（细化块有 priority 则加写）、Location 只 name/description/**priority（占位恒 P3）**、Spot 只 name/kind/description、Scene 只 name/scene_type/status=0、CostumeStyle 只 name/vibe/status=0、IllusDesign 只 status=0。
 
 **各来源创作域红线**（越域条目报错退回，不改写；混合定稿按条目域各查各的）：
 
 - ideator：不建 SubEvent/Spot/Scene/CostumeStyle/IllusDesign/Choice，不改既有节点属性（I5 的 StoryArc.description 与 I6 的 Event.description 除外——后者仅盘点支线分界契约修正场景：剥 Info 复述/补行为名义/删时间措辞，reason 必含 before/after 摘要）；
-- refiner（I1 细化块）：只产 Character.priority、at 边（type=居住/工作，挂保留名占位或点名轮既有 Location id）、基础 Lore + has_info 边；不建 Event/Info/Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign，不改 vibe/name/事件条目；
-- stager：不建 Event/Info/Lore/Choice/Location/Character；Event 直挂 anchored_at/appears_as 为违规（EA5）；
-- novelist（N1）：只提新 Event/Info + 定位边（occurs_at/involved/leads_to/establishes）与认知条目（has_cognition/about/forms），**禁改既有实体属性、禁夹带校验节点、不建 Lore**。
+- refiner（I1 细化块）：只产 Character.priority、at 边（type=居住/工作，挂保留名占位或点名轮既有 Location id）、基础固有 Info + has_info 边（节点标签 `Info`）；不建 Event/事件 Info/Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign，不改 vibe/name/事件条目；
+- stager：不建 Event/Info/Choice/Location/Character；Event 直挂 anchored_at/appears_as 为违规（EA5）；
+- novelist（N1）：只提新 Event/Info + 定位边（occurs_at/involved/leads_to/establishes）与认知条目（has_cognition/about/forms），**禁改既有实体属性、禁夹带校验节点、不建固有 Info**。
 
 **违例处置**：可无损改写的（措辞越界、格式、序号、转义）就地改写，**before/after 逐条记入汇报**；改写会改变叙事语义的 → 停下问用户。
 
@@ -83,13 +83,13 @@ OUTPUT_DIR="02_剧情数据"
 
 顶层数组，逐项 `{check, priority, reason, content, cypher, source}`（source 按条目域）。**组装顺序 = 依赖序（节点先于边）**：
 
-- **混合定稿固定 I1 占位（含细化物化：占位 Location → Character → at 边 → Lore → has_info）→ S1 占位 → I2 事件 → S2 SubEvent → S3 补边**——S1 Spot 的 part_of 挂同轮 I1 生成的 Location id、S2 的 refines 挂同轮 I2 生成的事件 id、at 边挂同轮 I1 生成的 Character/保留名占位 id，按序执行/采纳时依赖成立；
+- **混合定稿固定 I1 占位（含细化物化：占位 Location → Character → at 边 → 固有 Info → has_info）→ S1 占位 → I2 事件 → S2 SubEvent → S3 补边**——S1 Spot 的 part_of 挂同轮 I1 生成的 Location id、S2 的 refines 挂同轮 I2 生成的事件 id、at 边挂同轮 I1 生成的 Character/保留名占位 id，按序执行/采纳时依赖成立；
 - 纯 S 定稿沿用 S1 → S2 → S3；纯 I 共识沿用 I1 → I2 → I3/I4/I5（先占位实体后事件，挂边随各自条目）。
 
 汇报附**跨条目依赖清单**（如「#5 S1 依赖 #1 I1 的生成 id」），提示执行/人工采纳按序全采、勿只采一半。check/priority 沿用：
 
 - ideator 域：I1_placeholder_entity（占位 Character 节点，细化块有 priority 则并入本项 SET；占位 Location 节点恒 priority=P3）/ I2_new_event（结局/转折 high 否则 medium）/ I3_new_info（low）/ I4_new_story_arc（medium；扩线注明、省略 CREATE 句）/ I5_story_arc_update（low，改既有节点属性例外一，仅 StoryArc.description）/ I6_desc_update（low，改既有节点属性例外二，仅 Event.description，盘点分界契约修正——新文案过零时间措辞/不复述 title/不写认知解读三检，reason 必含 before/after 摘要）；
-- refiner 域（I1 细化块物化，source='entity-refiner'）：R1_anchor_at（保留名占位 Location 节点 + at 边，随人物一项，medium）/ R2_char_lore（基础 Lore 节点 + has_info 边，每条一项，low）/ R3_char_priority（点名轮既有 Character 补写或改判 priority，low）；
+- refiner 域（I1 细化块物化，source='entity-refiner'）：R1_anchor_at（保留名占位 Location 节点 + at 边，随人物一项，medium）/ R2_char_lore（基础固有 Info 节点 + has_info 边，每条一项，low；项名沿用）/ R3_char_priority（点名轮既有 Character 补写或改判 priority，low）；
 - cognition 域（共识/定稿/点名稿含认知条目，source 按文档来源）：R4_cognition（Cognition 节点 + has_cognition/about/forms 三边，新建与追加同款——态度转变即追加新条目（forms 锚转变事件），主语换挂建新条目后汇报提示旧链人工摘除；叙事关键 medium 否则 low）；
 - stager 域：S1_placeholder_node（high）/ S2_subevent / S3_gap_fix；
 - novelist 域：N1_novel_new_entity（新 Event/Info + 定位边，priority 按事件类型同 I2）；
@@ -134,9 +134,12 @@ MATCH (e:Event {id:'<event_id>'}) MATCH (l:Location {id:'<loc_id>'}) MERGE (e)-[
 MATCH (c:Character {id:'<char_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;
 // 仅文档明说因果时（方向 = 因 → 果）
 MATCH (a:Event {id:'<既有事件id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:leads_to]->(e) ON CREATE SET r.sync=false;
-// Info（Event ─establishes→ Info，每个成立承载事件一条 establishes 边）
-MERGE (f:Info {id:'<snowflake>'}) ON CREATE SET f.title='<标题>', f.content='<内容>', f.knowledge_level=<1|2|3>;
+// 事件 Info（Event ─establishes→ Info，恰一个成立承载事件；title 是带主语的完整事实句）
+MERGE (f:Info {id:'<snowflake>'}) ON CREATE SET f.title='<标题：带主语的完整事实句>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
 MATCH (ev:Event {id:'<carrier_event_id>'}) MATCH (f:Info {id:'<info_id>'}) MERGE (ev)-[r:establishes]->(f) ON CREATE SET r.sync=false;
+// 固有 Info（(Character|Location) ─has_info→ Info；开篇前就已为真；title 写「维度：值」、不带宿主名、一条一事）
+MERGE (f:Info {id:'<snowflake>'}) ON CREATE SET f.title='<维度：值>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
+MATCH (h {id:'<host_id：Character 或 Location>'}) MATCH (f:Info {id:'<info_id>'}) MERGE (h)-[r:has_info]->(f) ON CREATE SET r.sync=false;
 // 故事线（I4 建线形；扩线形 = 仅 MERGE，每成员一条）
 MERGE (a:StoryArc {id:'<snowflake>'}) ON CREATE SET a.title='<标题>', a.description='主旨：…\n氛围：…';
 MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;
@@ -156,9 +159,9 @@ MATCH (a:StoryArc {id:'<arc_id>'}) MATCH (e:Event {id:'<event_id>'}) MERGE (a)-[
 MERGE (l:Location {id:'<snowflake>'}) ON CREATE SET l.name='居住地点占位·QP23NrFZrz', l.priority='P3';
 MATCH (c:Character {id:'<char_id_本建议占位或既有>'}) MATCH (l:Location {id:'<snowflake_同上>'})
 MERGE (c)-[r:at {type:'居住'}]->(l) ON CREATE SET r.start_time='<yyyy-MM-dd HH:mm:ss 或 开篇前>', r.end_time='<同左 或 至今>', r.sync=false;
-// R2_char_lore——基础 Lore 节点 + has_info 宿主边（每条一项）
-MERGE (f:Lore {id:'<snowflake>'}) ON CREATE SET f.title='<标题：干净事实陈述>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
-MATCH (c:Character {id:'<char_id>'}) MATCH (f:Lore {id:'<snowflake_同上>'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;
+// R2_char_lore——基础固有 Info 节点 + has_info 宿主边（每条一项；项名沿用，节点标签 Info）
+MERGE (f:Info {id:'<snowflake>'}) ON CREATE SET f.title='<维度：值，不带宿主名>', f.content='<内容，可空则省略本段>', f.knowledge_level=<1|2|3>;
+MATCH (c:Character {id:'<char_id>'}) MATCH (f:Info {id:'<snowflake_同上>'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;
 // R3_char_priority——点名轮既有 Character 补写/改判（唯一改既有 Character 属性的通道，仅 priority）
 MATCH (c:Character {id:'<char_id>'}) SET c.priority='<P0~P5>';
 ```
@@ -166,11 +169,12 @@ MATCH (c:Character {id:'<char_id>'}) SET c.priority='<P0~P5>';
 ### cognition 域（R4_cognition）
 
 ```
-// 新建/追加同款（认知编年史：态度转变=追加新条目，旧条零改动）——MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；同 (Character, Info, forms 锚事件) 三元不重复由 §1 严检在生成端保证（生成前现查三元组）
+// 新建/追加同款（认知编年史：态度转变=追加新条目，旧条零改动）——MERGE 幂等（重跑/双通道重入无重复），节点先于边，各语句自包含；同 (Character, Info, forms 锚事件或「前史」) 三元不重复由 §1 严检在生成端保证（生成前现查三元组）
 MERGE (c:Cognition {id:'<snowflake>'}) ON CREATE SET c.type='<KNOWS|BELIEVES|SUSPECTS|DOUBTS>', c.title='<仅所信≠Info title 时写，否则删本段>';
 MATCH (ch:Character {id:'<char_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;
 MATCH (c:Cognition {id:'<snowflake_同上>'}) MATCH (i:Info {id:'<info_id>'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;
 MATCH (ev:Event {id:'<forms_event_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
+// 前史认知（开篇前就知道；只能指向固有 Info）：省略上面 forms 那一句
 // 主语换挂：新主语按上款建新条目；旧主语链的删边不进建议 JSON——汇报提示「建议摘除旧主语链 <cognition_id>（dashboard 人工执行）」
 ```
 

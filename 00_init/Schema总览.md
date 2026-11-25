@@ -18,7 +18,7 @@
 
 | 文件 | 内容 | 核心节点 |
 |------|------|---------|
-| [Schema/剧情/](Schema/剧情/) | 叙事与剧情数据——每节点一文件 + 边.md | Event, SubEvent, Info, Lore, Choice, StoryArc, Chapter, Section, LineAudio |
+| [Schema/剧情/](Schema/剧情/) | 叙事与剧情数据——每节点一文件 + 边.md | Event, SubEvent, Info, Cognition, Choice, StoryArc, Chapter, Section, LineAudio |
 | [Schema/角色美术/](Schema/角色美术/) | 角色域——每节点一文件 + 边.md | Character, AppearanceStyle, CostumeStyle, LanguageStyle, DesignSheet, IllusDesign, StandingIllustration |
 | [Schema/场景美术/](Schema/场景美术/) | 空间域——每节点一文件 + 边.md | Location, Spot, Scene, SceneLayer |
 | [Schema/声音/](Schema/声音/) | 角色如何从文字变成声音 + 场景 BGM——每节点一文件 + 边.md | VoiceDesign, BgmTrack |
@@ -33,9 +33,8 @@
 **剧情——事件与信息**
 - **Event** — 某时某刻发生的某件事
 - **SubEvent** — 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as 两边，无 status
-- **Info** — 一条事件性事实（Event 记「发生」，Info 记「事实」；establishes 边承载成立，Cognition 层承载知晓分布，交付时机归写作层裁量）
-- **Cognition** — 一条认知持有（某角色自 forms 锚事件起对某 Info 以什么态度持有什么认知；封闭世界：时间点 T 无 forms≤T 的链=不知情；认知编年史——同 (Character, Info) 多条并存，态度转变=追加新条目旧条保留；见 [剧情/Cognition.md](剧情/Cognition.md)）
-- **Lore** — 一条固有设定（角色/地点的固有事实；has_info 宿主挂靠，无揭示时刻，暴露节奏归写作层遗忘曲线）
+- **Info** — 一条事实（Event 记「发生」，Info 记「事实」）。按挂靠边分两类、互斥：**固有 Info**（`(Character|Location) ─has_info→`，开篇前就已为真；title 写「维度：值」、不带宿主名）/ **事件 Info**（`Event ─establishes→`，故事内某个动作使之成立；title 是带主语的完整事实句）。宿主默认自知名下的固有 Info；知晓分布由 Cognition 层承载，交付时机归写作层裁量（见 [剧情/Info.md](剧情/Info.md)）
+- **Cognition** — 一条认知持有（某角色对某 Info——固有或事件——以什么态度持有什么认知）。forms 可选：有 forms = 自锚事件起得知；无 forms = 开篇前就持有的前史认知（只能指向固有 Info）。封闭世界：既无有效认知链、也不是宿主 = 不知情；认知编年史——同 (Character, Info) 多条并存，态度转变=追加新条目旧条保留；见 [剧情/Cognition.md](剧情/Cognition.md)）
 
 **剧情——分叉与编排**
 - **Choice** — 玩家选择分叉点（galgame 选项；Event presents 触发、option 导向后续）
@@ -76,11 +75,11 @@
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.start_time 承载；事件↔信息归 Info 节点与 establishes 边） |
-| has_info | (Character\|Location) → Lore | N:N | ❌ | **固有设定宿主**（宿主轴）——Lore 是宿主角色/地点的固有事实（陆择→陆择是海王）；构图期人工拍板 |
-| establishes | Event → Info | 1:N | ❌ | **成立**（成立轴）——该事件使事实成立并进入故事（陈念来电→相亲安排成立）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；成立锚唯一：每条 Info 恰 1 入边，成立≠揭示，揭示/告知/印证事件不挂本边；固有前史事实建前史事件承载；event-ideator 产 |
-| has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色自 forms 锚事件起持有对某 Info 的认知；同 (Character, Info) 多条并存（认知编年史，转变=追加新条目） |
-| about | Cognition → Info | N:1 | ❌ | **指向**（指向轴）——认知针对哪条 Info |
-| forms | Event → Cognition | N:N | ❌ | **成因**（成因轴）——角色在该事件形成/改变认知（「何时知道」=锚事件 start_time）；每条 Cognition ≥1 入边，开篇前固有认知走前史事件；时间点 T 的认知态=该 (Character, Info) 下 forms≤T 最新一条 |
+| has_info | (Character\|Location) → Info | N:N | ❌ | **固有宿主**（宿主轴）——该 Info 是固有 Info：宿主角色/地点开篇前就已为真的事实（title 写「维度：值」、不带宿主名，如 陆择→「特长：恋爱话术」）；每条固有 Info ≥1 入边、与 establishes 互斥；宿主默认自知 |
+| establishes | Event → Info | 1:N | ❌ | **成立**（成立轴）——该事件使这条事件 Info 成立并进入故事（陈念来电→相亲安排成立）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；成立锚唯一：每条事件 Info 恰 1 入边、0 条 has_info，成立≠揭示，揭示/告知/印证事件不挂本边；开篇前就已为真的事实建固有 Info（has_info），不建成立事件；event-ideator 产 |
+| has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色持有对某条 Info（固有或事件）的认知；同 (Character, Info) 多条并存（认知编年史，转变=追加新条目） |
+| about | Cognition → Info | N:1 | ❌ | **指向**（指向轴）——认知针对哪条 Info（固有或事件皆可） |
+| forms | Event → Cognition | 0:N | ❌ | **成因**（成因轴）——角色在该事件得知/改变认知（「何时知道」=锚事件 start_time）；**可选**：无 forms = 前史认知（开篇前就持有，只能指向固有 Info），指向事件 Info 的认知必有 forms；时间点 T 的认知态=该 (Character,Info) 下 forms≤T 的最新一条 |
 | **剧情——分叉与编排** | | | | |
 | presents | Event → Choice | N:N | ❌ | 事件触发选择 |
 | option | Choice → Event | N:N | ❌ | 选项导向后续事件 |
@@ -118,8 +117,7 @@ flowchart LR
     subgraph 剧情_事件["剧情——事件与信息"]
         Event["Event"]
         SubEvent["SubEvent（演出物化）"]
-        Info["Info"]
-        Lore["Lore"]
+        Info["Info（固有 / 事件）"]
     end
 
     subgraph 剧情_编排["剧情——分叉与编排"]
@@ -162,8 +160,8 @@ flowchart LR
     Character -->|"relation ❌ N:N"| Character
     Character -->|"at ❌ N:N"| Location
     Character -->|"involved ❌ N:N"| Event
-    Character -->|"has_info ❌ N:N"| Lore
-    Location -->|"has_info ❌ N:N"| Lore
+    Character -->|"has_info ❌ N:N 固有"| Info
+    Location -->|"has_info ❌ N:N 固有"| Info
     Appearance -->|"produces ✅ 1:N 版本链"| DesignSheet
     Costume -->|"outfit_for ✅ 1:N"| IllusDesign
     DesignSheet -->|"produces ✅ 1:N"| IllusDesign
@@ -192,7 +190,7 @@ flowchart LR
 
 ## 剧情域
 
-> 本文件定义全部叙事与剧情数据实体：**事件与信息**（Event / SubEvent / Info / Lore——**Event 记「发生」，Info 记「事实」，Lore 记「固有」**）、**选择分叉与故事线**（Choice / StoryArc）、**剧本编排**（Chapter / Section / LineAudio）。人物实体（Character）见 [角色美术/Character.md](角色美术/Character.md)；空间实体（Location / Spot / Scene）见 [场景美术/](场景美术/) 各节点文件。「事件与信息 + 选择分叉/故事线」即旧称的**叙事基础域**（原独立文件已并入本文件）。
+> 本文件定义全部叙事与剧情数据实体：**事件与信息**（Event / SubEvent / Info——**Event 记「发生」，Info 记「事实」**）、**选择分叉与故事线**（Choice / StoryArc）、**剧本编排**（Chapter / Section / LineAudio）。人物实体（Character）见 [角色美术/Character.md](角色美术/Character.md)；空间实体（Location / Spot / Scene）见 [场景美术/](场景美术/) 各节点文件。「事件与信息 + 选择分叉/故事线」即旧称的**叙事基础域**（原独立文件已并入本文件）。
 
 > `includes`（Section→Event）承载节成员与顺序；选绘沿 `Section→includes→Event→refines→SubEvent→appears_as→IllusDesign` 直读。
 
@@ -207,11 +205,12 @@ galgame 运行时剧本的编排层：章（Chapter）→ 节（Section）→ �
 ```mermaid
 flowchart LR
     Character["Character（角色域）"] -->|"involved ❌ N:N"| Event["Event<br/>事件"]
-    Character -->|"has_info ❌ N:N"| Lore["Lore<br/>固有设定"]
-    Location["Location（场景域）"] -->|"has_info ❌ N:N"| Lore
+    Character -->|"has_info ❌ N:N 固有"| Info
+    Location -->|"has_info ❌ N:N 固有"| Info
+    Location["Location（场景域）"] -->|"has_info ❌ N:N 固有"| Info
     Event -->|"occurs_at ❌ N:N"| Location
     Event -->|"refines ✅ 1:N"| SubEvent["SubEvent<br/>演出物化"]
-    Event -->|"establishes ❌ 1:N"| Info["Info<br/>事件性事实"]
+    Event -->|"establishes ❌ 1:N 事件"| Info
     Character -->|"has_cognition ❌ 1:N"| Cog["Cognition<br/>认知持有"]
     Cog -->|"about ❌ N:1"| Info
     Event -->|"forms ❌ N:N"| Cog
@@ -240,7 +239,6 @@ python "${CLAUDE_SKILL_DIR}/../../scripts/snowflake_base62.py" -n 1 -q
 ```cypher
 MATCH (e:Event) WHERE e.title='事件标题' RETURN e.id AS id
 MATCH (f:Info) WHERE f.title='事实标题' RETURN f.id AS id
-MATCH (l:Lore) WHERE l.title='设定标题' RETURN l.id AS id
 MATCH (ch:Choice) WHERE ch.name='选择名' RETURN ch.id AS id
 MATCH (a:StoryArc) WHERE a.title='故事线标题' RETURN a.id AS id
 MATCH (c:Chapter) WHERE c.title='章标题' RETURN c.id AS id
@@ -255,9 +253,8 @@ MATCH (c:Chapter) WHERE c.title='章标题' RETURN c.id AS id
 | from | 允许的边 | to |
 |------|---------|-----|
 | Event | occurs_at, leads_to, presents, refines, establishes, forms | Location / Event / Choice / SubEvent / Info / Cognition |
-| Info | （无出边——事实终点，只被 Event─establishes 与 Cognition─about 指向） | — |
+| Info | （无出边——事实终点，只被 has_info / Event─establishes / Cognition─about 指向） | — |
 | Cognition | （无出边——只被 has_cognition 与 forms 指向，about 出边指向 Info） | Info（about） |
-| Lore | （无出边——设定终点，只被 has_info 指向） | — |
 | SubEvent | anchored_at*, appears_as** | Scene / IllusDesign |
 | Choice | option | Event |
 | StoryArc | comprises | Event |
@@ -277,14 +274,14 @@ MATCH (c:Chapter) WHERE c.title='章标题' RETURN c.id AS id
 
 | 建模维度 | 单一事实源 | 一句话定义 |
 |---|---|---|
-| **这是个什么人** | [Lore](剧情/Lore.md)（+at 边） | 身份事实：职业、家世、与谁有何关系 |
+| **这是个什么人** | 固有 Info（[Info.md](剧情/Info.md)，`has_info` 宿主挂靠；+at 边） | 身份事实：职业、家世、与谁有何关系 |
 | **视觉看上去如何** | vibe + AppearanceStyle | vibe=恒定调性（气质+配色方向）；AppearanceStyle=客观外貌（结构化字段） |
 | **习惯怎么说话** | speech_style（LanguageStyle） | 底色腔调+五境变形规则 |
 
 往下接物化层：
 
 ```
-这是谁（Lore / vibe / speech_style —— 三个"是什么"）
+这是谁（固有 Info / vibe / speech_style —— 三个"是什么"）
     ↓ 细化为
 长什么样（AppearanceStyle 客观外貌 + CostumeStyle 着装）
     ↓ 物化为
@@ -358,7 +355,7 @@ MATCH (c:Character) WHERE c.name='角色名' RETURN c.id AS id
 
 | from | 允许的边 | to |
 |------|---------|-----|
-| Character | relation, at, has_appearance, has_costume, has_voice_style, has_voice_design*, involved*, has_info* | Character / Location / AppearanceStyle / CostumeStyle / LanguageStyle / VoiceDesign / Event / Lore |
+| Character | relation, at, has_appearance, has_costume, has_voice_style, has_voice_design*, involved*, has_info* | Character / Location / AppearanceStyle / CostumeStyle / LanguageStyle / VoiceDesign / Event / Info（固有） |
 | AppearanceStyle | produces | DesignSheet |
 | CostumeStyle | outfit_for | IllusDesign |
 | DesignSheet | produces | IllusDesign |
@@ -470,7 +467,7 @@ MATCH (sp:Spot) WHERE sp.name='空间名' RETURN sp.id AS id
 
 | from | 允许的边 | to |
 |------|---------|-----|
-| Location | has_info*, part_of | Lore / Spot |
+| Location | has_info*, part_of | Info（固有） / Spot |
 | Spot | realizes | Scene |
 | Scene | has_layer, has_bgm* | SceneLayer / BgmTrack |
 | SceneLayer | — | （终端节点，无出边） |

@@ -14,7 +14,7 @@ allowed-tools: Read, Bash, Write, Edit
 
 # 节细节对话（Section 定稿态 · status=10/11/-1）
 
-剧情创作流程的**定稿段**（节级第二环；第一环 tabletop-dialoguer 产跑团草稿——chapter-novelist 已软删 2026-11-20）。读创作土壤（跑团模式：本节**跑团草稿.md**——拍头【场景…｜block】行即拓扑契约；存量小说模式：小说.md 的 `###` 场景段标题照旧；存量直连模式：sec.script_path 历史提纲/骨架文件），**从草稿打磨重写**逐句对话，产出节级 **`台词.ink`**（落盘 25_剧本/ch<NN>/sec<MM>/，编号目录）——人读/人改的定稿 ink 方言（**机器可解析**：人工批准后由 section-voice-publisher 拆分进图）。落盘 `25_剧本/ch<NN>/sec<MM>/`（编号目录；**创作/审阅区，非运行时**）。
+剧情创作流程的**定稿段**（节级第二环；第一环 tabletop-dialoguer 产跑团草稿——chapter-novelist 已软删 2026-11-20）。读创作土壤（跑团模式：本节**跑团草稿.md**——拍头【场景…｜block】行即拓扑契约；存量小说模式：小说.md 的 `###` 场景段标题照旧；存量直连模式：sec.script_path 历史提纲/骨架文件），**从草稿打磨重写**逐句对话，产出节级 **`台词.ink`**——人读/人改的定稿 ink 方言（**机器可解析**：人工批准后由 section-voice-publisher 拆分进图）。**创作土壤（跑团草稿.md、存量小说.md）在工作区 `Harness/25_剧本/ch<NN>/sec<MM>/`**（Asset 仓库上一层目录里的 `Harness/`，下称**土壤目录**）；`台词.ink` 落盘本仓库的 `25_剧本/ch<NN>/sec<MM>/`（下称**定稿目录**；编号目录；**创作/审阅区，非运行时**）。两者不在一处。
 
 ## 参数
 
@@ -41,20 +41,21 @@ LIMIT 1
 
 #### 1a-2. 模式判定（作废重做 / 常规创作 / 占位填充）
 
-`script_path` 已有值时，Read 该 台词.ink 并检查是否含 `llm:` 行：
+`script_path` 已有值时，Read 该 台词.ink 并检查是否含 `llm:` 行。**按 `Section.status` 判定**——`script_path` 有值不再等同于「已批」（存量节与跑团重跑的节都可能带着旧的 `script_path`）：
 
 - **`sec.status = -1`** → 作废重做：整篇重新创作覆盖（见顶部注记）。
+- **`sec.status = 1`** → 跑团尚未消费完：停止并提示「跑团进行中，草稿未就绪」（守护进程在跑或待跑，完成时 status 置 2）。
 - **`sec.status = 10`** → 定稿待人工审：停止并提示（批准 11 后由 voice-publisher 拆分；驳回 -1 后才轮到本 skill 重做——编排层不会在 10 态调本 skill，此处为防御）。
 - **含 `llm:` 占位** → 进入**填充模式**（直接走 §2b）：只扩写占位、其余行一字不动。用户流程是「占位 → LLM 填充 → 人工微调」，**禁止整篇重写覆盖手改**。
-- **无占位 且 script_path 已有值** → 定稿已批（sc=11），停止并提示（防覆盖手改/已定稿；要重做先经 dashboard 驳回或用户明示）。
-- **script_path 为空** → 常规创作流程。
+- **无占位 且 script_path 已有值 且 `sec.status = 11`** → 定稿已批，停止并提示（防覆盖手改/已定稿；要重做先经 dashboard 驳回或用户明示）。
+- **其余**（**script_path 为空**，或 `sec.status = 0` / `2`）→ 常规创作流程。`status = 2` 表示跑团草稿已就绪、旧 `script_path` 指向的是存量产物：以跑团草稿为土壤常规创作并覆盖。
 
 #### 1b. 章级依据（图）+ 创作土壤（小说 / 存量提纲）+ 查创作上下文
 
 **先读两份创作依据**：
 - **创作土壤（按 1b-2 判定）**：
-  - **跑团模式（现行链）**：Read 节目录 `跑团草稿.md`（tabletop-dialoguer 产出）——拍头 `【场景：地点·时间｜block <scene_block_id>】` 行是拓扑契约（场景块 id 唯一来源，同机位多拍同 id、按拍序合并为场景块，照搬不改写）；DM 旁白 + 台词行 + 内心轨是创作土壤；**文末内部附录（DM 判定/量化对照/机制发现）不是土壤，打磨时整体剥离**。
-  - **存量小说模式（兼容）**：Read 节目录 `小说.md`（chapter-novelist 存量产出）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
+  - **跑团模式（现行链）**：Read 土壤目录的 `跑团草稿.md`（tabletop-dialoguer 产出）——拍头 `【场景：地点·时间｜block <scene_block_id>】` 行是拓扑契约（场景块 id 唯一来源，同机位多拍同 id、按拍序合并为场景块，照搬不改写）；DM 旁白 + 台词行 + 内心轨是创作土壤；**文末内部附录（DM 判定/量化对照/机制发现）不是土壤，打磨时整体剥离**。
+  - **存量小说模式（兼容）**：Read 土壤目录的 `小说.md`（chapter-novelist 存量产出的副本，归 Harness）——`### <scene_block_id> <场景名> <时段>` 场景段标题是拓扑契约（场景块 id/顺序唯一来源，照搬不改写）；`## 视角`/`## 人物速写`/正文是创作土壤。
   - **存量直连模式**：Read `sec.script_path` 指向的历史文件（旧 outline.md / 骨架 ink / dayNN 蓝本），场景分段与分支拓扑照旧以它为准。
 
 再查图（角色 LanguageStyle 同前 + **分支骨架**——分支事实权威在图 Choice/option，小说模式必查：`MATCH (sec:Section {id})-[:includes]->(e:Event) OPTIONAL MATCH (e)-[:presents]->(choice:Choice) OPTIONAL MATCH (choice)-[op:option]->(target:Event) RETURN …`，Choice 的 options/label/去向以此为准核对小说结构）。
@@ -76,22 +77,22 @@ LIMIT 20
 #### 1b-2. 创作土壤判定 + 取材指纹自检（填充模式跳过本节）
 
 **按创作土壤文件存在性判定（优先级从上到下）**：
-- 节目录 `跑团草稿.md` 存在 → **跑团模式**（现行链，下文必过指纹自检）。
-- 无 `跑团草稿.md` 但 `小说.md` 存在 → **存量小说模式**（兼容，下文必过指纹自检）。
+- 土壤目录 `跑团草稿.md` 存在 → **跑团模式**（现行链，下文必过指纹自检）。
+- 土壤目录无 `跑团草稿.md` 但 `小说.md` 存在 → **存量小说模式**（兼容，下文必过指纹自检）。
 - 两者皆无且 `script_path` 已有历史值 → **存量直连模式**（旧流程节，读该历史文件照旧创作，跳过指纹自检）。
-- 两者皆无且 `script_path` 为空 → 停止并提示先跑 `tabletop-dialoguer <sec_id>`（草稿段未做，台词须从跑团草稿打磨）。
+- 两者皆无且 `script_path` 为空 → 停止并提示先把 `Section.status` 置 `1` 进跑团管线（`tabletop-dialoguer` 的守护进程消费后产草稿、置 2；台词须从跑团草稿打磨）。
 
 **跑团/小说模式必过指纹自检**（草稿是纯文件产物，新鲜度由内容指纹保证——status 只标记「产出过」不实时反映素材变动）：
 
 ```bash
-# 1) 圈定素材（与 tabletop-dialoguer §9 同一条 UNION 查询,includes 物化成员直取,见该 SKILL.md）
-python "${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py" -c "<圈定 UNION 查询>" --json > .tmp/novelist/<sec_id>_materials.json
+# 1) 圈定素材（与 tabletop-dialoguer 守护进程同一条查询——直接调它的子命令取，不手抄 Cypher；零 LLM 调用、不写图。路径相对 Asset 根，工作区布局见根 CLAUDE.md）
+python ../Harness/tabletop-dialoguer/scripts/tabletop_runner.py materials --section <sec_id> > .tmp/novelist/<sec_id>_materials.json
 # 2) 自检（同源脚本,归一化规则与生成侧一致;--novel 参数对 跑团草稿.md / 小说.md 通用）
 python "${CLAUDE_SKILL_DIR}/../../scripts/fingerprint.py" check --novel "<跑团草稿.md|小说.md>" --in .tmp/novelist/<sec_id>_materials.json
 ```
 
 - **exit 0（新鲜）** → 草稿可用，进入段 2 打磨。
-- **exit 1（stale：已记素材变动/被删）** → **停止**，产出报告（stale 明细 + 「需先重跑 tabletop-dialoguer 重产草稿并作废定稿；存量小说链经编排重写」）退出——本 skill 不作废 sc（职责在编排层），plot-design 接住后调 tabletop 重跑（其落盘步作废定稿链），重产后本 skill 重新打磨。圈定内未标注（未使用）的素材不算 stale，属常态。
+- **exit 1（stale：已记素材变动/被删）** → **停止**，产出报告（stale 明细 + 「需先重跑 tabletop-dialoguer 重产草稿并作废定稿；存量小说链经编排重写」）退出——本 skill 不作废 sc（职责在编排层），plot-design 接住后作废定稿链（置 `-1`）再置 `1` 重入跑团管线，tabletop 守护进程重产后本 skill 重新打磨。圈定内未标注（未使用）的素材不算 stale，属常态。
 
 ### 2. 完成任务（从草稿打磨细节对话）
 
@@ -157,13 +158,13 @@ bed- rain
 9. **覆盖完整**：提纲全部场景段、分支、结局都要写，不得增删场景/分支。
 10. **情感递进**：每个场景内部情绪有起伏（不是平铺），对齐小说场景段结构与情绪推进的节奏。
 11. **机器可解析（硬约束）**：台词.ink 是 section-voice-publisher 拆分进图（`script_splitter.py parse_ink`）的输入——行型严格依赖行首标记（`===`/`=`/`* `/`+ `/`-> `/`//`/`sfx:`/`llm:`/`bed+`/`bed-`/`旁白:`/`角色名:`），**台词正文中不得出现这些行首前缀**（换行重写）；无法解析的行会在拆分时报错（行号+原文），拆分前必须修 ink。行首 `->` 仅支持裸 `-> END`（其余 divert 报错——jump 暂无图行建模）。
-12. **Write 落盘**：`25_剧本/ch<NN>/sec<MM>/台词.ink`（编号目录：NN=chapter_no、MM=section_no 零填充，与该节小说.md 同目录）。`Section.script_path` 指向此 `.ink` 路径。Write 自动创建章/节目录。
+12. **Write 落盘**：定稿目录 `25_剧本/ch<NN>/sec<MM>/台词.ink`（本仓库；编号目录：NN=chapter_no、MM=section_no 零填充）。`Section.script_path` 指向此 `.ink` 路径（项目根相对）。Write 自动创建章/节目录。创作土壤在土壤目录（工作区 Harness/25_剧本/ 的同名路径），不往那里写东西。
 
 #### 创作质量自检（发现 outline 破碎 → FAIL 报告）
 
 创作完成后自检，若发现**根本问题在创作土壤而非台词**——再怎么写也写不出合格对话，按根因分两路（都不落盘、不写 status，产出「结构性问题报告」）：
 
-- **根因在草稿层**（跑团模式）：场景帧要素矛盾 / 角色行止与钉子冲突 / scene 间无情绪推进（无 turning point/climax）/ 草稿块结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 草稿层」，由 plot-design 接住后调 `tabletop-dialoguer` 强制重跑（重跑覆盖草稿并作废定稿链）；存量小说模式根因（人物速写矛盾/视角漂移等）同走编排回退。**与上游素材不足报告对称**——不硬凑烂对话交付。
+- **根因在草稿层**（跑团模式）：场景帧要素矛盾 / 角色行止与钉子冲突 / scene 间无情绪推进（无 turning point/climax）/ 草稿块结构与图 Choice 分支冲突到无法提炼 → 报告标注「根因 = 草稿层」，由 plot-design 接住后作废定稿链、置 `1` 重入跑团管线（tabletop 守护进程重跑覆盖草稿）；存量小说模式根因（人物速写矛盾/视角漂移等）同走编排回退。**与上游素材不足报告对称**——不硬凑烂对话交付。
 - **根因在图素材**（两模式皆可）：分支 options 无戏剧本质差异（flavor 级 Choice）/ 拓扑死胡同或 ending 缺落点（图 option 指向的 Event 缺失）→ 报告标注「根因 = 叙事图」，提示用户跑 `event-ideator` 补全 Choice 分化或落点事件后重调。
 
 > 通过自检才进段 3 写图。

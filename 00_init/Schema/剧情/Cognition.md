@@ -1,26 +1,37 @@
 # 认知（Cognition）
 
-一条认知持有：**某角色自 forms 锚事件起、对某条 Info 以什么态度持有什么认知**。中间节点层——
-知晓分布的唯一判源（封闭世界：时间点 T 无有效认知链 = T 时刻不知情）。
+一条认知持有：**某角色对某条 Info 以什么态度持有什么认知，以及是何时、经何事件得知的**。中间节点层——
+知晓分布的唯一判源（封闭世界：角色对某 Info 在时刻 T 无有效认知链 = T 时刻不知情）。
 
-整句读法：`<角色> 在 <forms 边的事件> 中，对 <about 边的 Info> 形成了 <type [+title]> 的认知`。
+整句读法：`<角色> 对 <about 边的 Info> 持有 <type [+title]> 的认知`；有 forms 边时「自 <锚事件> 起」，
+没有 forms 边时「开篇前就已持有」。
 
-- 三边：`Character ─has_cognition→ Cognition ─about→ Info`，`Event ─forms→ Cognition`
+- 三边：`Character ─has_cognition→ Cognition ─about→ Info`，`Event ─forms→ Cognition`（**可选**）
   （边定义见 [边.md](边.md)）。
-- **封闭世界**：角色对某 Info 无 has_cognition 链 = 该角色不知道这条 Info（时间点
-  语义：无 forms 锚 start_time ≤ T 的链 = T 时刻不知道）。只给知情者/偏差者建节点，
-  不做「不知道」显式节点；因此知情盘点必须完整——漏建节点会被判「不知道」。
-- **认知编年史（append-only）**：同一 `(Character, Info)` 允许多条 Cognition 沿
-  forms 时间轴并存——各记一态，误信态与揭底态共存是常态（例：陈默 06-12 对相亲局
-  持 BELIEVES「一起吃饭」、06-14 揭底后追加 KNOWS，两条并存）。态度转变 = **追加
-  新条目**（新 snowflake + 三边，forms 锚转变事件），旧条保留永不覆盖——认知历史
-  与 Event/Info 同为不可变的世界事实。**取材规则**：时间点 T 的认知态 = 该
-  (Character, Info) 下 forms 锚 start_time ≤ T 的**最新一条**；查询可全量返回时间线
-  （认知演变线对创作层有戏眼价值），投放白名单时按拍时刻取最新有效态。
-- **forms 必填 ≥1**：认知必有来处（开篇前固有认知走前史事件承载，不开免挂口）。
-- 与 `Event ─establishes→ Info`（成立轴）分工：establishes 答「事实因何成立」，
-  Cognition 答「谁以什么态度知道」；事件 involved 参与不推导出任何知情
-  （「参与即知情」已废止）。
+- **可指向任一类 Info**：事件 Info（故事内成立的事实）与固有 Info（开篇前已为真的事实，两类见
+  [Info.md](Info.md)）都能被认知指向。固有 Info 的宿主默认自知，不给自己建认知。
+- **forms 可选**：
+  - **有 forms**：角色在该锚事件得知（「何时知道」= 锚事件 start_time）。
+  - **没有 forms = 前史认知**：开篇前就持有，任意时刻有效（「A 开篇前就知道 B 是富家公子」）。
+  - **不变式：前史认知只能指向固有 Info**——事件 Info 在成立之前无人可知，指向事件 Info 的认知必须有 forms。
+- **时刻 T 的知识集**：`<角色> 在 T 知道什么` = 有效认知链（forms 锚 start_time ≤ T，或无 forms）指向的
+  Info ∪ 该角色宿主的固有 Info（`has_info`）。这是认知集投放与披露审验共用的唯一定义。双轨角色
+  （宿主被灵魂控制）：灵魂不继承宿主的固有 Info 与入住前形成的认知（消费方规则）。
+- **封闭世界**：角色对某 Info 既无认知链、也不是它的宿主 = 不知道（时间点语义：有 forms 的链要求
+  锚事件 start_time ≤ T）。只给知情者/偏差者建节点，不做「不知道」显式节点；因此知情盘点必须完整——
+  漏建节点会被判「不知道」。
+- **认知编年史（append-only）**：同一 `(Character, Info)` 允许多条 Cognition 沿 forms 时间轴并存——各记一态，
+  误信态与揭底态共存是常态（例：陈默 06-12 对相亲局持 BELIEVES「一起吃饭」、06-14 揭底后追加 KNOWS，
+  两条并存）。态度转变 = **追加新条目**（新 snowflake + 三边，forms 锚转变事件），旧条保留永不覆盖——
+  认知历史与 Event/Info 同为不可变的世界事实。**取材规则**：时间点 T 的认知态 = 该 (Character, Info) 下
+  有效条目里 forms 锚 start_time ≤ T 的**最新一条**；前史认知（无 forms）是时间轴上最早的一态——后续
+  转变条目从其锚时刻起生效，锚时刻之前仍是前史那一态。查询可全量返回时间线（认知演变线对创作层有
+  戏眼价值），投放白名单时按拍时刻取最新有效态。
+- **披露审验**：一条固有 Info **一旦有人持认知**，就进入封闭世界管理——说话人与听者两侧都按知识集判，
+  **宿主自述也不例外**。剧情上要让某人得知一条固有事实（包括当事人自己说出来），在设计期建 Cognition
+  （forms 锚在说出口的那场戏）；写作层不得临场创造知情者。
+- 与 `Event ─establishes→ Info`（成立轴）分工：establishes 答「事实因何成立」，Cognition 答「谁以什么
+  态度、何时知道」；事件 involved 参与不推导出任何知情（「参与即知情」已废止）。
 
 ## 字段
 
@@ -54,6 +65,8 @@ MERGE (c:Cognition {id:'<snowflake>'}) ON CREATE SET c.type='<KNOWS|BELIEVES|SUS
 MATCH (ch:Character {id:'<char_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ch)-[r:has_cognition]->(c) ON CREATE SET r.sync=false;
 MATCH (c:Cognition {id:'<snowflake_同上>'}) MATCH (i:Info {id:'<info_id>'}) MERGE (c)-[r:about]->(i) ON CREATE SET r.sync=false;
 MATCH (ev:Event {id:'<forms_event_id>'}) MATCH (c:Cognition {id:'<snowflake_同上>'}) MERGE (ev)-[f:forms]->(c) ON CREATE SET f.sync=false;
+
+// 前史认知（开篇前就持有）：同上，**省略 forms 那一句**；about 的终点必须是固有 Info（挂 has_info、无 establishes）
 
 // 追加（态度转变）：与新建同款——新 snowflake 再建一条（has_cognition 同角色、about 同 Info、forms 锚转变事件），旧条零改动（编年史并存，无 SET/DELETE 改写语句）
 ```

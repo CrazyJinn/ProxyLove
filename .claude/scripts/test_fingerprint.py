@@ -1,6 +1,7 @@
 """test_fingerprint.py — fingerprint.py 单测(纯逻辑,不连图库不碰真实小说)。
 
-覆盖:gen 强度标记 / check 双形态 kind 容错 / freshness 指数衰减·S 重置·跨章·自由节·kl 非法·从未消费。
+覆盖:gen 强度标记 / check 双形态 kind 容错·按 id 比对(kind 变化不 stale) / 两份副本字节一致 /
+freshness 指数衰减·S 重置·跨章·自由节·kl 非法·从未消费。
 fixture 在 tmp 目录构造小说树,不读 25_剧本 真实数据。用 dashboard venv 跑:uv run pytest / python -m pytest。
 """
 
@@ -11,6 +12,7 @@ import json
 import os
 import sys
 from contextlib import redirect_stdout
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 import fingerprint as fp  # noqa: E402
@@ -102,6 +104,41 @@ def test_check_content_change_stale(tmp_path):
     changed = lore("L1", content="改了")
     rc, _ = capture(fp.cmd_check, [changed], novel)
     assert rc == 1
+
+
+def test_check_kind_change_same_id_not_stale(tmp_path):
+    # 一条事实在数据治理里换了类别(info ↔ lore):同 id 同内容,kind 令牌变了不算 stale(按 id 比对)
+    novel = write_novel(tmp_path, "ch00/sec00/小说.md",
+                        [f"info   L9 {fp.fingerprint(info('L9'))} 事实九"])
+    rc, _ = capture(fp.cmd_check, [dict(info("L9"), kind="lore")], novel)
+    assert rc == 0
+    novel2 = write_novel(tmp_path, "ch00/sec01/小说.md",
+                         [f"lore   L8 {fp.fingerprint(lore('L8'))} 设定八"])
+    rc2, _ = capture(fp.cmd_check, [dict(lore("L8"), kind="info")], novel2)
+    assert rc2 == 0
+
+
+def test_check_reports_original_kind_on_stale(tmp_path):
+    # stale 明细仍打印头部原来的 kind(便于人工定位);同 id 在素材里出现两次时哈希相同,后到覆盖无影响
+    novel = write_novel(tmp_path, "ch00/sec00/小说.md",
+                        [f"info   L1 {fp.fingerprint(info('L1'))} 事实一",
+                         f"lore   L2 {fp.fingerprint(lore('L2'))} 设定二"])
+    rows = [info("L1", title="改了"), lore("L2"), dict(lore("L2"), kind="info")]
+    rc, out = capture(fp.cmd_check, rows, novel)
+    assert rc == 1 and "info L1" in out and "已删" not in out
+
+
+def test_fingerprint_copies_are_byte_identical():
+    # fingerprint.py 在 Asset(.claude/scripts,生成侧)与 Harness(tabletop-dialoguer/scripts,自检侧)各有一份,必须字节一致
+    here = Path(__file__).resolve().parent / "fingerprint.py"
+    root = here.parents[3]
+    others = [root / "Asset" / ".claude" / "scripts" / "fingerprint.py",
+              root / "Harness" / "tabletop-dialoguer" / "scripts" / "fingerprint.py"]
+    siblings = [p for p in others if p != here and p.exists()]
+    if not siblings:
+        pytest.skip("兄弟副本不存在(单独检出本仓库时)")
+    for p in siblings:
+        assert p.read_bytes() == here.read_bytes(), f"两份 fingerprint.py 不一致:{p}"
 
 
 # ── freshness ────────────────────────────────────────────────────────

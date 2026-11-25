@@ -98,7 +98,7 @@ sequenceDiagram
 
 > **职责**：叙事事件从无到有的完整生产线——**① event-ideator 共识（启发新 Event + 叙事基础占位，多轮迭代产 `_共识.md`）→ ② event-stager 定稿（消化共识拆 SubEvent + 演出域占位，产 `_定稿.md`）→ ③ suggest-consumer 严检执行（产建议 JSON，**用户确认后执行写回**）→ ④ char-design / scene-design 消化占位产资产 → ⑤ plot-design 写作**。①~③ 由 `event-design` agent 全链编排（亦可用户直触各 skill 跑单段）。
 >
-> **门控说明**：plot-design 写作**不等美术资产**（前驱只看叙事素材——tabletop DM 查询图料缺口检查），美术与写作并行推进；资产门控天然留在配音选绘（IllusDesign ≠ 11 报警跳过）与发布阶段，流程顺序靠占位节点（status=0 挂账，design 链入口查询天然圈到）+ 用户跑 design 链保证。**③ 执行写回前新事件不在图中**（共识→定稿全程文档接力，不经过图）——chapter-structurer / plot-design 圈事件须在执行写回之后。
+> **门控说明**：plot-design 写作**不等美术资产**（前驱只看叙事素材——tabletop 守护进程的结构校验与批预检报缺口），美术与写作并行推进；资产门控天然留在配音选绘（IllusDesign ≠ 11 报警跳过）与发布阶段，流程顺序靠占位节点（status=0 挂账，design 链入口查询天然圈到）+ 用户跑 design 链保证。**③ 执行写回前新事件不在图中**（共识→定稿全程文档接力，不经过图）——chapter-structurer / plot-design 圈事件须在执行写回之后。
 
 ### 分工边界
 
@@ -174,7 +174,7 @@ sequenceDiagram
     Note over PD,DB: ⑤ plot-design：写作（不等美术资产——前驱只看叙事素材丰满度）
     U->>PD: plot-design 章节 / section id（完整生产链见 §6）
     PD->>DB: 按 Section→includes→Event→refines→SubEvent→anchored_at/appears_as 取材
-    Note over PD: tabletop DM 查询图料缺口 → 报缺口退出（用户跑 event-ideator 补素材）<br/>立绘上游 IllusDesign≠11 → 报警跳过（美术与写作并行，门控在配音选绘 / 发布）
+    Note over PD: tabletop 守护进程报结构缺口 → 报缺口退出（用户跑 event-stager / event-ideator 补素材）<br/>立绘上游 IllusDesign≠11 → 报警跳过（美术与写作并行，门控在配音选绘 / 发布）
     end
 ```
 
@@ -309,18 +309,18 @@ sequenceDiagram
 
 > **唯一职责**：推进**单节**（section id）从小说 → 定稿 → 拆分配音 → 立绘，到该节就绪为止。输入只认 section id（dashboard「推进此节」或用户直呼；以标题指节时先查出唯一 id）。**无章级全量模式**——建章分节由用户直触 `chapter-structurer` 或 dashboard 人工编排，不经 plot-design；BGM 走 scene-design，plot-design 不查不调；**发布不在职责内**——该节就绪即汇报退出，`chapter-publisher` 由用户直触。
 >
-> 创作链（节级）：`tabletop-dialoguer`（跑团草稿.md，纯文件零图写入）→ `chapter-dialoguer`（台词.ink，写 sec.status=10 定稿待审）→ 人工定稿审（批准 11 / 驳回 -1）→ `section-voice-publisher`（拆分进图 + 选绘 + 配音，行 10 待逐句审）→ 立绘按需（uses 边引用）。**该节就绪 = sec.status=11 ∧ 行全 11 ∧ 本节 uses 立绘全 11**。
+> 创作链（节级）：`tabletop-dialoguer`（守护进程跑团，产跑团草稿.md 并置 sec.status 1→2）→ `chapter-dialoguer`（台词.ink，写 sec.status=10 定稿待审）→ 人工定稿审（批准 11 / 驳回 -1）→ `section-voice-publisher`（拆分进图 + 选绘 + 配音，行 10 待逐句审）→ 立绘按需（uses 边引用）。**该节就绪 = sec.status=11 ∧ 行全 11 ∧ 本节 uses 立绘全 11**。
 
 ### 创作侧四阶段（对应 4 个 skill）
 
 | 阶段 | Skill | 职责 |
 |------|-------|------|
 | ① 建章分节 | `chapter-structurer`（**用户直触**） | 建 Chapter + 分节建 Section + includes 边（节成员 = 事件物化，时间由成员推导）；零文件产出 |
-| ② 节级跑团草稿 | `tabletop-dialoguer` | DM 四查询圈定（骨架/静态包/动态包/共同经历，受限视角）+ 常驻角色 subagent 跑团 → 产 **跑团草稿.md**（纯文件、零图写入；拍头 `【场景…｜block】` = 拓扑契约，头部取材指纹 --target tabletop）；图料缺口拒绝开跑 |
+| ② 节级跑团草稿 | `tabletop-dialoguer` | 守护进程脚本跑团（`tabletop_runner.py`，实现在工作区 `Harness/tabletop-dialoguer/`、不依赖本仓库）：一次取齐全节快照（骨架/静态包/认知编年史/共同经历，受限视角），角色出演与 DM 判定均为无状态 LLM 调用、journal 可断点续跑 → 产 **跑团草稿.md**（落盘工作区 `Harness/25_剧本/`；拍头 `【场景…｜block】` = 拓扑契约，头部取材指纹 --target tabletop）并置 Section.status 1→2（唯一图写入）；结构缺口拒绝开跑 |
 | ③ 节级定稿 | `chapter-dialoguer` | 从小说提炼台词 → 产 **台词.ink**（人读 ink 方言、机器可解析）；唯一图写入 `SET sec.script_path + sec.status=10`；存量直连节照旧读历史文件 |
 | ④ 拆分+选绘+配音 | `section-voice-publisher` | 拆分对齐进图（幂等）→ LLM 逐句判 emotion / tts_text / 选立绘（portrait_binder 候选与建边，缺变体兜底建）→ Qwen3 逐句克隆 → 行 status=10 待逐句审；母带 = 行 `master_path`，不拷运行时副本 |
 
-> **口径**：跑团草稿.md 无 status（文件存在 + 指纹新鲜——「调度只看 status」的唯一例外；存量 小说.md 同待遇）；无草稿/小说且 script_path 有历史值 = 存量直连（跳过草稿段）；sec.status=11 才拆分配音与推立绘（立绘独立于音频门控，上游 IllusDesign≠11 报警跳过不跨链）；tabletop 图料缺口报缺口退出，用户跑 `event-ideator` 补全后重调。
+> **口径**：跑团草稿.md 的产出由 `Section.status` 1→2 标记（1 跑团待消费 / 2 已消费），新鲜度靠指纹；存量 小说.md 仍按文件存在判定（「调度只看 status」的唯一例外）；无草稿/小说且 script_path 有历史值 = 存量直连（跳过草稿段）；sec.status=11 才拆分配音与推立绘（立绘独立于音频门控，上游 IllusDesign≠11 报警跳过不跨链）；tabletop 结构缺口报缺口退出，用户跑 `event-stager` / `event-ideator` 补全后重调。
 
 ### 节点 → Skill 映射
 
@@ -329,7 +329,7 @@ sequenceDiagram
 | Chapter | `chapter-structurer`（**用户直触**，不经 plot-design） | 无 status（组章即结构就绪，属性已从图删除） | — |
 | Section（编排容器） | `chapter-structurer`（创建 status=0；**用户直触**）或 dashboard 人工编排直写；定稿态由 dialoguer 写 | status 见下行 | — |
 | Section.status（定稿态） | `chapter-dialoguer`（写 script_path+status=10；台词.ink 为纯文件产物） | 0 创建→10 定稿待审→11 已批（dashboard 批准/编辑保存即 11）；-1 作废（stale/级联/人工驳回）↔dialoguer 重写回 10 | ✅（定稿审 10→11） |
-| 跑团草稿.md（节级草稿·**纯文件产物，不入图**） | `tabletop-dialoguer` | 无 status——文件存在 + 指纹新鲜（stale 经编排重跑并作废定稿链） | 无 |
+| 跑团草稿.md（节级草稿，纯文件） | `tabletop-dialoguer` | 产出由 Section.status 1→2 标记；新鲜度靠指纹（stale 经编排作废定稿链、置 1 重入跑团管线） | 无 |
 | LineAudio（逐句台词行 ×N） | `section-voice-publisher`（拆分进图 + 配音） | say 行：-1/0→10→11；非音频行拆分即 11 | ✅（逐句审） |
 | LineAudio（音频环境行 op=transition / bed_start） | `ambient-sfx-designer`（plot-design 单节聚焦在配音步之后编排） | sfx / bed 行：0→10→11 | ✅（逐句审） |
 | StandingIllustration | `char-stand-designer`（直调 stand_id） | -1/0→10→11 | ✅ |
@@ -358,18 +358,20 @@ sequenceDiagram
     end
 
     rect rgb(255, 248, 240)
-    Note over A,SV: ② 单节产物链：tabletop 跑团草稿.md（纯文件产物，零图写入）→ dialoguer 台词.ink（写 Section.status=10 定稿待审）<br/>→ 人工定稿审（dashboard 批准 10→11，plot-design 停等）→ 拆分进图+配音 → 逐句音频审；节级链 Section→LineAudio×N
-    opt 节目录无 小说.md 且非存量直连（待小说）
-        A->>NV: Skill tabletop-dialoguer sec_id（首建 / stale 重跑）
-        alt 素材够（丰满度自检通过）
-            Note right of NV: 圈定取材（includes 成员 + 成员 involved 角色的认知集内 Info[has_cognition→about，forms 锚≤本节末] + has_info Lore）<br/>→ 五步产 小说.md（零图写入）；stale 重写作废定稿链；对账新实体走建议 JSON
-            NV-->>A: 小说.md 落盘（存量直连节跳过本段）
-        else 素材不足
-            NV-->>A: 报缺口（不写 status）
-            A-->>U: 📋 素材不足 + 缺口清单，请手动跑 event-ideator 补全后重调
+    Note over A,SV: ② 单节产物链：tabletop 跑团草稿.md（守护进程跑团，置 Section.status 1→2）→ dialoguer 台词.ink（写 Section.status=10 定稿待审）<br/>→ 人工定稿审（dashboard 批准 10→11，plot-design 停等）→ 拆分进图+配音 → 逐句音频审；节级链 Section→LineAudio×N
+    opt sec.status = 1（跑团待消费）
+        A->>NV: Skill tabletop-dialoguer sec_id → 拉起守护进程 tabletop_runner.py run --section
+        Note right of NV: 一次取齐全节快照（受限视角：includes 成员 + 成员角色认知集内 Info[has_cognition→about，forms 锚≤拍时刻取最新；无 forms=前史认知] + 名下固有 Info[has_info]）<br/>→ 结构校验 → 批预检 → 逐手出演+审验 → 汇编；角色与 DM 判定均为无状态 LLM 调用<br/>状态在工具自己的状态仓 Harness/tabletop-dialoguer/.tmp/tabletop/，可断点续跑
+        alt 跑完
+            NV-->>A: published：草稿落盘，sec.status=2
+        else 仍在后台跑（超出默认等待）
+            NV-->>A: running：汇报「跑团后台进行中」，本节退出，下次推进续走定稿
+        else 结构缺口
+            NV-->>A: gap_blocked（不花 LLM 调用，不改图）
+            A-->>U: 📋 图料缺口清单，请手动跑 event-stager / event-ideator 补全后重调
         end
     end
-    opt 有小说.md 或存量直连，且（无定稿 ∨ sec.status = -1）（待定稿）
+    opt 有跑团草稿.md 或存量直连，且（无定稿 ∨ sec.status = -1 ∨ sec.status = 2）（待定稿）
         A->>DG: Skill chapter-dialoguer sec_id
         Note right of DG: 入场指纹自检（stale 回退 tabletop）<br/>从草稿打磨台词（场景块照拍头 block 契约、分支照图 Choice）→ 产 台词.ink，写 sec.status=10
         DG-->>A: 定稿待审（sec.status=10；人工微调走定稿编辑器保存即 11 免审）
@@ -448,7 +450,7 @@ sequenceDiagram
 | Skill | 阶段 | 功能 | 主要产出 | 读写图 / 写 status |
 |-------|------|------|---------|-------------------|
 | chapter-structurer | ① 章级结构（**用户直触**，不经 plot-design） | 建 Chapter + 按情感弧分节建 Section（纯编排容器）+ 各节 `Section-includes->Event`（块 id=scene_id 由 tabletop 现场取用，structurer 不碰块） | Chapter + has_section + Section + includes 边 | ✅ |
-| tabletop-dialoguer | ② 节级跑团草稿（chapter-novelist 已软删 2026-11-20） | DM 四查询圈定（includes 成员 + 成员角色认知集内的 Info[has_cognition→about，forms 锚≤拍时刻取最新] + has_info Lore）+ 常驻角色 subagent 跑团 → 产 **跑团草稿.md**（纯文件零图写入；拍头 `【场景…｜block】`=拓扑契约 + 头部取材指纹 --target tabletop） | `25_剧本/ch<NN>/sec<MM>/跑团草稿.md` | ✅（零图写入） |
+| tabletop-dialoguer | ② 节级跑团草稿（chapter-novelist 已软删 2026-11-20） | 守护进程脚本跑团（工作区 `Harness/tabletop-dialoguer/` 的独立工具，不依赖本仓库）：快照受限视角圈定（includes 成员 + 成员角色认知集内的 Info[has_cognition→about，forms 锚≤拍时刻取最新；无 forms=前史认知] + 名下固有 Info[has_info]），角色出演与 DM 判定为无状态 LLM 调用、journal 可断点续跑 → 产 **跑团草稿.md**（拍头 `【场景…｜block】`=拓扑契约 + 头部取材指纹 --target tabletop） | 工作区 `Harness/25_剧本/ch<NN>/sec<MM>/跑团草稿.md`（创作土壤归 Harness；存量小说.md 的副本也在那里）+ Section.status 1→2（唯一图写入） | —（草稿无人工审） |
 | chapter-dialoguer | ③ 节级定稿 | 从草稿打磨台词（指纹自检，stale 回退 tabletop；存量小说/直连读历史文件）→ 产人读 ink 方言 **台词.ink**（不写演出标注，立绘由配音期选绘判定）；唯一图写入 `SET sec.script_path + sec.status=10` 定稿待审 | `25_剧本/ch<NN>/sec<MM>/台词.ink` + Section 定稿态 | — |
 | section-voice-publisher | ④ 节级拆分+选绘+配音 | 定稿已批（Section.status=11）：拆分对齐进图（幂等）→ LLM 逐句判 emotion / tts_text / 选立绘（apply 建 uses 边，缺变体兜底建）→ Qwen3 逐句克隆 → bind-graph 行 status=10；母带即产物，运行时副本由发布期收录 | 图逐句行 + uses 选绘边 + 立绘缺口 + `15_声音/` 母带（master_path） | ✅ |
 | ambient-sfx-designer | ⑤ 节级环境音 | 推进单节音频环境行（sfx 点状行走 Freesound CC0 实录检索、bed 音床行走 AudioFly 生成；先落盘试听后写图 ambient_track + status=10；不拷运行时副本——发布期按 status=11 收录） | `15_声音/` sfx / bed 母带 + `15_声音/sfx_raw/SOURCES.md` | ✅ |
@@ -506,7 +508,7 @@ sequenceDiagram
 │
 ├── 15_声音/                          # TTS 逐句母带（<ch_hexid>/<block_hexid>/<行_hexid>.wav = 图行 master_path；requirements/ venv 锁文件；sfx_raw/ Freesound CC0 登记与素材）
 │
-├── 25_剧本/                          # 剧本产出（节级：tabletop 出跑团草稿.md，dialoguer 出台词.ink；存量小说.md 为旧链产物；structurer 零文件产出）
+├── 25_剧本/                          # 定稿产出（节级：dialoguer 出台词.ink；存量小说.md 为旧链产物，其副本归工作区 Harness/25_剧本/；structurer 零文件产出）。跑团草稿.md 由 tabletop 落在工作区 Harness/25_剧本/
 │   ├── ch<NN>/                       # NN=chapter_no：各 sec<MM>/（MM=section_no；小说.md + 台词.ink；历史节另有 outline.md/骨架存档）
 │   └── 自由节/sec<MM>/               # 未组章自由节
 │

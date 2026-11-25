@@ -2,7 +2,7 @@
 
 归一化规则(改这里 = 改所有已产小说的新鲜度判据,慎动;已落盘小说需重产指纹):
   Event: '|'.join(title, start_time, type, description, ending_kind, condition)
-  Info/Lore: '|'.join(title, content, knowledge_level)
+  Info/Lore(事件 Info / 固有 Info 两种 kind 令牌): '|'.join(title, content, knowledge_level)
   每字段 strip,None/缺失 → 空串;整体 utf-8 后 sha256 取前 16 位 hex。
   旧指纹头的 `hook` 行按 `info` 归一读入(hash 算法不变,存量文件零 stale)。
 
@@ -23,11 +23,13 @@
         确要硬写加 --force(放行并 stderr 留痕)。自由节排序按 mtime,不门禁。
   check 自检小说.md 头部清单 vs 当前素材:退出码 0=新鲜 / 1=stale(stdout 报告明细):
         python fingerprint.py check --novel 小说.md --in materials.json
-        stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)
+        stale 判定 = 已记素材 hash 不等 / 已记素材被删;圈定内未标注的不算 stale(未使用是常态)。
+        按 id 比对,不看 kind 令牌:id 是全局唯一的雪花键,令牌只是 Info 类别的投影——
+        一条事实在数据治理里换了类别(info ↔ lore),头部不必跟着改。
   consumed 扫描 root 下全部小说.md 指纹头部的 info/lore 行,输出「id → 消费它的小说路径列表」
         JSON 映射(裸映射,调度/对账用)。--ids 只查给定子集:
         python fingerprint.py consumed [--root 25_剧本] [--ids id1,…]
-  freshness 新鲜度计算(Lore 新鲜度算法,2026-11-11 方案):
+  freshness 新鲜度计算(info/lore 新鲜度算法,2026-11-11 方案):
         对 --in 素材中的每条 info/lore,按「最近一次消费点 → --at 节」的间隔 Δ 算
         R = base × 2^(−Δ/h)(上次消费 E:base=1.0 / S:base=S_RESET),F = round(100×(1−R)),
         并给允许档位 explicit/side/blocked。--at 接受 chNN/secMM 相对形态或小说.md 路径:
@@ -96,7 +98,7 @@ def _materials(text: str) -> list[dict]:
     out = []
     for row in rows:
         if _kind(row) is None or not row.get("id"):
-            continue  # 容错跳过非 Event/Info/Lore 行(圈定查询可能带出别的列)
+            continue  # 容错跳过非 event/info/lore 行(圈定查询可能带出别的列)
         out.append(row)
     return out
 
@@ -143,7 +145,7 @@ def cmd_gen(rows: list[dict], ids: dict[str, str] | None, root: str | None = Non
             raise SystemExit(f"--ids 指定的素材不在输入 JSON 中: {sorted(missing)}")
         rows = [r for r in rows if str(r["id"]) in want]
     if not rows:
-        raise SystemExit("素材为空:圈定查询未命中任何 Event/Info/Lore(或 --ids 过滤后为空)")
+        raise SystemExit("素材为空:圈定查询未命中任何 event/info/lore 行(或 --ids 过滤后为空)")
     lines = [HEADER_OPEN_TABLETOP if target == "tabletop" else HEADER_OPEN]
     for row in rows:
         kind = _kind(row)
@@ -176,22 +178,26 @@ def _header_rows(novel_text: str) -> list[tuple[str, str, str]]:
 
 
 def cmd_check(rows: list[dict], novel_path: str) -> int:
-    current = {(_kind(r) or "", str(r["id"])): fingerprint(r) for r in rows}
-    old = {}
+    # 按 id 比对,不看 kind 令牌:id 是全局唯一的雪花键,令牌只是 Info 类别的投影
+    # (info = 事件 Info / lore = 固有 Info)。同一 id 在素材里出现两次时哈希相同(字段同构),后到覆盖无影响。
+    current = {str(r["id"]): fingerprint(r) for r in rows}
+    old: dict[str, str] = {}
+    old_kinds: dict[str, str] = {}
     for kind, sid, fp in _header_rows(open(novel_path, encoding="utf-8").read()):
-        old[(kind, sid)] = fp
+        old[sid] = fp
+        old_kinds[sid] = kind
 
-    changed = [k for k, fp in old.items() if k in current and current[k] != fp]
-    deleted = sorted(k for k in old if k not in current)
+    changed = [sid for sid, fp in old.items() if sid in current and current[sid] != fp]
+    deleted = sorted(sid for sid in old if sid not in current)
 
     if not (changed or deleted):
         print(f"新鲜:已记取材 {len(old)} 条素材指纹全部一致(圈定共 {len(current)} 条,未标注 {len(current) - len(old)} 条未使用属常态)")
         return 0
     print("STALE——需重跑创作段(novelist 存量重写小说 / tabletop 重跑跑团;均作废定稿):")
-    for kind, sid in changed:
-        print(f"  变动  {kind} {sid}:头部 {old[(kind, sid)]} → 当前 {current[(kind, sid)]}")
-    for kind, sid in deleted:
-        print(f"  已删  {kind} {sid}:头部有、图上无")
+    for sid in changed:
+        print(f"  变动  {old_kinds[sid]} {sid}:头部 {old[sid]} → 当前 {current[sid]}")
+    for sid in deleted:
+        print(f"  已删  {old_kinds[sid]} {sid}:头部有、图上无")
     return 1
 
 

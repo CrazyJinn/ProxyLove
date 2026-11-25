@@ -29,14 +29,14 @@ allowed-tools: Read, Bash, Write, Edit
 
 ### 1. 查询目标节点状态 + 生成素材
 
-通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询角色 + LanguageStyle + 已有 VoiceDesign + 叙事素材（Lore/Event）+ **同场角色**（频谱避让用）：
+通过 `${CLAUDE_SKILL_DIR}/../../scripts/cypher_exec.py` 查询角色 + LanguageStyle + 已有 VoiceDesign + 叙事素材（名下固有 Info/Event）+ **同场角色**（频谱避让用）：
 
 ```cypher
 MATCH (c:Character {id: '<char_id>'})
 OPTIONAL MATCH (c)-[:has_voice_style]->(ls:LanguageStyle)
 OPTIONAL MATCH (c)-[:has_voice_design]->(vd:VoiceDesign)
 WITH c, ls, vd
-OPTIONAL MATCH (c)-[:has_info]->(info:Lore)
+OPTIONAL MATCH (c)-[:has_info]->(info:Info)
 WITH c, ls, vd, collect(DISTINCT info { .title, .content, .knowledge_level }) AS infos
 OPTIONAL MATCH (c)-[:involved]->(evt:Event)
 WITH c, ls, vd, infos, collect(DISTINCT evt { .title, .description, .type, .start_time }) AS events
@@ -46,7 +46,7 @@ WITH c, ls, vd, infos, events,
 RETURN c, ls, vd, infos, events, event_infos;
 ```
 
-> 认知支路不做 forms 时间过滤——本查询供音色设计语境（非投放白名单），认知编年史下同 (角色,Info) 多条态经 DISTINCT 事实题去重后时间线无害；需要拍时刻快照的过滤范式见 tabletop-dialoguer Q3。
+> 认知支路不做 forms 时间过滤——本查询供音色设计语境（非投放白名单），认知编年史下同 (角色,Info) 多条态经 DISTINCT 事实题去重后时间线无害；需要拍时刻快照的过滤范式见 tabletop-dialoguer 的 `playable_rows`（工作区 `Harness/tabletop-dialoguer/scripts/tt_model.py`）。
 
 同场角色（查其已有 VoiceDesign 的 instruct，避免撞声）：
 

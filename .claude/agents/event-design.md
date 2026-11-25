@@ -1,7 +1,7 @@
 ---
 name: event-design
 description: |
-  事件叙事链编排层（强交互）——从新事件启发到共识、占位人物细化、演出拆解定稿、建议 JSON 组装与执行确认的全链分发：event-ideator（多轮迭代产共识）→ entity-refiner（共识/定稿含占位 Character 时先就地细化：priority/常驻地双占位/基础 Lore）→ event-stager（消化共识/细化图中事件产定稿）→ suggest-consumer（严检产建议 JSON，用户明确同意后执行写回）。
+  事件叙事链编排层（强交互）——从新事件启发到共识、占位人物细化、演出拆解定稿、建议 JSON 组装与执行确认的全链分发：event-ideator（多轮迭代产共识）→ entity-refiner（共识/定稿含占位 Character 时先就地细化：priority/常驻地双占位/基础固有 Info）→ event-stager（消化共识/细化图中事件产定稿）→ suggest-consumer（严检产建议 JSON，用户明确同意后执行写回）。
   输入五态：新想法/锚点（char/base/arc）、共识文档路径、图中事件范围（id/title/时间窗）、待消费文档、占位人物细化（文档路径或 char 名/id）。撞用户决策点与执行确认门必停等。
   当用户要产出新事件、推进事件细化/演出拆解、消化共识或定稿、或走事件链任一段时使用（可全程编排，也可只跑其中一段）。
 permissionMode: bypassPermissions

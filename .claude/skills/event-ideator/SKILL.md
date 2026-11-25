@@ -12,7 +12,7 @@ allowed-tools: Read, Bash, Write
 
 # 新事件启发与敲定（event-ideator）
 
-**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + Info 与 establishes 边（事件的信息要素，成立轴）+ 认知条目（Cognition：知情者/偏差者+forms 锚）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）；Lore 不经本通道（固有设定是构图期人工拍板）。
+**从人物设定出发，生成并敲定值得发生的粗粒度新 Event**（需求提出层——创作判断在本层发生，创建权就在本层）。**创建域**：Event + involved/occurs_at（/leads_to 仅用户明说因果时）挂边 + Character/Location 占位 + Info（故事内成立的事件 Info 挂 establishes 成立轴；开篇前就已为真的固有 Info 挂 has_info 宿主）+ 认知条目（Cognition：知情者/偏差者——故事内得知的给 forms 锚，开篇前就知道的标「前史」）+ StoryArc 与 comprises 边（I5 对账更新 description 是唯一改既有节点属性的例外）。不建 Choice/Spot/Scene/SubEvent/CostumeStyle/IllusDesign（演出域全归 event-stager）。
 
 > **通道契约（全程唯一表述，各步不再重复）**：
 > - **零图写入**——交互期间仅查询；写库由 suggest-consumer 在用户明确同意后执行，本层不碰图写。
@@ -29,7 +29,7 @@ NBHD="python ${CLAUDE_SKILL_DIR}/scripts/neighborhood.py"             # 锚点�
 OUTPUT_DIR="02_剧情数据"
 ```
 
-- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info/establishes/Cognition/Lore/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
+- Schema：[Schema/剧情/](../../../00_init/Schema/剧情/)（Event/involved/occurs_at/leads_to/Info〔固有 / 事件两类〕/has_info/establishes/Cognition/StoryArc/comprises 的唯一事实来源）；Character/Location 占位节点定义见 [Schema/角色美术/](../../../00_init/Schema/角色美术/) / [Schema/场景美术/](../../../00_init/Schema/场景美术/)。本层**只需语义正确**（字段是什么、写什么内容），字段级撰写契约（零时间措辞等）由 suggest-consumer 消费时强制。
 - 写 cypher 规则：[cypher_exec.py](../../scripts/cypher_exec.py) 顶部 docstring（内联值、MERGE 幂等、必须指定标签、加 LIMIT）。
 
 ## 流程总览（五步 + 故事线支线 + 盘点支线）
@@ -142,17 +142,17 @@ OUTPUT_DIR="02_剧情数据"
 
 **Info 提案（新事件默认伴随）**：
 
-- **触发自问**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题。description 与 Info 的分界（散文可读 ≠ 事实已承载）与信息要素分流见 [Schema/剧情/Info.md](../../../00_init/Schema/剧情/Info.md) 分界契约。
+- **触发自问**：提案每个新 Event 时自问「**这个事件使什么事实成立（产生了什么信息要素）**」——有则附 Info 提案并入候选批（无认知增量则不提，不硬凑）；锚点关系查询/深读中发现的隐认知、伏笔注记、背景事实同通道，不单独立题；**开篇前就已为真的背景事实建固有 Info**（挂 has_info 宿主，不建成立事件）。description 与 Info 的分界（散文可读 ≠ 事实已承载）与信息要素分流见 [Schema/剧情/Info.md](../../../00_init/Schema/剧情/Info.md) 分界契约。
 - **从严口径**：只立有持续叙事意义的事实（身份/关系/资源/知情面的持久变化），过程性/过渡性事实（战绩起伏/单次冲突/方案文档/邀约悬置类）默认不立，宁漏勿滥。
 - **分支纪律**：挂 condition 的分支事件不提 Info/不产认知条目——分支备线非既成事实，建了会经 forms 键跨支泄漏进小说取材。
-- **挂靠**：**成立承载事件**挂 `Event ─establishes→ Info`（默认本事件；固有前史事实建前史事件承载，无 sub 不演出）。
-- **认知条目（全量）**：知晓分布由 `Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition` 显式承载（契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）——提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title；forms 默认锚成立事件）；封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。**认知编年史**：同一 (角色, Info) 允许先后多条并存（append-only）——态度转变产**新条目**（旧态保留，误信态与揭底态并存是常态）；事件散文中的角色意图/念头/误信有后续叙事意义的同步落 Cognition（BELIEVES+title，forms 锚来源事件），宁漏勿滥不变。
+- **挂靠（两类互斥，判定测试见 Info.md「何时开始为真」）**：故事内本事件使之成立 → **事件 Info**，挂 `Event ─establishes→ Info`（默认本事件，恰一个）；开篇前就已为真 → **固有 Info**，挂 `(Character|Location) ─has_info→ Info`（宿主是事实的主语；title 写「维度：值」、不带宿主名，如「职业：理发师」；一条一事）。判据是「使之成立」不是「使之得知」——谁在哪个事件得知归 forms。
+- **认知条目（全量）**：知晓分布由 `Character ─has_cognition→ Cognition ─about→ Info` + `Event ─forms→ Cognition` 显式承载（契约见 [Schema/剧情/Cognition.md](../../../00_init/Schema/剧情/Cognition.md)）——提案 Info 时同产**全量**知情者/偏差者认知条目草案（type 四态；所信≠事实必写偏差 title）。每条认知先问「**他是开篇前就知道，还是故事里才得知**」：故事内得知的 forms 锚在那个事件（事件 Info 的知情者必有 forms）；开篇前就知道的标「前史」、不写 forms（只能指固有 Info）。固有 Info 的宿主默认自知，不给自己建条目。封闭世界下漏建=角色被误判不知情；「参与即知情」已废止，involved 不推导知情。**认知编年史**：同一 (角色, Info) 允许先后多条并存（append-only）——态度转变产**新条目**（旧态保留，误信态与揭底态并存是常态）；事件散文中的角色意图/念头/误信有后续叙事意义的同步落 Cognition（BELIEVES+title，forms 锚来源事件），宁漏勿滥不变。
 - **字段纪律**：title/content 为干净事实陈述（禁备忘/推导/编号引用，占位文字允许）；knowledge_level 必填（1/2/3，下游 freshness 半衰期档位，不影响认知集投放）。
 - 存量盘点（非新事件提案）走 §6 盘点支线；换述判例见 [references/Info盘点判例.md](references/Info盘点判例.md)。
 
 **同义对照步（Info 查重主闸，提 I3 前必做；语义判断在本层，consumer 只浅验证）**：
 
-- **圈对照池**（四源，全部图上结构/字符串查询，零语义成本）：① **同承载产出**——承载事件为图上既有时查其既有 `establishes→` Info，承载为新事件/同文档 I2 时对照同文档内挂同一承载事件的其他 I3 草案；② involved 角色认知集内 Info（`has_cognition→about`）；③ 候选事件时间窗 ±7 天内事件承载的 Info；④ 候选 title/content 中实体名（角色名/专名）`CONTAINS` 扫全量 Info title。
+- **圈对照池**（四源，全部图上结构/字符串查询，零语义成本）：① **同承载产出**——承载事件为图上既有时查其既有 `establishes→` Info，承载为新事件/同文档 I2 时对照同文档内挂同一承载事件的其他 I3 草案；② involved 角色认知集内 Info（`has_cognition→about`）；③ 候选事件时间窗 ±7 天内事件承载的 Info；④ 候选 title/content 中实体名（角色名/专名）`CONTAINS` 扫全量事件 Info title；候选是某人的固有事实时另按宿主查——该角色名下的全部固有 Info（`MATCH (h {name:'…'})-[:has_info]->(i:Info) RETURN i LIMIT 50`）。
 - **池上限 20 条**：①→④ 优先级装池，超限截断并在 reason 注明截断了哪些源。
 - **池内逐条三分类**：**同一事实**（换述/近义）→不新建，改回补（补承载边+认知挂既有 Info）；**不同侧面**→可新建，reason 必注与相近条目的区分点；**拿不准**→列裁决点附推荐。
 - **升级口**：池内疑似不确定或用户对裁决点追问时，允许对全量做一次 LLM 对照（reason 注明「全量复核」），常态不跑。
@@ -178,7 +178,7 @@ OUTPUT_DIR="02_剧情数据"
 2. **组装共识条目**（顺序：先占位实体后事件——节点先于边）：
    - 占位实体条目（类型 I1）：`[占位 Character]`/`[占位 Location]`——名称 + 一句话氛围人设/定位；
    - 事件条目（类型 I2）：title + type + start_time（跨时段事件补 end_time，点事件省略）+ occurs_at（既有 id 或占位指称）+ involved（逐人：id 或占位指称）+ condition 语义 + description 要点（钉子细节 1-3 句，自然语言）+ 因果（仅用户明说）+ ending_kind（仅结局事件）；
-   - Info 条目（类型 I3）：title + content + knowledge_level + 成立承载事件（establishes，默认本事件；既有 id 或 `定稿I2「<title>」`，可多条）+ 全量认知条目（知情者/偏差者逐人：type/title(仅偏差)/forms 锚）——知晓分布由认知条目逐人显式承载，与承载事件的选择无关；分支事件（挂 condition）不出本类条目；
+   - Info 条目（类型 I3）：title + content + knowledge_level + 挂靠（二选一：**事件 Info** 写成立承载事件——establishes，默认本事件，既有 id 或 `定稿I2「<title>」`，恰一个；**固有 Info** 写宿主——has_info，Character/Location 的既有 id 或占位指称；title 写「维度：值」、不带宿主名）+ 全量认知条目（知情者/偏差者逐人：type / title(仅偏差) / 来处——forms 锚哪个事件，或标「前史」）——知晓分布由认知条目逐人显式承载，与挂靠方式无关；分支事件（挂 condition）不出本类条目；
    - 故事线条目（类型 I4）：title + description 草案（主旨/氛围）+ 逐成员「event id + title」（建线/扩线注明）；
    - 对账条目（类型 I5）：线 id + 重写后的 description 全文草案；
    - arc→new 敲定的事件：条目内注明「挂线：<arc id>」——不为挂边单独立条。
@@ -206,17 +206,18 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 6. 盘点支线 —— 存量 Info/认知补全（纯 I 通路）
 
-**入口**：入参 `盘点范围`（章号 / 时间窗 / 全量 / 游离段）单独给出即走本支线（与 char/base 同给时仍走事件启发 §0~§4，本支线不混跑）。适用：全量盘点、按章批次盘点、主支确定后的分支段重盘、任意存量知情补全。模型契约见 [Schema/剧情/](../../../00_init/Schema/剧情/)；陷阱与判例见 [references/Info盘点判例.md](references/Info盘点判例.md)。
+**入口**：入参 `盘点范围`（章号 / 时间窗 / 全量 / 游离段）单独给出即走本支线（与 char/base 同给时仍走事件启发 §0~§4，本支线不混跑）。适用：全量盘点、按章批次盘点、主支确定后的分支段重盘、任意存量知情补全、固有 Info 的知情盘点（前史知情者与故事内得知）。模型契约见 [Schema/剧情/](../../../00_init/Schema/剧情/)；陷阱与判例见 [references/Info盘点判例.md](references/Info盘点判例.md)。
 
 **七步**：
 
 1. **圈定范围**：查事件全量明细 id/title/start_time/description/involved/occurs_at/**condition**——condition 决定分支处置，先查分布（`MATCH (e:Event) WHERE e.start_time >= '…' RETURN e.condition, count(*)`）；
-2. **查基线**：既有 Info 与认知分布（establishes 汇总 + has_cognition/about/forms 明细）——**只记补条目**（新承载边/新知情者/态度转变追加新条目），不重建；
+2. **查基线**：既有 Info 与认知分布（has_info / establishes 汇总 + has_cognition/about/forms 明细）——**只记补条目**（新承载边/新知情者/态度转变追加新条目），不重建；
 3. **建事实登记表**（文档内表格：事实 → 承载事件集 → 已登记认知）——贯穿维护，防「同一事实跨 5+ 事件再现靠记忆必漏」；
-4. **逐事件过堂**（start_time 升序）：每事件答「使什么事实成立（0~N 条）」→ 每条当场判认知分布（谁以什么态度知道、forms 锚哪个事件——**先问「他在此事件之前是否已知」**，更早形成的认知锚更早事件）；三分记录：**产出 / 零增量 / 从严不立**（留痕供重盘）；
+4. **逐事件过堂**（start_time 升序）：每事件答「使什么事实成立（0~N 条）」→ 每条当场判认知分布（谁以什么态度知道、来处是哪个事件——**先问「他在此事件之前是否已知」**，更早得知的锚更早事件，开篇前就知道的记「前史」并把该事实判为固有 Info）；三分记录：**产出 / 零增量 / 从严不立**（留痕供重盘）；
+   - **固有 Info 知情盘点**（盘点范围含人物设定时加做）：逐条宿主名下的固有 Info 问两件事——谁开篇前就知道（前史认知，无 forms）、故事里谁在哪场戏得知（forms）。推荐口径：身份属性类（职业 / 职务 / 身份 / 绰号 / 家境 / 能力）「认识即知道」——开篇前就认识的记前史，故事内才认识的 forms 锚初次共同出场的事件；经历类与性格类不自动推，只按亲属 / 密友关系推荐前史。剧情上要让某人得知一条固有事实（含当事人自己说出来），就在那场戏建 forms 认知——披露审验说话人、听者两侧都管；
 5. **同义对照**：每条候选新 Info 走 §3 同义对照步（对照池四源、上限 20、三分类）——同一事实改回补，不新建；
 6. **汇总**：新 Info（title 中性事实句/kl/establishes 源/认知分布）+ 补条目 + 裁决点清单（附推荐）→ 用户拍板 → 共识落盘 `${OUTPUT_DIR}/${DATE}_Info盘点<范围>_共识.md`（纯 I 通路直消 suggest-consumer）；
-7. **终验**（落图后）：无孤 Info（全部 ≥1 establishes）、无残认知（forms≥1 且 about 齐）、**认知三元不重复**（同 (Character, Info, forms 锚事件) 至多一条——多条并存是编年史常态，同锚重复才是违规）、近重复对扫描（范围内两两 title 对照，报告人工拍板；合并走 dashboard 人工执行——删除类不进建议 JSON，同 §5b 边界）。
+7. **终验**（落图后）：无孤 Info（每条恰一种挂靠：事件 Info 恰 1 establishes、固有 Info ≥1 has_info，不混轴）、无残认知（about 齐；事件 Info 的认知必有 forms；前史认知只指固有 Info）、**认知三元不重复**（同 (Character, Info, forms 锚事件或「前史」) 至多一条——多条并存是编年史常态，同锚重复才是违规）、近重复对扫描（范围内两两 title 对照，报告人工拍板；合并走 dashboard 人工执行——删除类不进建议 JSON，同 §5b 边界）。
 
 **执行口径（项目口径）**：
 
@@ -256,5 +257,5 @@ OUTPUT_DIR="02_剧情数据"
 
 ## 参考文档
 
-- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/Info/Lore/StoryArc/comprises）
+- [Schema/剧情/](../../../00_init/Schema/剧情/)（Event/Info〔固有 / 事件两类〕/Cognition/StoryArc/comprises）
 - Character/Location 节点定义见 [Schema/角色美术/Character.md](../../../00_init/Schema/角色美术/Character.md) / [Schema/场景美术/Location.md](../../../00_init/Schema/场景美术/Location.md)

@@ -1,6 +1,6 @@
 # 声音设计模板（VoiceDesign instruct / ref_text 写作指南）
 
-本模板指导 char-voice-design 第 2a 步：把角色的叙事素材（Character + LanguageStyle + Lore + Event）转写成 Qwen VoiceDesign 能理解的 `instruct` 自然语言，以及固化音色的 `ref_text`。
+本模板指导 char-voice-design 第 2a 步：把角色的叙事素材（Character + LanguageStyle + 固有 Info（has_info） + Event）转写成 Qwen VoiceDesign 能理解的 `instruct` 自然语言，以及固化音色的 `ref_text`。
 
 ## 措辞原则（首要约束，来自 Qwen VoiceDesign 官方提示词指南）
 
@@ -37,8 +37,8 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
 |------|------|------|
 | 性别 | `Character.gender` | — |
 | 年龄 | `Character.birth_year`（用故事基准年算岁数） | — |
-| 音色（音色基底） | `Character.vibe`（设计氛围） + `Lore`（职业/身份事实） | `Event`（`type=转折/状态变化` 的经历影响沧桑感） |
-| 气质（演绎方式） | `Character.vibe` + `LanguageStyle.speech_style` | `Lore`（优先 `knowledge_level=2,3` 深层身份/创伤，塑气质底色） |
+| 音色（音色基底） | `Character.vibe`（设计氛围） + 固有 Info（has_info，职业/身份事实） | `Event`（`type=转折/状态变化` 的经历影响沧桑感） |
+| 气质（演绎方式） | `Character.vibe` + `LanguageStyle.speech_style` | 固有 Info（has_info；优先 `knowledge_level=2,3` 深层身份/创伤，塑气质底色） |
 | 语速 | `LanguageStyle.speech_style`（节奏描述部分） | `Character.vibe` 的气质调性（沉静→慢 / 跳脱→快） |
 | 尾音 | `LanguageStyle.speech_style`（口头禅/犹豫模式部分） | `LanguageStyle.speech_style`（情绪部分） |
 
@@ -46,7 +46,7 @@ instruct 是给模型的**参数化描述**，不是角色小传。五条原则�
 
 - **气质是核心**：音色服务于气质。气质用一个腔调词，至多再缀半句行为佐证（「爱把日常用语念出仪式感」）。
 - **尾音从 habits 提炼**：直接落成物理描述词（习惯拖「嗯……」→ 尾音拖音；爱反问 → 尾音上扬；句末缀「阿门」→ 尾音拖长收）。
-- **经历渗入音色**：`Event` 里 `type=转折/状态变化` 的重大经历让音色带沧桑/疲态/冷硬，用一个特点词表达（「沙哑」「偏低」）；`Lore` 的 `knowledge_level=2,3` 深层身份塑气质底色。表层信息（`knowledge_level=1`、日常事件）参考价值低，可略。
+- **经历渗入音色**：`Event` 里 `type=转折/状态变化` 的重大经历让音色带沧桑/疲态/冷硬，用一个特点词表达（「沙哑」「偏低」）；固有 Info 的 `knowledge_level=2,3` 深层身份塑气质底色。表层信息（`knowledge_level=1`、日常事件）参考价值低，可略。
 - **对照变体库校准音高词**：「中低音/偏高/低沉」等音高词须与目标角色的基频段物理一致（查 [声线变体库.md](声线变体库.md) 的 F0 表）；模型不响应某音色词时，换更明确的音高措辞。
 - **反差可选不必备**：至多缀一处「表面 X，底下 Y」且仅限一个短句；没有就不写。
 
