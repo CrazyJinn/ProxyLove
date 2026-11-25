@@ -1,0 +1,18 @@
+[
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "图上实查：补「爬山脚疼(06-20)→自学护理(06-24)」护理体验起点缺环；插位 06-21 08:30（菜市场 07:00 后、上班前，菜市场在康复中心附近顺路——用户拍板）；挂线 RpPzkWr7Mw（用户指定关注苏晓禾线）。因果不建 leads_to；Info 从严不立（用户裁决，路径由下游 06-23/06-24/06-30 承载）。",
+    "content": "新事件「苏晓禾帮陈默腿部按摩缓解酸痛」：2024-06-21 08:30 康复中心训练室，苏晓禾上班前帮陈默按摩放松并讲解恢复门道；involved 苏晓禾、陈默；挂苏晓禾线。",
+    "source": "event-ideator",
+    "cypher": "MERGE (e:Event {id:'SMFhPJbbkW'}) ON CREATE SET e.title='苏晓禾帮陈默腿部按摩缓解酸痛', e.start_time='2024-06-21 08:30:00', e.end_time='2024-06-21 08:30:00', e.type='交流', e.description='陈默双腿酸胀，苏晓禾带他到康复中心训练室帮他做腿部按摩放松；她边按边讲解肌肉恢复的门道，手法利落';\nMATCH (e:Event {id:'SMFhPJbbkW'}) MATCH (l:Location {id:'QP23NrFZqm'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}) MATCH (e:Event {id:'SMFhPJbbkW'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}) MATCH (e:Event {id:'SMFhPJbbkW'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}) MATCH (e:Event {id:'SMFhPJbbkW'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "纯交流事件无换场景/换装/到场硬信号，单段即足（宁少勿滥）。空间继承既有训练大厅机位（「训练室」落 RVaUJp92GH，零占位）；着装继承：苏晓禾康复师工作装 NyJ99Sgpft（上班前换装），陈默日常户外休闲装 QmQCxuTrGK（当日漫展前同装）。",
+    "content": "事件 SMFhPJbbkW 的演出段：「晨间按摩放松」——陈默躺上护理床，苏晓禾自下而上逐处按压并讲解恢复门道；anchored_at 康复中心-训练大厅，appears_as 继承 NyJ99Sgpft + QmQCxuTrGK。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'SMFhPJbbkW'})\nMERGE (sub:SubEvent {id:'SMFhPJbbkX'})\nON CREATE SET sub.title='苏晓禾帮陈默腿部按摩缓解酸痛 · 晨间按摩放松', sub.start_time='2024-06-21 08:30:00', sub.end_time='2024-06-21 08:30:00',\n              sub.description='陈默躺上护理床露出酸胀的腿；苏晓禾自下而上逐处按压，边按边讲解肌肉恢复的门道'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMFhPJbbkX'}) MATCH (scn:Scene {id:'RVaUJp92GH'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMFhPJbbkX'}) MATCH (il:IllusDesign {id:'NyJ99Sgpft'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：康复师工作装（上班前换装）';\nMATCH (sub:SubEvent {id:'SMFhPJbbkX'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装（当日漫展行程同装）';"
+  }
+]

@@ -1,0 +1,18 @@
+[
+ {
+  "check": "S2_subevent",
+  "priority": "medium",
+  "reason": "独处触发段——宿醉醒来的认知错位与起身动作一段即足；换场景硬信号拆界（卧室机位）；着装继承既有 IllusDesign",
+  "content": "陈默在林梦家醒来 · 陌生的天花板（2024-06-16 07:40:00～2024-06-16 07:43:00）",
+  "cypher": "MATCH (e:Event {id:'RU4iVOG1SK'})\nMERGE (sub:SubEvent {id:'SMA9RtJ80e'})\nON CREATE SET sub.title='陈默在林梦家醒来 · 陌生的天花板', sub.start_time='2024-06-16 07:40:00', sub.end_time='2024-06-16 07:43:00',\n              sub.description='陈默醒来见天花板陌生，愣了几秒；他蹑手蹑脚起身下床'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMA9RtJ80e'}) MATCH (scn:Scene {id:'RrCNuG0g2U'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMA9RtJ80e'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：既有 IllusDesign（原 sub RlkWwdjD8Y 拆分前挂载）';\nMATCH (sub:SubEvent {id:'SMA9RtJ80e'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：既有 IllusDesign（原 sub RlkWwdjD8Y 拆分前挂载）';",
+  "source": "event-stager"
+ },
+ {
+  "check": "S2_subevent",
+  "priority": "medium",
+  "reason": "相遇反应段——对视/僵住互动方向明确；与卧室段以换区拍界；同机位段与 A 段着装一致（EA3）",
+  "content": "陈默在林梦家醒来 · 客厅撞个正着（2024-06-16 07:44:00～2024-06-16 07:46:00）",
+  "cypher": "MATCH (e:Event {id:'RU4iVOG1SK'})\nMERGE (sub:SubEvent {id:'SMA9S3F5Yu'})\nON CREATE SET sub.title='陈默在林梦家醒来 · 客厅撞个正着', sub.start_time='2024-06-16 07:44:00', sub.end_time='2024-06-16 07:46:00',\n              sub.description='陈默走到客厅，与林梦撞个正着；两人对视，同时僵住'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMA9S3F5Yu'}) MATCH (scn:Scene {id:'RrCNuG0g2V'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMA9S3F5Yu'}) MATCH (il:IllusDesign {id:'QSkk1LfIx8'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：既有 IllusDesign（原 sub RlkWwdjD8Y 拆分前挂载）';\nMATCH (sub:SubEvent {id:'SMA9S3F5Yu'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：既有 IllusDesign（原 sub RlkWwdjD8Y 拆分前挂载）';",
+  "source": "event-stager"
+ }
+]

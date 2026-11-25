@@ -1,0 +1,106 @@
+[
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "Event 3 菜市场拆两摊位 sub 需要机位；Location S7BDckog8O 已建档但空间链全空（2026-11-25 现查），补占位 Spot + 双 Scene。",
+    "content": "菜市场-水产蔬菜摊区（Spot 占位）+ 水产摊前/蔬菜摊前双 Scene 占位 + part_of/realizes 边。",
+    "source": "event-stager",
+    "cypher": "CREATE (sp:Spot {id:'SMKnfwWDjc'}) SET sp.name='菜市场-水产蔬菜摊区', sp.kind='zone', sp.description='水产摊与蔬菜摊连成一片的早市摊区';\nMATCH (l:Location {id:'S7BDckog8O'}) MATCH (sp:Spot {id:'SMKnfwWDjc'}) MERGE (l)-[r:part_of]->(sp) ON CREATE SET r.sync=false;\nCREATE (sc1:Scene {id:'SMKnfwWDjd'}) SET sc1.name='菜市场-水产摊前', sc1.scene_type='摊位前', sc1.status=0;\nMATCH (sp:Spot {id:'SMKnfwWDjc'}) MATCH (sc:Scene {id:'SMKnfwWDjd'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=false;\nCREATE (sc2:Scene {id:'SMKnfwWDje'}) SET sc2.name='菜市场-蔬菜摊前', sc2.scene_type='摊位前', sc2.status=0;\nMATCH (sp:Spot {id:'SMKnfwWDjc'}) MATCH (sc:Scene {id:'SMKnfwWDje'}) MERGE (sp)-[r:realizes]->(sc) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "朵朵仅有「秋日病号服披外套」一套，游乐园生日场景不适用；用户拍板春装口径；占位即挂 has_costume 归属防孤儿。",
+    "content": "朵朵春日出游装（CostumeStyle 占位 + IllusDesign 裸占位 + has_costume 归属朵朵 S3oFjfNVlg + outfit_for 边）。",
+    "source": "event-stager",
+    "cypher": "CREATE (cs:CostumeStyle {id:'SMKnfwWDjf'}) SET cs.name='朵朵春日出游装', cs.vibe='春季亮色薄外套套装，术后少女的活泼劲儿藏不住', cs.status=0;\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (cs:CostumeStyle {id:'SMKnfwWDjf'}) MERGE (c)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;\nCREATE (idn:IllusDesign {id:'SMKnfwWDjg'}) SET idn.status=0;\nMATCH (cs:CostumeStyle {id:'SMKnfwWDjf'}) MATCH (idn:IllusDesign {id:'SMKnfwWDjg'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "用户拍板：菜市场两拍两人着装走运动装占位（晨练买菜生活流）；与既有「晨跑运动装」（苏晓禾 NyBMgLXvns / 陈默 OLQBMO3oSA）按人名前缀区分防打架；占位即挂 has_costume 归属防孤儿。",
+    "content": "苏晓禾运动装 + 陈默运动装（各含 CostumeStyle 占位 + IllusDesign 裸占位 + 归属/outfit_for 边）。",
+    "source": "event-stager",
+    "cypher": "CREATE (cs1:CostumeStyle {id:'SMLTFVupsG'}) SET cs1.name='苏晓禾运动装', cs1.vibe='吸汗速干的清爽套装，跑起来发梢都在晃', cs1.status=0;\nMATCH (c:Character {id:'NvCkQmFPFs'}) MATCH (cs:CostumeStyle {id:'SMLTFVupsG'}) MERGE (c)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;\nCREATE (idn1:IllusDesign {id:'SMLTFVupsH'}) SET idn1.status=0;\nMATCH (cs:CostumeStyle {id:'SMLTFVupsG'}) MATCH (idn:IllusDesign {id:'SMLTFVupsH'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;\nCREATE (cs2:CostumeStyle {id:'SMLTFVupsI'}) SET cs2.name='陈默运动装', cs2.vibe='松垮但不脏的运动T恤短裤，第一次为出门运动买的装备', cs2.status=0;\nMATCH (c:Character {id:'NvCkQmFPFq'}) MATCH (cs:CostumeStyle {id:'SMLTFVupsI'}) MERGE (c)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;\nCREATE (idn2:IllusDesign {id:'SMLTFVupsJ'}) SET idn2.status=0;\nMATCH (cs:CostumeStyle {id:'SMLTFVupsI'}) MATCH (idn:IllusDesign {id:'SMLTFVupsJ'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 1 纯状态变化单段；犹豫→落子→收束三节拍；同刻另两条支线答复独立事件不在此重复。",
+    "content": "RINsONAON8 的演出段「微信应约」：邀请停在对话框顶端，打了删删了打只回一个字，发出后手机扣桌；anchored_at 电脑桌直播位-更新设备后，appears_as 居家颓废着装。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'RINsONAON8'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjh'})\nON CREATE SET sub.title='陈默答复苏晓禾答应去爬山（苏晓禾支线）· 微信应约', sub.start_time='2024-06-19 09:00:00', sub.end_time='2024-06-19 09:00:00',\n              sub.description='苏晓禾的爬山邀请停在对话框顶端；陈默打了删、删了打，最后只回出一个字；消息发出他把手机扣在桌上'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjh'}) MATCH (scn:Scene {id:'R22lVGrBuC'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjh'}) MATCH (il:IllusDesign {id:'QUVhvJKplY'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：居家颓废着装（在家）';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 2 告别转折，用户拍板合并为单 sub（同场景同着装，原则上一个 sub 表达）；开播→道别→收麦三节拍一线收完。",
+    "content": "RqcglHRCSm 的演出段「最后一播道别」：开播告知最后一场，镜头前谢观众并单独致谢林梦，下播收麦进抽屉；anchored_at 电脑桌直播位-更新设备后，appears_as 居家颓废着装。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'RqcglHRCSm'})\nMERGE (sub:SubEvent {id:'SMKnfwWDji'})\nON CREATE SET sub.title='陈默停播告别直播生涯 · 最后一播道别', sub.start_time='2024-06-19 21:00:00', sub.end_time='2024-06-19 21:00:00',\n              sub.description='陈默坐上直播位开机，破例没开礼物提醒，开场就告知这是最后一场；他对着镜头谢过一路陪伴的观众，最后单独念到林梦的名字郑重道谢；下播后他摘下耳机，把麦克风收进抽屉'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDji'}) MATCH (scn:Scene {id:'R22lVGrBuC'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDji'}) MATCH (il:IllusDesign {id:'QUVhvJKplY'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：居家颓废着装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 3 挑鱼拍；摊主为文字群像不建占位；机位挂本轮 S1 占位水产摊前。",
+    "content": "S7BDckog8P 的演出段「水产摊前学挑鱼」：苏晓禾示范掐鳃，陈默学着掐被摊主笑；anchored_at 菜市场-水产摊前（占位），两人运动装占位。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7BDckog8P'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjj'})\nON CREATE SET sub.title='陈默跟苏晓禾逛菜市场 · 水产摊前学挑鱼', sub.start_time='2024-06-21 07:05:00', sub.end_time='2024-06-21 07:05:00',\n              sub.description='苏晓禾拎起一尾鱼示范掐鱼鳃看鳃色；陈默学着掐了一条，被摊主笑话手法生疏'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjj'}) MATCH (scn:Scene {id:'SMKnfwWDjd'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjj'}) MATCH (il:IllusDesign {id:'SMLTFVupsH'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：苏晓禾运动装待消化';\nMATCH (sub:SubEvent {id:'SMKnfwWDjj'}) MATCH (il:IllusDesign {id:'SMLTFVupsJ'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：陈默运动装待消化';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 3 挑菜拍，与挑鱼互为动作递进（教→用）；机位挂本轮 S1 占位蔬菜摊前。",
+    "content": "S7BDckog8P 的演出段「蔬菜摊挑嫩菜」：捏菜叶辨老嫩，砍零头塞袋；anchored_at 菜市场-蔬菜摊前（占位），同装继承。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7BDckog8P'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjk'})\nON CREATE SET sub.title='陈默跟苏晓禾逛菜市场 · 蔬菜摊挑嫩菜', sub.start_time='2024-06-21 07:25:00', sub.end_time='2024-06-21 07:25:00',\n              sub.description='转到蔬菜摊，苏晓禾捏菜叶教他辨老嫩；她顺口跟摊主砍下零头，把挑好的菜塞进他拎着的袋子'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjk'}) MATCH (scn:Scene {id:'SMKnfwWDje'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjk'}) MATCH (il:IllusDesign {id:'SMLTFVupsH'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：苏晓禾运动装待消化';\nMATCH (sub:SubEvent {id:'SMKnfwWDjk'}) MATCH (il:IllusDesign {id:'SMLTFVupsJ'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：陈默运动装待消化';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 4 到场硬信号独立成拍；朵朵挂本轮 S1 占位 IllusDesign；别徽章给苏晓禾温软动线开场。",
+    "content": "S7AMLCsuLR 的演出段「入园直奔过山车」：别生日徽章，入园直奔过山车排队口；anchored_at 游乐园（既有），朵朵占位春装、苏晓禾日常休闲装、陈默户外休闲装。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLR'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjl'})\nON CREATE SET sub.title='陈默陪朵朵去游乐园过生日 · 入园直奔过山车', sub.start_time='2024-06-23 10:10:00', sub.end_time='2024-06-23 10:10:00',\n              sub.description='苏晓禾蹲下给朵朵别好生日徽章；入园门一开，朵朵一手拉一个直奔过山车排队口'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjl'}) MATCH (scn:Scene {id:'S7lM3irKjJ'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjl'}) MATCH (il:IllusDesign {id:'SMKnfwWDjg'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：朵朵春日出游装待消化';\nMATCH (sub:SubEvent {id:'SMKnfwWDjl'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装（春装口径）';\nMATCH (sub:SubEvent {id:'SMKnfwWDjl'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 4 核心释放拍，「术后第一次玩这么疯」正文落点；「轮流陪」兼顾术后看护事实。",
+    "content": "S7AMLCsuLR 的演出段「连刷项目玩哑嗓」：轮流派陪连刷项目，玩哑嗓比手势嚷再来；anchored_at 游乐园，同装继承。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLR'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjm'})\nON CREATE SET sub.title='陈默陪朵朵去游乐园过生日 · 连刷项目玩哑嗓', sub.start_time='2024-06-23 11:00:00', sub.end_time='2024-06-23 11:00:00',\n              sub.description='两人轮流派陪朵朵连刷项目；她嗓音玩哑了还比着手势嚷着再来一次，陈默举手投降被苏晓禾笑着推回队伍'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjm'}) MATCH (scn:Scene {id:'S7lM3irKjJ'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjm'}) MATCH (il:IllusDesign {id:'SMKnfwWDjg'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：朵朵春日出游装待消化';\nMATCH (sub:SubEvent {id:'SMKnfwWDjm'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjm'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 4 生日仪式余韵拍；第一块给陈默呼应「点名要陈默来过」；15:00 留足 16:00 花园提议动线。",
+    "content": "S7AMLCsuLR 的演出段「出园前许愿吹蜡烛」：长椅摆蛋糕许愿吹蜡烛，第一块端给陈默；anchored_at 游乐园，同装继承。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLR'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjn'})\nON CREATE SET sub.title='陈默陪朵朵去游乐园过生日 · 出园前许愿吹蜡烛', sub.start_time='2024-06-23 15:00:00', sub.end_time='2024-06-23 15:00:00',\n              sub.description='出园前长椅上摆开小蛋糕；朵朵闭眼许完愿吹灭蜡烛，第一块蛋糕端到了陈默面前'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjn'}) MATCH (scn:Scene {id:'S7lM3irKjJ'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjn'}) MATCH (il:IllusDesign {id:'SMKnfwWDjg'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：朵朵春日出游装待消化';\nMATCH (sub:SubEvent {id:'SMKnfwWDjn'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjn'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 5 纯交流单段；「没当场应下」与 06-24 自学、06-30 面试因果相容；机位选花园避开已用训练大厅。",
+    "content": "S7AMLCsuLS 的演出段「花园提议」：送朵朵回院花园歇脚，细数照顾朵朵的动作提议应聘护理，陈默没当场应下；anchored_at 康复中心-花园，春装继承。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S7AMLCsuLS'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjo'})\nON CREATE SET sub.title='苏晓禾推荐陈默去护理院当护理 · 花园提议', sub.start_time='2024-06-23 16:00:00', sub.end_time='2024-06-23 16:00:00',\n              sub.description='两人送朵朵回院，在花园长椅歇脚；苏晓禾细数他照顾朵朵的一整套动作，提议去护理院应聘护理；陈默没有当场应下'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjo'}) MATCH (scn:Scene {id:'S3p7v2bvfN'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjo'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjo'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 6 单段购书；18:40 衔接路边摊晚饭动线。",
+    "content": "S8zaNYXiEr 的演出段「护理专区选教材」：领路直奔专区翻目录比对，陈默抱一摞结账；anchored_at 书店-二楼书区，春装继承。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S8zaNYXiEr'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjp'})\nON CREATE SET sub.title='苏晓禾陪陈默书店买护理教材 · 护理专区选教材', sub.start_time='2024-06-23 18:00:00', sub.end_time='2024-06-23 18:00:00',\n              sub.description='苏晓禾领路直奔护理专区，抽出教材逐本翻目录比对；陈默抱着她挑好的一摞跟在身后结账，最厚的基础护理学压在最上面'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjp'}) MATCH (scn:Scene {id:'S9D9aBn0u9'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjp'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjp'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "Event 7 对峙类高密度按 skill 口径优先 1 sub（触发→回嘴→接住）；王昊仅一套队服且穿队服嘲讽改行主播主题自洽，继承零占位。",
+    "content": "S8zaNYXiEs 的演出段「邻桌嘲讽与回嘴」：王昊端酒杯嘲讽，苏晓禾回嘴，陈默按腕接话；anchored_at 路边摊-烧烤摊，三人着装继承（含王昊星耀二队队服）。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'S8zaNYXiEs'})\nMERGE (sub:SubEvent {id:'SMKnfwWDjq'})\nON CREATE SET sub.title='路边摊王昊嘲讽护理陈默苏晓禾回嘴 · 邻桌嘲讽与回嘴', sub.start_time='2024-06-23 18:40:00', sub.end_time='2024-06-23 18:40:00',\n              sub.description='邻桌的王昊认出陈默，端着酒杯嘲讽他改行做护理；苏晓禾回嘴顶了回去；陈默按住她的手腕，自己把话接了过去'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMKnfwWDjq'}) MATCH (scn:Scene {id:'Re2PEUaYTt'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMKnfwWDjq'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjq'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';\nMATCH (sub:SubEvent {id:'SMKnfwWDjq'}) MATCH (il:IllusDesign {id:'Rr42e15aGi'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：星耀二队训练队服（王昊）';"
+  }
+]

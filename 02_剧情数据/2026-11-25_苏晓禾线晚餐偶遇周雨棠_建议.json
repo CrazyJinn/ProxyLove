@@ -1,0 +1,50 @@
+[
+  {
+    "check": "I1_placeholder_entity",
+    "priority": "medium",
+    "reason": "用户点名新建；「护理师们」群像图上无实体（2026-11-25 现查零节点），只具名化一人做同事互动支点，防占位泛滥；同批回溯挂 06-17 探班事件（见 S3/I6 条目）。",
+    "content": "占位 Character 周雨棠：康复中心前台接待，嗓门亮心不坏，全中心的八卦枢纽，嘴快护短。",
+    "source": "event-ideator",
+    "cypher": "MERGE (c:Character {id:'SMHXohk9PF'}) ON CREATE SET c.name='周雨棠', c.vibe='康复中心前台接待，嗓门亮心不坏，全中心的八卦枢纽，嘴快护短';"
+  },
+  {
+    "check": "S1_placeholder_node",
+    "priority": "high",
+    "reason": "用户拍板改休闲装（探班事件与烧烤摊晚餐两场同装）；与苏晓禾既有「日常休闲装」(NyBMgLXvnt) 重名会两节点打架，按占位命名规范以人名前缀区分；占位即挂 has_costume 归属防孤儿占位（E1 体检）。",
+    "content": "周雨棠的休闲装（CostumeStyle 占位 + IllusDesign 裸占位 + 归属/outfit_for 边）。",
+    "source": "event-stager",
+    "cypher": "CREATE (cs:CostumeStyle {id:'SMHXohk9PG'}) SET cs.name='周雨棠休闲装', cs.vibe='爽利利落的日常休闲，坐在前台也像随时要下班去逛街', cs.status=0;\nMATCH (c:Character {id:'SMHXohk9PF'}) MATCH (cs:CostumeStyle {id:'SMHXohk9PG'}) MERGE (c)-[r:has_costume]->(cs) ON CREATE SET r.sync=true;\nCREATE (idn:IllusDesign {id:'SMHXohk9PH'}) SET idn.status=0;\nMATCH (cs:CostumeStyle {id:'SMHXohk9PG'}) MATCH (idn:IllusDesign {id:'SMHXohk9PH'}) MERGE (cs)-[r:outfit_for]->(idn) ON CREATE SET r.sync=true;"
+  },
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "关系公开化拍（用户拍板方向）；插位 06-25 18:30 下班后晚餐（用户拍板），补 06-24→06-26 两天空洞；去重：与 06-23 路边摊王昊嘲讽不同日不同拍（敌意冲突≠善意起哄）；因果不建；Info 从严不立（用户裁决，关系被看破属过程性）。",
+    "content": "新事件「陈默苏晓禾吃饭偶遇周雨棠」：2024-06-25 18:30 路边摊晚餐，周雨棠拼桌盘问，苏晓禾不接茬也不否认；involved 陈默、苏晓禾、周雨棠；挂苏晓禾线。",
+    "source": "event-ideator",
+    "cypher": "MERGE (e:Event {id:'SMHXohk9PE'}) ON CREATE SET e.title='陈默苏晓禾吃饭偶遇周雨棠', e.start_time='2024-06-25 18:30:00', e.end_time='2024-06-25 18:30:00', e.type='交流', e.description='两人路边摊吃晚饭；周雨棠端碗凑过来拼桌，几句盘问把两人关系问出轮廓；苏晓禾不接茬也不否认，陈默埋头扒饭';\nMATCH (e:Event {id:'SMHXohk9PE'}) MATCH (l:Location {id:'QP23NrFZql'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}) MATCH (e:Event {id:'SMHXohk9PE'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}) MATCH (e:Event {id:'SMHXohk9PE'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'SMHXohk9PF'}) MATCH (e:Event {id:'SMHXohk9PE'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}) MATCH (e:Event {id:'SMHXohk9PE'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "I6_desc_update",
+    "priority": "low",
+    "reason": "改既有节点属性例外二（用户明示拍板，越界使用已留痕）：回溯 06-17 探班事件中周雨棠的指路人身份。before「陈默从晨跑闲聊里记下她工作的康复中心；苏晓禾意外他找得到这儿，带他简单参观」→ after「陈默从晨跑闲聊里记下她工作的康复中心，前台周雨棠指路寻到苏晓禾；苏晓禾意外他找得到这儿，带他简单参观」。新文案过零时间措辞/不复述 title/不写认知解读三检。",
+    "content": "RMoHgKlbdq description 插入前台周雨棠指路一句。",
+    "source": "event-ideator",
+    "cypher": "MATCH (e:Event {id:'RMoHgKlbdq'}) SET e.description='陈默从晨跑闲聊里记下她工作的康复中心，前台周雨棠指路寻到苏晓禾；苏晓禾意外他找得到这儿，带他简单参观';"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "纯交流单段即足（宁少勿滥）；「谁追的谁」一问+「堵嘴」一答是本拍唯一张力点；anchored_at 继承既有烧烤摊机位零占位；苏晓禾/陈默着装继承既有日常套；周雨棠挂同轮 S1 占位 IllusDesign。",
+    "content": "事件 SMHXohk9PE 的演出段：「拼桌盘问」——周雨棠端碗拼桌点破气氛，苏晓禾堵嘴岔题；anchored_at 路边摊-烧烤摊，appears_as 继承 NyJ99Sgpfu + QmQCxuTrGK + 占位 SMHXohk9PH。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'SMHXohk9PE'})\nMERGE (sub:SubEvent {id:'SMHXohk9PI'})\nON CREATE SET sub.title='陈默苏晓禾吃饭偶遇周雨棠 · 拼桌盘问', sub.start_time='2024-06-25 18:30:00', sub.end_time='2024-06-25 18:30:00',\n              sub.description='两人刚落座开吃，周雨棠端着碗凑过来拼桌；她一句「你们俩谁追的谁」把气氛点破；苏晓禾反手把一筷子菜堵回去，话题被她岔到科室八卦'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMHXohk9PI'}) MATCH (scn:Scene {id:'Re2PEUaYTt'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMHXohk9PI'}) MATCH (il:IllusDesign {id:'NyJ99Sgpfu'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常休闲装（下班便装）';\nMATCH (sub:SubEvent {id:'SMHXohk9PI'}) MATCH (il:IllusDesign {id:'QmQCxuTrGK'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：日常户外休闲装';\nMATCH (sub:SubEvent {id:'SMHXohk9PI'}) MATCH (il:IllusDesign {id:'SMHXohk9PH'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='占位：周雨棠休闲装待消化';"
+  },
+  {
+    "check": "S3_gap_fix",
+    "priority": "medium",
+    "reason": "用户明示拍板回溯：周雨棠 06-17 探班时即在场（前台指路人）。实体为同轮 I1 占位（id 定稿I1「周雨棠」→ SMHXohk9PF），补边绑定同轮生成 id。",
+    "content": "补 involved 边：周雨棠 → RMoHgKlbdq（陈默按图索骥探班康复中心）。",
+    "source": "event-stager",
+    "cypher": "MATCH (c:Character {id:'SMHXohk9PF'}) MATCH (e:Event {id:'RMoHgKlbdq'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;"
+  }
+]

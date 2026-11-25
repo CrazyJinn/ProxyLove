@@ -1,0 +1,18 @@
+[
+  {
+    "check": "I2_new_event",
+    "priority": "medium",
+    "reason": "用户拍板新增（晚餐前的邀约拍）；插位 06-25 17:30（晚餐 18:30 前一小时）；leads_to→SMHXohk9PE 为用户明示因果（「叫出来吃饭」即晚餐之因）；Info 从严不立（过程性邀约，同日兑现）。",
+    "content": "新事件「苏晓禾来电叫陈默出来吃饭」：2024-06-25 17:30 八楼出租屋，陈默对着护理教材接起电话一口应下；involved 陈默、苏晓禾；leads_to 路边摊晚餐；挂苏晓禾线。",
+    "source": "event-ideator",
+    "cypher": "MERGE (e:Event {id:'SMJAfWVlgm'}) ON CREATE SET e.title='苏晓禾来电叫陈默出来吃饭', e.start_time='2024-06-25 17:30:00', e.end_time='2024-06-25 17:30:00', e.type='交流', e.description='苏晓禾来电叫陈默出来吃饭；陈默对着护理教材接起，一口应下';\nMATCH (e:Event {id:'SMJAfWVlgm'}) MATCH (l:Location {id:'QP23NrFZqb'}) MERGE (e)-[r:occurs_at]->(l) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFq'}) MATCH (e:Event {id:'SMJAfWVlgm'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (c:Character {id:'NvCkQmFPFs'}) MATCH (e:Event {id:'SMJAfWVlgm'}) MERGE (c)-[r:involved]->(e) ON CREATE SET r.sync=false;\nMATCH (a:Event {id:'SMJAfWVlgm'}) MATCH (b:Event {id:'SMHXohk9PE'}) MERGE (a)-[r:leads_to]->(b) ON CREATE SET r.sync=false;\nMATCH (a:StoryArc {id:'RpPzkWr7Mw'}) MATCH (e:Event {id:'SMJAfWVlgm'}) MERGE (a)-[r:comprises]->(e) ON CREATE SET r.sync=false;"
+  },
+  {
+    "check": "S2_subevent",
+    "priority": "medium",
+    "reason": "纯交流电话单段即足（宁少勿滥）；anchored_at 继承既有电脑桌机位（自学日常场景）；着装继承居家颓废着装；苏晓禾电话画外不在场不着装；零占位。",
+    "content": "事件 SMJAfWVlgm 的演出段：「出租屋接约」——教材摊桌来电响，陈默接起应下晚饭收桌出门；anchored_at 电脑桌直播位-更新设备后，appears_as 继承 QUVhvJKplY。",
+    "source": "event-stager",
+    "cypher": "MATCH (e:Event {id:'SMJAfWVlgm'})\nMERGE (sub:SubEvent {id:'SMJAfWVlgn'})\nON CREATE SET sub.title='苏晓禾来电叫陈默出来吃饭 · 出租屋接约', sub.start_time='2024-06-25 17:30:00', sub.end_time='2024-06-25 17:30:00',\n              sub.description='电脑桌上摊着护理教材，手机响起来电；陈默接起应下晚饭，收桌起身出门'\nMERGE (e)-[r:refines]->(sub) ON CREATE SET r.sync=true;\nMATCH (sub:SubEvent {id:'SMJAfWVlgn'}) MATCH (scn:Scene {id:'R22lVGrBuC'})\nMERGE (sub)-[a:anchored_at]->(scn) ON CREATE SET a.sync=false;\nMATCH (sub:SubEvent {id:'SMJAfWVlgn'}) MATCH (il:IllusDesign {id:'QUVhvJKplY'})\nMERGE (sub)-[ap:appears_as]->(il) ON CREATE SET ap.sync=false, ap.detail='继承：居家颓废着装（在家自学装）';"
+  }
+]
