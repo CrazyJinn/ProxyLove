@@ -29,7 +29,26 @@
 
 值为一个字符串，表达「玩家选择史」上的布尔条件——本 Event 仅当条件求值为真才可激活。典型用途：分支汇合点的软门控（玩家做过某选择后，另一条线上的后续事件才解锁）。
 
-- **原子**（唯一原子类型）：`choice:<choice_id>[<n>]` —— 语义：「玩家在 Choice `<choice_id>` 选择了第 `n` 个选项」为真。
+```
+condition := ε | expr
+expr      := term ( "|" term )*
+term      := factor ( "&" factor )*
+factor    := "!" factor | atom
+atom      := "choice:" choice_id "[" n "]"
+           | "knows:" info_id
+           | "knows:" char_id ":" info_id
+choice_id := [0-9A-Za-z]+        （雪花 Base62）
+info_id   := [0-9A-Za-z]+        （雪花 Base62）
+char_id   := [0-9A-Za-z]+        （雪花 Base62）
+n         := [1-9][0-9]*         （1 基正整数）
+```
+
+**求值口径**（condition 的两类原子）：
+
+- `choice:` 对玩家选择史求值：跑团语境 = 本 run 绑定周目的已落子选择（branch_state，悬置拍当拍落——`choice:<id>[<n>]` 非本周目所落即假）；盘点/静态分析语境 = 给定支线假设。**挂 condition 的分支事件照常建 Info/认知**——图是 run 无关的，跑团端按周目过滤，跨支不泄漏。
+- `knows:` 是**世界状态断言**（Event 上的硬触发，典型用途：角色因先前经历得知某事后才触发的特殊对话/事件变体）：`knows:<InfoId>` = 任一角色知道（持有指向该 Info 的有效认知，或为其宿主）；`knows:<CharId>:<InfoId>` = 指定角色知道。跑团端在拍调度时按事件时刻求值（查询侧不判）：判为假的事件对本 run 不入节——没发生就没拍。
+
+- **原子**：`choice:<choice_id>[<n>]` —— 语义：「玩家在 Choice `<choice_id>` 选择了第 `n` 个选项」为真；`knows:<info_id>` / `knows:<char_id>:<info_id>` —— 世界状态断言（语义见上方求值口径）。
 - **组合**：优先级 `!` > `&` > `|`，圆括号分组。例：`choice:RGj3o4sKsD[2] & !choice:RGcLQj1YBt[1]` = 「在 RGj3o4sKsD 选了第 2 项，且在 RGcLQj1YBt 没选第 1 项」。
 - **选项序号 n 的定义**：该 Choice 全部出边 `option` 按 `label` 字典序（Unicode 升序）排列的 **1 基序号**。书写/校验时的可复现查询：
   ```cypher
@@ -42,17 +61,5 @@
   - 求值输入 = 玩家选择史（运行时状态）；图上 option 边全集只提供序号基准，不承载「玩家实际选了什么」。
 - **校验**（人工/工具自检，非法不落库）：choice_id 在图中存在；`n` ≤ 该 Choice 的 option 总数；括号配对；无空原子。
 - Choice 节点与 presents/option 边定义见下文；condition 与 option 的分工（硬跳转 vs 软门控）见 option 边节。
-
-**语法（BNF）**：
-
-```
-condition := ε | expr
-expr      := term ( "|" term )*
-term      := factor ( "&" factor )*
-factor    := "!" factor | atom
-atom      := "choice:" choice_id "[" n "]"
-choice_id := [0-9A-Za-z]+        （雪花 Base62）
-n         := [1-9][0-9]*         （1 基正整数）
-```
 
 ---

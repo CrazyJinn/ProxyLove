@@ -2,7 +2,7 @@
   {
     "check": "R9_char_bigfive_backfill",
     "priority": "low",
-    "reason": "例外通道（用户点名存量治理，同 2026-11-20 vibe 补齐先例）：Big Five 五维回填 16 人之 1/16（林梦）；数值锚图上 vibe+LS+Lore 素材（锚点见回填 md U1），int 0-100 五维一次写齐，无新增设定",
+    "reason": "例外通道（用户点名存量治理，同 2026-11-20 vibe 补齐先例）：Big Five 五维回填 16 人之 1/16（林梦）；数值锚图上 vibe+LS+固有 Info 素材（锚点见回填 md U1），int 0-100 五维一次写齐，无新增设定",
     "content": "林梦 Big Five：开放 72 / 尽责 58 / 外向 82 / 宜人 38 / 神经质 62",
     "cypher": "MATCH (c:Character {id:'NvCkQmFPFt'}) SET c.bf_openness=72, c.bf_conscientiousness=58, c.bf_extraversion=82, c.bf_agreeableness=38, c.bf_neuroticism=62;",
     "source": "user-directive"

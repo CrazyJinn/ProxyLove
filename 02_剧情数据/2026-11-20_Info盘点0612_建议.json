@@ -32,11 +32,11 @@
     "source": "event-ideator"
   },
   {
-    "check": "L1_lore",
+    "check": "L1_info",
     "priority": "low",
-    "reason": "盘点 Lore 候选经用户裁决建立（构图期通道特批；仅挂基地单宿主）：荣誉墙场景的固有背景支撑，kl=1 公开背景；图上实查：星耀系既有 5 条 Lore 无此条",
-    "content": "Lore「星耀一队的辉煌停留在 dota1 时代」kl=1，宿主=星耀电竞基地（QP23NrFZqd）",
-    "cypher": "MERGE (f:Lore {id:'SEU6JwhJsu'}) ON CREATE SET f.title='星耀一队的辉煌停留在 dota1 时代', f.knowledge_level=1;\nMATCH (l:Location {id:'QP23NrFZqd'}) MATCH (f:Lore {id:'SEU6JwhJsu'}) MERGE (l)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+    "reason": "盘点 固有 Info 候选经用户裁决建立（构图期通道特批；仅挂基地单宿主）：荣誉墙场景的固有背景支撑，kl=1 公开背景；图上实查：星耀系既有 5 条 固有 Info 无此条",
+    "content": "固有 Info「星耀一队的辉煌停留在 dota1 时代」kl=1，宿主=星耀电竞基地（QP23NrFZqd）",
+    "cypher": "MERGE (f:Info {id:'SEU6JwhJsu'}) ON CREATE SET f.title='星耀一队的辉煌停留在 dota1 时代', f.knowledge_level=1;\nMATCH (l:Location {id:'QP23NrFZqd'}) MATCH (f:Info {id:'SEU6JwhJsu'}) MERGE (l)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
     "source": "event-ideator"
   }
 ]

@@ -1,18 +1,18 @@
 [
  {
-  "check": "R2_char_lore",
+  "check": "R2_char_info",
   "priority": "low",
-  "reason": "构图期人工拍板（用户 2026-11-23 批准，Info 盘点收尾）；朵朵既有 Lore 为空无查重冲突；kl2=参与层（互动观察所得）",
+  "reason": "构图期人工拍板（用户 2026-11-23 批准，Info 盘点收尾）；朵朵既有 固有 Info 为空无查重冲突；kl2=参与层（互动观察所得）",
   "content": "朵朵术后康复中且怕生",
-  "cypher": "MERGE (f:Lore {id:'SIwitcK4bQ'}) ON CREATE SET f.title='朵朵术后康复中且怕生', f.knowledge_level=2;\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (f:Lore {id:'SIwitcK4bQ'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+  "cypher": "MERGE (f:Info {id:'SIwitcK4bQ'}) ON CREATE SET f.title='朵朵术后康复中且怕生', f.knowledge_level=2;\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (f:Info {id:'SIwitcK4bQ'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
   "source": "user-approved"
  },
  {
-  "check": "R2_char_lore",
+  "check": "R2_char_info",
   "priority": "low",
   "reason": "构图期人工拍板（用户 2026-11-23 追加）；kl1=长效背景",
   "content": "朵朵是孤儿",
-  "cypher": "MERGE (f:Lore {id:'SIwitcK4bR'}) ON CREATE SET f.title='朵朵是孤儿', f.knowledge_level=1;\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (f:Lore {id:'SIwitcK4bR'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+  "cypher": "MERGE (f:Info {id:'SIwitcK4bR'}) ON CREATE SET f.title='朵朵是孤儿', f.knowledge_level=1;\nMATCH (c:Character {id:'S3oFjfNVlg'}) MATCH (f:Info {id:'SIwitcK4bR'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
   "source": "user-approved"
  },
  {
