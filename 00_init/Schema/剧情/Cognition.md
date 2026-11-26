@@ -8,7 +8,7 @@
 
 - 三边：`Character ─has_cognition→ Cognition ─about→ Info`，`Event ─forms→ Cognition`（**可选**）
   （边定义见 [边.md](边.md)）。
-- **可指向任一类 Info**：事件 Info（故事内成立的事实）与固有 Info（开篇前已为真的事实，两类见
+- **可指向任一类 Info**：事件 Info（故事内成立的事实）与固有 Info（在故事开始时为真的事实，两类见
   [Info.md](Info.md)）都能被认知指向。固有 Info 的宿主默认自知，不给自己建认知。
 - **forms 可选**：
   - **有 forms**：角色在该锚事件得知（「何时知道」= 锚事件 start_time）。
