@@ -1,0 +1,28 @@
+[
+  {
+    "check": "R2_char_info",
+    "priority": "low",
+    "reason": "用户点名回填（user-directive，2026-11-27）：苏晓禾习惯类固有事实；title 按用户裁定用描述性文字（2026-11-27：不用两段式）；宿主既有固有 Info（职业：护理师/资历：刚毕业、专业扎实）无同义重复，实查；kl=1 表层可观察（裁定点，备选 2）",
+    "content": {
+      "宿主": "苏晓禾",
+      "宿主id": "NvCkQmFPFs",
+      "新固有Info": "热爱美食",
+      "knowledge_level": 1
+    },
+    "cypher": "MERGE (f:Info {id:'SPaF6hR78S'}) ON CREATE SET f.title='热爱美食', f.knowledge_level=1;\nMATCH (c:Character {id:'NvCkQmFPFs'}) MATCH (f:Info {id:'SPaF6hR78S'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+    "source": "user-directive"
+  },
+  {
+    "check": "R2_char_info",
+    "priority": "low",
+    "reason": "用户点名回填（user-directive，2026-11-27）：李想习惯类固有事实；title 按用户裁定用描述性文字（2026-11-27：不用两段式）；宿主既有固有 Info（职务：dota2二号位玩家）无同义重复，实查；kl=1 表层可观察（裁定点，备选 2）",
+    "content": {
+      "宿主": "李想",
+      "宿主id": "RqeKlYIPnF",
+      "新固有Info": "有抽烟习惯",
+      "knowledge_level": 1
+    },
+    "cypher": "MERGE (f:Info {id:'SPaF6hR78T'}) ON CREATE SET f.title='有抽烟习惯', f.knowledge_level=1;\nMATCH (c:Character {id:'RqeKlYIPnF'}) MATCH (f:Info {id:'SPaF6hR78T'}) MERGE (c)-[r:has_info]->(f) ON CREATE SET r.sync=false;",
+    "source": "user-directive"
+  }
+]

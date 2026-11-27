@@ -33,7 +33,7 @@
 **剧情——事件与信息**
 - **Event** — 某时某刻发生的某件事
 - **SubEvent** — 事件在机位层的演出物化（到场/换区/离开/换装）；挂 anchored_at/appears_as 两边，无 status
-- **Info** — 一条事实（Event 记「发生」，Info 记「事实」）。按挂靠边分两类、互斥：**固有 Info**（`(Character|Location) ─has_info→`，开篇前就已为真；title 写「维度：值」、不带宿主名）/ **事件 Info**（`Event ─establishes→`，故事内某个动作使之成立；title 是带主语的完整事实句）。宿主默认自知名下的固有 Info；知晓分布由 Cognition 层承载，交付时机归写作层裁量（见 [剧情/Info.md](剧情/Info.md)）
+- **Info** — 一条事实（Event 记「发生」，Info 记「事实」）。按挂靠边分两类、互斥：**固有 Info**（`(Character|Location) ─has_info→`，开篇前就已为真；title 写描述性文字、不带宿主名）/ **事件 Info**（`Event ─establishes→`，故事内某个动作使之成立；title 是带主语的完整事实句）。宿主默认自知名下的固有 Info；知晓分布由 Cognition 层承载，交付时机归写作层裁量（见 [剧情/Info.md](剧情/Info.md)）
 - **Cognition** — 一条认知持有（某角色对某 Info——固有或事件——以什么态度持有什么认知）。forms 可选：有 forms = 自锚事件起得知；无 forms = 开篇前就持有的前史认知（只能指向固有 Info）。封闭世界：既无有效认知链、也不是宿主 = 不知情；认知编年史——同 (Character, Info) 多条并存，态度转变=追加新条目旧条保留；见 [剧情/Cognition.md](剧情/Cognition.md)）
 
 **剧情——分叉与编排**
@@ -75,7 +75,7 @@
 | occurs_at | Event → Location | N:N | ❌ | 事件发生地点（一跳；跨地点事件多挂；子空间归组见 anchored_at） |
 | refines | Event → SubEvent | 1:N | ✅ | 细化（父→子）；父属性变更级联作废 sub 重细化 |
 | leads_to | Event → Event | N:N | ❌ | 导致——叙事层唯一因果边，仅事件之间（先后时序由 Event.start_time 承载；事件↔信息归 Info 节点与 establishes 边） |
-| has_info | (Character\|Location) → Info | N:N | ❌ | **固有宿主**（宿主轴）——该 Info 是固有 Info：宿主角色/地点开篇前就已为真的事实（title 写「维度：值」、不带宿主名，如 陆择→「特长：恋爱话术」）；每条固有 Info ≥1 入边、与 establishes 互斥；宿主默认自知 |
+| has_info | (Character\|Location) → Info | N:N | ❌ | **固有宿主**（宿主轴）——该 Info 是固有 Info：宿主角色/地点开篇前就已为真的事实（title 写描述性文字、不带宿主名，如 陆择→「擅长恋爱话术」）；每条固有 Info ≥1 入边、与 establishes 互斥；宿主默认自知 |
 | establishes | Event → Info | 1:N | ❌ | **成立**（成立轴）——该事件使这条事件 Info 成立并进入故事（陈念来电→相亲安排成立）；只答成立不答知晓（「参与即知情」已废止，involved 不推导知情），知晓归 Cognition 层；成立锚唯一：每条事件 Info 恰 1 入边、0 条 has_info，成立≠揭示，揭示/告知/印证事件不挂本边；开篇前就已为真的事实建固有 Info（has_info），不建成立事件；event-ideator 产 |
 | has_cognition | Character → Cognition | 1:N | ❌ | **持有**（持有轴）——角色持有对某条 Info（固有或事件）的认知；同 (Character, Info) 多条并存（认知编年史，转变=追加新条目） |
 | about | Cognition → Info | N:1 | ❌ | **指向**（指向轴）——认知针对哪条 Info（固有或事件皆可） |
